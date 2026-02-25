@@ -986,7 +986,7 @@
                                     placeholder="Ej: juan_tpv">
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Contraseña *</label>
+                                <label class="form-label" id="workerPasswordLabel">Contraseña *</label>
                                 <input type="text" class="form-control" id="workerPassword" required
                                     placeholder="••••••••">
                                 <small class="text-muted">Se muestra en texto plano para gestión del dueño.</small>
@@ -1369,6 +1369,14 @@
             document.getElementById('workerId').value = id || '';
             document.getElementById('workerUsername').value = username || '';
             document.getElementById('workerActive').checked = active !== false;
+
+            // Ajustar etiqueta de contraseña según si editamos o creamos
+            const pwdLabel = document.getElementById('workerPasswordLabel');
+            if (id) {
+                pwdLabel.innerHTML = 'Contraseña <small class="text-muted font-normal">(opcional, blanco para mantener)</small>';
+            } else {
+                pwdLabel.innerHTML = 'Contraseña *';
+            }
 
             // Permissions
             const perms = permissions || [];

@@ -29,6 +29,14 @@ public class WorkerService {
     }
 
     public Worker save(Worker worker) {
+        if (worker.getId() != null) {
+            Worker existing = workerRepository.findById(worker.getId()).orElse(null);
+            if (existing != null) {
+                if (worker.getPassword() == null || worker.getPassword().trim().isEmpty()) {
+                    worker.setPassword(existing.getPassword());
+                }
+            }
+        }
         return workerRepository.save(worker);
     }
 
