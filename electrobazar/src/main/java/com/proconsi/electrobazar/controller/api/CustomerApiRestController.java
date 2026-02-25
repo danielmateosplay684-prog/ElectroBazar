@@ -21,6 +21,11 @@ public class CustomerApiRestController {
         return ResponseEntity.ok(customerService.findAllActive());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<Customer>> search(@RequestParam String query) {
+        return ResponseEntity.ok(customerService.searchCustomers(query));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getById(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.findById(id));

@@ -1019,6 +1019,48 @@
             gap: 0.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
+
+        /* Buscador de clientes en modal */
+        #customerSearchResults {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            display: none;
+        }
+
+        .customer-search-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .customer-search-item:last-child {
+            border-bottom: none;
+        }
+
+        .customer-search-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .customer-search-item .name {
+            font-weight: 600;
+            display: block;
+            color: var(--text-main);
+        }
+
+        .customer-search-item .details {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 
@@ -1038,6 +1080,13 @@
                 <i class="bi bi-person-circle text-accent"></i>
                 <span style="font-size: 0.85rem; font-weight: 600;"
                     th:text="${session.worker.username}">Trabajador</span>
+
+                <!-- Botón Admin (solo si tiene permiso) -->
+                <button th:if="${session.worker.permissions.contains('ADMIN_ACCESS')}" class="admin-lock-btn ms-1"
+                    id="adminLockBtn" title="Administración"
+                    style="border: none; background: transparent; color: var(--accent); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                    <i class="bi bi-shield-lock"></i>
+                </button>
             </div>
         </div>
 
@@ -1064,8 +1113,12 @@
                 </a>
             </th:block>
 
-            <button class="admin-lock-btn" id="adminLockBtn" title="Administración">
-                <i class="bi bi-shield-lock"></i>
+            <!-- Botón Administrar Productos y Categorías (solo con permiso) -->
+            <button
+                th:if="${session.worker.permissions.contains('MANAGE_PRODUCTS_TPV') or session.worker.permissions.contains('ADMIN_ACCESS')}"
+                class="btn-action-tpv" onclick="window.location.href='/admin'"
+                style="background: var(--surface); color: var(--text-main); padding: 0.5rem 0.8rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
+                <i class="bi bi-box-seam"></i> <span>Administrar productos y categorías</span>
             </button>
 
             <div class="menu-wrapper">
@@ -1224,12 +1277,39 @@
                         <div class="tab-content" id="invoiceTabsContent">
                             <!-- Tab: Buscar Cliente -->
                             <div class="tab-pane fade show active" id="search-pane" role="tabpanel">
-                                <div class="mb-3">
-                                    <label class="form-label">Seleccionar cliente existente</label>
-                                    <select id="existingCustomerSelect" class="form-select"
-                                        style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                                        <option value="">Cargando clientes...</option>
-                                    </select>
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label">Buscar cliente (Nombre o NIF)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"
+                                            style="background: var(--primary); border-color: var(--border); color: var(--text-muted);">
+                                            <i class="bi bi-search"></i>
+                                        </span>
+                                        <input type="text" id="customerSearchInput" class="form-control"
+                                            placeholder="Escribe nombre o NIF..."
+                                            style="background: var(--primary); color: var(--text-main); border-color: var(--border);"
+                                            autocomplete="off">
+                                    </div>
+                                    <div id="customerSearchResults"></div>
+
+                                    <div id="selectedCustomerDisplay" class="mt-3 p-2 rounded"
+                                        style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); display: none;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <small class="text-success d-block fw-bold"
+                                                    style="font-size: 0.7rem; text-transform: uppercase;">Cliente
+                                                    seleccionado</small>
+                                                <span id="selectedCustomerName" class="fw-bold"></span>
+                                                <div id="selectedCustomerTaxId" class="text-muted"
+                                                    style="font-size: 0.85rem;"></div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                onclick="clearSelectedCustomer()">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Input oculto para el ID -->
+                                    <input type="hidden" id="existingCustomerId">
                                 </div>
                             </div>
 
@@ -1495,17 +1575,9 @@
             document.getElementById('invoiceSection').style.display = 'none';
             document.getElementById('modalAlert').style.display = 'none';
 
-            // Fetch existing customers
-            fetch('/api/customers')
-                .then(r => r.json())
-                .then(customers => {
-                    const select = document.getElementById('existingCustomerSelect');
-                    select.innerHTML = '<option value="">-- Seleccionar cliente --</option>';
-                    customers.forEach(c => {
-                        select.innerHTML += `<option value="${c.id}">${c.name} - ${c.taxId || 'Sin NIF'}</option>`;
-                    });
-                })
-                .catch(err => console.error('Error fetching customers', err));
+            // Reset search state
+            document.getElementById('customerSearchInput').value = '';
+            clearSelectedCustomer();
 
             invoiceModalInstance = new bootstrap.Modal(document.getElementById('customerModal'));
             invoiceModalInstance.show();
@@ -1547,9 +1619,9 @@
 
             if (searchTabActive) {
                 // Cliente Existente
-                const selectedId = document.getElementById('existingCustomerSelect').value;
+                const selectedId = document.getElementById('existingCustomerId').value;
                 if (!selectedId) {
-                    showError('Por favor, selecciona un cliente o crea uno nuevo.');
+                    showError('Por favor, busca y selecciona un cliente.');
                     return;
                 }
                 customerIdInput.value = selectedId;
@@ -1860,6 +1932,71 @@
                 if (e.key === 'Escape') overlay.classList.remove('open');
             });
         })();
+
+        // ── Buscador de Clientes en Cobro ──
+        let customerSearchTimeout = null;
+
+        document.getElementById('customerSearchInput').addEventListener('input', function (e) {
+            const query = e.target.value.trim();
+            clearTimeout(customerSearchTimeout);
+
+            if (query.length < 2) {
+                document.getElementById('customerSearchResults').style.display = 'none';
+                return;
+            }
+
+            customerSearchTimeout = setTimeout(() => {
+                fetch(`/api/customers/search?query=${encodeURIComponent(query)}`)
+                    .then(r => r.json())
+                    .then(customers => {
+                        renderCustomerResults(customers);
+                    })
+                    .catch(err => console.error('Error searching customers', err));
+            }, 300);
+        });
+
+        function renderCustomerResults(customers) {
+            const container = document.getElementById('customerSearchResults');
+            container.innerHTML = '';
+
+            if (customers.length === 0) {
+                container.innerHTML = '<div class="p-3 text-muted">No se encontraron clientes</div>';
+            } else {
+                customers.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'customer-search-item';
+                    div.innerHTML = `
+                        <span class="name">${c.name}</span>
+                        <span class="details">${c.taxId || 'Sin NIF'} · ${c.city || ''}</span>
+                    `;
+                    div.onclick = () => selectCustomer(c);
+                    container.appendChild(div);
+                });
+            }
+            container.style.display = 'block';
+        }
+
+        function selectCustomer(c) {
+            document.getElementById('existingCustomerId').value = c.id;
+            document.getElementById('selectedCustomerName').textContent = c.name;
+            document.getElementById('selectedCustomerTaxId').textContent = c.taxId || 'Sin NIF';
+
+            document.getElementById('customerSearchInput').value = '';
+            document.getElementById('customerSearchResults').style.display = 'none';
+            document.getElementById('selectedCustomerDisplay').style.display = 'block';
+        }
+
+        function clearSelectedCustomer() {
+            document.getElementById('existingCustomerId').value = '';
+            document.getElementById('selectedCustomerDisplay').style.display = 'none';
+        }
+
+        // Cerrar resultados al hacer click fuera
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.position-relative')) {
+                document.getElementById('customerSearchResults').style.display = 'none';
+            }
+        });
 
     </script>
 </body>

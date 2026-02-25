@@ -10,6 +10,10 @@ import java.util.Optional;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByActiveTrueOrderByNameAsc();
+
     Optional<Customer> findByIdAndActiveTrue(Long id);
+
     Optional<Customer> findByTaxId(String taxId);
+
+    List<Customer> findByNameContainingIgnoreCaseOrTaxIdContainingIgnoreCaseAndActiveTrue(String name, String taxId);
 }

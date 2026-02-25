@@ -64,4 +64,13 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setActive(false);
         customerRepository.save(customer);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Customer> searchCustomers(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return customerRepository.findByActiveTrueOrderByNameAsc();
+        }
+        return customerRepository.findByNameContainingIgnoreCaseOrTaxIdContainingIgnoreCaseAndActiveTrue(query, query);
+    }
 }
