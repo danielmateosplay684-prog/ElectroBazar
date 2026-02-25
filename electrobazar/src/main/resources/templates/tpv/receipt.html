@@ -353,9 +353,8 @@
             <div class="t-header">
                 <div class="t-brand">Electro<span>Bazar</span></div>
                 <div class="t-subtitle">Ticket de venta</div>
-                <div class="t-meta"
-                    th:text="${'Nº ' + sale.id + ' · ' + #temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}">
-                    Nº 1001 · 25/02/2026 14:30
+                <div class="t-meta" th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}">
+                    25/02/2026 14:30
                 </div>
             </div>
 

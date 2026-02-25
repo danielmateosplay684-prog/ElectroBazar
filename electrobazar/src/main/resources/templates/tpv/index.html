@@ -1257,22 +1257,42 @@
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="requestInvoiceToggle"
-                            onchange="toggleInvoiceSection()">
-                        <label class="form-check-label fw-bold" for="requestInvoiceToggle">Solicita Factura</label>
+                    <!-- Invoice Toggle Card -->
+                    <div class="invoice-toggle-card mb-4" id="invoiceToggleCard" onclick="toggleInvoiceCard()">
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded"
+                            style="border: 2px solid var(--border); background: var(--primary); cursor: pointer; transition: all 0.2s;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="icon-circle"
+                                    style="width: 48px; height: 48px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--text-muted); transition: all 0.2s;">
+                                    <i class="bi bi-receipt-cutoff"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" style="color: var(--text-main);">Solicitar Factura</h6>
+                                    <small style="color: var(--text-muted);">Añadir datos del cliente a la venta</small>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                <input class="form-check-input mt-0" type="checkbox" id="requestInvoiceToggle"
+                                    style="cursor: pointer;">
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="invoiceSection" style="display: none;">
-                        <ul class="nav nav-tabs mb-3" id="invoiceTabs" role="tablist">
+                    <div id="invoiceSection" style="display: none; animation: fadeIn 0.3s ease;">
+                        <ul class="nav nav-pills nav-fill mb-4 gap-2" id="invoiceTabs" role="tablist">
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="search-tab" data-bs-toggle="tab"
-                                    data-bs-target="#search-pane" type="button" role="tab"
-                                    style="color: var(--text-main);">Buscar Cliente</button>
+                                <button class="nav-link active rounded-pill fw-bold" id="search-tab"
+                                    data-bs-toggle="pill" data-bs-target="#search-pane" type="button" role="tab"
+                                    style="border: 1px solid var(--border); color: var(--text-muted);">
+                                    <i class="bi bi-search me-1"></i> Buscar Cliente
+                                </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="new-tab" data-bs-toggle="tab" data-bs-target="#new-pane"
-                                    type="button" role="tab" style="color: var(--text-main);">Crear Nuevo</button>
+                                <button class="nav-link rounded-pill fw-bold" id="new-tab" data-bs-toggle="pill"
+                                    data-bs-target="#new-pane" type="button" role="tab"
+                                    style="border: 1px solid var(--border); color: var(--text-muted);">
+                                    <i class="bi bi-person-plus me-1"></i> Crear Nuevo
+                                </button>
                             </li>
                         </ul>
 
@@ -1573,9 +1593,8 @@
             document.getElementById('cobrarAmount').textContent = document.getElementById('ticketTotal').textContent;
 
             // Reset modal state
-            document.getElementById('requestInvoiceToggle').checked = false;
-            document.getElementById('invoiceSection').style.display = 'none';
             document.getElementById('modalAlert').style.display = 'none';
+            toggleInvoiceCard(false); // Reset toggle
 
             // Reset search state
             document.getElementById('customerSearchInput').value = '';
@@ -1585,8 +1604,33 @@
             invoiceModalInstance.show();
         }
 
-        function toggleInvoiceSection() {
-            const isChecked = document.getElementById('requestInvoiceToggle').checked;
+        function toggleInvoiceCard(override) {
+            const checkbox = document.getElementById('requestInvoiceToggle');
+            const card = document.getElementById('invoiceToggleCard').firstElementChild;
+            const iconCircle = card.querySelector('.icon-circle');
+
+            // Si override no es undefined, forzamos ese estado, si no, lo invertimos
+            if (override !== undefined) {
+                checkbox.checked = override;
+            } else {
+                checkbox.checked = !checkbox.checked;
+            }
+
+            const isChecked = checkbox.checked;
+
+            // Actualizar UI de la tarjeta
+            if (isChecked) {
+                card.style.borderColor = 'var(--accent)';
+                card.style.background = 'rgba(245, 166, 35, 0.05)';
+                iconCircle.style.background = 'var(--accent)';
+                iconCircle.style.color = 'var(--primary)';
+            } else {
+                card.style.borderColor = 'var(--border)';
+                card.style.background = 'var(--primary)';
+                iconCircle.style.background = 'var(--secondary)';
+                iconCircle.style.color = 'var(--text-muted)';
+            }
+
             document.getElementById('invoiceSection').style.display = isChecked ? 'block' : 'none';
         }
 

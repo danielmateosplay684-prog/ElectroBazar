@@ -6,8 +6,9 @@
     <title>Factura — ElectroBazar</title>
     <style>
         /* ══════════════════════════════════════════
-           ElectroBazar — Plantilla de Factura / Ticket
-           Diseño profesional A4 · sin dependencia de tema
+           ElectroBazar — Plantilla de Factura A4
+           Diseño profesional para PDF (openhtmltopdf)
+           Sin flexbox — usa table-layout para compatibilidad
            ══════════════════════════════════════════ */
 
         * {
@@ -17,333 +18,324 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
-            font-size: 13px;
-            color: #1a1a1a;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            color: #222;
             background: #fff;
-            padding: 40px 48px;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 36px 40px;
         }
 
-        /* ── Header ── */
-        .inv-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding-bottom: 24px;
+        /* ── Header bar ── */
+        .header-bar {
+            width: 100%;
             border-bottom: 3px solid #111;
-            margin-bottom: 28px;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
         }
 
-        .inv-brand {
-            font-size: 28px;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-table td {
+            vertical-align: top;
+            padding: 0;
+        }
+
+        .brand {
+            font-size: 26px;
             font-weight: 900;
             letter-spacing: 1px;
             color: #111;
-            line-height: 1;
         }
 
-        .inv-brand span {
+        .brand-light {
             font-weight: 300;
-            color: #555;
+            color: #666;
         }
 
-        .inv-company-info {
-            font-size: 11px;
-            color: #555;
+        .company-info {
+            font-size: 10px;
+            color: #666;
             line-height: 1.6;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
-        .inv-doc-info {
+        .doc-type {
             text-align: right;
-        }
-
-        .inv-doc-type {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #111;
         }
 
-        .inv-doc-ref {
-            font-size: 12px;
-            color: #555;
-            margin-top: 4px;
+        .doc-ref {
+            text-align: right;
+            font-size: 11px;
+            color: #666;
+            margin-top: 6px;
+            line-height: 1.6;
         }
 
-        .inv-doc-ref strong {
+        .doc-ref strong {
             color: #111;
         }
 
-        /* ── Parties ── */
-        .inv-parties {
-            display: flex;
-            gap: 24px;
-            margin-bottom: 28px;
+        /* ── Parties (Emisor + Cliente) ── */
+        .parties-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 0;
+            margin-bottom: 24px;
         }
 
-        .inv-party {
-            flex: 1;
-            padding: 14px 16px;
+        .parties-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 12px 14px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fafafa;
+            background: #f9f9f9;
         }
 
-        .inv-party-label {
+        .party-label {
             font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #888;
-            margin-bottom: 8px;
+            color: #999;
+            margin-bottom: 6px;
         }
 
-        .inv-party-name {
-            font-size: 14px;
+        .party-name {
+            font-size: 13px;
             font-weight: 700;
             color: #111;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
-        .inv-party-detail {
-            font-size: 11px;
+        .party-detail {
+            font-size: 10.5px;
             color: #555;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         /* ── Items Table ── */
-        .inv-table {
+        .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
-        .inv-table thead tr {
+        .items-table th {
             background: #111;
-        }
-
-        .inv-table thead th {
             color: #fff;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 9px 12px;
+            padding: 8px 10px;
             text-align: left;
         }
 
-        .inv-table thead th.text-right {
+        .items-table th.r {
             text-align: right;
         }
 
-        .inv-table tbody tr:nth-child(even) {
-            background: #f8f8f8;
-        }
-
-        .inv-table tbody td {
-            padding: 9px 12px;
+        .items-table td {
+            padding: 8px 10px;
             color: #222;
             border-bottom: 1px solid #eee;
-            font-size: 12.5px;
+            font-size: 11.5px;
         }
 
-        .inv-table tbody td.text-right {
+        .items-table td.r {
             text-align: right;
         }
 
-        .inv-table tbody td.product-name {
+        .items-table td.name {
             font-weight: 500;
         }
 
+        .items-table tbody tr:nth-child(even) td {
+            background: #f8f8f8;
+        }
+
         /* ── Totals ── */
-        .inv-totals-wrap {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 36px;
+        .totals-wrap {
+            text-align: right;
+            margin-bottom: 30px;
         }
 
-        .inv-totals {
-            width: 280px;
+        .totals-table {
+            width: 260px;
+            border-collapse: collapse;
+            margin-left: auto;
         }
 
-        .inv-totals-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 12px;
-            color: #555;
-            border-bottom: 1px dotted #ddd;
+        .totals-table td {
+            padding: 5px 8px;
+            font-size: 11px;
+            color: #666;
         }
 
-        .inv-totals-row:last-child {
-            border-bottom: none;
+        .totals-table td.lbl {
+            text-align: right;
         }
 
-        .inv-totals-row.grand-total {
-            font-size: 17px;
+        .totals-table td.amt {
+            text-align: right;
+            min-width: 80px;
+        }
+
+        .totals-table tr.grand td {
+            font-size: 16px;
             font-weight: 800;
             color: #111;
-            padding: 10px 0 0;
-            margin-top: 4px;
+            padding-top: 8px;
             border-top: 2px solid #111;
-            border-bottom: none;
         }
 
         /* ── Payment ── */
-        .inv-payment {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 36px;
-            padding: 8px 14px;
-            border: 1px solid #bbb;
-            border-radius: 4px;
+        .payment-line {
             font-size: 11px;
-            color: #555;
+            color: #666;
+            margin-bottom: 30px;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            display: inline-block;
         }
 
-        .inv-payment strong {
+        .payment-line strong {
             color: #111;
-            font-size: 12px;
         }
 
         /* ── Footer ── */
-        .inv-footer {
+        .footer {
             border-top: 1px solid #ddd;
-            padding-top: 16px;
-            font-size: 10px;
+            padding-top: 14px;
+            font-size: 9px;
             color: #aaa;
             line-height: 1.7;
             text-align: center;
-        }
-
-        /* ── Print ── */
-        @media print {
-            body {
-                padding: 20px 24px;
-            }
-
-            .no-print {
-                display: none !important;
-            }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Header -->
-    <div class="inv-header">
-        <div>
-            <div class="inv-brand">Electro<span>Bazar</span></div>
-            <div class="inv-company-info">
-                ElectroBazar S.L. · CIF: B12345678<br>
-                C/ Exemple, 12 · 28001 Madrid<br>
-                Tel: 91 123 45 67 · info@electrobazar.com
-            </div>
-        </div>
-        <div class="inv-doc-info">
-            <div class="inv-doc-type" th:text="${sale.customer != null ? 'Factura' : 'Ticket Simplificado'}">Factura
-            </div>
-            <div class="inv-doc-ref">
-                Ref: <strong th:text="'#' + sale.id">#1001</strong><br>
-                Fecha: <strong th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy')}">25/02/2026</strong><br>
-                Hora: <strong th:text="${#temporals.format(sale.createdAt, 'HH:mm:ss')}">14:30:00</strong>
-            </div>
-        </div>
+    <!-- ══ HEADER ══ -->
+    <div class="header-bar">
+        <table class="header-table">
+            <tr>
+                <td>
+                    <div class="brand">Electro<span class="brand-light">Bazar</span></div>
+                    <div class="company-info">
+                        ElectroBazar S.L. · CIF: B12345678<br>
+                        C/ Exemple, 12 · 28001 Madrid<br>
+                        Tel: 91 123 45 67 · info@electrobazar.com
+                    </div>
+                </td>
+                <td>
+                    <div class="doc-type" th:text="${sale.customer != null ? 'Factura' : 'Ticket Simplificado'}">Factura
+                    </div>
+                    <div class="doc-ref">
+                        Ref: <strong th:text="'#' + sale.id">#1001</strong><br>
+                        Fecha: <strong
+                            th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy')}">25/02/2026</strong><br>
+                        Hora: <strong th:text="${#temporals.format(sale.createdAt, 'HH:mm:ss')}">14:30:00</strong>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <!-- Parties -->
-    <div class="inv-parties">
-        <!-- Emisor -->
-        <div class="inv-party">
-            <div class="inv-party-label">Emisor</div>
-            <div class="inv-party-name">ElectroBazar S.L.</div>
-            <div class="inv-party-detail">
-                CIF: B12345678<br>
-                C/ Exemple, 12, 28001 Madrid<br>
-                Tel: 91 123 45 67
-            </div>
-        </div>
+    <!-- ══ PARTIES ══ -->
+    <table class="parties-table">
+        <tr>
+            <td>
+                <div class="party-label">Emisor</div>
+                <div class="party-name">ElectroBazar S.L.</div>
+                <div class="party-detail">
+                    CIF: B12345678<br>
+                    C/ Exemple, 12, 28001 Madrid<br>
+                    Tel: 91 123 45 67
+                </div>
+            </td>
+            <td th:if="${sale.customer != null}">
+                <div class="party-label">Cliente</div>
+                <div class="party-name" th:text="${sale.customer.name}">Cliente</div>
+                <div class="party-detail">
+                    <span th:text="${sale.customer.type.name() == 'COMPANY' ? 'CIF: ' : 'NIF: '}">NIF: </span>
+                    <span th:text="${sale.customer.taxId}">—</span><br>
+                    <span th:if="${sale.customer.address != null}"
+                        th:text="${sale.customer.address + ', ' + (sale.customer.city ?: '') + ' ' + (sale.customer.postalCode ?: '')}"></span><br>
+                    <span th:if="${sale.customer.email != null}" th:text="${sale.customer.email}"></span>
+                </div>
+            </td>
+            <td th:unless="${sale.customer != null}">
+                <div class="party-label">Cliente</div>
+                <div class="party-name">Venta al contado</div>
+                <div class="party-detail">Sin datos de cliente registrados</div>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Cliente -->
-        <div class="inv-party" th:if="${sale.customer != null}">
-            <div class="inv-party-label">Cliente</div>
-            <div class="inv-party-name" th:text="${sale.customer.name}">Cliente</div>
-            <div class="inv-party-detail">
-                <span th:text="${sale.customer.type.name() == 'COMPANY' ? 'CIF: ' : 'NIF: '}">NIF: </span>
-                <span th:text="${sale.customer.taxId}">—</span><br>
-                <span th:if="${sale.customer.address != null}"
-                    th:text="${sale.customer.address + ', ' + (sale.customer.city ?: '') + ' ' + (sale.customer.postalCode ?: '')}">Dirección</span><br>
-                <span th:if="${sale.customer.email != null}" th:text="${sale.customer.email}">email</span>
-            </div>
-        </div>
-        <div class="inv-party" th:unless="${sale.customer != null}">
-            <div class="inv-party-label">Cliente</div>
-            <div class="inv-party-name">Venta al contado</div>
-            <div class="inv-party-detail">Sin datos de cliente registrados</div>
-        </div>
-    </div>
-
-    <!-- Items -->
-    <table class="inv-table">
+    <!-- ══ ITEMS ══ -->
+    <table class="items-table">
         <thead>
             <tr>
                 <th>Concepto</th>
-                <th class="text-right">Precio Unit. (IVA inc.)</th>
-                <th class="text-right">Cantidad</th>
-                <th class="text-right">Subtotal</th>
+                <th class="r">Precio Unit. (IVA inc.)</th>
+                <th class="r">Cantidad</th>
+                <th class="r">Subtotal</th>
             </tr>
         </thead>
         <tbody>
             <tr th:each="line : ${sale.lines}">
-                <td class="product-name" th:text="${line.product.name}">Producto</td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2, 'POINT')} + ' €'">0.00 €
-                </td>
-                <td class="text-right" th:text="${line.quantity}">1</td>
-                <td class="text-right"
-                    th:text="${#numbers.formatDecimal(line.unitPrice * line.quantity, 1, 2, 'POINT')} + ' €'">0.00 €
-                </td>
+                <td class="name" th:text="${line.product.name}">Producto</td>
+                <td class="r" th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2, 'POINT')} + ' €'">0.00 €</td>
+                <td class="r" th:text="${line.quantity}">1</td>
+                <td class="r" th:text="${#numbers.formatDecimal(line.unitPrice * line.quantity, 1, 2, 'POINT')} + ' €'">
+                    0.00 €</td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Totals -->
-    <div class="inv-totals-wrap">
-        <div class="inv-totals">
-            <div class="inv-totals-row">
-                <span>Base imponible (aprox.)</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalAmount / 1.21, 1, 2, 'POINT')} + ' €'">0.00 €</span>
-            </div>
-            <div class="inv-totals-row">
-                <span>IVA 21% (aprox.)</span>
-                <span
-                    th:text="${#numbers.formatDecimal(sale.totalAmount - (sale.totalAmount / 1.21), 1, 2, 'POINT')} + ' €'">0.00
-                    €</span>
-            </div>
-            <div class="inv-totals-row grand-total">
-                <span>Total a pagar</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2, 'POINT')} + ' €'">0.00 €</span>
-            </div>
-        </div>
+    <!-- ══ TOTALS ══ -->
+    <div class="totals-wrap">
+        <table class="totals-table">
+            <tr>
+                <td class="lbl">Base imponible (aprox.):</td>
+                <td class="amt" th:text="${#numbers.formatDecimal(sale.totalAmount / 1.21, 1, 2, 'POINT')} + ' €'">0.00
+                    €</td>
+            </tr>
+            <tr>
+                <td class="lbl">IVA 21% (aprox.):</td>
+                <td class="amt"
+                    th:text="${#numbers.formatDecimal(sale.totalAmount - (sale.totalAmount / 1.21), 1, 2, 'POINT')} + ' €'">
+                    0.00 €</td>
+            </tr>
+            <tr class="grand">
+                <td class="lbl">TOTAL A PAGAR:</td>
+                <td class="amt" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2, 'POINT')} + ' €'">0.00 €</td>
+            </tr>
+        </table>
     </div>
 
-    <!-- Payment method -->
-    <div class="inv-payment">
-        Forma de pago:&nbsp;
+    <!-- Payment -->
+    <div class="payment-line">
+        Forma de pago:
         <strong th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta bancaria'}">Efectivo</strong>
     </div>
 
-    <!-- Footer -->
-    <div class="inv-footer">
+    <!-- ══ FOOTER ══ -->
+    <div class="footer">
         ElectroBazar S.L. — Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1 · CIF: B12345678<br>
         Documento generado automáticamente el
         <span th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>.
-        Este documento tiene validez fiscal como factura simplificada o factura según corresponda.
+        Este documento tiene validez fiscal.
     </div>
 
 </body>
