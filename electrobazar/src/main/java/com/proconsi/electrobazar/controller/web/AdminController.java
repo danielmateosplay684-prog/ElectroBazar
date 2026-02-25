@@ -21,6 +21,25 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
     private final com.proconsi.electrobazar.service.WorkerService workerService;
 
+    @GetMapping("/productos-categorias")
+    public String productsCategories(Model model, HttpSession session) {
+        // Permitimos acceso si tiene el permiso específico O es admin total
+        com.proconsi.electrobazar.model.Worker worker = (com.proconsi.electrobazar.model.Worker) session
+                .getAttribute("worker");
+        if (worker == null)
+            return "redirect:/login";
+
+        boolean hasPermission = worker.getPermissions().contains("MANAGE_PRODUCTS_TPV") ||
+                worker.getPermissions().contains("ADMIN_ACCESS");
+
+        if (!hasPermission)
+            return "redirect:/tpv";
+
+        model.addAttribute("products", productService.findAllWithCategory());
+        model.addAttribute("categories", categoryService.findAll());
+        return "admin/productos-categorias";
+    }
+
     @GetMapping
     public String index(Model model, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {

@@ -1080,13 +1080,22 @@
                 <i class="bi bi-person-circle text-accent"></i>
                 <span style="font-size: 0.85rem; font-weight: 600;"
                     th:text="${session.worker.username}">Trabajador</span>
+            </div>
 
-                <!-- Botón Admin (solo si tiene permiso) -->
-                <button th:if="${session.worker.permissions.contains('ADMIN_ACCESS')}" class="admin-lock-btn ms-1"
-                    id="adminLockBtn" title="Administración"
-                    style="border: none; background: transparent; color: var(--accent); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                    <i class="bi bi-shield-lock"></i>
+            <!-- Botones de Acción (Admin & Gestión) -->
+            <div class="d-flex align-items-center gap-2 ms-1">
+                <button th:if="${session.worker.permissions.contains('ADMIN_ACCESS')}" class="btn-action-tpv p-0"
+                    id="adminLockBtn" title="Panel de Administración" onclick="openAdminPinModal()"
+                    style="width: 36px; height: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="bi bi-shield-lock" style="font-size: 1.1rem;"></i>
                 </button>
+
+                <a th:if="${session.worker.permissions.contains('MANAGE_PRODUCTS_TPV') or session.worker.permissions.contains('ADMIN_ACCESS')}"
+                    th:href="@{/admin/productos-categorias}" class="btn-action-tpv"
+                    title="Administrar productos y categorías"
+                    style="height: 36px; background: var(--surface); color: var(--text-main); padding: 0 0.8rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.82rem; display: flex; align-items: center; gap: 0.45rem; white-space: nowrap; text-decoration: none;">
+                    <i class="bi bi-box-seam"></i> <span>Inventario</span>
+                </a>
             </div>
         </div>
 
@@ -1113,13 +1122,6 @@
                 </a>
             </th:block>
 
-            <!-- Botón Administrar Productos y Categorías (solo con permiso) -->
-            <button
-                th:if="${session.worker.permissions.contains('MANAGE_PRODUCTS_TPV') or session.worker.permissions.contains('ADMIN_ACCESS')}"
-                class="btn-action-tpv" onclick="window.location.href='/admin'"
-                style="background: var(--surface); color: var(--text-main); padding: 0.5rem 0.8rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
-                <i class="bi bi-box-seam"></i> <span>Administrar productos y categorías</span>
-            </button>
 
             <div class="menu-wrapper">
                 <button class="hamburger-btn" id="hamburgerBtn" title="Menú">
