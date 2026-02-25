@@ -20,6 +20,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.CashRegisterService cashRegisterService;
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
     private final com.proconsi.electrobazar.service.WorkerService workerService;
+    private final com.proconsi.electrobazar.service.CustomerService customerService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(Model model, HttpSession session) {
@@ -54,6 +55,7 @@ public class AdminController {
                 saleService.findBetween(java.time.LocalDateTime.now().minusYears(1), java.time.LocalDateTime.now()));
         model.addAttribute("cashRegisters", cashRegisterService.findAllClosed());
         model.addAttribute("workers", workerService.findAll());
+        model.addAttribute("customers", customerService.findAll());
 
         return "admin/index";
     }
