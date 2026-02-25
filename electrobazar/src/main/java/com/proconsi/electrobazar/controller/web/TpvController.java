@@ -127,9 +127,14 @@ public class TpvController {
 
     @GetMapping("/cash-close")
     public String cashCloseForm(HttpSession session, Model model) {
-        if (session.getAttribute("worker") == null) {
+        Worker worker = (Worker) session.getAttribute("worker");
+        if (worker == null)
             return "redirect:/login";
+
+        if (!worker.getPermissions().contains("CASH_CLOSE")) {
+            return "redirect:/tpv";
         }
+
         model.addAttribute("categories", categoryService.findAllActive());
         model.addAttribute("totalToday", saleService.sumTotalToday());
         model.addAttribute("countToday", saleService.countToday());
@@ -154,8 +159,12 @@ public class TpvController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        if (session.getAttribute("worker") == null) {
+        Worker worker = (Worker) session.getAttribute("worker");
+        if (worker == null)
             return "redirect:/login";
+
+        if (!worker.getPermissions().contains("CASH_CLOSE")) {
+            return "redirect:/tpv";
         }
 
         // Convertir closingBalance, reemplazando coma por punto si es necesario

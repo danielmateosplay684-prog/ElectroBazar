@@ -26,7 +26,12 @@ public class LoginController {
             Model model) {
         Optional<Worker> worker = workerService.login(username, password);
         if (worker.isPresent()) {
-            session.setAttribute("worker", worker.get());
+            Worker w = worker.get();
+            session.setAttribute("worker", w);
+            // Si tiene permiso de acceso admin, le damos la sesión de admin
+            if (w.getPermissions().contains("ADMIN_ACCESS")) {
+                session.setAttribute("admin", true);
+            }
             return "redirect:/tpv";
         } else {
             model.addAttribute("error", "Usuario o contraseña incorrectos");

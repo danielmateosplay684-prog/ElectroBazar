@@ -10,4 +10,19 @@ public class ElectrobazarApplication {
 		SpringApplication.run(ElectrobazarApplication.class, args);
 	}
 
+	@org.springframework.context.annotation.Bean
+	public org.springframework.boot.CommandLineRunner initData(
+			com.proconsi.electrobazar.service.WorkerService workerService) {
+		return args -> {
+			if (workerService.findAll().isEmpty()) {
+				com.proconsi.electrobazar.model.Worker defaultWorker = new com.proconsi.electrobazar.model.Worker();
+				defaultWorker.setUsername("root");
+				defaultWorker.setPassword("root");
+				defaultWorker.setActive(true);
+				defaultWorker.setPermissions(java.util.Set.of("MANAGE_PRODUCTS_TPV", "CASH_CLOSE", "ADMIN_ACCESS"));
+				workerService.save(defaultWorker);
+			}
+		};
+	}
+
 }

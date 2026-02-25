@@ -1015,6 +1015,15 @@
                                             id="permCash">
                                         <label class="form-check-label" for="permCash">Realizar cierres de caja</label>
                                     </div>
+                                    <div class="form-check mt-2"
+                                        style="border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                                        <input class="form-check-input" type="checkbox" value="ADMIN_ACCESS"
+                                            id="permAdmin">
+                                        <label class="form-check-label text-danger" for="permAdmin"
+                                            style="font-weight:700">
+                                            <i class="bi bi-shield-exclamation me-1"></i>ACCESO TOTAL ADMIN
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1368,6 +1377,7 @@
             const perms = permissions || [];
             document.getElementById('permProd').checked = perms.includes('MANAGE_PRODUCTS_TPV');
             document.getElementById('permCash').checked = perms.includes('CASH_CLOSE');
+            document.getElementById('permAdmin').checked = perms.includes('ADMIN_ACCESS');
 
             workerModal.show();
         }
@@ -1381,6 +1391,7 @@
             const permissions = [];
             if (document.getElementById('permProd').checked) permissions.push('MANAGE_PRODUCTS_TPV');
             if (document.getElementById('permCash').checked) permissions.push('CASH_CLOSE');
+            if (document.getElementById('permAdmin').checked) permissions.push('ADMIN_ACCESS');
 
             if (!username) { showToast('El nombre de usuario es obligatorio', 'error'); return; }
             if (!id && !password) { showToast('La contraseña es obligatoria para nuevos trabajadores', 'error'); return; }
