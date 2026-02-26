@@ -148,6 +148,53 @@
             padding: 0;
         }
 
+        /* ── Action Buttons in Header ── */
+        .btn-action-tpv {
+            height: 36px;
+            background: var(--surface);
+            color: var(--text-main);
+            padding: 0 0.8rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .btn-action-tpv:hover {
+            border-color: var(--accent);
+            background: rgba(var(--accent-rgb, 245, 166, 35), 0.1);
+            color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-action-tpv:active {
+            transform: translateY(0);
+        }
+
+        .btn-action-tpv i {
+            font-size: 1.1rem;
+            transition: color 0.2s;
+        }
+
+        .btn-action-tpv.p-0 {
+            width: 36px;
+            padding: 0;
+        }
+
+        .btn-action-tpv#adminLockBtn {
+            color: var(--accent);
+        }
+
         .prefs-close:hover {
             color: var(--danger);
         }
@@ -1085,15 +1132,13 @@
             <!-- Botones de Acción (Admin & Gestión) -->
             <div class="d-flex align-items-center gap-2 ms-1">
                 <button th:if="${session.worker.permissions.contains('ADMIN_ACCESS')}" class="btn-action-tpv p-0"
-                    id="adminLockBtn" title="Panel de Administración" onclick="openAdminPinModal()"
-                    style="width: 36px; height: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <i class="bi bi-shield-lock" style="font-size: 1.1rem;"></i>
+                    id="adminLockBtn" title="Panel de Administración" onclick="openAdminPinModal()">
+                    <i class="bi bi-shield-lock"></i>
                 </button>
 
                 <a th:if="${session.worker.permissions.contains('MANAGE_PRODUCTS_TPV') or session.worker.permissions.contains('ADMIN_ACCESS')}"
                     th:href="@{/admin/productos-categorias}" class="btn-action-tpv"
-                    title="Administrar productos y categorías"
-                    style="height: 36px; background: var(--surface); color: var(--text-main); padding: 0 0.8rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.82rem; display: flex; align-items: center; gap: 0.45rem; white-space: nowrap; text-decoration: none;">
+                    title="Administrar productos y categorías">
                     <i class="bi bi-box-seam"></i> <span>Inventario</span>
                 </a>
             </div>
