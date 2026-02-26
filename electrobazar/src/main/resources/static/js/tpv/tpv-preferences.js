@@ -1,5 +1,5 @@
 ﻿        (function () {
-            // â”€â”€ Color Palettes â”€â”€
+            // ── Color Palettes ──
             const accentColors = [
                 { name: 'Naranja', value: '#f5a623', hover: '#e09400' },
                 { name: 'Azul', value: '#3b82f6', hover: '#2563eb' },
@@ -13,7 +13,7 @@
             const darkPrimaries = [
                 { name: 'Medianoche', primary: '#1a1a2e', secondary: '#16213e', surface: '#0f3460', border: '#1e2d45', muted: '#8892a4', text: '#e8eaf0' },
                 { name: 'Negro total', primary: '#000000', secondary: '#111111', surface: '#0a0a0a', border: '#222222', muted: '#777777', text: '#e0e0e0' },
-                { name: 'CarbÃ³n', primary: '#1c1c1c', secondary: '#2a2a2a', surface: '#222222', border: '#3a3a3a', muted: '#888888', text: '#e8e8e8' },
+                { name: 'Carbón', primary: '#1c1c1c', secondary: '#2a2a2a', surface: '#222222', border: '#3a3a3a', muted: '#888888', text: '#e8e8e8' },
             ];
 
             const lightPrimaries = [
@@ -28,7 +28,7 @@
                 text: '#0f172a'
             };
 
-            // â”€â”€ State â”€â”€
+            // ── State ──
             const defaultPrefs = {
                 mode: 'dark',
                 lightAccent: 0, lightPrimaryIdx: 0,
@@ -55,7 +55,7 @@
                 setTimeout(() => flash.classList.remove('active'), 400);
             }
 
-            // â”€â”€ Apply Theme â”€â”€
+            // ── Apply Theme ──
             function apply(animate) {
                 const isDark = prefs.mode === 'dark';
 
@@ -85,7 +85,7 @@
                 root.setProperty('--accent-hover', accent.hover);
 
                 // Swap logo images
-                const logoFile = isDark ? '/favicon.svg' : '/favicon-light.svg';
+                const logoFile = isDark ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
                 document.querySelectorAll('img[alt="Logo"]').forEach(img => img.src = logoFile);
                 const faviconLink = document.querySelector('link[rel="icon"]');
                 if (faviconLink) faviconLink.href = logoFile;
@@ -101,7 +101,7 @@
                 renderSwatches();
             }
 
-            // â”€â”€ Render Accent Swatches â”€â”€
+            // ── Render Accent Swatches ──
             function renderSwatches() {
                 const accentGrid = document.getElementById('accentSwatches');
                 accentGrid.innerHTML = '';
@@ -162,7 +162,7 @@
                 });
             }
 
-            // â”€â”€ Mode Toggle Events â”€â”€
+            // ── Mode Toggle Events ──
             document.getElementById('modeDark').addEventListener('click', () => {
                 if (prefs.mode !== 'dark') {
                     prefs.mode = 'dark';
@@ -177,6 +177,6 @@
                 }
             });
 
-            // â”€â”€ Init â”€â”€
+            // ── Init ──
             apply(false);
         })();

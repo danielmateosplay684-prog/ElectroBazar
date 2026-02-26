@@ -72,7 +72,7 @@
         }
 
         function deleteProduct(id, name) {
-            if (confirm('Â¿Desactivar "' + name + '"?')) {
+            if (confirm('¿Desactivar "' + name + '"?')) {
                 fetch('/api/products/' + id, { method: 'DELETE' }).then(function (r) {
                     if (r.ok) location.reload(); else showToast('Error al eliminar', 'error');
                 });
@@ -84,7 +84,7 @@
             document.getElementById('categoryName').value = '';
             document.getElementById('categoryDescription').value = '';
             document.getElementById('categoryActive').checked = true;
-            document.getElementById('categoryModalLabel').textContent = id ? 'Editar CategorÃ­a' : 'Nueva CategorÃ­a';
+            document.getElementById('categoryModalLabel').textContent = id ? 'Editar Categoría' : 'Nueva Categoría';
 
             if (id) {
                 fetch('/api/categories/' + id).then(function (r) { return r.json(); }).then(function (c) {
@@ -113,7 +113,7 @@
         }
 
         function deleteCategory(id, name) {
-            if (confirm('Â¿Desactivar "' + name + '"?')) {
+            if (confirm('¿Desactivar "' + name + '"?')) {
                 fetch('/api/categories/' + id, { method: 'DELETE' }).then(function (r) {
                     if (r.ok) location.reload(); else showToast('Error al eliminar', 'error');
                 });

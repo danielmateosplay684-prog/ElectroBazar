@@ -1,4 +1,4 @@
-﻿        // â”€â”€ Estado del ticket â”€â”€
+﻿        // ── Estado del ticket ──
         var ticket = {}; // { productId: { name, price, quantity, stock } }
 
         function addToTicket(card) {
@@ -9,7 +9,7 @@
 
             var currentQty = ticket[id] ? ticket[id].quantity : 0;
             if (currentQty + 1 > stock) {
-                if (!confirm(`El producto "${name}" no tiene stock suficiente. Disponible: ${stock}. Â¿Deseas aÃ±adirlo de todas formas?`)) {
+                if (!confirm(`El producto "${name}" no tiene stock suficiente. Disponible: ${stock}. ¿Deseas añadirlo de todas formas?`)) {
                     return;
                 }
             }
@@ -31,7 +31,7 @@
             var newQty = ticket[id].quantity + delta;
 
             if (delta > 0 && newQty > ticket[id].stock) {
-                if (!confirm(`El producto "${ticket[id].name}" no tiene stock suficiente. Disponible: ${ticket[id].stock}. Â¿Deseas aÃ±adirlo de todas formas?`)) {
+                if (!confirm(`El producto "${ticket[id].name}" no tiene stock suficiente. Disponible: ${ticket[id].stock}. ¿Deseas añadirlo de todas formas?`)) {
                     return;
                 }
             }
@@ -62,7 +62,7 @@
                 var val = parseInt(input.value);
                 if (val && val > 0) {
                     if (val > ticket[id].stock) {
-                        if (!confirm('El producto "' + ticket[id].name + '" no tiene stock suficiente. Disponible: ' + ticket[id].stock + '. Â¿Deseas aplicar esta cantidad de todas formas?')) {
+                        if (!confirm('El producto "' + ticket[id].name + '" no tiene stock suficiente. Disponible: ' + ticket[id].stock + '. ¿Deseas aplicar esta cantidad de todas formas?')) {
                             renderTicket();
                             return;
                         }
@@ -93,15 +93,15 @@
 
             var ids = Object.keys(ticket);
 
-            // VacÃ­o
+            // Vacío
             if (ids.length === 0) {
                 linesEl.innerHTML = `
                 <div class="ticket-empty">
                     <i class="bi bi-cart"></i>
-                    <span>Pulsa un producto para aÃ±adirlo</span>
+                    <span>Pulsa un producto para añadirlo</span>
                 </div>`;
                 countEl.textContent = '0';
-                totalEl.textContent = '0.00â‚¬';
+                totalEl.textContent = '0.00€';
                 cobrarBtn.disabled = true;
                 formLines.innerHTML = '';
                 return;
@@ -122,11 +122,11 @@
                 <div class="ticket-line">
                     <div class="ticket-line-name">${escapeHtml(item.name)}</div>
                     <div class="qty-control">
-                        <button class="qty-btn" onclick="changeQty('${id}', -1)">âˆ’</button>
+                        <button class="qty-btn" onclick="changeQty('${id}', -1)">−</button>
                         <span class="qty-num" onclick="editQty(this, '${id}')">${item.quantity}</span>
                         <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
                     </div>
-                    <div class="ticket-line-price">${subtotal.toFixed(2)}â‚¬</div>
+                    <div class="ticket-line-price">${subtotal.toFixed(2)}€</div>
                     <button class="btn-remove-line" onclick="removeLine('${id}')">
                         <i class="bi bi-x"></i>
                     </button>
@@ -140,7 +140,7 @@
             linesEl.innerHTML = linesHTML;
             formLines.innerHTML = formHTML;
             countEl.textContent = totalItems;
-            totalEl.textContent = totalAmount.toFixed(2) + 'â‚¬';
+            totalEl.textContent = totalAmount.toFixed(2) + '€';
             cobrarBtn.disabled = false;
         }
 
@@ -211,7 +211,7 @@
 
         function toggleCustomerType() {
             var isCompany = document.getElementById('typeCompany').checked;
-            document.getElementById('lblCustomerName').innerHTML = isCompany ? 'RazÃ³n Social <span class="text-danger">*</span>' : 'Nombre y Apellidos <span class="text-danger">*</span>';
+            document.getElementById('lblCustomerName').innerHTML = isCompany ? 'Razón Social <span class="text-danger">*</span>' : 'Nombre y Apellidos <span class="text-danger">*</span>';
             document.getElementById('lblCustomerTaxId').innerHTML = isCompany ? 'CIF <span class="text-danger">*</span>' : 'NIF/NIE <span class="text-danger">*</span>';
         }
 
@@ -258,7 +258,7 @@
                 var email = document.getElementById('newCustomerEmail').value.trim();
                 var phone = document.getElementById('newCustomerPhone').value.trim();
 
-                // ValidaciÃ³n bÃ¡sica para ambos (Particular o Empresa)
+                // Validación básica para ambos (Particular o Empresa)
                 if (!name || !taxId || !address || !city || !postalCode) {
                     showError('Por favor, rellena todos los campos obligatorios (*).');
                     return;
@@ -276,7 +276,7 @@
                         return response.json();
                     })
                     .then(function (savedCustomer) {
-                        // Cliente creado con Ã©xito
+                        // Cliente creado con éxito
                         customerIdInput.value = savedCustomer.id;
                         saleForm.submit();
                     })
@@ -291,11 +291,11 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // Auto-ocultar alerta de Ã©xito tras 4 segundos
+        // Auto-ocultar alerta de éxito tras 4 segundos
         var successAlert = document.getElementById('successAlert');
         if (successAlert) setTimeout(function () { successAlert.style.display = 'none'; }, 4000);
 
-        // â”€â”€ SEARCH AND FILTER FUNCTIONALITY â”€â”€
+        // ── SEARCH AND FILTER FUNCTIONALITY ──
         var searchTimeout;
         var currentCategoryId = null;
 
@@ -342,7 +342,7 @@
                     ' <div class="product-image-container">' + imgHtml + ' </div>' +
                     ' <div class="product-info">' +
                     ' <div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                    ' <div class="product-price">' + parseFloat(product.price).toFixed(2) + 'â‚¬</div>' +
+                    ' <div class="product-price">' + parseFloat(product.price).toFixed(2) + '€</div>' +
                     ' <div class="product-category-badge">' + catName + '</div>' +
                     ' </div></div>';
             }).join('');
@@ -415,7 +415,7 @@
         // Search icon - decorative only
         // No functionality needed
 
-        // â”€â”€ Hamburger Menu â”€â”€
+        // ── Hamburger Menu ──
         (function () {
             var hamburger = document.getElementById('hamburgerBtn');
             var dropdown = document.getElementById('menuDropdown');
@@ -429,7 +429,7 @@
             dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
         })();
 
-        // â”€â”€ Apply saved theme from preferences page â”€â”€
+        // ── Apply saved theme from preferences page ──
         (function () {
             var accentColors = [
                 { value: '#f5a623', hover: '#e09400' },
@@ -495,13 +495,13 @@
             r.setProperty('--accent-hover', accent.hover);
 
             // Swap logo images
-            var logoFile = isDark ? '/favicon.svg' : '/favicon-light.svg';
+            var logoFile = isDark ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
             document.querySelectorAll('img[alt="Logo"]').forEach(function (img) { img.src = logoFile; });
             var faviconLink = document.querySelector('link[rel="icon"]');
             if (faviconLink) faviconLink.href = logoFile;
         })();
 
-        // â”€â”€ Admin PIN Login â”€â”€
+        // ── Admin PIN Login ──
         (function () {
             var overlay = document.getElementById('pinOverlay');
             var input = document.getElementById('pinInput');
@@ -544,7 +544,7 @@
                         input.focus();
                     }
                 }).catch(function () {
-                    error.textContent = 'Error de conexiÃ³n';
+                    error.textContent = 'Error de conexión';
                 });
             }
 
@@ -555,7 +555,7 @@
             });
         })();
 
-        // â”€â”€ Buscador de Clientes en Cobro â”€â”€
+        // ── Buscador de Clientes en Cobro ──
         var customerSearchTimeout = null;
 
         function loadAllCustomers() {
@@ -612,7 +612,7 @@
                     var div = document.createElement('div');
                     div.className = 'customer-search-item';
                     div.innerHTML = '<span class="name">' + escapeHtml(c.name) + '</span>' +
-                        '<span class="details">' + (c.taxId || 'Sin NIF') + ' Â· ' + (c.city || '') + '</span>';
+                        '<span class="details">' + (c.taxId || 'Sin NIF') + ' · ' + (c.city || '') + '</span>';
                     div.onclick = function () { selectCustomer(c); };
                     container.appendChild(div);
                 });

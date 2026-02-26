@@ -1,5 +1,5 @@
-﻿        const theoryAmountText = document.getElementById('theoryAmount').textContent.replace('â‚¬', '').trim();
-        // El formato espaÃ±ol usa punto como separador de miles y coma como decimal (ej: 1.234,56)
+﻿        const theoryAmountText = document.getElementById('theoryAmount').textContent.replace('€', '').trim();
+        // El formato español usa punto como separador de miles y coma como decimal (ej: 1.234,56)
         // Primero eliminamos los puntos de miles, luego reemplazamos la coma decimal por punto
         const theoryAmount = parseFloat(theoryAmountText.replace(/\./g, '').replace(',', '.')) || 0;
         const closingBalanceInput = document.getElementById('closingBalance');
@@ -8,18 +8,18 @@
             const realAmount = parseFloat(closingBalanceInput.value.replace(',', '.')) || 0;
             const difference = realAmount - theoryAmount;
 
-            document.getElementById('realAmount').textContent = realAmount.toFixed(2) + 'â‚¬';
+            document.getElementById('realAmount').textContent = realAmount.toFixed(2) + '€';
             const diffAmountSpan = document.getElementById('diffAmount');
 
-            // Cambiar color y texto segÃºn si hay diferencia
+            // Cambiar color y texto según si hay diferencia
             if (Math.abs(difference) < 0.01) {
-                diffAmountSpan.textContent = '0.00â‚¬';
+                diffAmountSpan.textContent = '0.00€';
                 diffAmountSpan.style.color = 'var(--success)';
             } else if (difference > 0) {
-                diffAmountSpan.textContent = '+' + difference.toFixed(2) + 'â‚¬';
+                diffAmountSpan.textContent = '+' + difference.toFixed(2) + '€';
                 diffAmountSpan.style.color = 'var(--success)';
             } else {
-                diffAmountSpan.textContent = difference.toFixed(2) + 'â‚¬';
+                diffAmountSpan.textContent = difference.toFixed(2) + '€';
                 diffAmountSpan.style.color = 'var(--danger)';
             }
         }
@@ -28,7 +28,7 @@
         closingBalanceInput.addEventListener('change', updateDifference);
         closingBalanceInput.addEventListener('keyup', updateDifference);
 
-        // â”€â”€ Apply saved theme â”€â”€
+        // ── Apply saved theme ──
         (function () {
             const accentColors = [
                 { value: '#f5a623', hover: '#e09400' },
@@ -90,7 +90,7 @@
             r.setProperty('--accent', accent.value);
             r.setProperty('--accent-hover', accent.hover);
 
-            const logo = isDark ? '/favicon.svg' : '/favicon-light.svg';
+            const logo = isDark ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
             document.querySelectorAll('img[alt="Logo"], img[alt="Logo ElectroBazar"]').forEach(function (i) { i.src = logo; });
             const fl = document.querySelector('link[rel="icon"]'); if (fl) fl.href = logo;
         })();

@@ -9,6 +9,6 @@
                 r.setProperty('--text-main', '#0f172a');
                 r.setProperty('--text-muted', '#636b7a');
                 r.setProperty('--border', '#cbd5e1');
-                document.querySelectorAll('img[alt="Logo"]').forEach(img => img.src = '/favicon-light.svg');
+                document.querySelectorAll('img[alt="Logo"]').forEach(img => img.src = '/icons/favicon-light.svg');
             }
         })();

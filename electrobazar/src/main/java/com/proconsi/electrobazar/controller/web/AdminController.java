@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import com.proconsi.electrobazar.service.*;
 
 @Controller
-@RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -41,7 +40,7 @@ public class AdminController {
         return "admin/productos-categorias";
     }
 
-    @GetMapping
+    @GetMapping("/admin")
     public String index(Model model, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/tpv";
@@ -60,7 +59,7 @@ public class AdminController {
         return "admin/index";
     }
 
-    @PostMapping("/workers/save")
+    @PostMapping("/admin/workers/save")
     @ResponseBody
     public org.springframework.http.ResponseEntity<?> saveWorker(
             @RequestBody com.proconsi.electrobazar.model.Worker worker,
@@ -72,7 +71,7 @@ public class AdminController {
         return org.springframework.http.ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/workers/delete/{id}")
+    @DeleteMapping("/admin/workers/delete/{id}")
     @ResponseBody
     public org.springframework.http.ResponseEntity<?> deleteWorker(@PathVariable Long id, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
@@ -82,7 +81,7 @@ public class AdminController {
         return org.springframework.http.ResponseEntity.ok().build();
     }
 
-    @org.springframework.web.bind.annotation.PostMapping("/upload-csv")
+    @org.springframework.web.bind.annotation.PostMapping("/admin/upload-csv")
     @org.springframework.web.bind.annotation.ResponseBody
     public org.springframework.http.ResponseEntity<?> uploadCsv(
             @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file,
@@ -101,7 +100,7 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/download/invoice/{id}")
+    @GetMapping("/admin/download/invoice/{id}")
     public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> downloadInvoicePdf(
             @org.springframework.web.bind.annotation.PathVariable Long id, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
@@ -140,7 +139,7 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/download/cash-close/{id}")
+    @GetMapping("/admin/download/cash-close/{id}")
     public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> downloadCashClosePdf(
             @org.springframework.web.bind.annotation.PathVariable Long id, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {

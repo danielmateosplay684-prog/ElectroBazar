@@ -3,7 +3,7 @@
         var categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
         var workerModal = new bootstrap.Modal(document.getElementById('workerModal'));
 
-        // â”€â”€ View Switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── View Switching ────────────────────────────────────────────────────────
         function switchView(viewId, btnElement) {
             // Hide all views
             document.getElementById('dashboardView').style.display = 'none';
@@ -55,7 +55,7 @@
             }
         }
 
-        // â”€â”€ Admin PIN Change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Admin PIN Change ─────────────────────────────────────────────────────
 
         var pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
 
@@ -92,7 +92,7 @@
                 .catch(function () { showToast('Error de red', 'error'); });
         }
 
-        // â”€â”€ Product CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Product CRUD ─────────────────────────────────────────────────────────
 
         function openProductModal(id) {
             document.getElementById('productId').value = '';
@@ -159,7 +159,7 @@
         }
 
         function deleteProduct(id, name) {
-            if (!confirm('Â¿Eliminar (desactivar) el producto "' + name + '"?')) return;
+            if (!confirm('¿Eliminar (desactivar) el producto "' + name + '"?')) return;
             fetch('/api/products/' + id, { method: 'DELETE' })
                 .then(function (r) {
                     if (!r.ok) throw new Error();
@@ -170,14 +170,14 @@
         }
 
 
-        // â”€â”€ Category CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Category CRUD ─────────────────────────────────────────────────────────
 
         function openCategoryModal(id) {
             document.getElementById('categoryId').value = '';
             document.getElementById('categoryName').value = '';
             document.getElementById('categoryDescription').value = '';
             document.getElementById('categoryActive').checked = true;
-            document.getElementById('categoryModalLabel').textContent = id ? 'Editar CategorÃ­a' : 'Nueva CategorÃ­a';
+            document.getElementById('categoryModalLabel').textContent = id ? 'Editar Categoría' : 'Nueva Categoría';
 
             if (id) {
                 fetch('/api/categories/' + id)
@@ -188,7 +188,7 @@
                         document.getElementById('categoryDescription').value = c.description || '';
                         document.getElementById('categoryActive').checked = c.active !== false;
                     })
-                    .catch(function () { showToast('Error al cargar la categorÃ­a', 'error'); });
+                    .catch(function () { showToast('Error al cargar la categoría', 'error'); });
             }
 
             categoryModal.show();
@@ -212,27 +212,27 @@
                 .then(function (r) {
                     if (!r.ok) return r.text().then(function (t) { throw new Error(t); });
                     categoryModal.hide();
-                    showToast(id ? 'CategorÃ­a actualizada correctamente' : 'CategorÃ­a creada correctamente');
+                    showToast(id ? 'Categoría actualizada correctamente' : 'Categoría creada correctamente');
                     setTimeout(function () { location.reload(); }, 900);
                 })
                 .catch(function (e) {
-                    var msg = e.message.indexOf('Ya existe') !== -1 ? e.message : 'Error al guardar la categorÃ­a';
+                    var msg = e.message.indexOf('Ya existe') !== -1 ? e.message : 'Error al guardar la categoría';
                     showToast(msg, 'error');
                 });
         }
 
         function deleteCategory(id, name) {
-            if (!confirm('Â¿Desactivar la categorÃ­a "' + name + '"?')) return;
+            if (!confirm('¿Desactivar la categoría "' + name + '"?')) return;
             fetch('/api/categories/' + id, { method: 'DELETE' })
                 .then(function (r) {
                     if (!r.ok) throw new Error();
-                    showToast('CategorÃ­a "' + name + '" desactivada');
+                    showToast('Categoría "' + name + '" desactivada');
                     setTimeout(function () { location.reload(); }, 900);
                 })
-                .catch(function () { showToast('Error al desactivar la categorÃ­a', 'error'); });
+                .catch(function () { showToast('Error al desactivar la categoría', 'error'); });
         }
 
-        // â”€â”€ Importar Productos y CategorÃ­as por CSV â”€â”€
+        // ── Importar Productos y Categorías por CSV ──
         function uploadCsvFile(input) {
             if (!input.files || input.files.length === 0) return;
             var file = input.files[0];
@@ -265,7 +265,7 @@
                 });
         }
 
-        // â”€â”€ Analytics & Charts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Analytics & Charts ──────────────────────────────────────────────────
         let salesChart, categoryChart;
 
         function initCharts() {
@@ -305,7 +305,7 @@
             });
 
             // Find top product
-            let topP = 'â€”';
+            let topP = '—';
             let maxQty = 0;
             for (const [name, qty] of Object.entries(productSalesCount)) {
                 if (qty > maxQty) {
@@ -315,7 +315,7 @@
             }
 
             // Update DOM
-            document.getElementById('statTodayRevenue').textContent = todayRevenue.toFixed(2) + ' â‚¬';
+            document.getElementById('statTodayRevenue').textContent = todayRevenue.toFixed(2) + ' €';
             document.getElementById('statTodaySales').textContent = todaySalesCount;
             document.getElementById('statTopProduct').textContent = topP.length > 15 ? topP.substring(0, 15) + '...' : topP;
             document.getElementById('statLowStock').textContent = lowStockCount;
@@ -342,7 +342,7 @@
                 data: {
                     labels: days,
                     datasets: [{
-                        label: 'Ventas (â‚¬)',
+                        label: 'Ventas (€)',
                         data: revenuePerDay,
                         borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
                         backgroundColor: 'rgba(245, 166, 35, 0.1)',
@@ -363,7 +363,7 @@
             // 3. Category Distribution Chart
             var catSummary = {};
             productsDataRaw.forEach(function (p) {
-                var catName = p.category ? p.category.name : 'Sin CategorÃ­a';
+                var catName = p.category ? p.category.name : 'Sin Categoría';
                 catSummary[catName] = (catSummary[catName] || 0) + 1;
             });
 
@@ -394,19 +394,19 @@
 
         // Theme application moved to <head>
 
-        // â”€â”€ Worker Management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Worker Management ────────────────────────────────────────────────────────
         function openWorkerModal(id, username, active, permissions) {
             document.getElementById('workerForm').reset();
             document.getElementById('workerId').value = id || '';
             document.getElementById('workerUsername').value = username || '';
             document.getElementById('workerActive').checked = active !== false;
 
-            // Ajustar etiqueta de contraseÃ±a segÃºn si editamos o creamos
+            // Ajustar etiqueta de contraseña según si editamos o creamos
             var pwdLabel = document.getElementById('workerPasswordLabel');
             if (id) {
-                pwdLabel.innerHTML = 'ContraseÃ±a <small class="text-muted font-normal">(opcional, blanco para mantener)</small>';
+                pwdLabel.innerHTML = 'Contraseña <small class="text-muted font-normal">(opcional, blanco para mantener)</small>';
             } else {
-                pwdLabel.innerHTML = 'ContraseÃ±a *';
+                pwdLabel.innerHTML = 'Contraseña *';
             }
 
             // Permissions
@@ -430,7 +430,7 @@
             if (document.getElementById('permAdmin').checked) permissions.push('ADMIN_ACCESS');
 
             if (!username) { showToast('El nombre de usuario es obligatorio', 'error'); return; }
-            if (!id && !password) { showToast('La contraseÃ±a es obligatoria para nuevos trabajadores', 'error'); return; }
+            if (!id && !password) { showToast('La contraseña es obligatoria para nuevos trabajadores', 'error'); return; }
 
             var worker = { id: id ? parseInt(id) : null, username: username, password: password, active: active, permissions: permissions };
 
@@ -440,7 +440,7 @@
                 body: JSON.stringify(worker)
             }).then(function (res) {
                 if (res.ok) {
-                    showToast('Trabajador guardado con Ã©xito');
+                    showToast('Trabajador guardado con éxito');
                     setTimeout(function () { location.reload(); }, 1000);
                 } else {
                     showToast('Error al guardar trabajador', 'error');
@@ -451,7 +451,7 @@
         }
 
         function deleteWorker(id) {
-            if (!confirm('Â¿Seguro que quieres eliminar a este trabajador?')) return;
+            if (!confirm('¿Seguro que quieres eliminar a este trabajador?')) return;
             fetch('/admin/workers/delete/' + id, { method: 'DELETE' })
                 .then(function (res) {
                     if (res.ok) {
@@ -465,7 +465,7 @@
                 });
         }
 
-        // â”€â”€ Filter Low Stock â”€â”€
+        // ── Filter Low Stock ──
         let showingLowStockOnly = false;
         function filterLowStock() {
             const btn = document.getElementById('btnFilterLowStock');
