@@ -20,6 +20,8 @@ public class SaleApiRestController {
 
     private final SaleService saleService;
     private final ProductService productService;
+    private final com.proconsi.electrobazar.service.CustomerService customerService;
+    private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
 
     @GetMapping("/{id}")
     public ResponseEntity<Sale> getById(@PathVariable Long id) {
@@ -29,6 +31,18 @@ public class SaleApiRestController {
     @GetMapping("/today")
     public ResponseEntity<List<Sale>> getToday() {
         return ResponseEntity.ok(saleService.findToday());
+    }
+
+    @GetMapping("/{id}/ticket")
+    public ResponseEntity<org.springframework.core.io.Resource> getTicket(@PathVariable Long id) {
+        Sale sale = saleService.findById(id);
+        java.io.File pdfFile = pdfReportService.generateInvoiceReport(sale);
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(pdfFile);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + pdfFile.getName() + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(resource);
     }
 
     // El body que espera:
@@ -54,7 +68,24 @@ public class SaleApiRestController {
                     .build();
         }).collect(Collectors.toList());
 
-        Sale saved = saleService.createSale(lines, sale.getPaymentMethod(), sale.getNotes(), worker);
+        com.proconsi.electrobazar.model.Customer validCustomer = null;
+        if (sale.getCustomer() != null && sale.getCustomer().getName() != null
+                && !sale.getCustomer().getName().isBlank()) {
+            com.proconsi.electrobazar.model.Customer newCust = com.proconsi.electrobazar.model.Customer.builder()
+                    .name(sale.getCustomer().getName())
+                    .type(sale.getCustomer().getType() != null ? sale.getCustomer().getType()
+                            : com.proconsi.electrobazar.model.Customer.CustomerType.INDIVIDUAL)
+                    .build();
+            validCustomer = customerService.save(newCust);
+        }
+
+        Sale saved;
+        if (validCustomer != null) {
+            saved = saleService.createSale(lines, sale.getPaymentMethod(), sale.getNotes(), validCustomer, worker);
+        } else {
+            saved = saleService.createSale(lines, sale.getPaymentMethod(), sale.getNotes(), worker);
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 }
