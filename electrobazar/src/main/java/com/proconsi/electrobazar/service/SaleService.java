@@ -12,6 +12,8 @@ import java.util.List;
 public interface SaleService {
         Sale findById(Long id);
 
+        List<Sale> findAll();
+
         List<Sale> findToday();
 
         List<Sale> findBetween(LocalDateTime from, LocalDateTime to);
