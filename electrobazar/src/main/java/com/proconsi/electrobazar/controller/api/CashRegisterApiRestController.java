@@ -17,6 +17,7 @@ public class CashRegisterApiRestController {
 
     private final CashRegisterService cashRegisterService;
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
+    private final com.proconsi.electrobazar.service.WorkerService workerService;
 
     @GetMapping("/{id}")
     public ResponseEntity<CashRegister> getById(@PathVariable Long id) {
@@ -35,6 +36,19 @@ public class CashRegisterApiRestController {
                 .orElse(ResponseEntity.noContent().build());
     }
 
+    @GetMapping("/today")
+    public ResponseEntity<CashRegister> getToday() {
+        return cashRegisterService.getOpenRegister()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> {
+                    try {
+                        return ResponseEntity.ok(cashRegisterService.findTodayIfClosed());
+                    } catch (Exception e) {
+                        return ResponseEntity.noContent().build();
+                    }
+                });
+    }
+
     @GetMapping("/{id}/ticket")
     public ResponseEntity<org.springframework.core.io.Resource> getTicket(@PathVariable Long id) {
         CashRegister cr = cashRegisterService.findById(id);
@@ -47,16 +61,37 @@ public class CashRegisterApiRestController {
                 .body(resource);
     }
 
+    @PostMapping("/open")
+    public ResponseEntity<CashRegister> openCashRegister(
+            @RequestParam BigDecimal openingBalance,
+            @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+
+        com.proconsi.electrobazar.model.Worker worker = null;
+        if (workerId != null) {
+            worker = workerService.findById(workerId).orElse(null);
+        }
+        try {
+            CashRegister cr = cashRegisterService.openCashRegister(openingBalance, worker);
+            return ResponseEntity.status(HttpStatus.CREATED).body(cr);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PostMapping("/close")
     public ResponseEntity<CashRegister> closeCashRegister(
             @RequestParam BigDecimal closingBalance,
             @RequestParam(required = false) String notes,
-            jakarta.servlet.http.HttpSession session) {
-        com.proconsi.electrobazar.model.Worker worker = (com.proconsi.electrobazar.model.Worker) session
-                .getAttribute("worker");
+            @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+
+        com.proconsi.electrobazar.model.Worker worker = null;
+        if (workerId != null) {
+            worker = workerService.findById(workerId).orElse(null);
+        }
         CashRegister cr = cashRegisterService.closeCashRegister(closingBalance, notes, worker);
         pdfReportService.generateCashCloseReport(cr);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(cr);
+        return ResponseEntity.status(HttpStatus.CREATED).body(cr);
     }
 }

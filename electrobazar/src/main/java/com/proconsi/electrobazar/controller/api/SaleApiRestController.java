@@ -22,6 +22,12 @@ public class SaleApiRestController {
     private final ProductService productService;
     private final com.proconsi.electrobazar.service.CustomerService customerService;
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
+    private final com.proconsi.electrobazar.service.WorkerService workerService;
+
+    @GetMapping
+    public ResponseEntity<List<Sale>> getAll() {
+        return ResponseEntity.ok(saleService.findAll());
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<Sale> getById(@PathVariable Long id) {
@@ -45,19 +51,15 @@ public class SaleApiRestController {
                 .body(resource);
     }
 
-    // El body que espera:
-    // {
-    // "paymentMethod": "CASH",
-    // "notes": "opcional",
-    // "lines": [
-    // { "product": { "id": 1 }, "quantity": 2 },
-    // { "product": { "id": 3 }, "quantity": 1 }
-    // ]
-    // }
     @PostMapping
-    public ResponseEntity<Sale> create(@RequestBody Sale sale, jakarta.servlet.http.HttpSession session) {
-        com.proconsi.electrobazar.model.Worker worker = (com.proconsi.electrobazar.model.Worker) session
-                .getAttribute("worker");
+    public ResponseEntity<Sale> create(
+            @RequestBody Sale sale,
+            @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+
+        com.proconsi.electrobazar.model.Worker worker = null;
+        if (workerId != null) {
+            worker = workerService.findById(workerId).orElse(null);
+        }
 
         List<SaleLine> lines = sale.getLines().stream().map(line -> {
             Product product = productService.findById(line.getProduct().getId());

@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
     List<ActivityLog> findTop50ByOrderByTimestampDesc();
+
+    List<ActivityLog> findTop20ByOrderByTimestampDesc();
 }

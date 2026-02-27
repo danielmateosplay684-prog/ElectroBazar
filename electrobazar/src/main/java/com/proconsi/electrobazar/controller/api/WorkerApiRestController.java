@@ -17,6 +17,35 @@ public class WorkerApiRestController {
 
     private final WorkerService workerService;
 
+    @GetMapping
+    public ResponseEntity<List<Worker>> getAll() {
+        return ResponseEntity.ok(workerService.findAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Worker> getById(@PathVariable Long id) {
+        return workerService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Worker> create(@RequestBody Worker worker) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(workerService.save(worker));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Worker> update(@PathVariable Long id, @RequestBody Worker worker) {
+        worker.setId(id);
+        return ResponseEntity.ok(workerService.save(worker));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        workerService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");

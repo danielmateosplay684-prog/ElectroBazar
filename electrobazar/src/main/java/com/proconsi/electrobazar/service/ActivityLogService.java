@@ -29,4 +29,8 @@ public class ActivityLogService {
     public List<ActivityLog> getRecentActivities() {
         return activityLogRepository.findTop50ByOrderByTimestampDesc();
     }
+
+    public List<ActivityLog> getMostRecentActivities() {
+        return activityLogRepository.findTop20ByOrderByTimestampDesc();
+    }
 }
