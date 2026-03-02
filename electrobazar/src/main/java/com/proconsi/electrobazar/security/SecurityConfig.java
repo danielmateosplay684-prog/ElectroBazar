@@ -24,6 +24,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // login endpoint is public
                         .requestMatchers("/api/workers/login").permitAll()
+                        // allow public reads for catalog (products, categories, cash register status)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/cash-register/**").permitAll()
                         // allow anybody to GET and POST customers (used by TPV for search and creation)
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/customers/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/customers").permitAll()
