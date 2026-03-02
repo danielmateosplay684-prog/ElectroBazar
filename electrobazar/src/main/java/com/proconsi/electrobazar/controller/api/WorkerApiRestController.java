@@ -2,11 +2,13 @@ package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.service.WorkerService;
+import com.proconsi.electrobazar.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
 public class WorkerApiRestController {
 
     private final WorkerService workerService;
+    private final JwtService jwtService;
 
     @GetMapping
     public ResponseEntity<List<Worker>> getAll() {
@@ -56,10 +59,17 @@ public class WorkerApiRestController {
             return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
 
-        Optional<Worker> worker = workerService.login(username, password);
+        Optional<Worker> workerOpt = workerService.login(username, password);
 
-        if (worker.isPresent()) {
-            return ResponseEntity.ok(worker.get());
+        if (workerOpt.isPresent()) {
+            Worker worker = workerOpt.get();
+            String token = jwtService.generateToken(worker.getUsername(), worker.getId(), worker.getPermissions());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("worker", worker);
+            response.put("token", token);
+
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid username or password"));
         }

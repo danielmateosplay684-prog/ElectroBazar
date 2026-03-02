@@ -155,4 +155,17 @@ public class SaleServiceImpl implements SaleService {
         return saleRepository.sumTotalBetweenByPaymentMethod(startTime, endOfDay, paymentMethod)
                 .orElse(BigDecimal.ZERO);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.proconsi.electrobazar.dto.SaleSummaryResponse getSummaryToday() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startTime = cashRegisterRepository.findFirstByClosedFalseOrderByRegisterDateDesc()
+                .filter(cr -> cr.getOpeningTime() != null)
+                .map(cr -> cr.getOpeningTime())
+                .orElse(today.atStartOfDay());
+
+        LocalDateTime endOfDay = today.atStartOfDay().plusDays(1).minusNanos(1);
+        return saleRepository.getSummaryBetween(startTime, endOfDay);
+    }
 }

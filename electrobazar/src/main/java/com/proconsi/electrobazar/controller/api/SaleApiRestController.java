@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,6 +39,11 @@ public class SaleApiRestController {
     @GetMapping("/today")
     public ResponseEntity<List<Sale>> getToday() {
         return ResponseEntity.ok(saleService.findToday());
+    }
+
+    @GetMapping("/stats/today")
+    public ResponseEntity<com.proconsi.electrobazar.dto.SaleSummaryResponse> getTodayStats() {
+        return ResponseEntity.ok(saleService.getSummaryToday());
     }
 
     @GetMapping("/{id}/ticket")

@@ -30,4 +30,6 @@ public interface SaleService {
         long countToday();
 
         BigDecimal sumTotalByPaymentMethodToday(PaymentMethod paymentMethod);
+
+        com.proconsi.electrobazar.dto.SaleSummaryResponse getSummaryToday();
 }

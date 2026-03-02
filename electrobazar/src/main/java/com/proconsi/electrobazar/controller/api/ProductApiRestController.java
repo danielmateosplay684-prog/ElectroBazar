@@ -59,4 +59,16 @@ public class ProductApiRestController {
         productService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/{id}/hard")
+    public ResponseEntity<Void> hardDelete(@PathVariable Long id) {
+        productService.hardDeleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/adjust-stock")
+    public ResponseEntity<Void> adjustStock(@PathVariable Long id, @RequestParam Integer quantity) {
+        productService.adjustStock(id, quantity);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -15,31 +15,43 @@ import java.util.Optional;
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "customer",
-            "worker" })
-    java.util.Optional<Sale> findById(Long id);
+        @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "customer",
+                        "worker" })
+        java.util.Optional<Sale> findById(Long id);
 
-    // Ventas en un rango de fechas (para informes / cierre de caja)
-    List<Sale> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
+        // Ventas en un rango de fechas (para informes / cierre de caja)
+        List<Sale> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 
-    // Ventas de hoy
-    @Query("SELECT s FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE ORDER BY s.createdAt DESC")
-    List<Sale> findToday();
+        // Ventas de hoy
+        @Query("SELECT s FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE ORDER BY s.createdAt DESC")
+        List<Sale> findToday();
 
-    // Total recaudado en un rango de fechas
-    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
-    BigDecimal sumTotalBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+        // Total recaudado en un rango de fechas
+        @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
+        BigDecimal sumTotalBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    // Total por método de pago en un rango de fechas
-    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.paymentMethod = :method")
-    Optional<BigDecimal> sumTotalBetweenByPaymentMethod(@Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to, @Param("method") PaymentMethod method);
+        // Total por método de pago en un rango de fechas
+        @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.paymentMethod = :method")
+        Optional<BigDecimal> sumTotalBetweenByPaymentMethod(@Param("from") LocalDateTime from,
+                        @Param("to") LocalDateTime to, @Param("method") PaymentMethod method);
 
-    // Número de ventas hoy
-    @Query("SELECT COUNT(s) FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE")
-    long countToday();
+        // Número de ventas hoy
+        @Query("SELECT COUNT(s) FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE")
+        long countToday();
 
-    // Contar ventas en un rango de fechas
-    @Query("SELECT COUNT(s) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
-    long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+        // Contar ventas en un rango de fechas
+        @Query("SELECT COUNT(s) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
+        long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+        // Resumen de ventas (proyección optimizada)
+        @Query("SELECT new com.proconsi.electrobazar.dto.SaleSummaryResponse(" +
+                        "COUNT(s), " +
+                        "COALESCE(SUM(s.totalAmount), 0), " +
+                        "COALESCE(SUM(CASE WHEN s.paymentMethod = com.proconsi.electrobazar.model.PaymentMethod.CASH THEN s.totalAmount ELSE 0 END), 0), "
+                        +
+                        "COALESCE(SUM(CASE WHEN s.paymentMethod = com.proconsi.electrobazar.model.PaymentMethod.CARD THEN s.totalAmount ELSE 0 END), 0)) "
+                        +
+                        "FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
+        com.proconsi.electrobazar.dto.SaleSummaryResponse getSummaryBetween(@Param("from") LocalDateTime from,
+                        @Param("to") LocalDateTime to);
 }
