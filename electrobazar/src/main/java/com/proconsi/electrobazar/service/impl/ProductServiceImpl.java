@@ -8,14 +8,12 @@ import com.proconsi.electrobazar.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ProductServiceImpl implements ProductService {
-
     private final ProductRepository productRepository;
     private final ActivityLogService activityLogService;
 
@@ -77,16 +75,17 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product update(Long id, Product updated) {
         Product existing = findById(id);
-
         existing.setName(updated.getName());
         existing.setDescription(updated.getDescription());
         existing.setPrice(updated.getPrice());
         existing.setActive(updated.getActive());
         existing.setImageUrl(updated.getImageUrl());
         existing.setCategory(updated.getCategory());
-        // Stock es gestionado únicamente a través de métodos específicos de stock
-        // no se actualiza en el método update
 
+        // El stock se puede actualizar manualmente para corregir errores de datos
+        if (updated.getStock() != null && updated.getStock() >= 0) {
+            existing.setStock(updated.getStock());
+        }
         Product saved = productRepository.save(existing);
         activityLogService.logActivity(
                 "ACTUALIZAR_PRODUCTO",
@@ -102,7 +101,6 @@ public class ProductServiceImpl implements ProductService {
         Product product = findById(id);
         product.setActive(false);
         productRepository.save(product);
-
         activityLogService.logActivity(
                 "ELIMINAR_PRODUCTO",
                 "Producto dado de baja: " + product.getName(),
@@ -115,7 +113,6 @@ public class ProductServiceImpl implements ProductService {
     public void hardDeleteProduct(Long id) {
         Product product = findById(id);
         productRepository.deleteById(id);
-
         activityLogService.logActivity(
                 "ELIMINAR_PRODUCTO_HARD",
                 "Producto eliminado definitivamente: " + product.getName(),
