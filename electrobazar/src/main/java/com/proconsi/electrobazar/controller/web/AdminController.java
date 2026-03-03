@@ -5,8 +5,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.proconsi.electrobazar.service.*;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class AdminController {
@@ -22,6 +24,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.CustomerService customerService;
     private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
     private final com.proconsi.electrobazar.service.RoleService roleService;
+    private final com.proconsi.electrobazar.service.DocumentService documentService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(Model model, HttpSession session) {
@@ -119,8 +122,6 @@ public class AdminController {
             return org.springframework.http.ResponseEntity.status(500).body("Error al eliminar el producto");
         }
     }
-
-    private final com.proconsi.electrobazar.service.DocumentService documentService;
 
     @GetMapping("/admin/download/invoice/{id}")
     public org.springframework.http.ResponseEntity<?> downloadInvoicePdf(
