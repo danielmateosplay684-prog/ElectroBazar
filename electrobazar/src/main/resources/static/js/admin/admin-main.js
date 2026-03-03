@@ -11,18 +11,19 @@ var rolesCache = null;
 // -- View Switching --------------------------------------------------------
 function switchView(viewId, btnElement) {
     // Hide all views
-    document.getElementById('dashboardView').style.display = 'none';
-    document.getElementById('productsView').style.display = 'none';
-    document.getElementById('invoicesView').style.display = 'none';
-    document.getElementById('cashCloseView').style.display = 'none';
-    document.getElementById('workersView').style.display = 'none';
-    document.getElementById('analyticsView').style.display = 'none';
-    document.getElementById('crmView').style.display = 'none';
-    document.getElementById('preciosTempView').style.display = 'none';
-    document.getElementById('activityView').style.display = 'none';
+    const views = [
+        'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
+        'workersView', 'rolesView', 'analyticsView', 'crmView',
+        'preciosTempView', 'preciosMasivosView', 'activityView'
+    ];
+    views.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.style.display = 'none';
+    });
 
     // Show selected view
-    document.getElementById(viewId).style.display = 'block';
+    const target = document.getElementById(viewId);
+    if (target) target.style.display = 'block';
 
     // Update active sidebar button state
     document.querySelectorAll('.sidebar-menu-btn').forEach(function (btn) {
@@ -30,13 +31,17 @@ function switchView(viewId, btnElement) {
     });
     if (btnElement) btnElement.classList.add('active');
 
-    // Trigger chart update if needed
+    // Trigger specific view updates
     if (viewId === 'analyticsView') {
-        initCharts();
+        updateAnalytics();
     } else if (viewId === 'activityView') {
         loadActivityLog();
     } else if (viewId === 'preciosTempView') {
         loadFuturePrices();
+    } else if (viewId === 'rolesView') {
+        loadRoles();
+    } else if (viewId === 'preciosMasivosView') {
+        loadBulkProducts();
     }
 }
 
@@ -319,11 +324,12 @@ function loadActivityLog() {
                 else if (log.action.includes('ELIMINAR')) iconClasses = 'bi-trash text-danger';
 
                 var formattedDate = log.timestamp ? formatTimeAgo(log.timestamp) : '';
+                var logShortDate = log.timestamp ? log.timestamp.split('T')[0] : '';
 
-                html += '<div class="activity-item">' +
+                html += '<div class="activity-item" data-user="' + escHtml(log.username || '') + '" data-action="' + escHtml(log.action) + '" data-date="' + logShortDate + '">' +
                     '<div class="activity-icon"><i class="bi ' + iconClasses + '"></i></div>' +
                     '<div class="activity-content">' +
-                    '<div class="activity-text">' + escapeHtml(log.description) + '</div>' +
+                    '<div class="activity-text">' + escHtml(log.description) + '</div>' +
                     '<div class="activity-time">' + formattedDate + '</div>' +
                     '</div>' +
                     '</div>';
@@ -372,30 +378,65 @@ function escapeHtml(str) {
 // -- Analytics & Charts --------------------------------------------------
 let salesChart, categoryChart;
 
-function initCharts() {
-    // Data injected via Thymeleaf from the model
-    /*[# th:if="${sales != null or products != null}"]*/
-    var salesDataRaw = /*[[${sales}]]*/[];
-    var productsDataRaw = /*[[${products}]]*/[];
-    /*[/]*/
+function updateAnalytics() {
+    const periodSelect = document.getElementById('analyticsPeriod');
+    const period = periodSelect ? periodSelect.value : '7days';
+    const now = new Date();
+    let fromDate = new Date();
+    let chartTitle = 'Ventas Últimos 7 Días';
+    let fetchAll = false;
+
+    if (period === 'today') {
+        fromDate.setHours(0, 0, 0, 0);
+        chartTitle = 'Ventas Hoy';
+    } else if (period === '7days') {
+        fromDate.setDate(now.getDate() - 7);
+        chartTitle = 'Ventas Últimos 7 Días';
+    } else if (period === '1month') {
+        fromDate.setMonth(now.getMonth() - 1);
+        chartTitle = 'Ventas Último Mes';
+    } else if (period === '6months') {
+        fromDate.setMonth(now.getMonth() - 6);
+        chartTitle = 'Ventas Últimos 6 Meses';
+    } else if (period === '1year') {
+        fromDate.setFullYear(now.getFullYear() - 1);
+        chartTitle = 'Ventas Último Año';
+    } else if (period === 'all') {
+        fetchAll = true;
+        chartTitle = 'Ventas Histórico Total';
+    }
+
+    const url = fetchAll ? '/api/sales' : `/api/sales/range?from=${fromDate.toISOString().slice(0, 19)}&to=${now.toISOString().slice(0, 19)}`;
+
+    Promise.all([
+        fetch(url).then(r => r.json()),
+        fetch('/api/products').then(r => r.json())
+    ]).then(([sales, products]) => {
+        initCharts(sales, products, period, chartTitle);
+    }).catch(err => {
+        console.error('Error updating analytics:', err);
+        showToast('Error al cargar datos de análisis', 'error');
+    });
+}
+
+function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel = 'Ventas (\u20AC)') {
+    if (!salesDataRaw) {
+        // Fallback for initial load if data is still injected
+        salesDataRaw = [];
+        productsDataRaw = [];
+    }
 
     var now = new Date();
-    var todayStr = now.toISOString().split('T')[0];
 
     // 1. Stats Calculation
-    let todayRevenue = 0;
-    let todaySalesCount = 0;
+    let totalRevenue = 0;
+    let totalSalesCount = 0;
     const productSalesCount = {};
     let lowStockCount = 0;
 
     salesDataRaw.forEach(function (sale) {
-        var saleDate = sale.createdAt ? sale.createdAt.split('T')[0] : '';
-        if (saleDate === todayStr) {
-            todayRevenue += sale.totalAmount || 0;
-            todaySalesCount++;
-        }
-
-        // Track product counts if lines are available
+        totalRevenue += sale.totalAmount || 0;
+        totalSalesCount++;
         if (sale.lines) {
             sale.lines.forEach(function (line) {
                 var pName = line.productName || 'Producto';
@@ -408,7 +449,6 @@ function initCharts() {
         if (p.stock < 5) lowStockCount++;
     });
 
-    // Find top product
     let topP = '—';
     let maxQty = 0;
     for (const [name, qty] of Object.entries(productSalesCount)) {
@@ -418,92 +458,123 @@ function initCharts() {
         }
     }
 
-    // Update DOM
-    document.getElementById('statTodayRevenue').textContent = todayRevenue.toFixed(2) + ' \u20AC';
-    document.getElementById('statTodaySales').textContent = todaySalesCount;
-    document.getElementById('statTopProduct').textContent = topP.length > 15 ? topP.substring(0, 15) + '...' : topP;
-    document.getElementById('statLowStock').textContent = lowStockCount;
+    // Update DOM Stats
+    if (document.getElementById('statTodayRevenue')) document.getElementById('statTodayRevenue').textContent = totalRevenue.toFixed(2) + ' \u20AC';
+    if (document.getElementById('statTodaySales')) document.getElementById('statTodaySales').textContent = totalSalesCount;
+    if (document.getElementById('statTopProduct')) document.getElementById('statTopProduct').textContent = topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
+    if (document.getElementById('statLowStock')) document.getElementById('statLowStock').textContent = lowStockCount;
 
-    // 2. Sales Trend Chart (Last 7 Days)
-    var days = [];
-    var revenuePerDay = [];
-    for (var i = 6; i >= 0; i--) {
-        var d = new Date();
-        d.setDate(d.getDate() - i);
-        var dStr = d.toISOString().split('T')[0];
-        days.push(d.toLocaleDateString('es-ES', { weekday: 'short' }));
+    const labelSuffix = (period === 'today') ? ' Hoy' : '';
+    if (document.getElementById('statRevenueLabel')) document.getElementById('statRevenueLabel').textContent = 'Ventas' + labelSuffix;
+    if (document.getElementById('statSalesLabel')) document.getElementById('statSalesLabel').textContent = 'Pedidos' + labelSuffix;
 
-        var total = salesDataRaw.reduce(function (sum, s) {
-            return (s.createdAt && s.createdAt.split('T')[0] === dStr) ? sum + (s.totalAmount || 0) : sum;
-        }, 0);
-        revenuePerDay.push(total);
+    // 2. Trend Chart
+    let labels = [];
+    let datasetsData = [];
+
+    if (period === 'today') {
+        for (let i = 0; i < 24; i++) {
+            labels.push(i + ':00');
+            let sum = salesDataRaw.reduce((acc, s) => {
+                let h = new Date(s.createdAt).getHours();
+                return h === i ? acc + (s.totalAmount || 0) : acc;
+            }, 0);
+            datasetsData.push(sum);
+        }
+    } else if (period === '7days' || period === '1month') {
+        let daysToTrack = period === '7days' ? 7 : 30;
+        for (let i = daysToTrack - 1; i >= 0; i--) {
+            let d = new Date();
+            d.setDate(d.getDate() - i);
+            let dStr = d.toISOString().split('T')[0];
+            labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+            let total = salesDataRaw.reduce((sum, s) => (s.createdAt && s.createdAt.split('T')[0] === dStr) ? sum + (s.totalAmount || 0) : sum, 0);
+            datasetsData.push(total);
+        }
+    } else {
+        let monthsToTrack = (period === 'all') ? 12 : (period === '1year' ? 12 : 6);
+        for (let i = monthsToTrack - 1; i >= 0; i--) {
+            let d = new Date();
+            d.setMonth(d.getMonth() - i);
+            labels.push(d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
+            let total = salesDataRaw.reduce((sum, s) => {
+                let sDate = new Date(s.createdAt);
+                return (sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear()) ? sum + (s.totalAmount || 0) : sum;
+            }, 0);
+            datasetsData.push(total);
+        }
     }
 
-    var ctxSales = document.getElementById('salesChart').getContext('2d');
-    if (salesChart) salesChart.destroy();
-    salesChart = new Chart(ctxSales, {
-        type: 'line',
-        data: {
-            labels: days,
-            datasets: [{
-                label: 'Ventas (\u20AC)',
-                data: revenuePerDay,
-                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
-                backgroundColor: 'rgba(245, 166, 35, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#8892a4' } },
-                x: { grid: { display: false }, border: { display: false }, ticks: { color: '#8892a4' } }
+    var ctxSales = document.getElementById('salesChart');
+    if (ctxSales) {
+        if (salesChart) salesChart.destroy();
+        salesChart = new Chart(ctxSales.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: chartLabel,
+                    data: datasetsData,
+                    borderColor: '#f5a623',
+                    backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: true, labels: { color: '#8892a4' } } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#8892a4' } },
+                    x: { grid: { display: false }, border: { display: false }, ticks: { color: '#8892a4' } }
+                }
             }
-        }
-    });
+        });
+    }
 
     // 3. Category Distribution Chart
     var catSummary = {};
-    productsDataRaw.forEach(function (p) {
+    productsDataRaw.forEach(p => {
         var catName = p.category ? p.category.name : 'Sin Categoría';
         catSummary[catName] = (catSummary[catName] || 0) + 1;
     });
 
-    var catLabels = Object.keys(catSummary);
-    var catData = Object.values(catSummary);
-
-    var ctxCat = document.getElementById('categoryChart').getContext('2d');
-    if (categoryChart) categoryChart.destroy();
-    categoryChart = new Chart(ctxCat, {
-        type: 'doughnut',
-        data: {
-            labels: catLabels,
-            datasets: [{
-                data: catData,
-                backgroundColor: ['#f5a623', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#06b6d4'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: '#8892a4', usePointStyle: true, boxWidth: 6 } }
+    var ctxCat = document.getElementById('categoryChart');
+    if (ctxCat) {
+        if (categoryChart) categoryChart.destroy();
+        categoryChart = new Chart(ctxCat.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catSummary),
+                datasets: [{
+                    data: Object.values(catSummary),
+                    backgroundColor: ['#f5a623', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#06b6d4'],
+                    borderWidth: 0
+                }]
             },
-            cutout: '75%'
-        }
-    });
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { color: '#8892a4', usePointStyle: true, boxWidth: 6 } } },
+                cutout: '75%'
+            }
+        });
+    }
 }
 
 // Theme application moved to <head>
 
 // -- Worker Management --------------------------------------------------------
-function openWorkerModal(id, username, active, permissions) {
+function openWorkerModal(id, username, active, permissions, roleId) {
     document.getElementById('workerForm').reset();
     document.getElementById('workerId').value = id || '';
     document.getElementById('workerUsername').value = username || '';
     document.getElementById('workerActive').checked = active !== false;
+
+    // Get role from data attribute if passed as string (from Thymeleaf loop)
+    if (!roleId && id) {
+        // We might need to find the roleId from the DOM or cache
+        // but since we are refetching in some cases, let's just use what's passed
+    }
 
     // Ajustar etiqueta de contraseña según si editamos o creamos
     var pwdLabel = document.getElementById('workerPasswordLabel');
@@ -515,9 +586,16 @@ function openWorkerModal(id, username, active, permissions) {
 
     // Permissions
     var perms = permissions || [];
+    if (typeof perms === 'string') perms = perms.replace(/[\[\]]/g, '').split(',').map(s => s.trim());
+
     document.getElementById('permProd').checked = perms.indexOf('MANAGE_PRODUCTS_TPV') !== -1;
     document.getElementById('permCash').checked = perms.indexOf('CASH_CLOSE') !== -1;
     document.getElementById('permAdmin').checked = perms.indexOf('ADMIN_ACCESS') !== -1;
+
+    // Load roles into select if not already there, then select current
+    loadRoles().then(() => {
+        document.getElementById('workerRole').value = roleId || '';
+    });
 
     workerModal.show();
 }
@@ -536,7 +614,15 @@ function saveWorker() {
     if (!username) { showToast('El nombre de usuario es obligatorio', 'error'); return; }
     if (!id && !password) { showToast('La contraseña es obligatoria para nuevos trabajadores', 'error'); return; }
 
-    var worker = { id: id ? parseInt(id) : null, username: username, password: password, active: active, permissions: permissions };
+    var roleId = document.getElementById('workerRole').value;
+    var worker = {
+        id: id ? parseInt(id) : null,
+        username: username,
+        password: password || null,
+        active: active,
+        permissions: permissions,
+        role: roleId ? { id: parseInt(roleId) } : null
+    };
 
     fetch('/admin/workers/save', {
         method: 'POST',
@@ -726,18 +812,18 @@ function openSchedulePriceModal() {
 }
 
 // Auto-select product's IVA rate when product is selected in schedule price modal
-document.getElementById('spProductSelect').addEventListener('change', function() {
+document.getElementById('spProductSelect').addEventListener('change', function () {
     var productId = this.value;
     if (productId) {
         fetch('/api/products/' + productId)
-            .then(function(r) { return r.json(); })
-            .then(function(p) {
+            .then(function (r) { return r.json(); })
+            .then(function (p) {
                 if (p.ivaRate) {
                     document.getElementById('spVatRate').value = String(p.ivaRate);
                     updateRecargoPreview();
                 }
             })
-            .catch(function() {});
+            .catch(function () { });
     }
 });
 
@@ -799,7 +885,7 @@ function loadFuturePrices() {
             tbody.innerHTML = prices.map(function (p) {
                 var vatPct = Math.round(parseFloat(p.vatRate) * 100) + '%';
                 var reRate = RE_RATE_MAP[String(p.vatRate)] || '—';
-                return '<tr>'
+                return '<tr class="future-price-row" data-product-name="' + escHtml(p.productName).toLowerCase() + '">'
                     + '<td><strong>' + escHtml(p.productName) + '</strong></td>'
                     + '<td>' + parseFloat(p.price).toFixed(2) + ' &euro;</td>'
                     + '<td>' + vatPct + ' <small class="text-muted">(+' + reRate + ' RE)</small></td>'
@@ -835,7 +921,7 @@ function loadPriceHistory() {
                     : (new Date(p.startDate) > new Date()
                         ? '<span class="badge bg-warning text-dark">Programado</span>'
                         : '<span class="badge bg-secondary">Expirado</span>');
-                
+
                 // Calculate price variation display
                 var variationHtml = '<span class="text-muted">—</span>';
                 if (p.priceChange !== null && p.priceChange !== undefined) {
@@ -849,7 +935,7 @@ function loadPriceHistory() {
                         variationHtml = '<span class="text-muted">0.00 € (0.00%)</span>';
                     }
                 }
-                
+
                 return '<tr>'
                     + '<td>' + parseFloat(p.price).toFixed(2) + ' &euro;</td>'
                     + '<td>' + vatPct + ' <small class="text-muted">(+' + reRate + ' RE)</small></td>'
@@ -892,14 +978,14 @@ var bulkProductsCache = null;
 
 function loadBulkProducts() {
     if (bulkProductsCache) return bulkProductsCache;
-    
+
     fetch('/api/products')
-        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
-        .then(function(products) {
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function (products) {
             bulkProductsCache = products;
             renderBulkProductList(products);
         })
-        .catch(function() {
+        .catch(function () {
             document.getElementById('bulkProductList').innerHTML = '<div class="text-center text-danger py-3">Error cargando productos</div>';
         });
 }
@@ -910,17 +996,19 @@ function renderBulkProductList(products) {
         container.innerHTML = '<div class="text-center text-muted py-3">No hay productos disponibles</div>';
         return;
     }
-    container.innerHTML = products.map(function(p) {
-        return '<div class="form-check">'
+    container.innerHTML = products.map(function (p) {
+        var catName = p.category ? p.category.name : 'S/C';
+        return '<div class="form-check bulk-product-item" data-search="' + escHtml(p.name).toLowerCase() + ' ' + escHtml(catName).toLowerCase() + '">'
             + '<input class="form-check-input bulk-product-checkbox" type="checkbox" value="' + p.id + '" id="bulkProd' + p.id + '" onchange="updateBulkSelectedCount()">'
-            + '<label class="form-check-label" for="bulkProd' + p.id + '">' + escHtml(p.name) + ' <small class="text-muted">(' + parseFloat(p.price).toFixed(2) + ' €)</small></label>'
+            + '<label class="form-check-label" for="bulkProd' + p.id + '">'
+            + '<strong>' + escHtml(p.name) + '</strong> <small class="text-muted">(' + catName + ' - ' + parseFloat(p.price).toFixed(2) + ' €)</small></label>'
             + '</div>';
     }).join('');
 }
 
 function selectAllBulkProducts(select) {
     var checkboxes = document.querySelectorAll('.bulk-product-checkbox');
-    checkboxes.forEach(function(cb) { cb.checked = select; });
+    checkboxes.forEach(function (cb) { cb.checked = select; });
     updateBulkSelectedCount();
 }
 
@@ -936,8 +1024,8 @@ function toggleBulkPriceFields() {
 }
 
 function applyBulkPriceUpdate() {
-    var selectedIds = Array.from(document.querySelectorAll('.bulk-product-checkbox:checked')).map(function(cb) { return parseInt(cb.value); });
-    
+    var selectedIds = Array.from(document.querySelectorAll('.bulk-product-checkbox:checked')).map(function (cb) { return parseInt(cb.value); });
+
     if (selectedIds.length === 0) {
         showToast('Selecciona al menos un producto', 'error');
         return;
@@ -945,7 +1033,7 @@ function applyBulkPriceUpdate() {
 
     var priceType = document.getElementById('bulkPriceType').value;
     var priceValue = parseFloat(document.getElementById('bulkPriceValue').value);
-    
+
     if (isNaN(priceValue) || priceValue === 0) {
         showToast('Introduce un valor de cambio de precio', 'error');
         return;
@@ -953,7 +1041,7 @@ function applyBulkPriceUpdate() {
 
     var effectiveDateInput = document.getElementById('bulkEffectiveDate').value;
     // If no date selected, default to now (immediate application)
-    var effectiveDate = effectiveDateInput 
+    var effectiveDate = effectiveDateInput
         ? new Date(effectiveDateInput).toISOString().slice(0, 19)
         : new Date().toISOString().slice(0, 19);
     var label = document.getElementById('bulkLabel').value.trim();
@@ -975,32 +1063,425 @@ function applyBulkPriceUpdate() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     })
-    .then(function(r) { 
-        if (!r.ok) throw new Error('Error en la petición'); 
-        return r.json();
-    })
-    .then(function(data) {
-        var count = Array.isArray(data) ? data.length : 1;
-        document.getElementById('bulkResultsText').textContent = 'Se han programado ' + count + ' cambio(s) de precio correctamente.';
-        document.getElementById('bulkResults').style.display = 'block';
-        showToast('Precios actualizados correctamente', 'success');
-        // Reset form
-        selectAllBulkProducts(false);
-        document.getElementById('bulkPriceValue').value = '';
-        document.getElementById('bulkEffectiveDate').value = '';
-        document.getElementById('bulkLabel').value = '';
-    })
-    .catch(function(err) {
-        showToast('Error al aplicar precios masivos: ' + err.message, 'error');
+        .then(function (r) {
+            if (!r.ok) throw new Error('Error en la petición');
+            return r.json();
+        })
+        .then(function (data) {
+            var count = Array.isArray(data) ? data.length : 1;
+            document.getElementById('bulkResultsText').textContent = 'Se han programado ' + count + ' cambio(s) de precio correctamente.';
+            document.getElementById('bulkResults').style.display = 'block';
+            showToast('Precios actualizados correctamente', 'success');
+            // Reset form
+            selectAllBulkProducts(false);
+            document.getElementById('bulkPriceValue').value = '';
+            document.getElementById('bulkEffectiveDate').value = '';
+            document.getElementById('bulkLabel').value = '';
+        })
+        .catch(function (err) {
+            showToast('Error al aplicar precios masivos: ' + err.message, 'error');
+        });
+}
+
+// ── ROLE MANAGEMENT ────────────────────────────────────────────────────────
+
+function loadRoles() {
+    return Promise.all([
+        fetch('/api/roles').then(res => { if (!res.ok) throw new Error('HTTP Status roles ' + res.status); return res.json(); }),
+        fetch('/api/workers').then(res => { if (!res.ok) throw new Error('HTTP Status workers ' + res.status); return res.json(); })
+    ])
+        .then(function ([roles, workers]) {
+            rolesCache = roles;
+            renderRolesTable(roles, workers);
+            populateRoleSelect(roles);
+            return roles;
+        })
+        .catch(function (err) {
+            console.error('Error loading roles/workers:', err);
+            document.getElementById('rolesTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos: ' + err.message + '</td></tr>';
+        });
+}
+
+function renderRolesTable(roles, workers) {
+    const tbody = document.getElementById('rolesTableBody');
+    if (!roles || roles.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No hay roles definidos</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = roles.map(r => {
+        const perms = r.permissions.map(p => `<span class="badge bg-secondary me-1" style="font-size:0.7rem">${p}</span>`).join('');
+        const permsText = r.permissions.join(',');
+
+        // Count workers with this role
+        const count = workers ? workers.filter(w => w.role && w.role.id === r.id).length : 0;
+
+        return `<tr class="role-row" data-name="${escHtml(r.name)}" data-permissions="${permsText}">
+            <td><strong>${escHtml(r.name)}</strong></td>
+            <td class="small text-muted">${escHtml(r.description || '—')}</td>
+            <td>${perms || '<span class="text-muted small">Sin permisos</span>'}</td>
+            <td><span class="badge bg-info text-dark" style="font-size:0.85rem">${count} trabajador(es)</span></td>
+            <td style="text-align:right">
+                <button class="btn-icon" onclick="openRoleModal(${r.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn-icon danger" onclick="deleteRole(${r.id})"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function populateRoleSelect(roles) {
+    const select = document.getElementById('workerRole');
+    const filterSelect = document.getElementById('workerFilterRole');
+
+    if (select) {
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Sin rol</option>' +
+            roles.map(r => `<option value="${r.id}">${escHtml(r.name)}</option>`).join('');
+        select.value = currentVal;
+    }
+
+    if (filterSelect) {
+        const currentVal = filterSelect.value;
+        filterSelect.innerHTML = '<option value="">Cualquier Rol</option>' +
+            roles.map(r => `<option value="${r.id}">${escHtml(r.name)}</option>`).join('');
+        filterSelect.value = currentVal;
+    }
+}
+
+function openRoleModal(id) {
+    document.getElementById('roleForm').reset();
+    document.getElementById('roleId').value = id || '';
+    document.getElementById('roleModalLabel').textContent = id ? 'Editar Rol' : 'Nuevo Rol';
+
+    if (id) {
+        const role = rolesCache.find(r => r.id == id);
+        if (role) {
+            document.getElementById('roleName').value = role.name;
+            document.getElementById('roleDescription').value = role.description || '';
+            document.getElementById('rolePermProd').checked = role.permissions.includes('MANAGE_PRODUCTS_TPV');
+            document.getElementById('rolePermCash').checked = role.permissions.includes('CASH_CLOSE');
+            document.getElementById('rolePermAdmin').checked = role.permissions.includes('ADMIN_ACCESS');
+        }
+    }
+    roleModal.show();
+}
+
+function saveRole() {
+    const id = document.getElementById('roleId').value;
+    const name = document.getElementById('roleName').value.trim();
+    if (!name) { showToast('El nombre del rol es obligatorio', 'error'); return; }
+
+    const permissions = [];
+    if (document.getElementById('rolePermProd').checked) permissions.push('MANAGE_PRODUCTS_TPV');
+    if (document.getElementById('rolePermCash').checked) permissions.push('CASH_CLOSE');
+    if (document.getElementById('rolePermAdmin').checked) permissions.push('ADMIN_ACCESS');
+
+    const role = {
+        name: name,
+        description: document.getElementById('roleDescription').value.trim() || null,
+        permissions: permissions
+    };
+
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? '/api/roles/' + id : '/api/roles';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(role)
+    }).then(res => {
+        if (res.ok) {
+            roleModal.hide();
+            showToast(id ? 'Rol actualizado' : 'Rol creado');
+            loadRoles();
+        } else {
+            showToast('Error al guardar el rol', 'error');
+        }
     });
 }
 
-// Load products when switching to preciosMasivosView
-var originalSwitchView = switchView;
-switchView = function(viewId, btn) {
-    originalSwitchView(viewId, btn);
-    if (viewId === 'preciosMasivosView') {
-        loadBulkProducts();
+function deleteRole(id) {
+    if (!confirm('¿Estás seguro de eliminar este rol? Los trabajadores que lo tengan perderán sus permisos asociados.')) return;
+    fetch('/api/roles/' + id, { method: 'DELETE' })
+        .then(res => {
+            if (res.ok) {
+                showToast('Rol eliminado');
+                loadRoles();
+            } else {
+                showToast('Error al eliminar el rol', 'error');
+            }
+        });
+}
+
+function onWorkerRoleChange() {
+    const roleId = document.getElementById('workerRole').value;
+    if (!roleId) return;
+
+    const role = rolesCache.find(r => r.id == roleId);
+    if (role) {
+        document.getElementById('permProd').checked = role.permissions.includes('MANAGE_PRODUCTS_TPV');
+        document.getElementById('permCash').checked = role.permissions.includes('CASH_CLOSE');
+        document.getElementById('permAdmin').checked = role.permissions.includes('ADMIN_ACCESS');
     }
-};
+}
+
+// ── WORKER FILTERING ────────────────────────────────────────────────────────
+
+function filterWorkers() {
+    const nameQuery = document.getElementById('workerFilterName').value.toLowerCase().trim();
+    const roleId = document.getElementById('workerFilterRole').value;
+    const status = document.getElementById('workerFilterStatus').value;
+    const selectedPerms = Array.from(document.querySelectorAll('.worker-filter-perm:checked')).map(cb => cb.value);
+
+    const rows = document.querySelectorAll('.worker-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const username = row.getAttribute('data-username').toLowerCase();
+        const active = row.getAttribute('data-active');
+        const rowRoleId = row.getAttribute('data-role-id');
+        const permissions = (row.getAttribute('data-permissions') || '').split(',');
+
+        let matches = true;
+        if (nameQuery && !username.includes(nameQuery)) matches = false;
+        if (roleId && rowRoleId !== roleId) matches = false;
+        if (status && active !== status) matches = false;
+
+        // Multi-perm logic: MUST HAVE ALL selected perms
+        if (selectedPerms.length > 0) {
+            const hasAll = selectedPerms.every(p => permissions.includes(p));
+            if (!hasAll) matches = false;
+        }
+
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+
+    const label = document.getElementById('workerCountLabel');
+    if (nameQuery || roleId || status || selectedPerms.length > 0) {
+        label.innerHTML = `Filtrado activo: <b>${visibleCount}</b> de <b>${rows.length}</b> trabajadores encontrados.`;
+    } else {
+        label.textContent = 'Mostrando todas las fichas de trabajadores.';
+    }
+}
+
+function resetWorkerFilters() {
+    document.getElementById('workerFilterName').value = '';
+    document.getElementById('workerFilterRole').value = '';
+    document.getElementById('workerFilterStatus').value = '';
+    document.querySelectorAll('.worker-filter-perm').forEach(cb => cb.checked = false);
+    filterWorkers();
+}
+
+// ── ROLE FILTERING ──────────────────────────────────────────────────────────
+
+function filterRoles() {
+    const nameQuery = document.getElementById('roleFilterName').value.toLowerCase().trim();
+    const selectedPerms = Array.from(document.querySelectorAll('.role-filter-perm:checked')).map(cb => cb.value);
+
+    const rows = document.querySelectorAll('.role-row');
+    rows.forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const perms = (row.getAttribute('data-permissions') || '').split(',');
+
+        let matches = true;
+        if (nameQuery && !name.includes(nameQuery)) matches = false;
+
+        if (selectedPerms.length > 0) {
+            const hasAll = selectedPerms.every(p => perms.includes(p));
+            if (!hasAll) matches = false;
+        }
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+
+function resetRolePermFilters() {
+    document.querySelectorAll('.role-filter-perm').forEach(cb => cb.checked = false);
+    filterRoles();
+}
+
+// ── NEW FILTERING FUNCTIONS ──────────────────────────────────────────────────
+
+function filterProducts() {
+    const query = document.getElementById('productFilterSearch').value.toLowerCase().trim();
+    const category = document.getElementById('productFilterCategory').value;
+    const stockFilter = document.getElementById('productFilterStock').value;
+    const activeFilter = document.getElementById('productFilterActive').value;
+
+    document.querySelectorAll('.product-row').forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const desc = (row.getAttribute('data-desc') || '').toLowerCase();
+        const id = (row.getAttribute('data-id') || '');
+        const cat = (row.getAttribute('data-category') || '');
+        const stock = parseInt(row.getAttribute('data-stock') || '0');
+        const active = row.getAttribute('data-active');
+
+        let matches = true;
+        if (query && !name.includes(query) && !desc.includes(query) && !id.includes(query)) matches = false;
+        if (category && cat !== category) matches = false;
+        if (stockFilter === 'low' && stock >= 5) matches = false;
+        if (stockFilter === 'normal' && stock < 5) matches = false;
+        if (activeFilter && active !== activeFilter) matches = false;
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+function resetProductFilters() {
+    document.getElementById('productFilterSearch').value = '';
+    document.getElementById('productFilterCategory').value = '';
+    document.getElementById('productFilterStock').value = '';
+    document.getElementById('productFilterActive').value = '';
+    filterProducts();
+}
+
+function filterInvoices() {
+    const query = document.getElementById('invoiceFilterSearch').value.toLowerCase().trim();
+    const type = document.getElementById('invoiceFilterType').value;
+    const method = document.getElementById('invoiceFilterMethod').value;
+    const date = document.getElementById('invoiceFilterDate').value;
+
+    document.querySelectorAll('.invoice-row').forEach(row => {
+        const id = (row.getAttribute('data-id') || '');
+        const customer = (row.getAttribute('data-customer') || '').toLowerCase();
+        const taxid = (row.getAttribute('data-taxid') || '').toLowerCase();
+        const rowType = row.getAttribute('data-type');
+        const rowMethod = row.getAttribute('data-method');
+        const rowDate = row.getAttribute('data-date');
+
+        let matches = true;
+        if (query && !id.includes(query) && !customer.includes(query) && !taxid.includes(query)) matches = false;
+        if (type && rowType !== type) matches = false;
+        if (method && rowMethod !== method) matches = false;
+        if (date && rowDate !== date) matches = false;
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+function resetInvoiceFilters() {
+    document.getElementById('invoiceFilterSearch').value = '';
+    document.getElementById('invoiceFilterType').value = '';
+    document.getElementById('invoiceFilterMethod').value = '';
+    document.getElementById('invoiceFilterDate').value = '';
+    filterInvoices();
+}
+
+function filterCashClosures() {
+    const query = document.getElementById('cashFilterWorker').value.toLowerCase().trim();
+    const dateQuery = document.getElementById('cashFilterDate').value.trim();
+
+    document.querySelectorAll('.cash-row').forEach(row => {
+        const worker = (row.getAttribute('data-worker') || '').toLowerCase();
+        const openDate = row.getAttribute('data-open-date');
+        const closeDate = row.getAttribute('data-close-date');
+
+        let matches = true;
+        if (query && !worker.includes(query)) matches = false;
+        if (dateQuery && openDate !== dateQuery && closeDate !== dateQuery) matches = false;
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+function resetCashFilters() {
+    document.getElementById('cashFilterWorker').value = '';
+    document.getElementById('cashFilterDate').value = '';
+    filterCashClosures();
+}
+
+function filterCRM() {
+    const query = document.getElementById('crmFilterSearch').value.toLowerCase().trim();
+    const type = document.getElementById('crmFilterType').value;
+    const re = document.getElementById('crmFilterRE').value;
+
+    document.querySelectorAll('.crm-row').forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const taxid = (row.getAttribute('data-taxid') || '').toLowerCase();
+        const email = (row.getAttribute('data-email') || '').toLowerCase();
+        const phone = (row.getAttribute('data-phone') || '').toLowerCase();
+        const city = (row.getAttribute('data-city') || '').toLowerCase();
+        const rowType = row.getAttribute('data-type');
+        const rowRE = row.getAttribute('data-re');
+
+        let matches = true;
+        if (query && !name.includes(query) && !taxid.includes(query) && !email.includes(query) && !phone.includes(query) && !city.includes(query)) matches = false;
+        if (type && rowType !== type) matches = false;
+        if (re && rowRE !== re) matches = false;
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+function resetCRMFilters() {
+    document.getElementById('crmFilterSearch').value = '';
+    document.getElementById('crmFilterType').value = '';
+    document.getElementById('crmFilterRE').value = '';
+    filterCRM();
+}
+
+function filterBulkProductList() {
+    const query = document.getElementById('bulkProductSearch').value.toLowerCase().trim();
+    document.querySelectorAll('.bulk-product-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(query) ? 'block' : 'none';
+    });
+}
+
+function filterActivity() {
+    const user = document.getElementById('activityFilterUser').value.toLowerCase().trim();
+    const action = document.getElementById('activityFilterAction').value.toLowerCase().trim();
+    const date = document.getElementById('activityFilterDate').value; // YYYY-MM-DD
+
+    document.querySelectorAll('.activity-item').forEach(item => {
+        const itemUser = (item.getAttribute('data-user') || '').toLowerCase();
+        const itemAction = (item.getAttribute('data-action') || '').toLowerCase();
+        const itemDate = item.getAttribute('data-date'); // YYYY-MM-DD
+
+        let matches = true;
+        if (user && !itemUser.includes(user)) matches = false;
+        if (action && !itemAction.includes(action)) matches = false;
+        if (date && itemDate !== date) matches = false;
+
+        item.style.display = matches ? 'block' : 'none';
+    });
+}
+function resetActivityFilters() {
+    document.getElementById('activityFilterUser').value = '';
+    document.getElementById('activityFilterAction').value = '';
+    document.getElementById('activityFilterDate').value = '';
+    filterActivity();
+}
+
+function filterCategories() {
+    const query = document.getElementById('categoryFilterSearch').value.toLowerCase().trim();
+    document.querySelectorAll('.category-row').forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const desc = (row.getAttribute('data-desc') || '').toLowerCase();
+        row.style.display = (name.includes(query) || desc.includes(query)) ? '' : 'none';
+    });
+}
+function resetCategoryFilters() {
+    document.getElementById('categoryFilterSearch').value = '';
+    filterCategories();
+}
+
+function filterFuturePrices() {
+    const query = document.getElementById('futurePriceFilterSearch').value.toLowerCase().trim();
+    document.querySelectorAll('.future-price-row').forEach(row => {
+        const name = (row.getAttribute('data-product-name') || '');
+        row.style.display = name.includes(query) ? '' : 'none';
+    });
+}
+function resetFuturePriceFilters() {
+    document.getElementById('futurePriceFilterSearch').value = '';
+    filterFuturePrices();
+}
+
+function filterBulkProductList() {
+    const query = document.getElementById('bulkProductSearch').value.toLowerCase().trim();
+    document.querySelectorAll('.bulk-product-item').forEach(item => {
+        const searchData = (item.getAttribute('data-search') || '');
+        item.style.display = searchData.includes(query) ? 'block' : 'none';
+    });
+}
+
+
 

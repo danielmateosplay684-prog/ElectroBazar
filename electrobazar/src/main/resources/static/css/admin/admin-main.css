@@ -59,6 +59,26 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Custom scrollbar for sidebar */
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
 
         .nav-link.sidebar-menu-btn {
@@ -243,12 +263,52 @@
             margin-right: 0.4rem;
         }
 
-        /* ── Panel header ── */
+        /* ── Header Search (Matches TPV) ── */
+        .header-search {
+            flex: 1;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-search .form-control {
+            background: var(--primary);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            height: 38px;
+        }
+
+        .header-search .form-control:focus {
+            background: var(--primary);
+            border-color: var(--accent);
+            color: var(--text-main);
+            box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
+        }
+
+        .header-search .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-search {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
         .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
+            gap: 1.5rem;
         }
 
         .panel-title {

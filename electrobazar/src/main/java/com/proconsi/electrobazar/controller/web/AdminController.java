@@ -21,6 +21,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.WorkerService workerService;
     private final com.proconsi.electrobazar.service.CustomerService customerService;
     private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
+    private final com.proconsi.electrobazar.service.RoleService roleService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(Model model, HttpSession session) {
@@ -56,6 +57,7 @@ public class AdminController {
         model.addAttribute("cashRegisters", cashRegisterService.findAllClosed());
         model.addAttribute("workers", workerService.findAll());
         model.addAttribute("customers", customerService.findAll());
+        model.addAttribute("roles", roleService.findAll());
 
         return "admin/admin";
     }

@@ -24,6 +24,35 @@ public class AdminLoginController {
         String pin = body.getOrDefault("pin", "");
         if (adminPinService.verifyPin(pin)) {
             session.setAttribute("admin", true);
+
+            // Escalate privileges in SecurityContext
+            org.springframework.security.core.Authentication currentAuth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+            String username = "admin";
+
+            if (currentAuth != null) {
+                username = currentAuth.getName();
+                authorities.addAll(currentAuth.getAuthorities().stream()
+                        .map(a -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                a.getAuthority()))
+                        .collect(java.util.stream.Collectors.toList()));
+            }
+
+            if (authorities.stream().noneMatch(a -> a.getAuthority().equals("ADMIN_ACCESS"))) {
+                authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ADMIN_ACCESS"));
+            }
+
+            org.springframework.security.authentication.UsernamePasswordAuthenticationToken newAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    username, null, authorities);
+
+            org.springframework.security.core.context.SecurityContext context = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext();
+            context.setAuthentication(newAuth);
+            session.setAttribute(
+                    org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    context);
+
             return ResponseEntity.ok(Map.of("ok", true));
         }
         return ResponseEntity.status(401).body(Map.of("ok", false, "message", "PIN incorrecto"));

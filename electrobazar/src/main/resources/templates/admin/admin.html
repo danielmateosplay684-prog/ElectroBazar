@@ -266,6 +266,65 @@
                 <span class="panel-title"><i class="bi bi-house-door me-2"></i>Bienvenido al Administrador</span>
             </div>
 
+            <!-- QUICK ACTIONS SECTION -->
+            <div class="mb-5">
+                <h5 class="mb-3 text-muted"
+                    style="font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                    Acciones Rápidas
+                </h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openProductModal()">
+                        <i class="bi bi-plus-circle me-1"></i> Nuevo Producto
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openCategoryModal()">
+                        <i class="bi bi-tags me-1"></i> Nueva Categoría
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openWorkerModal()">
+                        <i class="bi bi-person-plus me-1"></i> Nuevo Trabajador
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openRoleModal()">
+                        <i class="bi bi-shield-plus me-1"></i> Nuevo Rol
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openCustomerModal()">
+                        <i class="bi bi-person-badge me-1"></i> Nuevo Cliente
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="openSchedulePriceModal()">
+                        <i class="bi bi-calendar-check me-1"></i> Programar Precio
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="switchView('productsView'); setTimeout(() => filterLowStock(), 100)">
+                        <i class="bi bi-exclamation-triangle me-1"></i> Ver Stock Bajo
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="switchView('preciosTempView'); setTimeout(() => showPreciosTab('historial'), 100)">
+                        <i class="bi bi-clock-history me-1"></i> Historial Precios
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3 py-2"
+                        style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
+                        onclick="document.getElementById('csvFileInput').click()">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Importar CSV
+                    </button>
+                </div>
+            </div>
+
+            <h5 class="mb-3 text-muted"
+                style="font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="bi bi-columns-gap me-2"></i>Secciones del Panel
+            </h5>
             <div class="dashboard-grid">
                 <div class="dashboard-card"
                     onclick="switchView('productsView', document.querySelector('[onclick*=\'productsView\']'))">
@@ -296,6 +355,13 @@
                 </div>
 
                 <div class="dashboard-card"
+                    onclick="switchView('rolesView', document.querySelector('[onclick*=\'rolesView\']'))">
+                    <i class="bi bi-shield-lock"></i>
+                    <h3>Gestión de Roles</h3>
+                    <p>Define perfiles de acceso y permisos específicos por cargo.</p>
+                </div>
+
+                <div class="dashboard-card"
                     onclick="switchView('analyticsView', document.querySelector('[onclick*=\'analyticsView\']'))">
                     <i class="bi bi-graph-up"></i>
                     <h3>Análisis</h3>
@@ -315,6 +381,7 @@
                     <h3>Actividad</h3>
                     <p>Revisa las últimas acciones realizadas en el sistema.</p>
                 </div>
+
 
                 <div class="dashboard-card"
                     onclick="switchView('preciosTempView', document.querySelector('[onclick*=\'preciosTempView\']'))">
@@ -336,27 +403,38 @@
         <div id="productsView" style="display: none;">
             <!-- PANEL: Gestión de Inventario -->
             <div class="panel-header">
-                <span class="panel-title">
-                    <button class="btn-icon me-2"
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
                         onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
                         title="Volver al Panel">
                         <i class="bi bi-arrow-left"></i>
                     </button>
-                    <i class="bi bi-box-seam me-2"></i>Gestión de Inventario
-                </span>
+                    <span class="panel-title">Inventario</span>
+                </div>
+
+                <!-- Centro: Buscador (Matches TPV Header) -->
+                <div class="header-search">
+                    <i class="bi bi-search btn-search"></i>
+                    <input type="text" id="productFilterSearch" class="form-control"
+                        placeholder="Buscar producto por nombre, ID o descripción..." autocomplete="off"
+                        oninput="filterProducts()">
+                </div>
+
                 <div class="d-flex gap-2 flex-wrap" style="position: relative; z-index: 10;">
                     <input type="file" id="csvFileInput" accept=".csv" style="display: none;"
                         onchange="uploadCsvFile(this)">
                     <button class="btn-nuevo" onclick="document.getElementById('csvFileInput').click()"
-                        style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border);">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> Importar CSV
+                        style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border);"
+                        title="Importar CSV">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
                     </button>
                     <button class="btn-nuevo" onclick="filterLowStock()" id="btnFilterLowStock"
-                        style="background: rgba(231, 76, 60, 0.1); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.2);">
-                        <i class="bi bi-filter"></i> Stock Bajo
+                        style="background: rgba(231, 76, 60, 0.1); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.2);"
+                        title="Stock Bajo">
+                        <i class="bi bi-filter"></i>
                     </button>
                     <button class="btn-nuevo" onclick="openProductModal()">
-                        <i class="bi bi-plus-lg"></i> Nuevo Producto
+                        <i class="bi bi-plus-lg me-1"></i> Nuevo
                     </button>
                 </div>
             </div>
@@ -381,8 +459,47 @@
 
                 <!-- Tab: Productos -->
                 <div class="tab-pane fade show active" id="products-pane" role="tabpanel">
+                    <div class="filter-bar mt-3 p-3 rounded"
+                        style="background: var(--surface); border: 1px solid var(--border);">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Categoría</label>
+                                <select id="productFilterCategory" class="form-select form-select-sm"
+                                    onchange="filterProducts()">
+                                    <option value="">Todas</option>
+                                    <option th:each="c : ${categories}" th:value="${c.name}" th:text="${c.name}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Stock Level</label>
+                                <select id="productFilterStock" class="form-select form-select-sm"
+                                    onchange="filterProducts()">
+                                    <option value="">Todos</option>
+                                    <option value="low">Stock Bajo</option>
+                                    <option value="normal">Suficiente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Estado</label>
+                                <select id="productFilterActive" class="form-select form-select-sm"
+                                    onchange="filterProducts()">
+                                    <option value="">Todos</option>
+                                    <option value="true">Activos</option>
+                                    <option value="false">Inactivos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetProductFilters()"
+                                    style="border-color: var(--border); color: var(--text-muted); height: 31px;">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Limpiar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="admin-table-wrap mt-3">
-                        <table class="admin-table">
+                        <table class="admin-table" id="productsTable">
                             <thead>
                                 <tr>
                                     <th>Imagen</th>
@@ -394,8 +511,11 @@
                                     <th style="text-align:right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr th:each="p : ${products}">
+                            <tbody id="productsTableBody">
+                                <tr th:each="p : ${products}" class="product-row" th:data-name="${p.name}"
+                                    th:data-desc="${p.description}" th:data-id="${p.id}"
+                                    th:data-category="${p.category != null ? p.category.name : ''}"
+                                    th:data-stock="${p.stock}" th:data-active="${p.active}">
                                     <td>
                                         <img th:if="${p.imageUrl != null && !#strings.isEmpty(p.imageUrl)}"
                                             th:src="${p.imageUrl}" class="thumb" alt="">
@@ -453,7 +573,22 @@
 
                 <!-- Tab: Categorías -->
                 <div class="tab-pane fade" id="categories-pane" role="tabpanel">
-                    <div class="d-flex justify-content-end mt-3 mb-2">
+                    <div class="filter-bar mt-3 mb-2 p-3 rounded"
+                        style="background: var(--surface); border: 1px solid var(--border);">
+                        <div class="row g-2">
+                            <div class="col-md-10">
+                                <label class="form-label small text-muted mb-1">Buscar categoría</label>
+                                <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
+                                    placeholder="Nombre o descripción..." oninput="filterCategories()">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCategoryFilters()">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-2 mb-2">
                         <button class="btn-nuevo"
                             style="background:var(--surface);color:var(--text-main);border-color:var(--border);"
                             onclick="openCategoryModal()">
@@ -461,7 +596,7 @@
                         </button>
                     </div>
                     <div class="admin-table-wrap">
-                        <table class="admin-table">
+                        <table class="admin-table" id="categoriesTable">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -471,8 +606,9 @@
                                     <th style="text-align:right;width:120px">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr th:each="c : ${categories}">
+                            <tbody id="categoriesTableBody">
+                                <tr th:each="c : ${categories}" class="category-row" th:data-name="${c.name}"
+                                    th:data-desc="${c.description ?: ''}">
                                     <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+c.id}"></td>
                                     <td><strong th:text="${c.name}"></strong></td>
                                     <td th:text="${c.description ?: '—'}"></td>
@@ -520,8 +656,45 @@
                 </span>
             </div>
 
+            <div class="filter-bar mb-3 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Buscar factura/cliente</label>
+                        <input type="text" id="invoiceFilterSearch" class="form-control form-control-sm"
+                            placeholder="Nº, Cliente, NIF..." oninput="filterInvoices()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Tipo</label>
+                        <select id="invoiceFilterType" class="form-select form-select-sm" onchange="filterInvoices()">
+                            <option value="">Todos</option>
+                            <option value="factura">Factura</option>
+                            <option value="ticket">Ticket</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Método de Pago</label>
+                        <select id="invoiceFilterMethod" class="form-select form-select-sm" onchange="filterInvoices()">
+                            <option value="">Cualquier método</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Fecha</label>
+                        <input type="date" id="invoiceFilterDate" class="form-control form-control-sm"
+                            onchange="filterInvoices()">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetInvoiceFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="admin-table-wrap">
-                <table class="admin-table">
+                <table class="admin-table" id="invoicesTable">
                     <thead>
                         <tr>
                             <th>ID Venta</th>
@@ -534,8 +707,13 @@
                             <th style="text-align:right">Descargar</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr th:each="sale : ${sales}">
+                    <tbody id="invoicesTableBody">
+                        <tr th:each="sale : ${sales}" class="invoice-row" th:data-id="${sale.id}"
+                            th:data-customer="${sale.customer != null ? sale.customer.name : ''}"
+                            th:data-taxid="${sale.customer != null ? sale.customer.taxId : ''}"
+                            th:data-type="${sale.customer != null ? 'factura' : 'ticket'}"
+                            th:data-method="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
+                            th:data-date="${#temporals.format(sale.createdAt, 'yyyy-MM-dd')}">
                             <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+sale.id}"></td>
                             <td th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                             <td>
@@ -546,7 +724,8 @@
                                 <div th:if="${sale.customer != null}">
                                     <strong th:text="${sale.customer.name}"></strong>
                                     <div style="font-size:0.75rem;color:var(--text-muted)"
-                                        th:text="${sale.customer.taxId}"></div>
+                                        th:text="${sale.customer.taxId}">
+                                    </div>
                                 </div>
                                 <span th:unless="${sale.customer != null}" style="color:var(--text-muted)">—
                                     Consumidor Final —</span>
@@ -591,8 +770,29 @@
                 </span>
             </div>
 
+            <div class="filter-bar mb-3 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <label class="form-label small text-muted mb-1">Buscar por trabajador</label>
+                        <input type="text" id="cashFilterWorker" class="form-control form-control-sm"
+                            placeholder="Nombre de usuario..." oninput="filterCashClosures()">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small text-muted mb-1">Fecha (DD/MM/YYYY)</label>
+                        <input type="text" id="cashFilterDate" class="form-control form-control-sm"
+                            placeholder="Ej: 03/03/2026..." oninput="filterCashClosures()">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCashFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="admin-table-wrap">
-                <table class="admin-table">
+                <table class="admin-table" id="cashClosuresTable">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -605,8 +805,11 @@
                             <th style="text-align:right">Descargar</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr th:each="register : ${cashRegisters}">
+                    <tbody id="cashClosuresTableBody">
+                        <tr th:each="register : ${cashRegisters}" class="cash-row"
+                            th:data-worker="${register.worker != null ? register.worker.username : 'Sistema'}"
+                            th:data-open-date="${#temporals.format(register.openingTime, 'dd/MM/yyyy')}"
+                            th:data-close-date="${#temporals.format(register.closedAt, 'dd/MM/yyyy')}">
                             <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+register.id}"></td>
                             <td th:text="${#temporals.format(register.openingTime, 'dd/MM/yyyy HH:mm')}"></td>
                             <td th:text="${#temporals.format(register.closedAt, 'dd/MM/yyyy HH:mm')}"></td>
@@ -664,33 +867,98 @@
                 </button>
             </div>
 
+            <div class="filter-bar mb-3 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Buscar por nombre</label>
+                        <input type="text" id="workerFilterName" class="form-control form-control-sm"
+                            placeholder="Usuario..." oninput="filterWorkers()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Rol</label>
+                        <select id="workerFilterRole" class="form-select form-select-sm" onchange="filterWorkers()">
+                            <option value="">Cualquier Rol</option>
+                            <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Estado</label>
+                        <select id="workerFilterStatus" class="form-select form-select-sm" onchange="filterWorkers()">
+                            <option value="">Todos</option>
+                            <option value="true">Activos</option>
+                            <option value="false">Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Permisos (requiere todos los marcados)</label>
+                        <div class="d-flex flex-wrap gap-2 p-2 rounded border"
+                            style="background: rgba(255,255,255,0.02);">
+                            <div class="form-check">
+                                <input class="form-check-input worker-filter-perm" type="checkbox" value="ADMIN_ACCESS"
+                                    id="wf_admin" onchange="filterWorkers()">
+                                <label class="form-check-label x-small" for="wf_admin">ADMIN</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input worker-filter-perm" type="checkbox" value="CASH_CLOSE"
+                                    id="wf_cash" onchange="filterWorkers()">
+                                <label class="form-check-label x-small" for="wf_cash">CAJA</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input worker-filter-perm" type="checkbox"
+                                    value="MANAGE_PRODUCTS_TPV" id="wf_stock" onchange="filterWorkers()">
+                                <label class="form-check-label x-small" for="wf_stock">INV</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetWorkerFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+                <div id="workerCountLabel" class="text-muted small mt-2">
+                    Mostrando todas las fichas de trabajadores.
+                </div>
+            </div>
+
             <div class="admin-table-wrap mb-5">
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Nombre de usuario</th>
+                            <th>Rol</th>
                             <th>Estado</th>
                             <th>Permisos</th>
                             <th style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="w : ${workers}">
+                        <tr th:each="w : ${workers}" class="worker-row" th:data-username="${w.username}"
+                            th:data-active="${w.active}" th:data-role-id="${w.role != null ? w.role.id : ''}"
+                            th:data-permissions="${#strings.listJoin(w.getEffectivePermissions(), ',')}">
                             <td><strong th:text="${w.username}"></strong></td>
+                            <td>
+                                <span th:if="${w.role != null}" class="badge bg-info text-dark"
+                                    style="font-size:0.75rem" th:text="${w.role.name}"></span>
+                                <span th:unless="${w.role != null}" class="text-muted small">Sin rol</span>
+                            </td>
                             <td>
                                 <span th:if="${w.active}" class="badge bg-success">Activo</span>
                                 <span th:unless="${w.active}" class="badge bg-danger">Inactivo</span>
                             </td>
                             <td>
-                                <span th:each="perm : ${w.permissions}" class="badge bg-secondary me-1"
-                                    th:text="${perm}"></span>
-                                <span th:if="${#lists.isEmpty(w.permissions)}" class="text-muted small">Sin
+                                <span th:each="perm : ${w.getEffectivePermissions()}" class="badge bg-secondary me-1"
+                                    th:text="${perm}" style="font-size: 0.65rem;"></span>
+                                <span th:if="${#lists.isEmpty(w.getEffectivePermissions())}"
+                                    class="text-muted small">Sin
                                     permisos</span>
                             </td>
                             <td style="text-align:right">
                                 <button class="btn-action" th:data-id="${w.id}" th:data-username="${w.username}"
                                     th:data-active="${w.active}" th:data-permissions="${w.permissions}"
-                                    onclick="openWorkerModal(this.getAttribute('data-id'), this.getAttribute('data-username'), this.getAttribute('data-active') === 'true', this.getAttribute('data-permissions'))">
+                                    th:data-role="${w.role != null ? w.role.id : ''}"
+                                    onclick="openWorkerModal(this.getAttribute('data-id'), this.getAttribute('data-username'), this.getAttribute('data-active') === 'true', this.getAttribute('data-permissions'), this.getAttribute('data-role'))">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                                 <button class="btn-action btn-action-delete" th:data-id="${w.id}"
@@ -700,7 +968,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(workers)}">
-                            <td colspan="4" class="text-center py-4 text-muted">No hay trabajadores registrados</td>
+                            <td colspan="5" class="text-center py-4 text-muted">No hay trabajadores registrados</td>
                         </tr>
                     </tbody>
                 </table>
@@ -718,9 +986,45 @@
                     </button>
                     <i class="bi bi-shield-lock me-2"></i>Gestión de Roles
                 </span>
-                <button class="btn-nuevo" onclick="openRoleModal()">
-                    <i class="bi bi-plus-lg"></i> Nuevo Rol
-                </button>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="input-group input-group-sm" style="width: 250px;">
+                        <span class="input-group-text bg-surface border-border text-muted"><i
+                                class="bi bi-search"></i></span>
+                        <input type="text" id="roleFilterName" class="form-control" placeholder="Buscar por nombre..."
+                            oninput="filterRoles()">
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Filtrar por Permisos
+                        </button>
+                        <div class="dropdown-menu p-3 bg-surface border-border shadow" style="min-width: 250px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                <span class="fw-bold small">Permisos requeridos</span>
+                                <button class="btn btn-link btn-sm p-0 text-decoration-none x-small"
+                                    onclick="resetRolePermFilters()">Limpiar</button>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input role-filter-perm" type="checkbox" value="ADMIN_ACCESS"
+                                    id="rf_admin" onchange="filterRoles()">
+                                <label class="form-check-label small" for="rf_admin">ADMIN_ACCESS</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input role-filter-perm" type="checkbox" value="CASH_CLOSE"
+                                    id="rf_cash" onchange="filterRoles()">
+                                <label class="form-check-label small" for="rf_cash">CASH_CLOSE</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input role-filter-perm" type="checkbox"
+                                    value="MANAGE_PRODUCTS_TPV" id="rf_stock" onchange="filterRoles()">
+                                <label class="form-check-label small" for="rf_stock">MANAGE_PRODUCTS_TPV</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-nuevo" onclick="openRoleModal()">
+                        <i class="bi bi-plus-lg"></i> Nuevo Rol
+                    </button>
+                </div>
             </div>
 
             <div class="admin-table-wrap">
@@ -756,6 +1060,17 @@
                     </button>
                     <i class="bi bi-graph-up me-2"></i>Análisis de Negocio
                 </span>
+                <div class="d-flex gap-2">
+                    <select id="analyticsPeriod" class="form-select form-select-sm" style="width: 180px;"
+                        onchange="updateAnalytics()">
+                        <option value="today">Hoy</option>
+                        <option value="7days" selected>Últimos 7 días</option>
+                        <option value="1month">Último mes</option>
+                        <option value="6months">Últimos 6 meses</option>
+                        <option value="1year">Último año</option>
+                        <option value="all">Desde siempre</option>
+                    </select>
+                </div>
             </div>
 
             <div class="row g-4 mb-4">
@@ -764,7 +1079,7 @@
                         <div class="stats-icon"><i class="bi bi-currency-euro"></i></div>
                         <div class="stats-data">
                             <div class="stats-value" id="statTodayRevenue">0.00 &euro;</div>
-                            <div class="stats-label">Ventas Hoy</div>
+                            <div class="stats-label" id="statRevenueLabel">Ventas</div>
                         </div>
                     </div>
                 </div>
@@ -773,7 +1088,7 @@
                         <div class="stats-icon"><i class="bi bi-cart-check"></i></div>
                         <div class="stats-data">
                             <div class="stats-value" id="statTodaySales">0</div>
-                            <div class="stats-label">Pedidos Hoy</div>
+                            <div class="stats-label" id="statSalesLabel">Pedidos</div>
                         </div>
                     </div>
                 </div>
@@ -832,8 +1147,40 @@
                 </button>
             </div>
 
+            <div class="filter-bar mb-3 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <label class="form-label small text-muted mb-1">Buscar cliente</label>
+                        <input type="text" id="crmFilterSearch" class="form-control form-control-sm"
+                            placeholder="Nombre, NIF, Email, Teléfono..." oninput="filterCRM()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Tipo</label>
+                        <select id="crmFilterType" class="form-select form-select-sm" onchange="filterCRM()">
+                            <option value="">Todos los tipos</option>
+                            <option value="INDIVIDUAL">Particular</option>
+                            <option value="COMPANY">Empresa / Profesional</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">R.E.</label>
+                        <select id="crmFilterRE" class="form-select form-select-sm" onchange="filterCRM()">
+                            <option value="">Todos</option>
+                            <option value="yes">Con Recargo</option>
+                            <option value="no">Sin Recargo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCRMFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="admin-table-wrap">
-                <table class="admin-table">
+                <table class="admin-table" id="crmTable">
                     <thead>
                         <tr>
                             <th>Nombre</th>
@@ -846,8 +1193,11 @@
                             <th style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr th:each="c : ${customers}">
+                    <tbody id="crmTableBody">
+                        <tr th:each="c : ${customers}" class="crm-row" th:data-name="${c.name}"
+                            th:data-taxid="${c.taxId ?: ''}" th:data-email="${c.email ?: ''}"
+                            th:data-phone="${c.phone ?: ''}" th:data-city="${c.city ?: ''}" th:data-type="${c.type}"
+                            th:data-re="${c.hasRecargoEquivalencia ? 'yes' : 'no'}">
                             <td><strong th:text="${c.name}"></strong></td>
                             <td th:text="${c.taxId ?: '—'}"></td>
                             <td th:text="${c.email ?: '—'}"></td>
@@ -928,6 +1278,21 @@
 
             <!-- Tab: Futuros -->
             <div id="preciosTabFuturos">
+                <div class="filter-bar mb-3 p-3 rounded"
+                    style="background: var(--surface); border: 1px solid var(--border);">
+                    <div class="row g-2">
+                        <div class="col-md-10">
+                            <label class="form-label small text-muted mb-1">Buscar por producto</label>
+                            <input type="text" id="futurePriceFilterSearch" class="form-control form-control-sm"
+                                placeholder="Nombre del producto..." oninput="filterFuturePrices()">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFuturePriceFilters()">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="admin-table-wrap">
                     <table class="admin-table" id="tableFuturesPrices">
                         <thead>
@@ -977,7 +1342,8 @@
                         </thead>
                         <tbody id="priceHistoryBody">
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">Selecciona un producto para ver su historial de precios.</td>
+                                <td colspan="7" class="text-center py-4 text-muted">Selecciona un producto para ver su
+                                    historial de precios.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1003,7 +1369,9 @@
                 style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--text-main)">
                 <i class="bi bi-info-circle-fill text-info mt-1"></i>
                 <div>
-                    <strong>Precios Masivos:</strong> Selecciona varios productos y aplica un incremento o decremento porcentual a todos ellos. También puedes establecer una fecha futura para que los cambios entren en vigor automáticamente.
+                    <strong>Precios Masivos:</strong> Selecciona varios productos y aplica un incremento o decremento
+                    porcentual a todos ellos. También puedes establecer una fecha futura para que los cambios entren en
+                    vigor automáticamente.
                 </div>
             </div>
 
@@ -1013,10 +1381,16 @@
                     <div class="mb-3">
                         <label class="form-label fw-600">Seleccionar Productos</label>
                         <div class="d-flex gap-2 mb-2">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(true)">Seleccionar Todos</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(false)">Deseleccionar Todos</button>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                onclick="selectAllBulkProducts(true)">Seleccionar Todos</button>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                onclick="selectAllBulkProducts(false)">Deseleccionar Todos</button>
+                            <input type="text" id="bulkProductSearch" class="form-control form-control-sm ms-auto"
+                                style="max-width:200px" placeholder="🔍 Buscar producto..."
+                                oninput="filterBulkProductList()">
                         </div>
-                        <div class="bulk-product-list" id="bulkProductList" style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px">
+                        <div class="bulk-product-list" id="bulkProductList"
+                            style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px">
                             <div class="text-center text-muted py-3">Cargando productos...</div>
                         </div>
                         <small class="text-muted" id="selectedCountLabel">0 productos seleccionados</small>
@@ -1032,7 +1406,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-600" id="bulkPriceValueLabel">Porcentaje (%)</label>
-                            <input type="number" class="form-control" id="bulkPriceValue" step="0.01" placeholder="Ej: 10 para +10%">
+                            <input type="number" class="form-control" id="bulkPriceValue" step="0.01"
+                                placeholder="Ej: 10 para +10%">
                         </div>
                     </div>
 
@@ -1073,6 +1448,32 @@
                     </button>
                     <i class="bi bi-clock-history me-2"></i>Registro de Actividad Reciente
                 </span>
+            </div>
+
+            <div class="filter-bar mb-4 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Buscar por usuario</label>
+                        <input type="text" id="activityFilterUser" class="form-control form-control-sm"
+                            placeholder="Nombre de usuario..." oninput="filterActivity()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Buscar acción</label>
+                        <input type="text" id="activityFilterAction" class="form-control form-control-sm"
+                            placeholder="Ej: VENTA, ELIMINAR..." oninput="filterActivity()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Fecha</label>
+                        <input type="date" id="activityFilterDate" class="form-control form-control-sm"
+                            onchange="filterActivity()">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetActivityFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="activity-feed" id="activityFeedContainer">
@@ -1206,7 +1607,8 @@
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background:var(--secondary);color:var(--text-main);border-color:var(--border);">
+            <div class="modal-content"
+                style="background:var(--secondary);color:var(--text-main);border-color:var(--border);">
                 <div class="modal-header" style="border-color:var(--border);">
                     <h5 class="modal-title" id="roleModalLabel">Rol</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1217,26 +1619,37 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label">Nombre del rol *</label>
-                                <input type="text" class="form-control" id="roleName" required placeholder="Ej: Cajero, Supervisor">
+                                <input type="text" class="form-control" id="roleName" required
+                                    placeholder="Ej: Cajero, Supervisor">
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Descripción</label>
-                                <input type="text" class="form-control" id="roleDescription" placeholder="Descripción opcional del rol">
+                                <input type="text" class="form-control" id="roleDescription"
+                                    placeholder="Descripción opcional del rol">
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Permisos</label>
-                                <div class="p-3 rounded" style="background:var(--primary); border:1px solid var(--border)">
+                                <div class="p-3 rounded"
+                                    style="background:var(--primary); border:1px solid var(--border)">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" value="MANAGE_PRODUCTS_TPV" id="rolePermProd">
-                                        <label class="form-check-label" for="rolePermProd">Gestionar productos en TPV</label>
+                                        <input class="form-check-input" type="checkbox" value="MANAGE_PRODUCTS_TPV"
+                                            id="rolePermProd">
+                                        <label class="form-check-label" for="rolePermProd">Gestionar productos en
+                                            TPV</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="CASH_CLOSE" id="rolePermCash">
-                                        <label class="form-check-label" for="rolePermCash">Realizar cierres de caja</label>
+                                        <input class="form-check-input" type="checkbox" value="CASH_CLOSE"
+                                            id="rolePermCash">
+                                        <label class="form-check-label" for="rolePermCash">Realizar cierres de
+                                            caja</label>
                                     </div>
-                                    <div class="form-check mt-2" style="border-top: 1px solid var(--border); padding-top: 0.5rem;">
-                                        <input class="form-check-input" type="checkbox" value="ADMIN_ACCESS" id="rolePermAdmin">
-                                        <label class="form-check-label text-danger" for="rolePermAdmin" style="font-weight:700"><i class="bi bi-shield-exclamation me-1"></i>ACCESO TOTAL ADMIN</label>
+                                    <div class="form-check mt-2"
+                                        style="border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                                        <input class="form-check-input" type="checkbox" value="ADMIN_ACCESS"
+                                            id="rolePermAdmin">
+                                        <label class="form-check-label text-danger" for="rolePermAdmin"
+                                            style="font-weight:700"><i class="bi bi-shield-exclamation me-1"></i>ACCESO
+                                            TOTAL ADMIN</label>
                                     </div>
                                 </div>
                             </div>
@@ -1244,7 +1657,8 @@
                     </form>
                 </div>
                 <div class="modal-footer" style="border-color:var(--border);">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" style="flex:1">Cancelar</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
+                        style="flex:1">Cancelar</button>
                     <button type="button" class="btn btn-save" onclick="saveRole()" style="flex:1">Guardar</button>
                 </div>
             </div>
@@ -1285,7 +1699,8 @@
                                 <select class="form-select" id="workerRole" onchange="onWorkerRoleChange()">
                                     <option value="">Sin rol</option>
                                 </select>
-                                <small class="text-muted">Selecciona un rol para auto-completar permisos, o establece permisos manualmente.</small>
+                                <small class="text-muted">Selecciona un rol para auto-completar permisos, o establece
+                                    permisos manualmente.</small>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Permisos</label>
@@ -1380,9 +1795,11 @@
                                 </div>
                             </div>
                             <div class="col-12">
-                                <div class="p-3 rounded" style="background:var(--surface,#f8f9fa);border:1px solid var(--border,#dee2e6)">
+                                <div class="p-3 rounded"
+                                    style="background:var(--surface,#f8f9fa);border:1px solid var(--border,#dee2e6)">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="customerRecargoEquivalencia">
+                                        <input class="form-check-input" type="checkbox"
+                                            id="customerRecargoEquivalencia">
                                         <label class="form-check-label fw-semibold" for="customerRecargoEquivalencia">
                                             <i class="bi bi-percent me-1 text-warning"></i>
                                             Sujeto a Recargo de Equivalencia (R.E.)
@@ -1413,7 +1830,8 @@
     <!-- ══════════════════════════════════════════════════════════════
      MODAL — PROGRAMAR PRECIO TEMPORAL
     ══════════════════════════════════════════════════════════════ -->
-    <div class="modal fade" id="schedulePriceModal" tabindex="-1" aria-labelledby="schedulePriceModalLabel" aria-hidden="true">
+    <div class="modal fade" id="schedulePriceModal" tabindex="-1" aria-labelledby="schedulePriceModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1449,7 +1867,8 @@
                             <div class="col-12">
                                 <label class="form-label" for="spStartDate">Fecha de Inicio *</label>
                                 <input type="datetime-local" class="form-control" id="spStartDate" required>
-                                <small class="text-muted">El precio actual se cerrará automáticamente un segundo antes de esta fecha.</small>
+                                <small class="text-muted">El precio actual se cerrará automáticamente un segundo antes
+                                    de esta fecha.</small>
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="spLabel">Etiqueta (opcional)</label>
@@ -1457,8 +1876,10 @@
                                     placeholder="Ej: Tarifa 2026, Oferta Verano...">
                             </div>
                             <div class="col-12">
-                                <div class="p-2 rounded" style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);font-size:0.8rem">
-                                    <strong><i class="bi bi-percent me-1 text-warning"></i>Recargo de Equivalencia asociado:</strong>
+                                <div class="p-2 rounded"
+                                    style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);font-size:0.8rem">
+                                    <strong><i class="bi bi-percent me-1 text-warning"></i>Recargo de Equivalencia
+                                        asociado:</strong>
                                     <span id="spRecargoPreview" class="ms-2 text-muted">21% IVA → +5,2% RE</span>
                                 </div>
                             </div>

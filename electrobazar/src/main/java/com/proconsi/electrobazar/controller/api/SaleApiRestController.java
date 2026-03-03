@@ -44,6 +44,15 @@ public class SaleApiRestController {
         return ResponseEntity.ok(saleService.getSummaryToday());
     }
 
+    @GetMapping("/range")
+    public ResponseEntity<List<Sale>> getRange(
+            @RequestParam("from") String from,
+            @RequestParam("to") String to) {
+        java.time.LocalDateTime start = java.time.LocalDateTime.parse(from);
+        java.time.LocalDateTime end = java.time.LocalDateTime.parse(to);
+        return ResponseEntity.ok(saleService.findBetween(start, end));
+    }
+
     @GetMapping("/{id}/ticket")
     public ResponseEntity<org.springframework.core.io.Resource> getTicket(@PathVariable Long id) {
         Sale sale = saleService.findById(id);

@@ -28,6 +28,25 @@ public class LoginController {
         if (worker.isPresent()) {
             Worker w = worker.get();
             session.setAttribute("worker", w);
+
+            // Populate Spring Security Context for session-based auth
+            java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = w
+                    .getEffectivePermissions()
+                    .stream()
+                    .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                    .collect(java.util.stream.Collectors.toList());
+
+            org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    w.getUsername(), null, authorities);
+
+            org.springframework.security.core.context.SecurityContext context = org.springframework.security.core.context.SecurityContextHolder
+                    .createEmptyContext();
+            context.setAuthentication(auth);
+            org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+            session.setAttribute(
+                    org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    context);
+
             // Si tiene permiso de acceso admin, le damos la sesión de admin
             if (w.getEffectivePermissions().contains("ADMIN_ACCESS")) {
                 session.setAttribute("admin", true);
@@ -41,7 +60,7 @@ public class LoginController {
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
-        session.removeAttribute("worker");
+        session.invalidate();
         return "redirect:/login";
     }
 }

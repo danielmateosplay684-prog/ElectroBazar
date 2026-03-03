@@ -33,7 +33,7 @@ public class RoleApiRestController {
         Role role = Role.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .permissions(request.getPermissions())
+                .permissions(request.getPermissions() != null ? request.getPermissions() : new java.util.HashSet<>())
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(roleService.save(role));
     }
@@ -42,9 +42,14 @@ public class RoleApiRestController {
     public ResponseEntity<Role> update(@PathVariable Long id, @RequestBody Role request) {
         return roleService.findById(id)
                 .map(existing -> {
-                    existing.setName(request.getName());
+                    if (request.getName() != null)
+                        existing.setName(request.getName());
                     existing.setDescription(request.getDescription());
-                    existing.setPermissions(request.getPermissions());
+                    if (request.getPermissions() != null) {
+                        existing.setPermissions(request.getPermissions());
+                    } else {
+                        existing.getPermissions().clear();
+                    }
                     return ResponseEntity.ok(roleService.save(existing));
                 })
                 .orElse(ResponseEntity.notFound().build());
