@@ -49,26 +49,29 @@ public class ElectrobazarApplication {
 			adminRole.setPermissions(java.util.Set.of("MANAGE_PRODUCTS_TPV", "CASH_CLOSE", "ADMIN_ACCESS"));
 			final com.proconsi.electrobazar.model.Role finalAdminRole = roleRepository.save(adminRole);
 
-			if (workerService.findAll().stream().noneMatch(w -> "root".equals(w.getUsername()))) {
-				com.proconsi.electrobazar.model.Worker defaultWorker = new com.proconsi.electrobazar.model.Worker();
-				defaultWorker.setUsername("root");
-				defaultWorker.setPassword("r00t");
-				defaultWorker.setActive(true);
-				defaultWorker.setRole(finalAdminRole);
-				workerService.save(defaultWorker);
-				System.out.println(">>> Usuario ROOT creado por defecto (root/r00t)");
-			} else {
-				// If root exists, ensure it has the admin role and is active
-				workerService.findAll().stream()
-						.filter(w -> "root".equals(w.getUsername()))
-						.findFirst()
-						.ifPresent(w -> {
-							w.setRole(finalAdminRole);
-							w.setActive(true);
-							workerService.save(w);
-							System.out.println(">>> Usuario ROOT actualizado con rol ADMIN");
-						});
-			}
+			workerService.findAll().stream()
+					.filter(w -> "root".equals(w.getUsername()))
+					.findFirst()
+					.ifPresentOrElse(w -> {
+						// Update existing root
+						w.setRole(finalAdminRole);
+						w.setActive(true);
+						w.getPermissions()
+								.addAll(java.util.Set.of("MANAGE_PRODUCTS_TPV", "CASH_CLOSE", "ADMIN_ACCESS"));
+						workerService.save(w);
+						System.out.println(">>> Usuario ROOT actualizado con rol ADMIN y permisos manuales");
+					}, () -> {
+						// Create new root
+						com.proconsi.electrobazar.model.Worker defaultWorker = new com.proconsi.electrobazar.model.Worker();
+						defaultWorker.setUsername("root");
+						defaultWorker.setPassword("r00t");
+						defaultWorker.setActive(true);
+						defaultWorker.setRole(finalAdminRole);
+						defaultWorker.getPermissions()
+								.addAll(java.util.Set.of("MANAGE_PRODUCTS_TPV", "CASH_CLOSE", "ADMIN_ACCESS"));
+						workerService.save(defaultWorker);
+						System.out.println(">>> Usuario ROOT creado por defecto (root/r00t) con permisos manuales");
+					});
 		};
 	}
 
