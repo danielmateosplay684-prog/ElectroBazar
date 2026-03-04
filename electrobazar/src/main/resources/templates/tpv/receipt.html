@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket de Venta &mdash; ElectroBazar</title>
+    <title th:text="${ticket != null ? 'Ticket ' + ticket.ticketNumber : 'Ticket #' + sale.id} + ' — ElectroBazar'">
+        Ticket de Venta — ElectroBazar</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/icons/favicon.svg}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +26,12 @@
                     <div th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}">25/02/2026 14:30</div>
                     <div style="margin-top: 0.2rem;">Le atendi&oacute;: <strong
                             th:text="${sale.worker != null ? sale.worker.username : 'Sistema'}">Admin</strong></div>
-                    <div style="margin-top: 0.2rem;">N&ordm;: <strong th:text="'#' + ${sale.id}">#1</strong></div>
+                    <div style="margin-top: 0.2rem;">
+                        <span th:if="${ticket != null}">Ticket N&ordm;: <strong
+                                th:text="${ticket.ticketNumber}">T-2026-0001</strong></span>
+                        <span th:unless="${ticket != null}">N&ordm;: <strong
+                                th:text="'#' + ${sale.id}">#1</strong></span>
+                    </div>
                 </div>
             </div>
 

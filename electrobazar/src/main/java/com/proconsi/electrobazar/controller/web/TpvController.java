@@ -220,6 +220,12 @@ public class TpvController {
                     .ifPresent(inv -> model.addAttribute("invoice", inv));
         }
 
+        // Resolve ticket (only if not an invoice)
+        if (!model.containsAttribute("invoice") && !model.containsAttribute("ticket")) {
+            ticketService.findBySaleId(saleId)
+                    .ifPresent(t -> model.addAttribute("ticket", t));
+        }
+
         // Always ensure tax-breakdown variables are in the model.
         // This runs whether the sale is a ticket OR an invoice, and whether we
         // came from a redirect (flash attrs present) or a direct URL (page reload).
