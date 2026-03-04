@@ -187,9 +187,9 @@ public class TpvController {
             } else {
                 pdfData = pdfReportService.generateTicketReport(sale, taxBreakdowns, applyRecargo, totalBase, totalVat,
                         totalRecargo);
-                // Guardar PDF directamente en la entidad Sale (campo pdf_data)
+                // Guardar PDF en StoredDocument (solo para tickets)
                 String filename = String.format("Ticket_%d.pdf", sale.getId());
-                saleService.savePdf(sale.getId(), pdfData, filename);
+                documentService.store(DocumentType.TICKET, sale.getId(), filename, pdfData);
             }
 
             if (invoice != null) {
@@ -405,7 +405,7 @@ public class TpvController {
             String dateStr = register.getClosedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String filename = String.format("Cierre_Caja_%s_ID%d.pdf", dateStr, register.getId());
 
-            cashRegisterService.savePdf(register.getId(), pdfData, filename);
+            documentService.store(DocumentType.CASH_CLOSE, register.getId(), filename, pdfData);
 
             redirectAttributes.addFlashAttribute("successMessage",
                     "Cierre de caja realizado. Diferencia: " + register.getDifference()

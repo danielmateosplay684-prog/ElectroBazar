@@ -1,6 +1,3 @@
-ALTER TABLE invoices MODIFY COLUMN pdf_data LONGBLOB;
-ALTER TABLE invoices MODIFY COLUMN pdf_filename VARCHAR(200);
-
 -- ============================================
 -- Electrobazar Database Schema Initialization
 -- ============================================
@@ -70,8 +67,6 @@ CREATE TABLE IF NOT EXISTS sales (
     received_amount DECIMAL(10,2),
     change_amount DECIMAL(10,2),
     notes VARCHAR(255),
-    pdf_data LONGBLOB,
-    pdf_filename VARCHAR(200),
     FOREIGN KEY (customer_id) REFERENCES customers(id),
     FOREIGN KEY (worker_id) REFERENCES workers(id)
 );
@@ -120,8 +115,6 @@ CREATE TABLE IF NOT EXISTS cash_registers (
     closed_at TIMESTAMP,
     closed BOOLEAN NOT NULL DEFAULT FALSE,
     worker_id BIGINT,
-    pdf_data LONGBLOB,
-    pdf_filename VARCHAR(200),
     FOREIGN KEY (worker_id) REFERENCES workers(id)
 );
 
@@ -174,8 +167,6 @@ CREATE TABLE IF NOT EXISTS invoices (
     created_at TIMESTAMP NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     rectified_by_id BIGINT,
-    pdf_data LONGBLOB,
-    pdf_filename VARCHAR(200),
     CONSTRAINT uc_invoices_invoice_number UNIQUE (invoice_number),
     CONSTRAINT uc_invoices_sale_id UNIQUE (sale_id),
     FOREIGN KEY (sale_id) REFERENCES sales(id),
