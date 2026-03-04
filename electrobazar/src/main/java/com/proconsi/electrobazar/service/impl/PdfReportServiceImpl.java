@@ -92,6 +92,8 @@ public class PdfReportServiceImpl implements PdfReportService {
             BigDecimal totalRecargo) {
 
         log.info("Generating ticket PDF report for Sale ID {}", sale.getId());
+        String htmlContent = ""; // Lo declaro fuera para poder imprimirlo si falla
+
         try {
             // 1. Prepare Thymeleaf context with variables
             Context context = new Context();
@@ -103,12 +105,16 @@ public class PdfReportServiceImpl implements PdfReportService {
             context.setVariable("totalRecargo", totalRecargo);
 
             // 2. Process HTML template
-            String htmlContent = templateEngine.process("reports/ticket-report", context);
+            htmlContent = templateEngine.process("reports/ticket-report", context);
 
             // 3. Convert HTML to PDF using OpenHTMLToPDF in-memory
             try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
                 PdfRendererBuilder builder = new PdfRendererBuilder();
-                builder.withHtmlContent(htmlContent, "classpath:/templates/");
+
+                // FIX: Usar string vacío "" en lugar de "classpath:/templates/"
+                // Esto evita que Railway bloquee la generación por problemas de resolución de
+                // rutas
+                builder.withHtmlContent(htmlContent, "");
                 builder.toStream(os);
                 builder.run();
 
@@ -118,6 +124,11 @@ public class PdfReportServiceImpl implements PdfReportService {
             }
 
         } catch (Exception e) {
+            // SALVAVIDAS: Si falla, esto nos escupirá el HTML exacto que está atragantando
+            // al PDF
+            log.error("================ ERROR HTML CONTENT ================");
+            log.error(htmlContent);
+            log.error("====================================================");
             log.error("Error generating ticket PDF report for Sale ID " + sale.getId(), e);
             throw new RuntimeException("Error generating PDF report: " + e.getMessage(), e);
         }
