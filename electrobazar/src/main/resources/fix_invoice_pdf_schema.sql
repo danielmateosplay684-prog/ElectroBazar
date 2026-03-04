@@ -1,0 +1,2 @@
+ALTER TABLE invoices MODIFY COLUMN pdf_data LONGBLOB;
+ALTER TABLE invoices MODIFY COLUMN pdf_filename VARCHAR(200);

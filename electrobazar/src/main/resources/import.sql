@@ -1,3 +1,6 @@
+ALTER TABLE invoices MODIFY COLUMN pdf_data LONGBLOB;
+ALTER TABLE invoices MODIFY COLUMN pdf_filename VARCHAR(200);
+
 -- ============================================
 -- Electrobazar Database Schema Initialization
 -- ============================================
@@ -167,6 +170,8 @@ CREATE TABLE IF NOT EXISTS invoices (
     created_at TIMESTAMP NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     rectified_by_id BIGINT,
+    pdf_data LONGBLOB,
+    pdf_filename VARCHAR(200),
     CONSTRAINT uc_invoices_invoice_number UNIQUE (invoice_number),
     CONSTRAINT uc_invoices_sale_id UNIQUE (sale_id),
     FOREIGN KEY (sale_id) REFERENCES sales(id),
