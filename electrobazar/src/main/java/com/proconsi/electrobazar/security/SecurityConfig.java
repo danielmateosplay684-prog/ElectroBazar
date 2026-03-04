@@ -31,8 +31,12 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
 
                                                 // ── PUBLIC ENDPOINTS ─────────────────────────────────────────────
-                                                // Web login / logout pages (form-based session auth)
-                                                .requestMatchers("/login", "/logout").permitAll()
+                                                // Static resources
+                                                .requestMatchers("/css/**", "/js/**", "/images/**", "/assets/**",
+                                                                "/webjars/**")
+                                                .permitAll()
+                                                // Web login / logout / register pages and error page
+                                                .requestMatchers("/login", "/logout", "/register", "/error").permitAll()
                                                 // API login endpoint (returns JWT / creates session)
                                                 .requestMatchers("/api/workers/login").permitAll()
 
