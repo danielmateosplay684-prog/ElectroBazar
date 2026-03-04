@@ -17,9 +17,15 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
         @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "customer",
                         "worker" })
+        @Query("SELECT s FROM Sale s ORDER BY s.createdAt DESC")
+        List<Sale> findAllWithDetails();
+
+        @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "customer",
+                        "worker" })
         java.util.Optional<Sale> findById(Long id);
 
-        // Ventas en un rango de fechas (para informes / cierre de caja)
+        @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "customer",
+                        "worker" })
         List<Sale> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 
         // Ventas de hoy

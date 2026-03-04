@@ -1218,14 +1218,28 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label fw-600">Seleccionar Productos</label>
-                        <div class="d-flex gap-2 mb-2">
+                        <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
                             <button class="btn btn-sm btn-outline-secondary"
                                 onclick="selectAllBulkProducts(true)">Seleccionar Todos</button>
                             <button class="btn btn-sm btn-outline-secondary"
                                 onclick="selectAllBulkProducts(false)">Deseleccionar Todos</button>
-                            <input type="text" id="bulkProductSearch" class="form-control form-control-sm ms-auto"
-                                style="max-width:200px" placeholder="🔍 Buscar producto..."
-                                oninput="filterBulkProductList()">
+
+                            <!-- Filter by category -->
+                            <div class="d-flex align-items-center gap-2 ms-auto">
+                                <select id="bulkCategoryFilter" class="form-select form-select-sm"
+                                    style="max-width:180px" onchange="filterBulkProductList()">
+                                    <option value="">Todas las categorías</option>
+                                    <option th:each="c : ${categories}" th:value="${c.name}" th:text="${c.name}">
+                                    </option>
+                                </select>
+                                <button class="btn btn-sm btn-accent" onclick="selectBulkByCategory()"
+                                    style="background:var(--accent); color:var(--primary); font-weight:600; border:none; padding:4px 10px; border-radius:6px;">
+                                    Marcar Categoría
+                                </button>
+                            </div>
+
+                            <input type="text" id="bulkProductSearch" class="form-control form-control-sm"
+                                style="max-width:180px" placeholder="🔍 Buscar..." oninput="filterBulkProductList()">
                         </div>
                         <div class="bulk-product-list" id="bulkProductList"
                             style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px">

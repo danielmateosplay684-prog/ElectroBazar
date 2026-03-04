@@ -38,7 +38,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional(readOnly = true)
     public List<Sale> findAll() {
-        return saleRepository.findAll();
+        return saleRepository.findAllWithDetails();
     }
 
     @Override

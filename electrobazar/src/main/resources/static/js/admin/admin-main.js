@@ -409,8 +409,8 @@ function updateAnalytics() {
     const url = fetchAll ? '/api/sales' : `/api/sales/range?from=${fromDate.toISOString().slice(0, 19)}&to=${now.toISOString().slice(0, 19)}`;
 
     Promise.all([
-        fetch(url).then(r => r.json()),
-        fetch('/api/products').then(r => r.json())
+        fetch(url).then(r => { if (!r.ok) throw new Error('Error al obtener ventas: ' + r.status); return r.json(); }),
+        fetch('/api/products').then(r => { if (!r.ok) throw new Error('Error al obtener productos: ' + r.status); return r.json(); })
     ]).then(([sales, products]) => {
         initCharts(sales, products, period, chartTitle);
     }).catch(err => {
@@ -439,8 +439,8 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
         totalSalesCount++;
         if (sale.lines) {
             sale.lines.forEach(function (line) {
-                var pName = line.productName || 'Producto';
-                productSalesCount[pName] = (productSalesCount[pName] || 0) + line.quantity;
+                var pName = (line.product && line.product.name) ? line.product.name : 'Producto';
+                productSalesCount[pName] = (productSalesCount[pName] || 0) + (line.quantity || 0);
             });
         }
     });
@@ -488,7 +488,14 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
             d.setDate(d.getDate() - i);
             let dStr = d.toISOString().split('T')[0];
             labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
-            let total = salesDataRaw.reduce((sum, s) => (s.createdAt && s.createdAt.split('T')[0] === dStr) ? sum + (s.totalAmount || 0) : sum, 0);
+            let total = salesDataRaw.reduce((sum, s) => {
+                if (!s.createdAt) return sum;
+                try {
+                    // Safe date parsing and comparison
+                    let sDateIso = new Date(s.createdAt).toISOString().split('T')[0];
+                    return (sDateIso === dStr) ? sum + (s.totalAmount || 0) : sum;
+                } catch (e) { return sum; }
+            }, 0);
             datasetsData.push(total);
         }
     } else {
@@ -498,8 +505,11 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
             d.setMonth(d.getMonth() - i);
             labels.push(d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
             let total = salesDataRaw.reduce((sum, s) => {
-                let sDate = new Date(s.createdAt);
-                return (sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear()) ? sum + (s.totalAmount || 0) : sum;
+                if (!s.createdAt) return sum;
+                try {
+                    let sDate = new Date(s.createdAt);
+                    return (sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear()) ? sum + (s.totalAmount || 0) : sum;
+                } catch (e) { return sum; }
             }, 0);
             datasetsData.push(total);
         }
@@ -973,7 +983,7 @@ function renderBulkProductList(products) {
     }
     container.innerHTML = products.map(function (p) {
         var catName = p.category ? p.category.name : 'S/C';
-        return '<div class="form-check bulk-product-item" data-search="' + escHtml(p.name).toLowerCase() + ' ' + escHtml(catName).toLowerCase() + '">'
+        return '<div class="form-check bulk-product-item" data-category="' + escHtml(catName).toLowerCase() + '" data-search="' + escHtml(p.name).toLowerCase() + ' ' + escHtml(catName).toLowerCase() + '">'
             + '<input class="form-check-input bulk-product-checkbox" type="checkbox" value="' + p.id + '" id="bulkProd' + p.id + '" onchange="updateBulkSelectedCount()">'
             + '<label class="form-check-label" for="bulkProd' + p.id + '">'
             + '<strong>' + escHtml(p.name) + '</strong> <small class="text-muted">(' + catName + ' - ' + parseFloat(p.price).toFixed(2) + ' €)</small></label>'
@@ -1448,10 +1458,44 @@ function resetFuturePriceFilters() {
 
 function filterBulkProductList() {
     const query = document.getElementById('bulkProductSearch').value.toLowerCase().trim();
+    const categoryQuery = document.getElementById('bulkCategoryFilter').value.toLowerCase().trim();
+
     document.querySelectorAll('.bulk-product-item').forEach(item => {
         const searchData = (item.getAttribute('data-search') || '');
-        item.style.display = searchData.includes(query) ? 'block' : 'none';
+        const categoryData = (item.getAttribute('data-category') || '');
+
+        let matchesSearch = !query || searchData.includes(query);
+        let matchesCategory = !categoryQuery || categoryData === categoryQuery;
+
+        item.style.display = (matchesSearch && matchesCategory) ? 'block' : 'none';
     });
+}
+
+function selectBulkByCategory() {
+    const categoryQuery = document.getElementById('bulkCategoryFilter').value.toLowerCase().trim();
+    if (!categoryQuery) {
+        showToast('Selecciona primero una categoría del desplegable', 'warning');
+        return;
+    }
+
+    let countAdded = 0;
+    document.querySelectorAll('.bulk-product-item').forEach(item => {
+        const categoryData = (item.getAttribute('data-category') || '');
+        if (categoryData === categoryQuery) {
+            const cb = item.querySelector('.bulk-product-checkbox');
+            if (cb && !cb.checked) {
+                cb.checked = true;
+                countAdded++;
+            }
+        }
+    });
+
+    updateBulkSelectedCount();
+    if (countAdded > 0) {
+        showToast('Se han marcado ' + countAdded + ' productos adicionales');
+    } else {
+        showToast('No hay productos nuevos para marcar en esta categoría', 'info');
+    }
 }
 
 

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a legal invoice or simplified ticket linked to a Sale.
@@ -45,6 +46,7 @@ public class Invoice {
     private int sequenceNumber;
 
     /** The sale this invoice is associated with. One sale → one invoice. */
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sale_id", nullable = false, unique = true)
     private Sale sale;
