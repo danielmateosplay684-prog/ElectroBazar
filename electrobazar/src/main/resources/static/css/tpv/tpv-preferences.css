@@ -23,7 +23,8 @@
         }
 
         body {
-            font-family: 'Barlow', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
+            font-size: var(--main-font-size, 16px);
             background: var(--primary);
             color: var(--text-main);
             min-height: 100vh;
@@ -326,4 +327,74 @@
 
         .theme-flash.active {
             opacity: 0.08;
+        }
+
+        /* ── Advanced Selectors (Font Size & Family) ── */
+        .option-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--primary);
+            border-radius: 12px;
+            padding: 6px;
+        }
+
+        .select-option {
+            flex: 1;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+
+        .select-option:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .select-option.selected {
+            background: var(--accent);
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .font-montserrat {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .font-barlow {
+            font-family: 'Barlow', sans-serif;
+        }
+
+        .font-quicksand {
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        .size-small {
+            font-size: 0.8rem;
+        }
+
+        .size-normal {
+            font-size: 0.9rem;
+        }
+
+        .size-large {
+            font-size: 1.1rem;
+        }
+
+        .size-xl {
+            font-size: 1.3rem;
         }

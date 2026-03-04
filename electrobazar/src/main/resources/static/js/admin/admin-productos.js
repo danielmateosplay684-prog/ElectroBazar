@@ -26,6 +26,8 @@ function openProductModal(id) {
     document.getElementById('productCategory').value = '';
     document.getElementById('productImageUrl').value = '';
     document.getElementById('productActive').checked = true;
+    const ivaEl = document.getElementById('productIvaRate');
+    if (ivaEl) ivaEl.value = '0.21';
     document.getElementById('productModalLabel').textContent = id ? 'Editar Producto' : 'Nuevo Producto';
     previewImage(null);
 
@@ -41,6 +43,7 @@ function openProductModal(id) {
                 document.getElementById('productCategory').value = p.category ? p.category.id : '';
                 document.getElementById('productImageUrl').value = p.imageUrl || '';
                 document.getElementById('productActive').checked = p.active !== false;
+                if (ivaEl) ivaEl.value = p.ivaRate ? p.ivaRate.toString() : '0.21';
                 previewImage(p.imageUrl);
             });
     }
@@ -59,6 +62,7 @@ function saveProduct() {
         stock: parseInt(document.getElementById('productStock').value) || 0,
         active: document.getElementById('productActive').checked,
         imageUrl: document.getElementById('productImageUrl').value.trim() || null,
+        ivaRate: document.getElementById('productIvaRate') ? parseFloat(document.getElementById('productIvaRate').value) : 0.21,
         category: document.getElementById('productCategory').value ? { id: parseInt(document.getElementById('productCategory').value) } : null
     };
 

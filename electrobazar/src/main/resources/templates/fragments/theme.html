@@ -15,8 +15,16 @@
         ──────────────────────────────────────────────────────────────────────
     -->
     <th:block th:fragment="themeScript">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@400;700&family=Quicksand:wght@400;500;600;700&display=swap"
+            rel="stylesheet">
         <style>
             /* Apply theme before render to avoid flash */
+            :root {
+                font-size: var(--main-font-size, 16px);
+            }
         </style>
         <script>
             (function () {
@@ -50,7 +58,15 @@
                     { name: 'Ceniza', primary: '#eef2f7', secondary: '#e4e9f0', surface: '#d8e0ea' },
                 ];
                 const lightFixed = { border: '#dae1e7', muted: '#64748b', text: '#0f172a' };
-                const defaultPrefs = { mode: 'light', lightAccent: 0, lightPrimaryIdx: 0, darkAccent: 7, darkPrimaryIdx: 0 };
+                const defaultPrefs = {
+                    mode: 'light',
+                    lightAccent: 0,
+                    lightPrimaryIdx: 0,
+                    darkAccent: 7,
+                    darkPrimaryIdx: 0,
+                    fontSize: '16px',
+                    fontFamily: "'Barlow', sans-serif"
+                };
 
                 let prefs = JSON.parse(localStorage.getItem('tpv-prefs') || 'null');
                 if (prefs && prefs.darkPrimaryIdx >= darkP.length) prefs.darkPrimaryIdx = 0;
@@ -59,6 +75,10 @@
                     prefs = { ...defaultPrefs, mode: prefs ? prefs.mode : 'dark' };
                     localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
                 }
+
+                // Ensure new fields exist for old users
+                if (!prefs.fontSize) prefs.fontSize = '16px';
+                if (!prefs.fontFamily) prefs.fontFamily = "'Barlow', sans-serif";
 
                 const isDark = prefs.mode === 'dark';
                 let currentAccentIdx = isDark ? prefs.darkAccent : prefs.lightAccent;
@@ -80,6 +100,9 @@
                 rs.setProperty('--primary', p.primary);
                 rs.setProperty('--secondary', p.secondary);
                 rs.setProperty('--surface', p.surface);
+                rs.setProperty('--main-font-size', prefs.fontSize);
+                rs.setProperty('--main-font-family', prefs.fontFamily);
+
                 if (isDark) {
                     rs.setProperty('--border', p.border);
                     rs.setProperty('--text-muted', p.muted);
@@ -106,6 +129,12 @@
                         .forEach(function (img) { img.src = logoFile; });
                     const faviconLink = document.querySelector('link[rel="icon"]');
                     if (faviconLink) faviconLink.href = logoFile;
+
+                    // Root font size for rem/em scaling
+                    document.documentElement.style.fontSize = prefs.fontSize;
+                    // Body font size as fallback
+                    document.body.style.fontSize = prefs.fontSize;
+                    document.body.style.fontFamily = prefs.fontFamily;
                 });
 
                 // ── Live-sync across tabs ───────────────────────────────────
@@ -128,6 +157,11 @@
                     rs2.setProperty('--primary', pal2.primary);
                     rs2.setProperty('--secondary', pal2.secondary);
                     rs2.setProperty('--surface', pal2.surface);
+                    rs2.setProperty('--main-font-size', p2.fontSize || '16px');
+                    rs2.setProperty('--main-font-family', p2.fontFamily || "'Barlow', sans-serif");
+                    document.body.style.fontSize = p2.fontSize || '16px';
+                    document.body.style.fontFamily = p2.fontFamily || "'Barlow', sans-serif";
+
                     if (isDark2) {
                         rs2.setProperty('--border', pal2.border);
                         rs2.setProperty('--text-muted', pal2.muted);

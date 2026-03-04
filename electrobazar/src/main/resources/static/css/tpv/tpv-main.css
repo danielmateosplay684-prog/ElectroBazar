@@ -292,7 +292,8 @@
         }
 
         body {
-            font-family: 'Barlow', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
+            font-size: var(--main-font-size, 16px);
             background: var(--primary);
             color: var(--text-main);
             height: 100vh;
@@ -949,7 +950,7 @@
 
         .pin-panel p {
             color: var(--text-muted);
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             margin-bottom: 1.25rem;
         }
 

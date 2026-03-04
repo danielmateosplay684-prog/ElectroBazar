@@ -10,10 +10,9 @@
 
 
         body {
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
+            font-size: var(--main-font-size, 16px);
             background: var(--primary);
-            color: var(--text-main);
-            font-family: 'Barlow', sans-serif;
-            min-height: 100vh;
         }
 
         .container {

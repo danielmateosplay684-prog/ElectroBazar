@@ -69,6 +69,15 @@
         root.setProperty('--primary', p.primary);
         root.setProperty('--secondary', p.secondary);
         root.setProperty('--surface', p.surface);
+        root.setProperty('--main-font-size', prefs.fontSize || '16px');
+        root.setProperty('--main-font-family', prefs.fontFamily || "'Barlow', sans-serif");
+
+        // Root font size for rem/em scaling
+        document.documentElement.style.fontSize = prefs.fontSize || '16px';
+        // Body font size as fallback
+        document.body.style.fontSize = prefs.fontSize || '16px';
+        document.body.style.fontFamily = prefs.fontFamily || "'Barlow', sans-serif";
+
         if (isDark) {
             root.setProperty('--border', p.border);
             root.setProperty('--text-muted', p.muted);
@@ -111,6 +120,19 @@
         localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
         if (animate) triggerFlash();
         renderSwatches();
+        renderFontOptions();
+    }
+
+    function renderFontOptions() {
+        const sizeOptions = document.querySelectorAll('#sizeSelector .select-option');
+        sizeOptions.forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.size === prefs.fontSize);
+        });
+
+        const fontOptions = document.querySelectorAll('#fontSelector .select-option');
+        fontOptions.forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.font === prefs.fontFamily);
+        });
     }
 
     function renderSwatches() {
@@ -181,6 +203,20 @@
             prefs.mode = 'light';
             apply(true);
         }
+    });
+
+    document.querySelectorAll('#sizeSelector .select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            prefs.fontSize = opt.dataset.size;
+            apply(true);
+        });
+    });
+
+    document.querySelectorAll('#fontSelector .select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            prefs.fontFamily = opt.dataset.font;
+            apply(true);
+        });
     });
 
     apply(false);

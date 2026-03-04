@@ -10,7 +10,9 @@
         }
 
         body {
-            font-family: 'Barlow', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
+            font-size: var(--main-font-size, 16px);
+            background: #111;
             background: var(--primary);
             color: var(--text-main);
             height: 100vh;
