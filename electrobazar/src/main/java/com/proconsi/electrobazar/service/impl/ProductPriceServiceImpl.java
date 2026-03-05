@@ -138,12 +138,14 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
         ProductPrice newPrice = ProductPrice.builder()
                 .product(product)
-                .price(request.getPrice())
                 .vatRate(vatRate)
                 .startDate(newStartDate)
                 .endDate(null) // Open-ended: no scheduled expiry
                 .label(request.getLabel())
                 .build();
+
+        // Use setPrice to handle the Gross -> Net conversion automatically
+        newPrice.setPrice(request.getPrice());
 
         ProductPrice saved = productPriceRepository.save(newPrice);
 
@@ -346,12 +348,14 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                 // Create new scheduled price
                 ProductPrice newPriceEntity = ProductPrice.builder()
                         .product(product)
-                        .price(newPrice)
                         .vatRate(vatRate)
                         .startDate(effectiveDate)
                         .endDate(null)
                         .label(request.getLabel())
                         .build();
+
+                // Use setPrice to handle the Gross -> Net conversion automatically
+                newPriceEntity.setPrice(newPrice);
 
                 ProductPrice saved = productPriceRepository.save(newPriceEntity);
 

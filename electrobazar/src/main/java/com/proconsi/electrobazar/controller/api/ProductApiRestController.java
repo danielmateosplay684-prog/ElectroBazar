@@ -60,8 +60,14 @@ public class ProductApiRestController {
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setIvaRate(request.getIvaRate());
+        product.setIvaRate(request.getIvaRate()); // Set rate first for calculations
+
+        if (request.getBasePriceNet() != null) {
+            product.setBasePriceNet(request.getBasePriceNet());
+        } else {
+            product.setPrice(request.getPrice());
+        }
+
         product.setStock(request.getStock() != null ? request.getStock() : 0);
         product.setImageUrl(request.getImageUrl());
 

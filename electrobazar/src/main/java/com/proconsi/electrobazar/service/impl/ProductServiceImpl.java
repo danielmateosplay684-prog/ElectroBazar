@@ -85,11 +85,18 @@ public class ProductServiceImpl implements ProductService {
         Product existing = findById(id);
         existing.setName(updated.getName());
         existing.setDescription(updated.getDescription());
-        existing.setPrice(updated.getPrice());
+        existing.setIvaRate(updated.getIvaRate()); // Set rate first
+
+        // If the update object came with a specific net base price, use it
+        if (updated.getBasePriceNet() != null && updated.getBasePriceNet().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            existing.setBasePriceNet(updated.getBasePriceNet());
+        } else {
+            existing.setPrice(updated.getPrice());
+        }
+
         existing.setActive(updated.getActive());
         existing.setImageUrl(updated.getImageUrl());
         existing.setCategory(updated.getCategory());
-        existing.setIvaRate(updated.getIvaRate());
 
         // El stock se puede actualizar manualmente para corregir errores de datos
         if (updated.getStock() != null && updated.getStock() >= 0) {

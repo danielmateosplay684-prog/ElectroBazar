@@ -40,13 +40,38 @@ public class ProductPrice {
     private Product product;
 
     /**
-     * The price value. Uses BigDecimal for monetary precision.
-     * Convention: Prices are stored VAT-inclusive. Net prices are derived for
-     * fiscal reporting.
-     * This field represents the Gross Price (Final Price to consumer).
+     * The net base price (before VAT).
+     * Convention: This is the primary stored value.
      */
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
+    @Column(name = "base_price_net", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal basePriceNet = java.math.BigDecimal.ZERO;
+
+    /**
+     * Returns the Gross Price (VAT included).
+     * Calculated on the fly: basePriceNet * (1 + vatRate)
+     */
+    public java.math.BigDecimal getPrice() {
+        if (basePriceNet == null)
+            return java.math.BigDecimal.ZERO;
+        java.math.BigDecimal rate = vatRate != null ? vatRate : new java.math.BigDecimal("0.21");
+        return basePriceNet.multiply(java.math.BigDecimal.ONE.add(rate))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Sets the Net price based on a Gross price input.
+     * basePriceNet = grossPrice / (1 + vatRate)
+     */
+    public void setPrice(java.math.BigDecimal grossPrice) {
+        if (grossPrice == null) {
+            this.basePriceNet = java.math.BigDecimal.ZERO;
+            return;
+        }
+        java.math.BigDecimal rate = vatRate != null ? vatRate : new java.math.BigDecimal("0.21");
+        this.basePriceNet = grossPrice.divide(java.math.BigDecimal.ONE.add(rate), 10, java.math.RoundingMode.HALF_UP)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+    }
 
     /**
      * The VAT rate applicable to this product price (e.g., 0.21 for 21%).
