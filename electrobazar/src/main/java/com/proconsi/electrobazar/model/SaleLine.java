@@ -42,4 +42,16 @@ public class SaleLine {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(nullable = false, precision = 10, scale = 2, name = "base_amount")
+    private BigDecimal baseAmount;
+
+    @Column(nullable = false, precision = 10, scale = 2, name = "vat_amount")
+    private BigDecimal vatAmount;
+
+    @Column(nullable = false, precision = 5, scale = 4, name = "recargo_rate")
+    private BigDecimal recargoRate;
+
+    @Column(nullable = false, precision = 10, scale = 2, name = "recargo_amount")
+    private BigDecimal recargoAmount;
 }

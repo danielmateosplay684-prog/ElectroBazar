@@ -77,6 +77,10 @@ public class SaleServiceImpl implements SaleService {
 
         // Calcular subtotales y total usando el calculador de impuestos
         BigDecimal total = BigDecimal.ZERO;
+        BigDecimal totalBase = BigDecimal.ZERO;
+        BigDecimal totalVat = BigDecimal.ZERO;
+        BigDecimal totalRecargo = BigDecimal.ZERO;
+
         for (SaleLine line : lines) {
             BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
             com.proconsi.electrobazar.dto.TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(
@@ -87,8 +91,16 @@ public class SaleServiceImpl implements SaleService {
                     vatRate,
                     applyRecargo);
 
+            line.setBaseAmount(breakdown.getBaseAmount());
+            line.setVatAmount(breakdown.getVatAmount());
+            line.setRecargoRate(breakdown.getRecargoRate());
+            line.setRecargoAmount(breakdown.getRecargoAmount());
             line.setSubtotal(breakdown.getTotalAmount());
+
             total = total.add(line.getSubtotal());
+            totalBase = totalBase.add(line.getBaseAmount());
+            totalVat = totalVat.add(line.getVatAmount());
+            totalRecargo = totalRecargo.add(line.getRecargoAmount());
         }
 
         BigDecimal changeAmount = null;
@@ -103,6 +115,10 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = Sale.builder()
                 .paymentMethod(paymentMethod)
                 .totalAmount(total)
+                .totalBase(totalBase)
+                .totalVat(totalVat)
+                .totalRecargo(totalRecargo)
+                .applyRecargo(applyRecargo)
                 .receivedAmount(receivedAmount)
                 .changeAmount(changeAmount)
                 .notes(notes)

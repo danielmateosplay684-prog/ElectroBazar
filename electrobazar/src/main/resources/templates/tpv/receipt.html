@@ -14,7 +14,10 @@
 </head>
 
 <body>
-    <div class="page-title"><i class="bi bi-receipt"></i> Ticket de Venta</div>
+    <div class="page-title">
+        <i class="bi" th:classappend="${invoice != null} ? 'bi-receipt-cutoff' : 'bi-receipt'"></i>
+        <span th:text="${invoice != null} ? 'Factura de Venta' : 'Ticket de Venta'">Ticket de Venta</span>
+    </div>
 
     <div class="ticket-wrap">
         <div class="ticket">

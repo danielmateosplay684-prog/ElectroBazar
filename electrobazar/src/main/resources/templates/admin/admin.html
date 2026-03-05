@@ -1603,12 +1603,22 @@
                                 <label class="form-label" for="customerPostalCode">C.P.</label>
                                 <input type="text" class="form-control" id="customerPostalCode" placeholder="28001">
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label" for="customerType">Tipo</label>
-                                <select class="form-select" id="customerType">
-                                    <option value="INDIVIDUAL">Particular</option>
-                                    <option value="COMPANY">Empresa</option>
-                                </select>
+                            <div class="col-md-5">
+                                <label class="form-label d-block">Tipo de Cliente *</label>
+                                <div class="d-flex gap-3 pt-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="customerTypeRadio"
+                                            id="adminTypeIndividual" value="INDIVIDUAL" checked
+                                            onchange="toggleAdminCustomerType()">
+                                        <label class="form-check-label" for="adminTypeIndividual">Particular</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="customerTypeRadio"
+                                            id="adminTypeCompany" value="COMPANY" onchange="toggleAdminCustomerType()">
+                                        <label class="form-check-label" for="adminTypeCompany">Empresa</label>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="customerType" value="INDIVIDUAL">
                             </div>
                             <div class="col-12">
                                 <div class="form-check">
@@ -1616,20 +1626,20 @@
                                     <label class="form-check-label" for="customerActive">Cliente activo</label>
                                 </div>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12" id="adminCustomerReSection" style="display: none;">
                                 <div class="p-3 rounded"
-                                    style="background:var(--surface,#f8f9fa);border:1px solid var(--border,#dee2e6)">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox"
+                                    style="background:rgba(var(--accent-rgb), 0.05); border:1px solid var(--border)">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input ms-0 me-2" type="checkbox"
                                             id="customerRecargoEquivalencia">
-                                        <label class="form-check-label fw-semibold" for="customerRecargoEquivalencia">
-                                            <i class="bi bi-percent me-1 text-warning"></i>
+                                        <label class="form-check-label fw-bold" for="customerRecargoEquivalencia">
+                                            <i class="bi bi-percent me-1 text-accent"></i>
                                             Sujeto a Recargo de Equivalencia (R.E.)
                                         </label>
                                     </div>
-                                    <small class="text-muted d-block mt-1">
-                                        Aplica el recargo de equivalencia español sobre las ventas a este cliente
-                                        (21%→+5,2% | 10%→+1,4% | 4%→+0,5% | 2%→+0,15%).
+                                    <small class="text-muted d-block mt-2 ms-4" style="font-size: 0.8rem;">
+                                        Activa esta opción si el cliente es un minorista en régimen de RE. Se aplicará
+                                        el recargo español según el IVA (21%→5,2%, etc.).
                                     </small>
                                 </div>
                             </div>

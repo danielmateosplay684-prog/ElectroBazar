@@ -47,6 +47,18 @@ public class Sale {
     @Column(precision = 10, scale = 2)
     private BigDecimal changeAmount;
 
+    @Column(nullable = false, precision = 10, scale = 2, name = "total_base")
+    @Builder.Default
+    private BigDecimal totalBase = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 10, scale = 2, name = "total_vat")
+    @Builder.Default
+    private BigDecimal totalVat = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 10, scale = 2, name = "total_recargo")
+    @Builder.Default
+    private BigDecimal totalRecargo = BigDecimal.ZERO;
+
     @Column(length = 255)
     private String notes;
 

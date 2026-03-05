@@ -652,14 +652,39 @@ function openCustomerModal(id) {
                 document.getElementById('customerAddress').value = c.address || '';
                 document.getElementById('customerCity').value = c.city || '';
                 document.getElementById('customerPostalCode').value = c.postalCode || '';
-                document.getElementById('customerType').value = c.type || 'INDIVIDUAL';
+
+                var type = c.type || 'INDIVIDUAL';
+                document.getElementById('customerType').value = type;
+                if (type === 'COMPANY') {
+                    document.getElementById('adminTypeCompany').checked = true;
+                } else {
+                    document.getElementById('adminTypeIndividual').checked = true;
+                }
+
                 document.getElementById('customerActive').checked = c.active !== false;
                 // Load Recargo de Equivalencia flag
                 document.getElementById('customerRecargoEquivalencia').checked = c.hasRecargoEquivalencia === true;
+
+                toggleAdminCustomerType();
             })
             .catch(function () { showToast('Error al cargar el cliente', 'error'); });
+    } else {
+        toggleAdminCustomerType();
     }
     customerModal.show();
+}
+
+function toggleAdminCustomerType() {
+    var isCompany = document.getElementById('adminTypeCompany').checked;
+    document.getElementById('customerType').value = isCompany ? 'COMPANY' : 'INDIVIDUAL';
+
+    var reSection = document.getElementById('adminCustomerReSection');
+    if (reSection) {
+        reSection.style.display = isCompany ? 'block' : 'none';
+        if (!isCompany) {
+            document.getElementById('customerRecargoEquivalencia').checked = false;
+        }
+    }
 }
 
 function saveCustomer() {

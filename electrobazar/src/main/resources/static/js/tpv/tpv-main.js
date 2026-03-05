@@ -278,6 +278,15 @@ function toggleCustomerType() {
             taxInput.removeAttribute('required');
         }
     }
+
+    // Show RE toggle only for Companies
+    var reSection = document.getElementById('newCustomerReSection');
+    if (reSection) {
+        reSection.style.display = isCompany ? 'block' : 'none';
+        if (!isCompany) {
+            document.getElementById('newCustomerHasRecargo').checked = false;
+        }
+    }
 }
 
 function showError(msg) {
@@ -392,6 +401,7 @@ function processSaleWithInvoiceValidation() {
         var postalCode = document.getElementById('newCustomerPostalCode').value.trim();
         var email = document.getElementById('newCustomerEmail').value.trim();
         var phone = document.getElementById('newCustomerPhone').value.trim();
+        var hasRecargo = document.getElementById('newCustomerHasRecargo').checked;
 
         // Validación básica: sólo _nombre_ siempre, y CIF/NIF sólo cuando sea estrictamente necesario
         if (!name) {
@@ -408,7 +418,18 @@ function processSaleWithInvoiceValidation() {
             return;
         }
 
-        var newCustomer = { name: name, taxId: taxId, address: address, city: city, postalCode: postalCode, email: email, phone: phone, type: type, active: true };
+        var newCustomer = {
+            name: name,
+            taxId: taxId,
+            address: address,
+            city: city,
+            postalCode: postalCode,
+            email: email,
+            phone: phone,
+            type: type,
+            active: true,
+            hasRecargoEquivalencia: hasRecargo
+        };
 
         fetch('/api/customers', {
             method: 'POST',
