@@ -18,7 +18,7 @@ public class ActivityLog {
     private Long id;
 
     @Column(nullable = false, length = 50)
-    private String action; // e.g. "CREATE_PRODUCT", "SALE", "CASH_CLOSE"
+    private String action; // e.g. "CREATE_PRODUCT", "SALE", "CASH_CLOSE"a
 
     @Column(nullable = false, length = 255)
     private String description;
