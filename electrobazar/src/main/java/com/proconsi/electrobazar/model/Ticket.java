@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a simplified ticket (factura simplificada) linked to a Sale.
@@ -44,7 +45,7 @@ public class Ticket {
     @Column(name = "sequence_number", nullable = false)
     private int sequenceNumber;
 
-    /** The sale this ticket is associated with. One sale -> one ticket/invoice. */
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sale_id", nullable = false, unique = true)
     private Sale sale;

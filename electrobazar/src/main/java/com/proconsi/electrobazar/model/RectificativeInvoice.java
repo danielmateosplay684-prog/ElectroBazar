@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Represents a corrective invoice (Factura Rectificativa) generated for a
  * return
@@ -29,6 +31,7 @@ public class RectificativeInvoice {
     private String rectificativeNumber;
 
     /** The return record this invoice belongs to. */
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_return_id", nullable = false, unique = true)
     private SaleReturn saleReturn;

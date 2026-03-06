@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Represents a single product line within a return operation.
  * Links back to the original SaleLine to track exactly which line
@@ -24,6 +26,7 @@ public class ReturnLine {
     private Long id;
 
     /** The return this line belongs to. */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "return_id", nullable = false)
     private SaleReturn saleReturn;

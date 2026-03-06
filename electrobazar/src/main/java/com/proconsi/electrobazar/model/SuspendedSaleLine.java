@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * One product line within a suspended sale.
  * Stores the product, quantity and unit price at the time of suspension
@@ -24,6 +26,7 @@ public class SuspendedSaleLine {
     private Long id;
 
     /** The suspended sale this line belongs to. */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "suspended_sale_id", nullable = false)
     private SuspendedSale suspendedSale;
