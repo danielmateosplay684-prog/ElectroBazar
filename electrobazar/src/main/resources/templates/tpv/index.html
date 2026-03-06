@@ -69,9 +69,9 @@
                     style="background: var(--accent); color: var(--primary); padding: 0.5rem 1rem; border-radius: 10px; text-decoration: none; font-weight: 700; border: none; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; font-size: 0.82rem; letter-spacing: 0.3px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: all 0.2s ease;">
                     <i class="bi bi-cash-register"></i> Cierre de caja
                 </a>
-                <button type="button" class="btn-action-tpv flex-shrink-0" id="btnWithdrawal" title="Retirada de caja"
+                <button type="button" class="btn-action-tpv flex-shrink-0" id="btnWithdrawal" title="Movimiento de caja"
                     data-bs-toggle="modal" data-bs-target="#withdrawalModal">
-                    <i class="bi bi-box-arrow-up"></i> <span>Retirada</span>
+                    <i class="bi bi-cash-stack"></i> <span>Movimiento</span>
                 </button>
             </th:block>
 
@@ -484,21 +484,42 @@
         </div>
     </div>
 
-    <!-- ── MODAL: Retirada de caja ── -->
+    <!-- ── MODAL: Movimiento de caja (Entrada/Salida) ── -->
     <div class="modal fade" id="withdrawalModal" tabindex="-1">
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header" style="border-color: var(--border);">
-                    <h6 class="modal-title"><i class="bi bi-box-arrow-up me-2"></i>Retirada de efectivo</h6>
+                    <h6 class="modal-title"><i class="bi bi-cash-stack me-2"></i>Movimiento de caja</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
                 <form th:action="@{/tpv/withdrawal}" method="post">
                     <div class="modal-body">
+                        <!-- Selector de Tipo -->
                         <div class="mb-3">
-                            <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">Importe a
-                                retirar</label>
+                            <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">Tipo de
+                                movimiento</label>
+                            <div class="d-flex gap-2">
+                                <input type="radio" class="btn-check" name="type" id="typeWithdrawal" value="WITHDRAWAL"
+                                    checked autocomplete="off">
+                                <label class="btn btn-outline-danger btn-sm w-100 fw-bold" for="typeWithdrawal"
+                                    style="font-size: 0.75rem;">
+                                    <i class="bi bi-box-arrow-up me-1"></i>Retirar
+                                </label>
+
+                                <input type="radio" class="btn-check" name="type" id="typeEntry" value="ENTRY"
+                                    autocomplete="off">
+                                <label class="btn btn-outline-success btn-sm w-100 fw-bold" for="typeEntry"
+                                    style="font-size: 0.75rem;">
+                                    <i class="bi bi-box-arrow-down me-1"></i>Añadir
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"
+                                style="font-size:0.85rem; color: var(--text-muted);">Importe</label>
                             <div class="input-group">
                                 <span class="input-group-text"
                                     style="background: var(--primary); border-color: var(--border); color: var(--text-muted);">&euro;</span>
@@ -511,7 +532,7 @@
                             <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">Motivo
                                 (opcional)</label>
                             <input type="text" name="reason" class="form-control"
-                                placeholder="Ej: Pago a proveedor, cambio..."
+                                placeholder="Ej: Pago a proveedor, fondo extra..."
                                 style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                     </div>
@@ -536,26 +557,27 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
-                <form th:action="@{/tpv/return/search}" method="get">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">ID de Venta o
-                                Número de Ticket</label>
-                            <input type="text" name="query" class="form-control" placeholder="Ej: 123 o T-2026-0001"
-                                required
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <small style="color: var(--text-muted); font-size:0.78rem;">
-                            Introduce el número que aparece en la parte superior del ticket.
-                        </small>
+                <div class="modal-body">
+                    <div id="returnSearchError" class="alert alert-danger py-2 mb-3"
+                        style="display:none; font-size: 0.8rem;"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">ID de Venta o
+                            Número de Ticket</label>
+                        <input type="text" id="returnQueryInput" class="form-control"
+                            placeholder="Ej: 123 o T-2026-0001"
+                            style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                     </div>
-                    <div class="modal-footer" style="border-color: var(--border);">
-                        <button type="button" class="btn" data-bs-dismiss="modal"
-                            style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
-                        <button type="submit" class="btn"
-                            style="background: var(--accent); color: var(--primary); font-weight: 600;">Buscar</button>
-                    </div>
-                </form>
+                    <small style="color: var(--text-muted); font-size:0.78rem;">
+                        Introduce el número que aparece en la parte superior del ticket.
+                    </small>
+                </div>
+                <div class="modal-footer" style="border-color: var(--border);">
+                    <button type="button" class="btn" data-bs-dismiss="modal"
+                        style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
+                    <button type="button" class="btn" id="btnSubmitReturnSearch" onclick="handleReturnSearch()"
+                        style="background: var(--accent); color: var(--primary); font-weight: 600;">Buscar</button>
+                </div>
             </div>
         </div>
     </div>

@@ -37,6 +37,16 @@ public class CashWithdrawal {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MovementType type = MovementType.WITHDRAWAL;
+
+    public enum MovementType {
+        WITHDRAWAL, // EXIT
+        ENTRY // ADD
+    }
+
     @PrePersist
     public void prePersist() {
         if (this.createdAt == null) {

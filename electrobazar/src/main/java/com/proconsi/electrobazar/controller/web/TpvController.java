@@ -276,8 +276,15 @@ public class TpvController {
         java.math.BigDecimal cashSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CASH);
         java.math.BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
 
-        java.math.BigDecimal totalWithdrawals = cashWithdrawalService.findByRegisterId(openRegister.getId()).stream()
-                .map(CashWithdrawal::getAmount)
+        List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(openRegister.getId());
+        java.math.BigDecimal totalWithdrawals = movements.stream()
+                .filter(m -> m.getType() == null || m.getType() == CashWithdrawal.MovementType.WITHDRAWAL)
+                .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        java.math.BigDecimal totalEntries = movements.stream()
+                .filter(m -> m.getType() == CashWithdrawal.MovementType.ENTRY)
+                .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         java.time.LocalDateTime startOfShift = openRegister.getOpeningTime() != null
@@ -288,6 +295,7 @@ public class TpvController {
 
         java.math.BigDecimal expectedCashInDrawer = openRegister.getOpeningBalance()
                 .add(cashSalesToday)
+                .add(totalEntries)
                 .subtract(totalWithdrawals)
                 .subtract(cashRefundsToday);
 
@@ -300,6 +308,7 @@ public class TpvController {
         model.addAttribute("cardSalesToday", saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD));
         model.addAttribute("cardRefundsToday", returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD));
         model.addAttribute("totalWithdrawals", totalWithdrawals);
+        model.addAttribute("totalEntries", totalEntries);
         model.addAttribute("expectedCashInDrawer", expectedCashInDrawer);
         return "tpv/cash-close";
     }
@@ -308,6 +317,7 @@ public class TpvController {
     public String processWithdrawal(
             @RequestParam String amount,
             @RequestParam(required = false) String reason,
+            @RequestParam(required = false, defaultValue = "WITHDRAWAL") String type,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
@@ -316,7 +326,7 @@ public class TpvController {
             return "redirect:/login";
 
         if (!worker.getEffectivePermissions().contains("CASH_CLOSE")) {
-            redirectAttributes.addFlashAttribute("errorMessage", "No tiene permiso para realizar retiradas de caja.");
+            redirectAttributes.addFlashAttribute("errorMessage", "No tiene permiso para realizar movimientos de caja.");
             return "redirect:/tpv";
         }
 
@@ -328,12 +338,16 @@ public class TpvController {
             }
 
             BigDecimal amountDecimal = new BigDecimal(amount.replace(",", "."));
-            cashWithdrawalService.withdraw(openRegister.get().getId(), amountDecimal, reason, worker);
+            CashWithdrawal.MovementType movementType = CashWithdrawal.MovementType.valueOf(type);
 
-            redirectAttributes.addFlashAttribute("successMessage", "Retirada de "
-                    + amountDecimal.setScale(2, RoundingMode.HALF_UP) + " \u20ac realizada correctamente.");
+            cashWithdrawalService.processMovement(openRegister.get().getId(), amountDecimal, reason, movementType,
+                    worker);
+
+            String msg = (movementType == CashWithdrawal.MovementType.ENTRY ? "Entrada" : "Retirada")
+                    + " de " + amountDecimal.setScale(2, RoundingMode.HALF_UP) + " \u20ac realizada correctamente.";
+            redirectAttributes.addFlashAttribute("successMessage", msg);
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error al procesar la retirada: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error al procesar el movimiento: " + e.getMessage());
         }
 
         return "redirect:/tpv";
@@ -426,6 +440,42 @@ public class TpvController {
         return "redirect:/tpv/open-register";
     }
 
+    @GetMapping("/return/check")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> checkTicketForReturn(@RequestParam String query) {
+        try {
+            Long saleId = null;
+            // 1. Try searching by ID
+            if (query.matches("\\d+")) {
+                Long id = Long.parseLong(query);
+                Sale sale = saleService.findById(id);
+                if (sale != null) {
+                    saleId = id;
+                }
+            }
+
+            // 2. Try searching by Ticket Number
+            if (saleId == null) {
+                saleId = ticketService.findByTicketNumber(query)
+                        .map(t -> t.getSale().getId())
+                        .orElse(null);
+            }
+
+            if (saleId != null) {
+                return org.springframework.http.ResponseEntity
+                        .ok(java.util.Collections.singletonMap("redirectUrl", "/tpv/return/" + saleId));
+            } else {
+                return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .body(java.util.Collections.singletonMap("errorMessage", "Ticket no encontrado: " + query));
+            }
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity
+                    .status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Collections.singletonMap("errorMessage",
+                            "Error al buscar el ticket: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/return/search")
     public String searchTicketForReturn(@RequestParam String query, RedirectAttributes redirectAttributes) {
         try {
@@ -513,12 +563,88 @@ public class TpvController {
         if (session.getAttribute("worker") == null) {
             return "redirect:/login";
         }
-        if (!model.containsAttribute("saleReturn")) {
-            SaleReturn saleReturn = returnService.findById(returnId)
+        SaleReturn saleReturn = (SaleReturn) model.getAttribute("saleReturn");
+        if (saleReturn == null) {
+            saleReturn = returnService.findById(returnId)
                     .orElseThrow(() -> new IllegalArgumentException("Return not found: " + returnId));
             model.addAttribute("saleReturn", saleReturn);
         }
         model.addAttribute("autoPrint", autoPrint);
+
+        // Calculate common tax breakdown (positive values for standard receipt)
+        Sale originalSale = saleReturn.getOriginalSale();
+        boolean applyRecargo = originalSale.isApplyRecargo();
+        List<TaxBreakdown> standardBreakdowns = new ArrayList<>();
+
+        for (ReturnLine line : saleReturn.getLines()) {
+            if (line.getSaleLine() == null || line.getSaleLine().getProduct() == null)
+                continue;
+
+            BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
+            TaxBreakdown bd = recargoCalculator.calculateLineBreakdown(
+                    line.getSaleLine().getProduct().getId(), line.getSaleLine().getProduct().getName(),
+                    line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
+            standardBreakdowns.add(bd);
+        }
+
+        model.addAttribute("applyRecargo", applyRecargo);
+        model.addAttribute("totalBase", standardBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        model.addAttribute("totalVat", standardBreakdowns.stream().map(TaxBreakdown::getVatAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        model.addAttribute("totalRecargo", standardBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+
+        // If the return has a rectificative invoice, prepare negative values and use
+        // specific template
+        if (saleReturn.getRectificativeInvoice() != null) {
+            List<TaxBreakdown> negativeBreakdowns = new ArrayList<>();
+            for (TaxBreakdown bd : standardBreakdowns) {
+                negativeBreakdowns.add(TaxBreakdown.builder()
+                        .productId(bd.getProductId())
+                        .productName(bd.getProductName())
+                        .unitPrice(bd.getUnitPrice())
+                        .quantity(bd.getQuantity() * -1)
+                        .baseAmount(bd.getBaseAmount().negate())
+                        .vatRate(bd.getVatRate())
+                        .vatAmount(bd.getVatAmount().negate())
+                        .recargoRate(bd.getRecargoRate())
+                        .recargoAmount(bd.getRecargoAmount().negate())
+                        .totalAmount(bd.getTotalAmount().negate())
+                        .recargoApplied(applyRecargo)
+                        .build());
+            }
+            model.addAttribute("taxBreakdowns", negativeBreakdowns);
+
+            // Re-calculate totals with negative amounts for the invoice
+            model.addAttribute("totalBase", negativeBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            model.addAttribute("totalVat", negativeBreakdowns.stream().map(TaxBreakdown::getVatAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            model.addAttribute("totalRecargo", negativeBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+
+            // Prepare negative lines for the table
+            List<java.util.Map<String, Object>> negativeLines = new ArrayList<>();
+            for (ReturnLine line : saleReturn.getLines()) {
+                if (line.getSaleLine() == null || line.getSaleLine().getProduct() == null)
+                    continue;
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("name", line.getSaleLine().getProduct().getName());
+                map.put("unitPrice", line.getUnitPrice());
+                map.put("quantity", line.getQuantity() * -1);
+                map.put("subtotal", line.getSubtotal().negate());
+                map.put("vatRate", line.getVatRate());
+                map.put("recargoRate", line.getSaleLine().getRecargoRate());
+                negativeLines.add(map);
+            }
+            model.addAttribute("negativeLines", negativeLines);
+            model.addAttribute("totalAmount", saleReturn.getTotalRefunded().negate());
+
+            return "tpv/rectificative-invoice";
+        }
+
+        model.addAttribute("taxBreakdowns", standardBreakdowns);
         return "tpv/return-receipt";
     }
 }

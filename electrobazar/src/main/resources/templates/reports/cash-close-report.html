@@ -289,8 +289,8 @@
             <thead>
                 <tr>
                     <th>Fecha/Hora</th>
-                    <th>Nº Devolución</th>
-                    <th>Ticket Orig.</th>
+                    <th>Nº Documento</th>
+                    <th>Original</th>
                     <th>Método</th>
                     <th class="amount">Importe</th>
                 </tr>
@@ -298,8 +298,12 @@
             <tbody>
                 <tr th:each="ret : ${returns}">
                     <td th:text="${#temporals.format(ret.createdAt, 'HH:mm')}">14:30</td>
-                    <td th:text="${ret.returnNumber}">D-2026-0001</td>
-                    <td th:text="${ret.originalSale.id}">123</td>
+                    <td
+                        th:text="${ret.rectificativeInvoice != null ? ret.rectificativeInvoice.rectificativeNumber : ret.returnNumber}">
+                        D-2026-0001</td>
+                    <td
+                        th:text="${(ret.rectificativeInvoice != null ? ret.rectificativeInvoice.originalInvoice.invoiceNumber : 'Ticket #' + ret.originalSale.id)}">
+                        123</td>
                     <td
                         th:text="${ret.paymentMethod == T(com.proconsi.electrobazar.model.PaymentMethod).CASH ? 'Efectivo' : 'Tarjeta'}">
                         Efectivo</td>

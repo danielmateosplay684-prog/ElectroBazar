@@ -68,18 +68,23 @@
 
             <hr class="t-divider">
 
-            <!-- VAT breakdown (exact, from stored vatRate on each return line) -->
-            <div class="t-summary" style="font-size:0.78rem;color:var(--text-muted)">
-                <span>Base imponible</span>
-                <span th:text="${#numbers.formatDecimal(
-                    #aggregates.sum(saleReturn.lines.![subtotal / (1 + vatRate)]),
-                    1, 2)} + ' €'">0.00 €</span>
+            <!-- VAT breakdown (robust, pre-calculated in controller) -->
+            <div th:each="bd : ${taxBreakdowns}" class="t-summary"
+                style="font-size:0.75rem;color:var(--text-muted); opacity: 0.8;">
+                <span th:text="'Base (' + ${#numbers.formatDecimal(bd.vatRate * 100, 1, 0)} + '%)'">Base (21%)</span>
+                <span th:text="${#numbers.formatDecimal(bd.baseAmount, 1, 2)} + ' €'">0.00 €</span>
             </div>
-            <div class="t-summary" style="font-size:0.78rem;color:var(--text-muted)">
-                <span>IVA</span>
-                <span th:text="${#numbers.formatDecimal(
-                    #aggregates.sum(saleReturn.lines.![subtotal - (subtotal / (1 + vatRate))]),
-                    1, 2)} + ' €'">0.00 €</span>
+            <div th:each="bd : ${taxBreakdowns}" class="t-summary"
+                style="font-size:0.75rem;color:var(--text-muted); opacity: 0.8;">
+                <span th:text="'Cuota IVA (' + ${#numbers.formatDecimal(bd.vatRate * 100, 1, 0)} + '%)'">IVA
+                    (21%)</span>
+                <span th:text="${#numbers.formatDecimal(bd.vatAmount, 1, 2)} + ' €'">0.00 €</span>
+            </div>
+            <div th:if="${applyRecargo}" th:each="bd : ${taxBreakdowns}" class="t-summary"
+                style="font-size:0.75rem;color:var(--text-muted); opacity: 0.8;">
+                <span th:text="'Recargo (' + ${#numbers.formatDecimal(bd.recargoRate * 100, 1, 2)} + '%)'">Recargo
+                    (5.2%)</span>
+                <span th:text="${#numbers.formatDecimal(bd.recargoAmount, 1, 2)} + ' €'">0.00 €</span>
             </div>
 
             <!-- Total refunded -->

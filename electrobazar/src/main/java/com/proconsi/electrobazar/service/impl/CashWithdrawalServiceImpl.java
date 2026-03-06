@@ -25,31 +25,35 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
     private final ActivityLogService activityLogService;
 
     @Override
-    public CashWithdrawal withdraw(Long cashRegisterId, BigDecimal amount, String reason, Worker worker) {
+    public CashWithdrawal processMovement(Long cashRegisterId, BigDecimal amount, String reason,
+            CashWithdrawal.MovementType type, Worker worker) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Importe inválido para la retirada");
+            throw new IllegalArgumentException("Importe inválido");
         }
 
         CashRegister register = cashRegisterRepository.findById(cashRegisterId)
                 .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada con id: " + cashRegisterId));
 
         if (register.getClosed()) {
-            throw new IllegalStateException("No se puede realizar una retirada de una caja ya cerrada");
+            throw new IllegalStateException("No se puede realizar un movimiento en una caja ya cerrada");
         }
 
-        CashWithdrawal withdrawal = CashWithdrawal.builder()
+        CashWithdrawal movement = CashWithdrawal.builder()
                 .cashRegister(register)
                 .amount(amount)
                 .reason(reason)
                 .worker(worker)
+                .type(type)
                 .build();
 
-        CashWithdrawal saved = cashWithdrawalRepository.save(withdrawal);
+        CashWithdrawal saved = cashWithdrawalRepository.save(movement);
 
+        String typeStr = type == CashWithdrawal.MovementType.ENTRY ? "ENTRADA" : "RETIRADA";
         String username = worker != null ? worker.getUsername() : "Anónimo";
+
         activityLogService.logActivity(
-                "RETIRADA_CAJA",
-                "Retirada de caja de " + amount.setScale(2, java.math.RoundingMode.HALF_UP) + " \u20ac" +
+                typeStr + "_CAJA",
+                typeStr + " de caja de " + amount.setScale(2, java.math.RoundingMode.HALF_UP) + " \u20ac" +
                         (reason != null && !reason.isEmpty() ? ". Motivo: " + reason : ""),
                 username,
                 "CASH_REGISTER",

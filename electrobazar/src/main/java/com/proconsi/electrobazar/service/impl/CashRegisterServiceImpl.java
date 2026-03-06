@@ -79,7 +79,14 @@ public class CashRegisterServiceImpl implements CashRegisterService {
                         BigDecimal openingBal = register.getOpeningBalance() != null ? register.getOpeningBalance()
                                         : BigDecimal.ZERO;
 
+                        // Separate withdrawals (OUT) from entries (IN)
                         BigDecimal totalWithdrawals = register.getWithdrawals().stream()
+                                        .filter(w -> w.getType() == com.proconsi.electrobazar.model.CashWithdrawal.MovementType.WITHDRAWAL)
+                                        .map(com.proconsi.electrobazar.model.CashWithdrawal::getAmount)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                        BigDecimal totalEntries = register.getWithdrawals().stream()
+                                        .filter(w -> w.getType() == com.proconsi.electrobazar.model.CashWithdrawal.MovementType.ENTRY)
                                         .map(com.proconsi.electrobazar.model.CashWithdrawal::getAmount)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -96,10 +103,17 @@ public class CashRegisterServiceImpl implements CashRegisterService {
                         register.setClosingBalance(closingBalance != null ? closingBalance : BigDecimal.ZERO);
                         register.setCashRefunds(cashRefunds != null ? cashRefunds : BigDecimal.ZERO);
                         register.setCardRefunds(cardRefunds != null ? cardRefunds : BigDecimal.ZERO);
+
+                        // We use the subtracted sum of withdrawals and entries for the register's
+                        // totalWithdrawals field if we want to keep it simple,
+                        // but it's better to store just the net or the withdrawals only.
+                        // For now, I'll store the net effect: Withdrawals - Entries? No, let's keep
+                        // setTotalWithdrawals for actual withdrawals.
                         register.setTotalWithdrawals(totalWithdrawals != null ? totalWithdrawals : BigDecimal.ZERO);
 
                         BigDecimal expected = openingBal.add(register.getCashSales())
-                                        .subtract(register.getTotalWithdrawals())
+                                        .add(totalEntries)
+                                        .subtract(totalWithdrawals)
                                         .subtract(register.getCashRefunds());
                         register.setDifference(register.getClosingBalance().subtract(expected));
 
@@ -214,6 +228,12 @@ public class CashRegisterServiceImpl implements CashRegisterService {
                                 .orElse(BigDecimal.ZERO);
 
                 BigDecimal totalWithdrawals = register.getWithdrawals().stream()
+                                .filter(w -> w.getType() == com.proconsi.electrobazar.model.CashWithdrawal.MovementType.WITHDRAWAL)
+                                .map(com.proconsi.electrobazar.model.CashWithdrawal::getAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalEntries = register.getWithdrawals().stream()
+                                .filter(w -> w.getType() == com.proconsi.electrobazar.model.CashWithdrawal.MovementType.ENTRY)
                                 .map(com.proconsi.electrobazar.model.CashWithdrawal::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -222,6 +242,7 @@ public class CashRegisterServiceImpl implements CashRegisterService {
 
                 return register.getOpeningBalance()
                                 .add(cashSales)
+                                .add(totalEntries)
                                 .subtract(totalWithdrawals)
                                 .subtract(cashRefunds);
         }

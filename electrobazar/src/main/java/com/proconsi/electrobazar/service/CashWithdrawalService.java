@@ -6,7 +6,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public interface CashWithdrawalService {
-    CashWithdrawal withdraw(Long cashRegisterId, BigDecimal amount, String reason, Worker worker);
+    CashWithdrawal processMovement(Long cashRegisterId, BigDecimal amount, String reason,
+            CashWithdrawal.MovementType type, Worker worker);
 
     List<CashWithdrawal> findByRegisterId(Long registerId);
 }

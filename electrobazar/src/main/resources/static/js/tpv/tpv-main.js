@@ -1015,11 +1015,74 @@ function cleanupModalBackdrop() {
     }, 300);
 }
 
-// Load badge count on page load
-loadSuspendedCount();
+// -- RETURN TICKET SEARCH (AJAX) ---------------------------------------------
+function handleReturnSearch() {
+    var queryInput = document.getElementById('returnQueryInput');
+    var errorDiv = document.getElementById('returnSearchError');
+    var submitBtn = document.getElementById('btnSubmitReturnSearch');
+    var query = queryInput.value.trim();
 
-// Allow Enter key in label modal to confirm suspend
+    if (!query) {
+        queryInput.focus();
+        return;
+    }
+
+    // Reset UI
+    errorDiv.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+    fetch('/tpv/return/check?query=' + encodeURIComponent(query))
+        .then(function (response) {
+            if (!response.ok) {
+                return response.json().then(function (data) {
+                    throw new Error(data.errorMessage || 'Ticket no encontrado');
+                });
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            // Success: Redirect to the return flow
+            window.location.href = data.redirectUrl;
+        })
+        .catch(function (error) {
+            // Error: Show message in modal and refocus
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = 'block';
+            queryInput.focus();
+            queryInput.select();
+        })
+        .finally(function () {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Buscar';
+        });
+}
+
+// Initialization and Event Listeners
 document.addEventListener('DOMContentLoaded', function () {
+    // Return search modal focus and Enter key
+    var returnModal = document.getElementById('returnSearchModal');
+    if (returnModal) {
+        var returnInput = document.getElementById('returnQueryInput');
+
+        returnModal.addEventListener('shown.bs.modal', function () {
+            returnInput.value = '';
+            document.getElementById('returnSearchError').style.display = 'none';
+            returnInput.focus();
+        });
+
+        returnInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleReturnSearch();
+            }
+        });
+    }
+
+    // Load badge count on page load
+    loadSuspendedCount();
+
+    // Allow Enter key in label modal to confirm suspend
     var labelInput = document.getElementById('suspendLabelInput');
     if (labelInput) {
         labelInput.addEventListener('keydown', function (e) {

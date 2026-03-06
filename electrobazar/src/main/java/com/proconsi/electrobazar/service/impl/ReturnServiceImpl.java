@@ -38,6 +38,7 @@ public class ReturnServiceImpl implements ReturnService {
     private final InvoiceSequenceRepository invoiceSequenceRepository;
     private final InvoiceRepository invoiceRepository;
     private final CashRegisterService cashRegisterService;
+    private final RectificativeInvoiceRepository rectificativeInvoiceRepository;
 
     @Override
     @Transactional
@@ -156,9 +157,49 @@ public class ReturnServiceImpl implements ReturnService {
             });
         }
 
+        // Fiscally mandatory in Spain: if original sale had an INVOICE, generate a
+        // "factura rectificativa"
+        if (originalSale.getInvoice() != null) {
+            String rectificativeNumber = generateRectificativeNumber();
+            RectificativeInvoice rectificativeInvoice = RectificativeInvoice.builder()
+                    .rectificativeNumber(rectificativeNumber)
+                    .saleReturn(saved)
+                    .originalInvoice(originalSale.getInvoice())
+                    .reason(reason != null && !reason.isBlank() ? reason : "Devolución de mercancía")
+                    .build();
+            rectificativeInvoiceRepository.save(rectificativeInvoice);
+            saved.setRectificativeInvoice(rectificativeInvoice);
+            log.info("Factura Rectificativa {} generated for return {}", rectificativeNumber, returnNumber);
+        }
+
         log.info("Return {} processed for sale #{}: {} refunded ({})",
                 returnNumber, originalSaleId, totalRefunded, returnType);
         return saved;
+    }
+
+    /**
+     * Generates the next corrective invoice number in format FR-YYYY-NNNN.
+     */
+    private String generateRectificativeNumber() {
+        String serie = "FR";
+        int currentYear = LocalDate.now().getYear();
+
+        InvoiceSequence sequence = invoiceSequenceRepository
+                .findBySerieAndYearForUpdate(serie, currentYear)
+                .orElseGet(() -> {
+                    InvoiceSequence newSeq = InvoiceSequence.builder()
+                            .serie(serie)
+                            .year(currentYear)
+                            .lastNumber(0)
+                            .build();
+                    return invoiceSequenceRepository.save(newSeq);
+                });
+
+        int nextNumber = sequence.getLastNumber() + 1;
+        sequence.setLastNumber(nextNumber);
+        invoiceSequenceRepository.save(sequence);
+
+        return String.format("%s-%d-%04d", serie, currentYear, nextNumber);
     }
 
     /**

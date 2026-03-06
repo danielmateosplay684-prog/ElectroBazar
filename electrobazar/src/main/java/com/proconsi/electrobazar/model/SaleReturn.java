@@ -71,6 +71,10 @@ public class SaleReturn {
     @Builder.Default
     private ReturnStatus status = ReturnStatus.COMPLETED;
 
+    /** The corrective invoice if the original sale had one. */
+    @OneToOne(mappedBy = "saleReturn", cascade = CascadeType.ALL)
+    private RectificativeInvoice rectificativeInvoice;
+
     /** The individual product lines being returned. */
     @OneToMany(mappedBy = "saleReturn", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
