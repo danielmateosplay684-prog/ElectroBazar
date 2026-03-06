@@ -178,26 +178,13 @@ public class TpvController {
             }
 
             if (invoice != null) {
-                // Generamos el reporte para asegurar que los datos son correctos,
-                // aunque ya no se guarda el binario en la base de datos.
-                // Pass the breakdown variables to the invoice report
-                pdfReportService.generateInvoiceReport(sale, invoice, taxBreakdowns, applyRecargo, totalBase, totalVat,
-                        totalRecargo);
-            } else {
-                // Para tickets: guardamos el flag de recargo en la venta y creamos el registro
-                // de ticket correlativo
-                saleService.saveApplyRecargo(sale.getId(), applyRecargo);
-                ticketService.createTicket(sale, applyRecargo);
-
-                // No generamos el PDF aquí para guardarlo, solo lo generamos si fuese necesario
-                // para mostrarlo
-                // (pero el flujo actual redirige al /receipt/{id} que lo regenerará para el
-                // navegador)
-            }
-
-            if (invoice != null) {
+                // For invoices: update success message
                 redirectAttributes.addFlashAttribute("successMessage",
                         "Factura " + invoice.getInvoiceNumber() + " generada.");
+            } else {
+                // For tickets: save recargo flag and create ticket record
+                saleService.saveApplyRecargo(sale.getId(), applyRecargo);
+                ticketService.createTicket(sale, applyRecargo);
             }
         } catch (Exception e) {
             log.error("Error creating document record for sale " + sale.getId(), e);

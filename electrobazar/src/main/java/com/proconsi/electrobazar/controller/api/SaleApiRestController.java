@@ -20,10 +20,7 @@ public class SaleApiRestController {
         private final SaleService saleService;
         private final ProductService productService;
         private final com.proconsi.electrobazar.service.CustomerService customerService;
-        private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
         private final com.proconsi.electrobazar.service.WorkerService workerService;
-        private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
-        private final com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator recargoCalculator;
 
         @GetMapping
         public ResponseEntity<List<Sale>> getAll() {
@@ -52,53 +49,6 @@ public class SaleApiRestController {
                 java.time.LocalDateTime start = java.time.LocalDateTime.parse(from);
                 java.time.LocalDateTime end = java.time.LocalDateTime.parse(to);
                 return ResponseEntity.ok(saleService.findBetween(start, end));
-        }
-
-        @GetMapping("/{id}/ticket")
-        public ResponseEntity<org.springframework.core.io.Resource> getTicket(@PathVariable Long id) {
-                Sale sale = saleService.findById(id);
-                com.proconsi.electrobazar.model.Invoice invoice = invoiceService.findBySaleId(id).orElse(null);
-                // Recalculate tax breakdowns for PDF generation
-                java.util.List<com.proconsi.electrobazar.dto.TaxBreakdown> taxBreakdowns = new java.util.ArrayList<>();
-                boolean applyRecargo = sale.getCustomer() != null
-                                && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
-
-                for (com.proconsi.electrobazar.model.SaleLine line : sale.getLines()) {
-                        java.math.BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate()
-                                        : new java.math.BigDecimal("0.21");
-                        taxBreakdowns.add(recargoCalculator.calculateLineBreakdown(
-                                        line.getProduct().getId(),
-                                        line.getProduct().getName(),
-                                        line.getUnitPrice(),
-                                        line.getQuantity(),
-                                        vatRate,
-                                        applyRecargo));
-                }
-
-                java.math.BigDecimal totalBase = taxBreakdowns.stream()
-                                .map(com.proconsi.electrobazar.dto.TaxBreakdown::getBaseAmount)
-                                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                java.math.BigDecimal totalVat = taxBreakdowns.stream()
-                                .map(com.proconsi.electrobazar.dto.TaxBreakdown::getVatAmount)
-                                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                java.math.BigDecimal totalRecargo = taxBreakdowns.stream()
-                                .map(com.proconsi.electrobazar.dto.TaxBreakdown::getRecargoAmount)
-                                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-
-                byte[] pdfData = pdfReportService.generateSaleDocument(sale, invoice, taxBreakdowns, applyRecargo,
-                                totalBase,
-                                totalVat, totalRecargo);
-
-                String invoiceLabel = invoice != null ? invoice.getInvoiceNumber() : ("Ticket_" + id);
-                String filename = "Ticket_" + invoiceLabel + ".pdf";
-
-                org.springframework.core.io.Resource resource = new org.springframework.core.io.ByteArrayResource(
-                                pdfData);
-                return ResponseEntity.ok()
-                                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                                                "attachment; filename=\"" + filename + "\"")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-                                .body(resource);
         }
 
         @PostMapping

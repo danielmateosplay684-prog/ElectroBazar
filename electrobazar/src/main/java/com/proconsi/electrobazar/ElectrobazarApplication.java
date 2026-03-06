@@ -31,6 +31,21 @@ public class ElectrobazarApplication {
 	}
 
 	public static void main(String[] args) {
+		// Manual loading of .env for reliability in local dev
+		try {
+			java.io.File envFile = new java.io.File(".env");
+			if (envFile.exists()) {
+				java.nio.file.Files.lines(envFile.toPath())
+						.filter(line -> line.contains("=") && !line.trim().startsWith("#"))
+						.forEach(line -> {
+							String[] parts = line.split("=", 2);
+							System.setProperty(parts[0].trim(), parts[1].trim());
+						});
+				System.out.println(">>> Profile variables loaded manually from .env");
+			}
+		} catch (java.io.IOException e) {
+			System.err.println("Could not load .env file manually: " + e.getMessage());
+		}
 		SpringApplication.run(ElectrobazarApplication.class, args);
 	}
 

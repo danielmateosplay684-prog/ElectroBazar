@@ -7,48 +7,49 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 20mm;
+            margin: 15mm;
 
             @bottom-center {
                 content: "Página " counter(page) " de " counter(pages);
                 font-family: 'Helvetica', Arial, sans-serif;
-                font-size: 9pt;
-                color: #7f8c8d;
+                font-size: 8pt;
+                color: #555;
             }
         }
 
         body {
             font-family: 'Helvetica', Arial, sans-serif;
-            color: #2c3e50;
-            line-height: 1.5;
+            color: #000;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
-            background-color: #ffffff;
+            background-color: #fff;
+            font-size: 10pt;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #34495e;
+            border-bottom: 1.5pt solid #000;
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
 
         .header h1 {
-            color: #f39c12;
             margin: 0;
-            font-size: 24pt;
-            letter-spacing: 1px;
+            font-size: 18pt;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .header p {
             margin: 5px 0 0 0;
-            color: #7f8c8d;
             font-size: 10pt;
+            font-weight: bold;
         }
 
         .info-section {
             width: 100%;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .info-table {
@@ -57,32 +58,24 @@
         }
 
         .info-table td {
-            padding: 5px;
+            padding: 4px;
             vertical-align: top;
+            border-bottom: 0.5pt solid #eee;
         }
 
         .info-label {
             font-weight: bold;
-            color: #34495e;
-            width: 150px;
+            width: 120px;
         }
 
-        .card {
-            background-color: #f8f9fa;
-            border: 1px solid #ecf0f1;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            color: #2c3e50;
-            font-size: 14pt;
+        .section-title {
+            font-size: 12pt;
             font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #bdc3c7;
-            padding-bottom: 5px;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1pt solid #000;
+            padding-bottom: 3px;
         }
 
         .data-table {
@@ -93,59 +86,61 @@
 
         .data-table th,
         .data-table td {
-            padding: 10px;
+            padding: 8px;
             text-align: left;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 0.5pt solid #ccc;
         }
 
         .data-table th {
-            background-color: #ecf0f1;
-            color: #34495e;
             font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9pt;
+            background-color: #f2f2f2;
         }
 
         .data-table .amount {
             text-align: right;
             font-family: 'Courier New', Courier, monospace;
             font-weight: bold;
+            font-size: 11pt;
         }
 
         .total-row {
-            background-color: #e8f4f8;
             font-weight: bold;
+            background-color: #f9f9f9;
         }
 
         .total-row td {
-            border-top: 2px solid #3498db;
-        }
-
-        .difference-positive {
-            color: #27ae60;
+            border-top: 1pt solid #000;
+            border-bottom: 1.5pt solid #000;
         }
 
         .difference-negative {
-            color: #c0392b;
-        }
-
-        .difference-neutral {
-            color: #2c3e50;
+            text-decoration: underline;
         }
 
         .notes-section {
-            background-color: #fffcdc;
-            border-left: 4px solid #f1c40f;
-            padding: 15px;
+            border: 1pt solid #000;
+            padding: 10px;
             margin-top: 20px;
-            font-style: italic;
+            font-size: 9pt;
+        }
+
+        .notes-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-size: 8pt;
         }
 
         .footer {
-            margin-top: 40px;
+            margin-top: 30px;
             text-align: center;
-            font-size: 9pt;
-            color: #95a5a6;
-            border-top: 1px solid #ecf0f1;
-            padding-top: 10px;
+            font-size: 8pt;
+            color: #444;
+            border-top: 0.5pt solid #ccc;
+            padding-top: 8px;
         }
     </style>
 </head>
@@ -169,7 +164,7 @@
                 <td class="info-label">Fecha del Día:</td>
                 <td th:text="${#temporals.format(register.registerDate, 'dd/MM/yyyy')}">01/01/2023</td>
                 <td class="info-label">Estado:</td>
-                <td style="color: #27ae60; font-weight: bold;">CERRADO</td>
+                <td style="font-weight: bold;">CERRADO</td>
             </tr>
             <tr>
                 <td class="info-label">Le atendió:</td>
@@ -178,8 +173,8 @@
         </table>
     </div>
 
-    <div class="card">
-        <h2 class="card-title">Resumen de Ventas</h2>
+    <div>
+        <h2 class="section-title">Resumen de Ventas</h2>
         <table class="data-table">
             <thead>
                 <tr>
@@ -211,7 +206,7 @@
                 </tr>
                 <tr>
                     <td>Devoluciones Efectivo</td>
-                    <td class="amount text-danger"
+                    <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €
@@ -219,7 +214,7 @@
                 </tr>
                 <tr>
                     <td>Devoluciones Tarjeta</td>
-                    <td class="amount text-danger"
+                    <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €
@@ -236,8 +231,8 @@
         </table>
     </div>
 
-    <div class="card">
-        <h2 class="card-title">Arqueo de Caja (Efectivo)</h2>
+    <div>
+        <h2 class="section-title">Arqueo de Caja (Efectivo)</h2>
         <table class="data-table">
             <tbody>
                 <tr>
@@ -254,13 +249,13 @@
                 </tr>
                 <tr>
                     <td>(-) Devoluciones en Efectivo</td>
-                    <td class="amount text-danger"
+                    <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(-) Retiradas de Caja</td>
-                    <td class="amount text-danger"
+                    <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(register.totalWithdrawals, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
@@ -279,8 +274,7 @@
                 </tr>
                 <tr class="total-row">
                     <td>Diferencia (Descuadre)</td>
-                    <td class="amount"
-                        th:classappend="${register.difference < 0 ? 'difference-negative' : (register.difference > 0 ? 'difference-positive' : 'difference-neutral')}"
+                    <td class="amount" th:classappend="${register.difference < 0 ? 'difference-negative' : ''}"
                         th:text="${(register.difference > 0 ? '+' : '') + #numbers.formatDecimal(register.difference, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €
                     </td>
@@ -289,8 +283,8 @@
         </table>
     </div>
 
-    <div class="card" th:if="${returns != null and !returns.isEmpty()}">
-        <h2 class="card-title">Detalle de Devoluciones</h2>
+    <div th:if="${returns != null and !returns.isEmpty()}">
+        <h2 class="section-title">Detalle de Devoluciones</h2>
         <table class="data-table">
             <thead>
                 <tr>
@@ -309,7 +303,7 @@
                     <td
                         th:text="${ret.paymentMethod == T(com.proconsi.electrobazar.model.PaymentMethod).CASH ? 'Efectivo' : 'Tarjeta'}">
                         Efectivo</td>
-                    <td class="amount text-danger"
+                    <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(ret.totalRefunded, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         -0,00 €</td>
                 </tr>
@@ -318,7 +312,7 @@
     </div>
 
     <div th:if="${register.notes != null and !register.notes.isEmpty()}" class="notes-section">
-        <strong>Observaciones del Cierre:</strong><br />
+        <span class="notes-title">Observaciones del Cierre:</span>
         <span th:text="${register.notes}">Sin observaciones.</span>
     </div>
 
