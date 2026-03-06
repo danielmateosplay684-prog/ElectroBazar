@@ -39,6 +39,9 @@
             <button class="nav-link sidebar-menu-btn" onclick="switchView('cashCloseView', this)">
                 <i class="bi bi-cash-stack"></i> Listado de Cierres de caja
             </button>
+            <button class="nav-link sidebar-menu-btn" onclick="switchView('returnsHistoryView', this)">
+                <i class="bi bi-arrow-counterclockwise"></i> Listado de Devoluciones
+            </button>
             <button class="nav-link sidebar-menu-btn" onclick="switchView('workersView', this)">
                 <i class="bi bi-people"></i> Gestión de Trabajadores
             </button>
@@ -180,6 +183,12 @@
                     <i class="bi bi-cash-stack"></i>
                     <h3>Cierres de Caja</h3>
                     <p>Revisa el histórico de arqueos y aperturas de caja registradas.</p>
+                </div>
+                <div class="dashboard-card"
+                    onclick="switchView('returnsHistoryView', document.querySelector('[onclick*=\'returnsHistoryView\']'))">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <h3>Historial Devoluciones</h3>
+                    <p>Consulta las devoluciones realizadas y descarga facturas rectificativas.</p>
                 </div>
 
                 <div class="dashboard-card"
@@ -538,6 +547,103 @@
                         <tr th:if="${#lists.isEmpty(sales)}">
                             <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">
                                 No hay ventas registradas en el periodo especificado.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2B. RETURNS VIEW -->
+        <div id="returnsHistoryView" style="display: none;">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <button class="btn-icon me-2"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        title="Volver al Panel">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Listado de Devoluciones
+                </span>
+            </div>
+
+            <div class="filter-bar mb-3 p-3 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Buscar por Nº / Motivo</label>
+                        <input type="text" id="returnFilterSearch" class="form-control form-control-sm"
+                            placeholder="Ej: D-2026-0001 o Motivo..." oninput="filterReturns()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Método de Pago</label>
+                        <select id="returnFilterMethod" class="form-select form-select-sm" onchange="filterReturns()">
+                            <option value="">Cualquier método</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Fecha</label>
+                        <input type="date" id="returnFilterDate" class="form-control form-control-sm"
+                            onchange="filterReturns()">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetReturnFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="returnsTable">
+                    <thead>
+                        <tr>
+                            <th>ID Devol.</th>
+                            <th>Ticket Orig.</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Motivo</th>
+                            <th>Atendido por</th>
+                            <th>Método Pago</th>
+                            <th>Importe</th>
+                            <th style="text-align:right">Descargar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="returnsTableBody">
+                        <tr th:each="ret : ${returns}" class="return-row" th:data-number="${ret.returnNumber}"
+                            th:data-reason="${ret.reason ?: ''}"
+                            th:data-method="${ret.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
+                            th:data-date="${#temporals.format(ret.createdAt, 'yyyy-MM-dd')}">
+                            <td style="color:var(--text-muted);font-weight:600" th:text="${ret.returnNumber}"></td>
+                            <td th:text="${'#' + ret.originalSale.id}"></td>
+                            <td th:text="${#temporals.format(ret.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                            <td>
+                                <span class="badge-active" th:classappend="${ret.type.name() == 'TOTAL'} ? 'yes' : 'no'"
+                                    th:text="${ret.type.name() == 'TOTAL'} ? 'Total' : 'Parcial'"></span>
+                            </td>
+                            <td th:text="${#strings.abbreviate(ret.reason ?: '—', 40)}"></td>
+                            <td style="font-weight: 500;">
+                                <span th:text="${ret.worker != null ? ret.worker.username : 'Sistema'}">—</span>
+                            </td>
+                            <td>
+                                <i th:class="${ret.paymentMethod.name() == 'CASH' ? 'bi bi-cash' : 'bi bi-credit-card'}"
+                                    style="margin-right:0.3rem"></i>
+                                <span th:text="${ret.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"></span>
+                            </td>
+                            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--danger)"
+                                th:text="'-' + ${#numbers.formatDecimal(ret.totalRefunded,1,2)} + ' &euro;'"></td>
+                            <td style="text-align:right">
+                                <a th:href="@{/admin/download/return/{id}(id=${ret.id})}" target="_blank"
+                                    class="btn-icon" title="Imprimir Comprobante" style="text-decoration: none;">
+                                    <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(returns)}">
+                            <td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">
+                                No hay devoluciones registradas en el periodo especificado.
                             </td>
                         </tr>
                     </tbody>

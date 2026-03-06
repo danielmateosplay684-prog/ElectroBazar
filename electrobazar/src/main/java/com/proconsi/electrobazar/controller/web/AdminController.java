@@ -26,6 +26,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
     private final com.proconsi.electrobazar.service.RoleService roleService;
     private final com.proconsi.electrobazar.service.TicketService ticketService;
+    private final com.proconsi.electrobazar.service.ReturnService returnService;
     private final com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator recargoCalculator;
 
     @GetMapping("/productos-categorias")
@@ -63,6 +64,8 @@ public class AdminController {
         model.addAttribute("workers", workerService.findAll());
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("roles", roleService.findAll());
+        model.addAttribute("returns", returnService.findByCreatedAtBetween(java.time.LocalDateTime.now().minusYears(1),
+                java.time.LocalDateTime.now()));
 
         return "admin/admin";
     }
@@ -132,6 +135,15 @@ public class AdminController {
             return "redirect:/login";
         }
         return "redirect:/tpv/receipt/" + id + "?autoPrint=true";
+    }
+
+    @GetMapping("/admin/download/return/{id}")
+    @Transactional(readOnly = true)
+    public String downloadReturnPdf(@PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return "redirect:/login";
+        }
+        return "redirect:/tpv/return-receipt/" + id + "?autoPrint=true";
     }
 
     @GetMapping("/admin/download/cash-close/{id}")

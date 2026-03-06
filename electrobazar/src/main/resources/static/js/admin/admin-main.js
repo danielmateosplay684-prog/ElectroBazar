@@ -13,8 +13,8 @@ function switchView(viewId, btnElement) {
     // Hide all views
     const views = [
         'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
-        'workersView', 'rolesView', 'analyticsView', 'crmView',
-        'preciosTempView', 'preciosMasivosView', 'activityView'
+        'returnsHistoryView', 'workersView', 'rolesView', 'analyticsView',
+        'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView'
     ];
     views.forEach(v => {
         const el = document.getElementById(v);
@@ -1487,6 +1487,35 @@ function selectBulkByCategory() {
     } else {
         showToast('No hay productos nuevos para marcar en esta categoría', 'info');
     }
+}
+
+// ── RETURNS FILTERING ────────────────────────────────────────────────────────
+
+function filterReturns() {
+    const query = document.getElementById('returnFilterSearch').value.toLowerCase().trim();
+    const method = document.getElementById('returnFilterMethod').value;
+    const date = document.getElementById('returnFilterDate').value;
+
+    document.querySelectorAll('.return-row').forEach(row => {
+        const number = (row.getAttribute('data-number') || '').toLowerCase();
+        const reason = (row.getAttribute('data-reason') || '').toLowerCase();
+        const rowMethod = row.getAttribute('data-method');
+        const rowDate = row.getAttribute('data-date');
+
+        let matches = true;
+        if (query && !number.includes(query) && !reason.includes(query)) matches = false;
+        if (method && rowMethod !== method) matches = false;
+        if (date && rowDate !== date) matches = false;
+
+        row.style.display = matches ? '' : 'none';
+    });
+}
+
+function resetReturnFilters() {
+    document.getElementById('returnFilterSearch').value = '';
+    document.getElementById('returnFilterMethod').value = '';
+    document.getElementById('returnFilterDate').value = '';
+    filterReturns();
 }
 
 

@@ -39,6 +39,7 @@ public class ReturnServiceImpl implements ReturnService {
     private final InvoiceRepository invoiceRepository;
     private final CashRegisterService cashRegisterService;
     private final RectificativeInvoiceRepository rectificativeInvoiceRepository;
+    private final com.proconsi.electrobazar.service.ActivityLogService activityLogService;
 
     @Override
     @Transactional
@@ -174,6 +175,17 @@ public class ReturnServiceImpl implements ReturnService {
 
         log.info("Return {} processed for sale #{}: {} refunded ({})",
                 returnNumber, originalSaleId, totalRefunded, returnType);
+
+        // Log to activity log
+        String username = worker != null ? worker.getUsername() : "Sistema";
+        activityLogService.logActivity(
+                "DEVOLUCIÓN",
+                String.format("Devolución %s (Ref: Ticket #%d) procesada por %s. Total: -%.2f€ Método: %s",
+                        returnNumber, originalSaleId, username, totalRefunded, paymentMethod.name()),
+                username,
+                "RETURN",
+                saved.getId());
+
         return saved;
     }
 
