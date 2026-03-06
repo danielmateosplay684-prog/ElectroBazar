@@ -42,6 +42,7 @@
             <button class="nav-link sidebar-menu-btn" onclick="switchView('returnsHistoryView', this)">
                 <i class="bi bi-arrow-counterclockwise"></i> Listado de Devoluciones
             </button>
+
             <button class="nav-link sidebar-menu-btn" onclick="switchView('workersView', this)">
                 <i class="bi bi-people"></i> Gestión de Trabajadores
             </button>
@@ -67,10 +68,12 @@
 
         <!-- Footer Actions -->
         <div class="sidebar-footer">
-
             <a href="/tpv" class="btn-back">
                 <i class="bi bi-arrow-left"></i> Volver al listado
             </a>
+            <button class="nav-link sidebar-menu-btn btn-back w-100 mb-1" onclick="switchView('settingsView', this)">
+                <i class="bi bi-gear"></i> Configuración (PIN)
+            </button>
             <a href="/admin/logout" class="btn-back text-danger border-danger">
                 <i class="bi bi-box-arrow-right"></i> Cerrar sesión
             </a>
@@ -648,6 +651,73 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- 2C. SETTINGS VIEW -->
+        <div id="settingsView" style="display: none;">
+            <div class="panel-header mb-4">
+                <span class="panel-title">
+                    <button class="btn-icon me-2"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        title="Volver al Panel">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <i class="bi bi-gear me-2"></i>Configuración del Sistema
+                </span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card bg-surface border-border shadow-sm">
+                        <div class="card-header border-border bg-transparent py-3">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-shield-lock me-2 text-warning"></i>Seguridad:
+                                Cambiar
+                                PIN Administrador</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-muted small mb-4">
+                                Este PIN se utiliza para acceder a funciones administrativas y realizar cierres de caja.
+                                Al cambiarlo, el nuevo PIN se aplicará inmediatamente sin necesidad de reiniciar.
+                            </p>
+                            <form id="changePinForm" onsubmit="event.preventDefault(); updateAdminPin();">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">PIN Actual</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-transparent border-border text-muted"><i
+                                                class="bi bi-key"></i></span>
+                                        <input type="password" id="currentPin"
+                                            class="form-control border-border shadow-none" required placeholder="••••">
+                                    </div>
+                                </div>
+                                <hr class="border-border my-4">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Nuevo PIN</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-transparent border-border text-muted"><i
+                                                class="bi bi-shield-plus"></i></span>
+                                        <input type="password" id="newPin"
+                                            class="form-control border-border shadow-none" required minlength="4"
+                                            placeholder="Mínimo 4 caracteres">
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold">Confirmar Nuevo PIN</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-transparent border-border text-muted"><i
+                                                class="bi bi-check-circle"></i></span>
+                                        <input type="password" id="confirmPin"
+                                            class="form-control border-border shadow-none" required
+                                            placeholder="Repite el nuevo PIN">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-save w-100 py-2">
+                                    <i class="bi bi-save me-1"></i> Actualizar PIN de Seguridad
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

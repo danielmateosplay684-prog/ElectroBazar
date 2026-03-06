@@ -13,7 +13,7 @@ function switchView(viewId, btnElement) {
     // Hide all views
     const views = [
         'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
-        'returnsHistoryView', 'workersView', 'rolesView', 'analyticsView',
+        'returnsHistoryView', 'settingsView', 'workersView', 'rolesView', 'analyticsView',
         'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView'
     ];
     views.forEach(v => {
@@ -1516,6 +1516,56 @@ function resetReturnFilters() {
     document.getElementById('returnFilterMethod').value = '';
     document.getElementById('returnFilterDate').value = '';
     filterReturns();
+}
+
+// ── SETTINGS & SECURITY ──────────────────────────────────────────────────────
+
+function updateAdminPin() {
+    const currentPin = document.getElementById('currentPin').value;
+    const newPin = document.getElementById('newPin').value;
+    const confirmPin = document.getElementById('confirmPin').value;
+
+    if (!currentPin || !newPin || !confirmPin) {
+        showToast('Todos los campos son obligatorios', 'error');
+        return;
+    }
+
+    if (newPin !== confirmPin) {
+        showToast('El nuevo PIN y la confirmación no coinciden', 'error');
+        return;
+    }
+
+    if (newPin.length < 4) {
+        showToast('El nuevo PIN debe tener al menos 4 caracteres', 'error');
+        return;
+    }
+
+    const body = {
+        currentPin: currentPin,
+        newPin: newPin,
+        confirmPin: confirmPin
+    };
+
+    fetch('/admin/settings/pin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+        .then(async response => {
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message || 'PIN actualizado correctamente');
+                document.getElementById('changePinForm').reset();
+            } else {
+                showToast(data.message || 'Error al actualizar el PIN', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating PIN:', error);
+            showToast('Error de conexión al servidor', 'error');
+        });
 }
 
 

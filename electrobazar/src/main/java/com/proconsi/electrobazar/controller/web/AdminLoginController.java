@@ -58,16 +58,28 @@ public class AdminLoginController {
         return ResponseEntity.status(401).body(Map.of("ok", false, "message", "PIN incorrecto"));
     }
 
-    @PostMapping("/change-pin")
+    @PostMapping("/settings/pin")
     @ResponseBody
-    public ResponseEntity<?> changePin(HttpSession session) {
-        // PIN rotation is no longer supported at runtime.
-        // To change the admin PIN, update the ADMIN_PIN environment variable and
-        // restart the application.
-        return ResponseEntity.status(410)
-                .body(Map.of("ok", false, "message",
-                        "El cambio de PIN en tiempo de ejecución ha sido deshabilitado por razones de seguridad. " +
-                                "Para cambiar el PIN, actualice la variable de entorno ADMIN_PIN y reinicie la aplicación."));
+    public ResponseEntity<?> changePin(@RequestBody Map<String, String> body, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return ResponseEntity.status(403)
+                    .body(Map.of("message", "Acceso denegado. Se requiere ser administrador."));
+        }
+
+        String currentPin = body.getOrDefault("currentPin", "");
+        String newPin = body.getOrDefault("newPin", "");
+        String confirmPin = body.getOrDefault("confirmPin", "");
+
+        if (!newPin.equals(confirmPin)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "El nuevo PIN y la confirmación no coinciden."));
+        }
+
+        try {
+            adminPinService.updatePin(currentPin, newPin);
+            return ResponseEntity.ok(Map.of("ok", true, "message", "PIN actualizado correctamente."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/logout")
