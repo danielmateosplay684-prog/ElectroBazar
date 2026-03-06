@@ -3,14 +3,12 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title
-        th:text="${ticket != null ? 'Ticket ' + ticket.ticketNumber : 'Ticket #' + sale.id} + ' &#8212; ElectroBazar'">
-        Ticket de Venta &#8212; ElectroBazar</title>
+    <title th:text="'Devolución ' + ${saleReturn.returnNumber} + ' &#8212; ElectroBazar'">Albarán de Devolución &#8212;
+        ElectroBazar</title>
     <style>
         /* ══════════════════════════════════════════════════════════
-           ElectroBazar — Plantilla de Ticket de Venta (PDF Térmico)
-           Adaptado de receipt.html para openhtmltopdf
-           Optimizada para papel térmico de 80mm
+           ElectroBazar — Plantilla de Devolución (PDF Térmico)
+           Basada en ticket-report.html con toques rojos (refund)
            ══════════════════════════════════════════════════════════ */
 
         @page {
@@ -54,6 +52,9 @@
             padding-bottom: 15px;
             margin-bottom: 15px;
             border-bottom: 1px dashed #aaa;
+            border-top: 4px solid #ef4444;
+            /* Rojo devolución */
+            padding-top: 10px;
         }
 
         .t-brand {
@@ -65,7 +66,8 @@
         }
 
         .t-brand span {
-            color: #555;
+            color: #ef4444;
+            /* Rojo devolución */
             font-weight: 400;
         }
 
@@ -73,8 +75,10 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #666;
+            color: #ef4444;
+            /* Rojo devolución */
             margin-top: 3px;
+            font-weight: bold;
         }
 
         .t-meta {
@@ -83,30 +87,43 @@
             margin-top: 8px;
         }
 
-        /* ── Customer block ── */
-        .t-customer {
-            background: #f7f7f7;
-            border: 1px solid #e0e0e0;
-            padding: 8px;
-            margin-bottom: 15px;
+        /* ── Return Badges ── */
+        .return-ref-badge {
+            display: inline-block;
+            background: #fdf2f2;
+            border: 1px solid #fbd5d5;
+            padding: 4px 10px;
             font-size: 13px;
+            color: #ef4444;
+            font-weight: 700;
+            margin-top: 5px;
         }
 
-        .t-customer-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: #888;
-            margin-bottom: 2px;
-        }
-
-        .t-customer-name {
-            font-weight: 600;
-            color: #111;
-        }
-
-        .t-customer-type {
+        .original-ref {
             font-size: 11px;
             color: #666;
+            margin-top: 4px;
+        }
+
+        .t-type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 10px 0;
+        }
+
+        .t-type-total {
+            background: #fdf2f2;
+            color: #ef4444;
+            border: 1px solid #fbd5d5;
+        }
+
+        .t-type-partial {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
         }
 
         /* ── Items ── */
@@ -173,7 +190,7 @@
         .t-total {
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 2px solid #111;
+            border-top: 2px solid #ef4444;
             position: relative;
             text-align: right;
         }
@@ -189,7 +206,8 @@
         .t-total-amount {
             font-size: 24px;
             font-weight: 700;
-            color: #111;
+            color: #ef4444;
+            /* Rojo devolución */
         }
 
         /* ── Payment ── */
@@ -199,6 +217,7 @@
             padding: 8px;
             border: 1px solid #ddd;
             font-size: 12px;
+            background: #f9fafb;
         }
 
         .t-payment-method {
@@ -208,8 +227,9 @@
         }
 
         .t-payment-detail {
-            color: #555;
+            color: #666;
             margin-top: 3px;
+            font-style: italic;
         }
 
         /* ── Footer ── */
@@ -227,15 +247,6 @@
             color: #333;
             font-size: 12px;
         }
-
-        .re-badge {
-            border: 1px solid #f5a623;
-            padding: 5px;
-            margin-bottom: 8px;
-            font-size: 11px;
-            text-align: center;
-            font-weight: bold;
-        }
     </style>
 </head>
 
@@ -245,32 +256,42 @@
             <!-- Header -->
             <div class="t-header">
                 <div class="t-brand">Electro<span>Bazar</span></div>
-                <div class="t-subtitle">Ticket de venta</div>
+                <div class="t-subtitle">Albar&#225;n de Devoluci&#243;n</div>
                 <div class="t-meta">
-                    <div th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}">25/02/2026 14:30</div>
-                    <div style="margin-top: 2px;">Le atendi&#243;: <strong
-                            th:text="${sale.worker != null ? sale.worker.username : 'Sistema'}">Admin</strong></div>
-                    <div style="margin-top: 2px;">
-                        <span th:if="${ticket != null}">Ticket N&#186;: <strong
-                                th:text="${ticket.ticketNumber}">T-2026-0001</strong></span>
-                        <span th:unless="${ticket != null}">N&#186;: <strong
-                                th:text="'#' + ${sale.id}">#1</strong></span>
+                    <div th:text="${#temporals.format(saleReturn.createdAt, 'dd/MM/yyyy HH:mm')}">25/02/2026 14:30</div>
+                    <div style="margin-top: 2px;">Atendido por: <strong
+                            th:text="${saleReturn.worker != null ? saleReturn.worker.username : 'Sistema'}">Admin</strong>
+                    </div>
+
+                    <div class="return-ref-badge" th:text="${saleReturn.returnNumber}">D-2026-0001</div>
+
+                    <div class="original-ref">
+                        Venta Original: #<span th:text="${saleReturn.originalSale.id}">1</span>
+                        &#183;
+                        <span
+                            th:text="${#temporals.format(saleReturn.originalSale.createdAt, 'dd/MM/yyyy')}">25/02/2026</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Customer -->
-            <div th:if="${sale.customer != null}" class="t-customer">
-                <div class="t-customer-label">Cliente</div>
-                <div class="t-customer-name" th:text="${sale.customer.name}">Cliente</div>
-                <div class="t-customer-type"
-                    th:text="${sale.customer.type.name() == 'COMPANY' ? 'Empresa' : 'Particular'}">Particular</div>
+            <div style="text-align: center;">
+                <span
+                    th:class="${saleReturn.type.name() == 'TOTAL'} ? 't-type-badge t-type-total' : 't-type-badge t-type-partial'"
+                    th:text="${saleReturn.type.name() == 'TOTAL'} ? 'Devoluci&#243;n Total' : 'Devoluci&#243;n Parcial'">
+                    Devoluci&#243;n Total
+                </span>
+            </div>
+
+            <!-- Reason -->
+            <div th:if="${saleReturn.reason != null and !#strings.isEmpty(saleReturn.reason)}"
+                style="font-size: 12px; color: #666; text-align: center; margin-bottom: 15px; font-style: italic;">
+                Motivo: <span th:text="${saleReturn.reason}">...</span>
             </div>
 
             <!-- Items -->
             <div class="t-items">
-                <div th:each="line : ${sale.lines}" class="t-item">
-                    <div class="t-item-first-row" th:text="${line.product.name}">Producto</div>
+                <div th:each="line : ${saleReturn.lines}" class="t-item">
+                    <div class="t-item-first-row" th:text="${line.saleLine.product.name}">Producto</div>
                     <div class="t-item-second-row clearfix">
                         <div class="t-item-details">
                             <span th:text="${line.quantity}">1</span> ud. x
@@ -285,67 +306,43 @@
 
             <hr class="t-divider" />
 
-            <!-- Tax Breakdown -->
-            <div th:if="${taxBreakdowns != null and !#lists.isEmpty(taxBreakdowns)}">
-                <div th:if="${applyRecargo}" class="re-badge">
-                    Recargo de Equivalencia aplicado
-                </div>
-
-                <div th:each="bd : ${taxBreakdowns}" class="t-summary clearfix">
-                    <div class="t-summary-label"
-                        th:text="'IVA ' + ${#numbers.formatDecimal(bd.vatRate * 100, 1, 0)} + '%'">IVA 21%</div>
-                    <div>
-                        Base: <span th:text="${#numbers.formatDecimal(bd.baseAmount, 1, 2, 'POINT')}">0.00</span> &#183;
-                        Cuota: <span th:text="${#numbers.formatDecimal(bd.vatAmount, 1, 2, 'POINT')}">0.00</span>
-                        &#8364;
-                    </div>
-                </div>
-
-                <div class="t-summary clearfix" style="margin-top: 5px; border-top: 1px dotted #ddd; padding-top: 5px;">
-                    <span class="t-summary-label">Base imponible</span>
-                    <span th:text="${#numbers.formatDecimal(totalBase, 1, 2, 'POINT')} + ' &#8364;'">0.00 &#8364;</span>
-                </div>
-                <div class="t-summary clearfix">
-                    <span class="t-summary-label">IVA total</span>
-                    <span th:text="${#numbers.formatDecimal(totalVat, 1, 2, 'POINT')} + ' &#8364;'">0.00 &#8364;</span>
-                </div>
-                <div th:if="${applyRecargo}" class="t-summary clearfix">
-                    <span class="t-summary-label">R.E. total</span>
-                    <span th:text="${#numbers.formatDecimal(totalRecargo, 1, 2, 'POINT')} + ' &#8364;'">0.00
-                        &#8364;</span>
-                </div>
+            <!-- Summary -->
+            <div class="t-summary clearfix">
+                <span class="t-summary-label">Base reembolsada</span>
+                <span
+                    th:text="${#numbers.formatDecimal(#aggregates.sum(saleReturn.lines.![subtotal / (1 + vatRate)]), 1, 2, 'POINT')} + ' &#8364;'">0.00
+                    &#8364;</span>
+            </div>
+            <div class="t-summary clearfix">
+                <span class="t-summary-label">IVA reembolsado</span>
+                <span
+                    th:text="${#numbers.formatDecimal(#aggregates.sum(saleReturn.lines.![subtotal - (subtotal / (1 + vatRate))]), 1, 2, 'POINT')} + ' &#8364;'">0.00
+                    &#8364;</span>
             </div>
 
             <div class="t-total clearfix">
-                <span class="t-total-label">Total</span>
+                <span class="t-total-label">Total Devuelto</span>
                 <span class="t-total-amount"
-                    th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2, 'POINT')} + ' &#8364;'">0.00
+                    th:text="${#numbers.formatDecimal(saleReturn.totalRefunded, 1, 2, 'POINT')} + ' &#8364;'">0.00
                     &#8364;</span>
             </div>
 
             <!-- Payment -->
             <div class="t-payment">
-                <div class="t-payment-method" th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}">
+                <div class="t-payment-method"
+                    th:text="${saleReturn.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}">
                     Efectivo</div>
-                <div class="t-payment-detail" th:if="${sale.receivedAmount != null}">
-                    Entregado: <span th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2, 'POINT')}">0.00</span>
-                    &#8364;<br />
-                    Cambio: <span th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2, 'POINT')}">0.00</span>
-                    &#8364;
-                </div>
-                <div class="t-payment-detail" th:if="${sale.receivedAmount == null}">
-                    Importe abonado: <strong
-                        th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2, 'POINT')} + ' &#8364;'">0.00
-                        &#8364;</strong>
+                <div class="t-payment-detail">
+                    Importe abonado al cliente como reembolso.
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="t-footer">
-                <strong>&#161;Gracias por su compra!</strong><br />
+                <strong>Justificante de Devoluci&#243;n</strong><br />
                 ElectroBazar S.L. &#183; C/ Exemple, 12, Madrid<br />
-                Vuelva pronto &#8212; conserve este ticket<br />
-                Generado: <span th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>
+                Conserve este albar&#225;n como prueba de reembolso<br />
+                Generado: <span th:text="${#temporals.format(saleReturn.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>
             </div>
         </div>
     </div>

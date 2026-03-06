@@ -150,6 +150,12 @@
             <i class="bi bi-arrow-left"></i> Volver al TPV
         </a>
     </div>
+
+    <script th:if="${autoPrint}">
+        window.onload = function () {
+            window.print();
+        };
+    </script>
 </body>
 
 </html>

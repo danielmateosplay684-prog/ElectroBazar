@@ -68,4 +68,9 @@ public interface PdfReportService {
                         java.math.BigDecimal totalBase,
                         java.math.BigDecimal totalVat,
                         java.math.BigDecimal totalRecargo);
+
+        /**
+         * Generates a PDF return receipt (albarán de devolución) for the given record.
+         */
+        byte[] generateReturnReport(com.proconsi.electrobazar.model.SaleReturn saleReturn);
 }

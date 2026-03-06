@@ -489,6 +489,11 @@
         </a>
     </div>
 
+    <script th:if="${autoPrint}">
+        window.onload = function () {
+            window.print();
+        };
+    </script>
 </body>
 
 </html>

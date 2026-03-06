@@ -127,106 +127,11 @@ public class AdminController {
 
     @GetMapping("/admin/download/invoice/{id}")
     @Transactional(readOnly = true)
-    public org.springframework.http.ResponseEntity<?> downloadInvoicePdf(
-            @org.springframework.web.bind.annotation.PathVariable Long id, HttpSession session) {
+    public String downloadInvoicePdf(@PathVariable Long id, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
-            return org.springframework.http.ResponseEntity.status(401).build();
+            return "redirect:/login";
         }
-
-        try {
-            com.proconsi.electrobazar.model.Sale sale = saleService.findById(id);
-            com.proconsi.electrobazar.model.Invoice invoice = invoiceService.findBySaleId(id).orElse(null);
-
-            byte[] pdfData = null;
-            String filename = null;
-
-            if (invoice != null) {
-                // Recalculate tax breakdowns for invoice regeneration
-                java.util.List<com.proconsi.electrobazar.dto.TaxBreakdown> taxBreakdowns = new java.util.ArrayList<>();
-                boolean applyRecargo = sale.getCustomer() != null
-                        && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
-
-                for (com.proconsi.electrobazar.model.SaleLine line : sale.getLines()) {
-                    // Logic: Back-calculate Gross if needed, but here we assume line.unitPrice
-                    // already follows the convention for that sale's customer.
-                    // However, to be safe and use the Gross convention:
-                    // We need the original Gross price. In this system, Product.price is Gross.
-                    // But if it was an RE customer, line.unitPrice already includes RE.
-                    // So we must be careful. Let's use the line's data.
-                    taxBreakdowns.add(recargoCalculator.calculateLineBreakdown(
-                            line.getProduct().getId(),
-                            line.getProduct().getName(),
-                            line.getUnitPrice(), // This is Gross (VAT inc)
-                            line.getQuantity(),
-                            line.getVatRate(),
-                            applyRecargo));
-                }
-
-                java.math.BigDecimal totalBase = taxBreakdowns.stream()
-                        .map(com.proconsi.electrobazar.dto.TaxBreakdown::getBaseAmount)
-                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                java.math.BigDecimal totalVat = taxBreakdowns.stream()
-                        .map(com.proconsi.electrobazar.dto.TaxBreakdown::getVatAmount)
-                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                java.math.BigDecimal totalRecargo = taxBreakdowns.stream()
-                        .map(com.proconsi.electrobazar.dto.TaxBreakdown::getRecargoAmount)
-                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-
-                // Regenerate Invoice PDF with breakdown
-                pdfData = pdfReportService.generateInvoiceReport(sale, invoice, taxBreakdowns, applyRecargo, totalBase,
-                        totalVat, totalRecargo);
-                filename = "Factura_" + invoice.getInvoiceNumber() + ".pdf";
-            } else {
-                // Try to find the correlative Ticket
-                java.util.Optional<com.proconsi.electrobazar.model.Ticket> ticketOpt = ticketService.findBySaleId(id);
-                if (ticketOpt.isPresent()) {
-                    com.proconsi.electrobazar.model.Ticket ticket = ticketOpt.get();
-
-                    // Recalculate tax breakdowns for ticket regeneration
-                    java.util.List<com.proconsi.electrobazar.dto.TaxBreakdown> taxBreakdowns = new java.util.ArrayList<>();
-                    for (com.proconsi.electrobazar.model.SaleLine line : sale.getLines()) {
-                        taxBreakdowns.add(recargoCalculator.calculateLineBreakdown(
-                                line.getProduct().getId(),
-                                line.getProduct().getName(),
-                                line.getUnitPrice(),
-                                line.getQuantity(),
-                                line.getVatRate(),
-                                ticket.isApplyRecargo()));
-                    }
-
-                    java.math.BigDecimal totalBase = taxBreakdowns.stream()
-                            .map(com.proconsi.electrobazar.dto.TaxBreakdown::getBaseAmount)
-                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                    java.math.BigDecimal totalVat = taxBreakdowns.stream()
-                            .map(com.proconsi.electrobazar.dto.TaxBreakdown::getVatAmount)
-                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-                    java.math.BigDecimal totalRecargo = taxBreakdowns.stream()
-                            .map(com.proconsi.electrobazar.dto.TaxBreakdown::getRecargoAmount)
-                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-
-                    pdfData = pdfReportService.generateTicketReport(
-                            sale, taxBreakdowns, ticket.isApplyRecargo(),
-                            totalBase, totalVat, totalRecargo);
-                    filename = "Ticket_" + ticket.getTicketNumber() + ".pdf";
-                }
-            }
-
-            if (pdfData == null) {
-                log.warn("Document not found/could not be generated for sale {}", id);
-                return org.springframework.http.ResponseEntity.status(404)
-                        .body("No se encontró factura ni ticket correlativo para la venta#" + id);
-            }
-
-            org.springframework.core.io.Resource resource = new org.springframework.core.io.ByteArrayResource(pdfData);
-            return org.springframework.http.ResponseEntity.ok()
-                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\"")
-                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-                    .body(resource);
-        } catch (Exception e) {
-            log.error("Error generating document for sale " + id, e);
-            return org.springframework.http.ResponseEntity.internalServerError().build();
-        }
+        return "redirect:/tpv/receipt/" + id + "?autoPrint=true";
     }
 
     @GetMapping("/admin/download/cash-close/{id}")

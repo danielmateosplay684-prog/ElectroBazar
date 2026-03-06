@@ -69,6 +69,9 @@ public class Sale {
     @OneToOne(mappedBy = "sale")
     private Invoice invoice;
 
+    @OneToOne(mappedBy = "sale")
+    private Ticket ticket;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean applyRecargo = false;

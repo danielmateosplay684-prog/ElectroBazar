@@ -529,9 +529,9 @@
                             <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main)"
                                 th:text="${#numbers.formatDecimal(sale.totalAmount,1,2)} + ' &euro;'"></td>
                             <td style="text-align:right">
-                                <a th:href="@{/admin/download/invoice/{id}(id=${sale.id})}" target="_blank"
-                                    class="btn-icon" title="Descargar PDF" style="text-decoration: none;">
-                                    <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
+                                <a th:href="@{/tpv/receipt/{id}(id=${sale.id}, autoPrint=true)}" target="_blank"
+                                    class="btn-icon" title="Imprimir Ticket" style="text-decoration: none;">
+                                    <i class="bi bi-printer" style="color:#e74c3c;"></i>
                                 </a>
                             </td>
                         </tr>

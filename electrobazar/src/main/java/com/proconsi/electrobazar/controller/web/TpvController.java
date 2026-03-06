@@ -209,12 +209,17 @@ public class TpvController {
     }
 
     @GetMapping("/receipt/{saleId}")
-    public String showReceipt(@PathVariable Long saleId, HttpSession session, Model model) {
+    public String showReceipt(
+            @PathVariable Long saleId,
+            @RequestParam(required = false, defaultValue = "false") Boolean autoPrint,
+            HttpSession session,
+            Model model) {
         if (session.getAttribute("worker") == null) {
             return "redirect:/login";
         }
         Sale sale = saleService.findById(saleId);
         model.addAttribute("sale", sale);
+        model.addAttribute("autoPrint", autoPrint);
 
         // Resolve invoice (from flash or DB) — must happen before template decision
         if (!model.containsAttribute("invoice")) {
@@ -513,7 +518,11 @@ public class TpvController {
     }
 
     @GetMapping("/return-receipt/{returnId}")
-    public String showReturnReceipt(@PathVariable Long returnId, HttpSession session, Model model) {
+    public String showReturnReceipt(
+            @PathVariable Long returnId,
+            @RequestParam(required = false, defaultValue = "false") Boolean autoPrint,
+            HttpSession session,
+            Model model) {
         if (session.getAttribute("worker") == null) {
             return "redirect:/login";
         }
@@ -522,6 +531,7 @@ public class TpvController {
                     .orElseThrow(() -> new IllegalArgumentException("Return not found: " + returnId));
             model.addAttribute("saleReturn", saleReturn);
         }
+        model.addAttribute("autoPrint", autoPrint);
         return "tpv/return-receipt";
     }
 }

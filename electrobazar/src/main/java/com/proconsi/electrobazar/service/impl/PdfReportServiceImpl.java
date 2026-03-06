@@ -120,6 +120,7 @@ public class PdfReportServiceImpl implements PdfReportService {
             // 1. Prepare Thymeleaf context with variables
             Context context = new Context();
             context.setVariable("sale", sale);
+            context.setVariable("ticket", sale.getTicket());
             context.setVariable("taxBreakdowns", taxBreakdowns);
             context.setVariable("applyRecargo", applyRecargo);
             context.setVariable("totalBase", totalBase);
@@ -170,6 +171,31 @@ public class PdfReportServiceImpl implements PdfReportService {
             return generateInvoiceReport(sale, invoice, taxBreakdowns, applyRecargo, totalBase, totalVat, totalRecargo);
         } else {
             return generateTicketReport(sale, taxBreakdowns, applyRecargo, totalBase, totalVat, totalRecargo);
+        }
+    }
+
+    @Override
+    public byte[] generateReturnReport(com.proconsi.electrobazar.model.SaleReturn saleReturn) {
+        log.info("Generating return PDF report for Return Number {}", saleReturn.getReturnNumber());
+        try {
+            Context context = new Context();
+            context.setVariable("saleReturn", saleReturn);
+
+            String htmlContent = templateEngine.process("reports/return-receipt-report", context);
+
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                PdfRendererBuilder builder = new PdfRendererBuilder();
+                builder.withHtmlContent(htmlContent, "");
+                builder.toStream(os);
+                builder.run();
+
+                byte[] pdfBytes = os.toByteArray();
+                log.info("Return PDF generated successfully (Size: {} bytes)", pdfBytes.length);
+                return pdfBytes;
+            }
+        } catch (Exception e) {
+            log.error("Error generating return PDF report for Return ID " + saleReturn.getId(), e);
+            throw new RuntimeException("Error generating PDF report: " + e.getMessage(), e);
         }
     }
 }
