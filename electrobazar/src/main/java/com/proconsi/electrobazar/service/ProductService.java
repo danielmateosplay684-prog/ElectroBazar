@@ -34,4 +34,6 @@ public interface ProductService {
     void increaseStock(Long productId, Integer quantity);
 
     void adjustStock(Long productId, Integer quantity);
+
+    List<Product> getTopProducts(int limit);
 }

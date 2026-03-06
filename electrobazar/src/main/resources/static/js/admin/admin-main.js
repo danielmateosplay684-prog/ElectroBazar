@@ -1597,3 +1597,149 @@ function cancelSale(saleId) {
 
 
 
+// -- IPC Update Integration (INE) ---------------------------------------------
+var ipcUpdateModalEl = document.getElementById('ipcUpdateModal');
+var ipcUpdateModal = ipcUpdateModalEl ? new bootstrap.Modal(ipcUpdateModalEl) : null;
+
+function openIpcUpdateModal() {
+    if (!ipcUpdateModal) return;
+    ipcUpdateModal.show();
+
+    const statusEl = document.getElementById('ipcApiStatus');
+    const inputEl = document.getElementById('ipcValueInput');
+    const noteEl = document.getElementById('ipcSourceNote');
+
+    // Default: Reset and show loading
+    statusEl.className = 'alert alert-info py-2 d-flex align-items-center gap-2 mb-3';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Obteniendo IPC actual del INE...';
+    inputEl.value = '';
+
+    // Ensure bulk products are loaded for 'all products' scope
+    if (!bulkProductsCache) {
+        loadBulkProducts();
+    }
+
+    fetch('/api/ipc/current')
+        .then(r => r.json())
+        .then(data => {
+            if (data.ipcValue) {
+                statusEl.className = 'alert alert-success py-2 d-flex align-items-center gap-2 mb-3';
+                statusEl.innerHTML = '<i class="bi bi-check-circle-fill"></i> IPC obtenido del INE con éxito.';
+                inputEl.value = data.ipcValue;
+                noteEl.textContent = 'Dato oficial INE (Variación anual)';
+            } else {
+                statusEl.className = 'alert alert-warning py-2 d-flex align-items-center gap-2 mb-3';
+                statusEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> No se pudo obtener el IPC. Introduzca el valor manualmente.';
+                noteEl.textContent = 'Introducción manual';
+            }
+
+            // Suggest Jan 1st of next year
+            const nextYear = new Date().getFullYear() + 1;
+            document.getElementById('ipcEffectiveDate').value = nextYear + '-01-01T00:00';
+            updateIpcPreview();
+        })
+        .catch(() => {
+            statusEl.className = 'alert alert-danger py-2 d-flex align-items-center gap-2 mb-3';
+            statusEl.innerHTML = '<i class="bi bi-exclamation-octagon-fill"></i> Error de conexión con la API del INE.';
+            noteEl.textContent = 'Introducción manual requerida';
+            updateIpcPreview();
+        });
+}
+
+// Add event listener for auto-preview on input change
+document.getElementById('ipcValueInput').addEventListener('input', debounce(function () {
+    updateIpcPreview();
+}, 500));
+
+function updateIpcPreview() {
+    const val = parseFloat(document.getElementById('ipcValueInput').value) || 0;
+    const body = document.getElementById('ipcPreviewBody');
+
+    body.innerHTML = '<tr><td colspan="3" class="text-center py-2"><span class="spinner-border spinner-border-sm"></span></td></tr>';
+
+    fetch('/api/ipc/preview?percentage=' + val)
+        .then(r => r.json())
+        .then(data => {
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" class="text-center py-2 text-muted">No hay productos para previsualizar</td></tr>';
+                return;
+            }
+            body.innerHTML = data.map(p => `
+                <tr>
+                    <td>${escHtml(p.productName)}</td>
+                    <td class="text-end">${parseFloat(p.currentPrice).toFixed(2)} €</td>
+                    <td class="text-end fw-bold text-primary">${parseFloat(p.newPrice).toFixed(2)} €</td>
+                </tr>
+            `).join('');
+        })
+        .catch(() => {
+            body.innerHTML = '<tr><td colspan="3" class="text-center py-2 text-danger">Error al cargar vista previa</td></tr>';
+        });
+}
+
+function applyIpcConfirm() {
+    const val = parseFloat(document.getElementById('ipcValueInput').value);
+    const dateInput = document.getElementById('ipcEffectiveDate').value;
+    const scope = document.getElementById('ipcScope').value;
+
+    if (isNaN(val) || val === 0) {
+        showToast('Introduzca un porcentaje de variación válido', 'error');
+        return;
+    }
+
+    let productIds = [];
+    if (scope === 'all') {
+        if (!bulkProductsCache) {
+            showToast('Cargando lista de productos, inténtelo de nuevo en un segundo', 'warning');
+            loadBulkProducts();
+            return;
+        }
+        productIds = bulkProductsCache.map(p => p.id);
+    } else {
+        productIds = Array.from(document.querySelectorAll('.bulk-product-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+
+    if (productIds.length === 0) {
+        showToast('No hay productos seleccionados. Use el filtro masivo o elija el ámbito "Todos".', 'error');
+        return;
+    }
+
+    if (!confirm('¿Confirma aplicar un incremento del ' + val + '% a ' + productIds.length + ' productos?')) return;
+
+    // Format date for API
+    const effectiveDate = dateInput
+        ? new Date(dateInput).toISOString().slice(0, 19)
+        : new Date().toISOString().slice(0, 19);
+
+    const body = {
+        productIds: productIds,
+        percentage: val,
+        effectiveDate: effectiveDate,
+        label: "Actualización IPC INE (" + val + "%)"
+    };
+
+    fetch('/api/product-prices/bulk-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+        .then(res => {
+            if (res.ok) {
+                showToast('Actualización masiva por IPC realizada con éxito');
+                ipcUpdateModal.hide();
+                if (typeof loadFuturePrices === 'function') loadFuturePrices();
+            } else {
+                showToast('Error al procesar la actualización por IPC', 'error');
+            }
+        })
+        .catch(() => showToast('Error de comunicación con el servidor', 'error'));
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}

@@ -166,4 +166,12 @@ public class ProductServiceImpl implements ProductService {
         product.setStock(newStock);
         productRepository.save(product);
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<Product> getTopProducts(int limit) {
+        return productRepository.findAllActiveWithCategory().stream()
+                .limit(limit)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
