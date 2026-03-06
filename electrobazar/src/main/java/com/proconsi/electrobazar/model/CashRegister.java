@@ -54,6 +54,10 @@ public class CashRegister {
     @Builder.Default
     private BigDecimal totalWithdrawals = BigDecimal.ZERO;
 
+    @Column(nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal totalEntries = BigDecimal.ZERO;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal difference;
 

@@ -110,6 +110,7 @@ public class CashRegisterServiceImpl implements CashRegisterService {
                         // For now, I'll store the net effect: Withdrawals - Entries? No, let's keep
                         // setTotalWithdrawals for actual withdrawals.
                         register.setTotalWithdrawals(totalWithdrawals != null ? totalWithdrawals : BigDecimal.ZERO);
+                        register.setTotalEntries(totalEntries != null ? totalEntries : BigDecimal.ZERO);
 
                         BigDecimal expected = openingBal.add(register.getCashSales())
                                         .add(totalEntries)

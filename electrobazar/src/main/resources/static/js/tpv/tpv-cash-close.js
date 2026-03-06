@@ -67,9 +67,11 @@
                 if (retainCard) retainCard.classList.add('active');
 
                 // Sync current closing balance to retain input on initial activation
-                if (retainInput && !retainInput._userEdited) {
+                if (retainInput) {
                     const currentClosing = parseFloat(closingBalanceInput.value.replace(',', '.')) || 0;
-                    retainInput.value = currentClosing > 0 ? currentClosing.toFixed(2) : '';
+                    if (!retainInput._userEdited) {
+                        retainInput.value = currentClosing > 0 ? currentClosing.toFixed(2) : '';
+                    }
                 }
             } else {
                 if (retainBody) retainBody.classList.remove('open');
@@ -79,8 +81,10 @@
     }
 
     if (retainInput) {
-        retainInput.addEventListener('input', () => {
-            retainInput._userEdited = true;
+        ['input', 'change', 'blur'].forEach(evt => {
+            retainInput.addEventListener(evt, () => {
+                retainInput._userEdited = true;
+            });
         });
     }
 

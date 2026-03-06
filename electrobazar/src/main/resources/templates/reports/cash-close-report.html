@@ -248,6 +248,12 @@
                         0,00 €</td>
                 </tr>
                 <tr>
+                    <td>(+) Entradas de Caja</td>
+                    <td class="amount"
+                        th:text="${#numbers.formatDecimal(register.totalEntries, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        0,00 €</td>
+                </tr>
+                <tr>
                     <td>(-) Devoluciones en Efectivo</td>
                     <td class="amount"
                         th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
@@ -260,9 +266,9 @@
                         0,00 €</td>
                 </tr>
                 <tr class="total-row" style="background-color: #f1f8ff;">
-                    <td>Saldo Teórico (Esperado)</td>
+                    <td>Saldo Teórico (Efectivo Esperado)</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.openingBalance.add(register.cashSales).subtract(register.totalWithdrawals).subtract(register.cashRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register.openingBalance.add(register.cashSales).add(register.totalEntries).subtract(register.totalWithdrawals).subtract(register.cashRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
@@ -273,13 +279,50 @@
                         €</td>
                 </tr>
                 <tr class="total-row">
-                    <td>Diferencia (Descuadre)</td>
+                    <td>Diferencia (Descuadre Efectivo)</td>
                     <td class="amount" th:classappend="${register.difference < 0 ? 'difference-negative' : ''}"
                         th:text="${(register.difference > 0 ? '+' : '') + #numbers.formatDecimal(register.difference, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €
                     </td>
                 </tr>
             </tbody>
+        </table>
+    </div>
+
+    <div>
+        <h2 class="section-title">Arqueo de Tarjeta</h2>
+        <table class="data-table">
+            <tbody>
+                <tr>
+                    <td>(+) Ventas con Tarjeta</td>
+                    <td class="amount"
+                        th:text="${#numbers.formatDecimal(register.cardSales, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        0,00 €</td>
+                </tr>
+                <tr>
+                    <td>(-) Devoluciones con Tarjeta</td>
+                    <td class="amount"
+                        th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        0,00 €</td>
+                </tr>
+                <tr class="total-row" style="background-color: #f1f8ff;">
+                    <td>Total Tarjeta Esperado</td>
+                    <td class="amount"
+                        th:text="${#numbers.formatDecimal(register.cardSales.subtract(register.cardRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        0,00 €</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 30px; border: 2pt solid #000; padding: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="font-size: 14pt; font-weight: bold;">
+                <td>TOTAL NETO (Efectivo + Tarjeta)</td>
+                <td style="text-align: right;"
+                    th:text="${#numbers.formatDecimal(register.openingBalance.add(register.cashSales).add(register.totalEntries).subtract(register.totalWithdrawals).subtract(register.cashRefunds).add(register.cardSales).subtract(register.cardRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                    0,00 €</td>
+            </tr>
         </table>
     </div>
 
