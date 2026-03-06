@@ -4,8 +4,10 @@ import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Sale;
 import com.proconsi.electrobazar.model.SaleLine;
+import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.SaleRepository;
+import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.SaleService;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,11 +26,15 @@ import java.util.List;
 @Transactional
 public class SaleServiceImpl implements SaleService {
 
+    private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
+    private static final int SCALE = 2;
+
     private final SaleRepository saleRepository;
     private final ProductService productService;
     private final CashRegisterRepository cashRegisterRepository;
     private final ActivityLogService activityLogService;
     private final com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator recargoCalculator;
+    private final TariffRepository tariffRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,11 +70,42 @@ public class SaleServiceImpl implements SaleService {
     @Override
     public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount,
             com.proconsi.electrobazar.model.Customer customer, com.proconsi.electrobazar.model.Worker worker) {
+        return createSaleWithTariff(lines, paymentMethod, notes, receivedAmount, customer, worker, null);
+    }
+
+    /**
+     * Creates a sale with an explicit tariff override.
+     * If {@code tariffOverride} is null, the customer's own tariff is used
+     * (or MINORISTA if the customer has none).
+     */
+    @Override
+    public Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
+            BigDecimal receivedAmount, com.proconsi.electrobazar.model.Customer customer,
+            com.proconsi.electrobazar.model.Worker worker, Tariff tariffOverride) {
+
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("Una venta debe tener al menos un producto.");
         }
 
-        // Validar stock disponible antes de crear la venta
+        // ── Resolve effective tariff ────────────────────────────────────────
+        Tariff effectiveTariff;
+        if (tariffOverride != null) {
+            effectiveTariff = tariffOverride;
+        } else if (customer != null && customer.getTariff() != null) {
+            effectiveTariff = customer.getTariff();
+        } else {
+            // Default: MINORISTA (no discount)
+            effectiveTariff = tariffRepository.findByName(Tariff.MINORISTA)
+                    .orElse(null);
+        }
+
+        BigDecimal discountPct = (effectiveTariff != null && effectiveTariff.getDiscountPercentage() != null)
+                ? effectiveTariff.getDiscountPercentage()
+                : BigDecimal.ZERO;
+
+        String tariffName = effectiveTariff != null ? effectiveTariff.getName() : Tariff.MINORISTA;
+
+        // Reduce stock before creating the sale
         for (SaleLine line : lines) {
             productService.decreaseStock(line.getProduct().getId(), line.getQuantity());
         }
@@ -75,23 +113,49 @@ public class SaleServiceImpl implements SaleService {
         // Determine if RE applies for this sale
         boolean applyRecargo = customer != null && Boolean.TRUE.equals(customer.getHasRecargoEquivalencia());
 
-        // Calcular subtotales y total usando el calculador de impuestos
+        // ── Calculate line totals with discount applied ─────────────────────
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal totalBase = BigDecimal.ZERO;
         BigDecimal totalVat = BigDecimal.ZERO;
         BigDecimal totalRecargo = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
 
         for (SaleLine line : lines) {
+            // Catalogue (original) gross price
+            BigDecimal originalPrice = line.getUnitPrice();
+            line.setOriginalUnitPrice(originalPrice.setScale(SCALE, ROUNDING));
+            line.setDiscountPercentage(discountPct.setScale(SCALE, ROUNDING));
+
+            // Apply discount to gross price
+            BigDecimal discountedPrice;
+            if (discountPct.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal discountFactor = BigDecimal.ONE
+                        .subtract(discountPct.divide(new BigDecimal("100"), 10, ROUNDING));
+                discountedPrice = originalPrice.multiply(discountFactor).setScale(SCALE, ROUNDING);
+            } else {
+                discountedPrice = originalPrice.setScale(SCALE, ROUNDING);
+            }
+            line.setUnitPrice(discountedPrice);
+
+            // The discount Amount to track and display MUST be the net amount (without
+            // VAT), to show the true loss of revenue/value.
+            // Using a simple reverse VAT calculation to get the net discount
             BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
+            BigDecimal perUnitGrossDiscount = originalPrice.subtract(discountedPrice);
+            BigDecimal divisor = BigDecimal.ONE.add(vatRate);
+            BigDecimal perUnitNetDiscount = perUnitGrossDiscount.divide(divisor, 10, ROUNDING).setScale(SCALE,
+                    ROUNDING);
+            totalDiscount = totalDiscount.add(perUnitNetDiscount.multiply(new BigDecimal(line.getQuantity())));
+
             com.proconsi.electrobazar.dto.TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(
                     line.getProduct().getId(),
                     line.getProduct().getName(),
-                    line.getUnitPrice(), // unitPrice is Gross (VAT incl)
+                    discountedPrice, // use discounted price for tax calculation
                     line.getQuantity(),
                     vatRate,
                     applyRecargo);
 
-            line.setBasePriceNet(breakdown.getUnitPrice()); // Storing historical net unit price
+            line.setBasePriceNet(breakdown.getUnitPrice());
             line.setBaseAmount(breakdown.getBaseAmount());
             line.setVatAmount(breakdown.getVatAmount());
             line.setRecargoRate(breakdown.getRecargoRate());
@@ -115,10 +179,11 @@ public class SaleServiceImpl implements SaleService {
         // Construir la venta
         Sale sale = Sale.builder()
                 .paymentMethod(paymentMethod)
-                .totalAmount(total)
-                .totalBase(totalBase)
-                .totalVat(totalVat)
-                .totalRecargo(totalRecargo)
+                .totalAmount(total.setScale(SCALE, ROUNDING))
+                .totalBase(totalBase.setScale(SCALE, ROUNDING))
+                .totalVat(totalVat.setScale(SCALE, ROUNDING))
+                .totalRecargo(totalRecargo.setScale(SCALE, ROUNDING))
+                .totalDiscount(totalDiscount.setScale(SCALE, ROUNDING))
                 .applyRecargo(applyRecargo)
                 .receivedAmount(receivedAmount)
                 .changeAmount(changeAmount)
@@ -126,9 +191,11 @@ public class SaleServiceImpl implements SaleService {
                 .customer(customer)
                 .worker(worker)
                 .lines(lines)
+                .appliedTariff(tariffName)
+                .appliedDiscountPercentage(discountPct.setScale(SCALE, ROUNDING))
                 .build();
 
-        // Enlazar cada línea con la venta
+        // Link each line to the sale
         lines.forEach(line -> line.setSale(sale));
 
         Sale savedSale = saleRepository.save(sale);
@@ -136,8 +203,8 @@ public class SaleServiceImpl implements SaleService {
         String username = worker != null ? worker.getUsername() : "Anónimo";
         activityLogService.logActivity(
                 "VENTA",
-                "Venta realizada por " + username + " (Total: " + total.setScale(2, java.math.RoundingMode.HALF_UP)
-                        + " \u20ac)",
+                "Venta realizada por " + username + " (Total: " + total.setScale(SCALE, ROUNDING)
+                        + " €, Tarifa: " + tariffName + ")",
                 username,
                 "SALE",
                 savedSale.getId());
@@ -215,7 +282,7 @@ public class SaleServiceImpl implements SaleService {
             throw new IllegalStateException("La venta ya está anulada.");
         }
 
-        // Restaurar stock
+        // Restore stock
         for (SaleLine line : sale.getLines()) {
             productService.increaseStock(line.getProduct().getId(), line.getQuantity());
         }

@@ -81,6 +81,35 @@ public class Sale {
     @Builder.Default
     private SaleStatus status = SaleStatus.ACTIVE;
 
+    // ── Tariff fields ───────────────────────────────────────────────────────
+
+    /**
+     * Name of the tariff applied to this sale (e.g. "MAYORISTA").
+     * Stored as a plain string so historical records are not affected by
+     * tariff renames.
+     */
+    @Column(length = 50)
+    @Builder.Default
+    private String appliedTariff = "MINORISTA";
+
+    /**
+     * Discount percentage applied to this sale (e.g. 15.00 for -15%).
+     * 0.00 means no discount (MINORISTA).
+     */
+    @Column(nullable = false, precision = 5, scale = 2, name = "applied_discount_percentage")
+    @Builder.Default
+    private BigDecimal appliedDiscountPercentage = BigDecimal.ZERO;
+
+    // ── Total discount amount (informational) ───────────────────────────────
+
+    /**
+     * Aggregated discount amount across all lines (sum of originalUnitPrice –
+     * unitPrice for each line, multiplied by quantity).
+     */
+    @Column(nullable = false, precision = 10, scale = 2, name = "total_discount")
+    @Builder.Default
+    private BigDecimal totalDiscount = BigDecimal.ZERO;
+
     public enum SaleStatus {
         ACTIVE,
         CANCELLED

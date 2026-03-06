@@ -38,6 +38,7 @@ public class TpvController {
     private final TicketService ticketService;
     private final CashWithdrawalService cashWithdrawalService;
     private final ActivityLogService activityLogService;
+    private final TariffService tariffService;
 
     @GetMapping
     public String index(
@@ -72,6 +73,7 @@ public class TpvController {
         model.addAttribute("totalToday", saleService.sumTotalToday());
         model.addAttribute("countToday", saleService.countToday());
         model.addAttribute("todayRegister", openRegisterOpt.get());
+        model.addAttribute("tariffs", tariffService.findAllActive());
 
         return "tpv/index";
     }
@@ -87,6 +89,7 @@ public class TpvController {
             @RequestParam(required = false) String notes,
             @RequestParam(required = false) String receivedAmount,
             @RequestParam(required = false, defaultValue = "false") Boolean requestInvoice,
+            @RequestParam(required = false) Long tariffId,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
@@ -108,13 +111,18 @@ public class TpvController {
                     .build());
         }
 
+        // Resolve tariff override (cashier manual selection)
+        Tariff tariffOverride = null;
+        if (tariffId != null) {
+            tariffOverride = tariffService.findById(tariffId).orElse(null);
+        }
+
         // Determinar si aplica Recargo de Equivalencia
         boolean applyRecargo = customer != null && Boolean.TRUE.equals(customer.getHasRecargoEquivalencia());
 
         // Procesar líneas de venta usando el sistema de precios temporales
         LocalDateTime now = LocalDateTime.now();
         List<SaleLine> lines = new ArrayList<>();
-        List<TaxBreakdown> taxBreakdowns = new ArrayList<>();
 
         for (int i = 0; i < productIds.size(); i++) {
             Product product = productService.findById(productIds.get(i));
@@ -131,10 +139,6 @@ public class TpvController {
                 vatRate = new BigDecimal("0.21"); // Default Spanish standard VAT
             }
 
-            TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(
-                    product.getId(), product.getName(), unitPrice, qty, vatRate, applyRecargo);
-            taxBreakdowns.add(breakdown);
-
             lines.add(SaleLine.builder()
                     .product(product)
                     .quantity(qty)
@@ -144,14 +148,18 @@ public class TpvController {
         }
 
         Worker worker = (Worker) session.getAttribute("worker");
-        BigDecimal totalAmount = taxBreakdowns.stream()
-                .map(TaxBreakdown::getTotalAmount)
+
+        // Sum total from lines pre-discount just for cash limit validation (approximate
+        // but safe since discounts only reduce price)
+        BigDecimal maxPosibleAmount = lines.stream()
+                .map(l -> l.getUnitPrice().multiply(new BigDecimal(l.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Validar límite de pago en efectivo (Ley 11/2021)
-        if (paymentMethod == PaymentMethod.CASH && totalAmount.compareTo(new BigDecimal("1000")) >= 0) {
+        if (paymentMethod == PaymentMethod.CASH && maxPosibleAmount.compareTo(new BigDecimal("1000")) >= 0) {
             activityLogService.logActivity("CASH_LIMIT_VIOLATION",
-                    "Intento de pago en efectivo bloqueado por importe >= 1000€ (Total: " + totalAmount + "€)",
+                    "Intento de pago en efectivo bloqueado por importe >= 1000€ (Total estimado: " + maxPosibleAmount
+                            + "€)",
                     worker.getUsername(), "SALE", null);
             redirectAttributes.addFlashAttribute("errorMessage",
                     "El pago en efectivo no está permitido para importes iguales o superiores a 1.000 € según la Ley 11/2021 de prevención del fraude fiscal. Seleccione otro método de pago.");
@@ -166,21 +174,12 @@ public class TpvController {
                 // Ignore
             }
         }
-        Sale sale = saleService.createSale(lines, paymentMethod, notes, receivedAmountDecimal, customer, worker);
+        Sale sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, customer,
+                worker, tariffOverride);
 
-        // Flash attributes for the receipt view
-        redirectAttributes.addFlashAttribute("taxBreakdowns", taxBreakdowns);
-        redirectAttributes.addFlashAttribute("applyRecargo", applyRecargo);
-
-        BigDecimal totalBase = taxBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalVat = taxBreakdowns.stream().map(TaxBreakdown::getVatAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalRecargo = taxBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-        redirectAttributes.addFlashAttribute("totalBase", totalBase);
-        redirectAttributes.addFlashAttribute("totalVat", totalVat);
-        redirectAttributes.addFlashAttribute("totalRecargo", totalRecargo);
+        // We no longer put taxBreakdowns, totalBase, etc. in flash attributes.
+        // showReceipt now computes them correctly from the finalized Sale object and
+        // discounted prices.
 
         // Generate and Store PDF in DB
         try {

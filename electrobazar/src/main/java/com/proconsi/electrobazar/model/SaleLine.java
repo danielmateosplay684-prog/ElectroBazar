@@ -34,8 +34,28 @@ public class SaleLine {
     @Column(nullable = false)
     private Integer quantity;
 
+    /**
+     * Gross unit price AFTER applying the tariff discount.
+     * This is what the customer actually pays per unit (VAT included).
+     */
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
+
+    /**
+     * Gross unit price BEFORE applying any tariff discount (i.e. the catalogue
+     * price). Equal to {@code unitPrice} when no discount is applied.
+     */
+    @Column(nullable = false, precision = 10, scale = 2, name = "original_unit_price")
+    @Builder.Default
+    private BigDecimal originalUnitPrice = BigDecimal.ZERO;
+
+    /**
+     * Discount percentage applied to this line (e.g. 15.00 for -15%).
+     * 0 means no discount.
+     */
+    @Column(nullable = false, precision = 5, scale = 2, name = "discount_percentage")
+    @Builder.Default
+    private BigDecimal discountPercentage = BigDecimal.ZERO;
 
     @Column(nullable = false, precision = 10, scale = 2, name = "base_price_net")
     @Builder.Default

@@ -83,6 +83,9 @@
             <button class="nav-link sidebar-menu-btn" onclick="switchView('activityView', this)">
                 <i class="bi bi-clock-history"></i> Actividad Reciente
             </button>
+            <button class="nav-link sidebar-menu-btn" onclick="switchView('tarifasView', this)">
+                <i class="bi bi-tags"></i> Tarifas
+            </button>
         </nav>
 
         <!-- Footer Actions -->
@@ -265,7 +268,156 @@
             </div>
         </div>
 
-        <!-- 1. PRODUCTS & CATEGORIES VIEW -->
+        <!-- TARIFAS VIEW -->
+        <div id="tarifasView" style="display: none;">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        title="Volver al Panel">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="panel-title"><i class="bi bi-tags me-2"></i>Gestión de Tarifas</span>
+                </div>
+                <button class="btn-nuevo" onclick="openCreateTariffModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Nueva Tarifa
+                </button>
+            </div>
+
+            <div class="admin-table-wrap mt-3">
+                <table class="admin-table" id="tarifasTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descuento</th>
+                            <th>Descripción</th>
+                            <th>Clientes</th>
+                            <th>Activa</th>
+                            <th>Tipo</th>
+                            <th style="text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="tariff : ${tariffs}">
+                            <td><strong th:text="${tariff.name}">MINORISTA</strong></td>
+                            <td>
+                                <span th:if="${tariff.discountPercentage > 0}"
+                                    style="background:rgba(39,174,96,0.15);color:#27ae60;padding:0.15rem 0.5rem;border-radius:6px;font-weight:700;font-size:0.88rem;"
+                                    th:text="'-' + ${#numbers.formatDecimal(tariff.discountPercentage, 1, 0)} + '%'">
+                                    -15%</span>
+                                <span th:unless="${tariff.discountPercentage > 0}" style="color:var(--text-muted);">0%
+                                    (sin dto.)</span>
+                            </td>
+                            <td th:text="${tariff.description ?: '—'}">—</td>
+                            <td>
+                                <span th:if="${tariffCustomerCounts.containsKey(tariff.id)}"
+                                    th:text="${tariffCustomerCounts.get(tariff.id)} + ' clientes'">
+                                    0 clientes</span>
+                                <span th:unless="${tariffCustomerCounts.containsKey(tariff.id)}"
+                                    style="color:var(--text-muted);">0 clientes</span>
+                            </td>
+                            <td>
+                                <span class="badge-active" th:classappend="${tariff.active} ? 'yes' : 'no'"
+                                    th:text="${tariff.active} ? 'Sí' : 'No'"></span>
+                            </td>
+                            <td>
+                                <span th:if="${tariff.systemTariff}"
+                                    style="font-size:0.75rem;color:var(--text-muted);">Sistema</span>
+                                <span th:unless="${tariff.systemTariff}"
+                                    style="font-size:0.75rem;color:var(--text-muted);">Personalizada</span>
+                            </td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                    <button class="btn-icon" title="Editar descuento" th:data-id="${tariff.id}"
+                                        th:data-name="${tariff.name}" th:data-discount="${tariff.discountPercentage}"
+                                        th:data-description="${tariff.description ?: ''}"
+                                        onclick="openEditTariffModal(this)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button th:if="${!tariff.systemTariff and tariff.active}" class="btn-icon danger"
+                                        title="Desactivar" th:data-id="${tariff.id}" th:data-name="${tariff.name}"
+                                        onclick="deactivateTariff(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        <i class="bi bi-toggle-off"></i>
+                                    </button>
+                                    <button th:if="${!tariff.systemTariff and !tariff.active}" class="btn-icon"
+                                        title="Activar" th:data-id="${tariff.id}" style="color:#27ae60;"
+                                        onclick="activateTariff(this.getAttribute('data-id'))">
+                                        <i class="bi bi-toggle-on"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal: Crear Tarifa -->
+        <div class="modal fade" id="createTariffModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Tarifa Personalizada
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" id="newTariffName" class="form-control" placeholder="Ej: VIP, SOCIO..."
+                                style="text-transform:uppercase;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descuento (%) <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" id="newTariffDiscount" class="form-control" min="0" max="100"
+                                step="0.5" placeholder="Ej: 20">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descripción</label>
+                            <input type="text" id="newTariffDescription" class="form-control"
+                                placeholder="Descripción opcional">
+                        </div>
+                        <div id="createTariffError" class="alert alert-danger" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-save" onclick="saveTariff()">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Editar Tarifa -->
+        <div class="modal fade" id="editTariffModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i>Editar Tarifa: <span
+                                id="editTariffNameLabel"></span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editTariffId">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descuento (%) <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" id="editTariffDiscount" class="form-control" min="0" max="100"
+                                step="0.5">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descripción</label>
+                            <input type="text" id="editTariffDescription" class="form-control">
+                        </div>
+                        <div id="editTariffError" class="alert alert-danger" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-save" onclick="updateTariff()">Actualizar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div id="productsView" style="display: none;">
             <!-- PANEL: Gestión de Inventario -->
             <div class="panel-header">
@@ -1191,6 +1343,7 @@
                             <th>Teléfono</th>
                             <th>Ciudad</th>
                             <th>Tipo</th>
+                            <th>Tarifa</th>
                             <th title="Recargo de Equivalencia">R.E.</th>
                             <th style="text-align:right">Acciones</th>
                         </tr>
@@ -1209,6 +1362,12 @@
                                 <span class="badge"
                                     th:classappend="${c.type.name() == 'COMPANY'} ? 'bg-primary' : 'bg-secondary'"
                                     th:text="${c.type}"></span>
+                            </td>
+                            <td>
+                                <span th:if="${c.tariff != null}" class="badge bg-dark"
+                                    th:text="${c.tariff.name}"></span>
+                                <span th:unless="${c.tariff != null}" class="text-muted"
+                                    style="font-size:0.8rem">MINORISTA</span>
                             </td>
                             <td>
                                 <span th:if="${c.hasRecargoEquivalencia}" class="badge bg-warning text-dark"
@@ -1851,8 +2010,24 @@
                                     </small>
                                 </div>
                             </div>
+                            <!-- Tariff selector -->
+                            <div class="col-12">
+                                <label class="form-label" for="customerTariffId">
+                                    <i class="bi bi-tags me-1"></i>Tarifa de Precio
+                                </label>
+                                <select class="form-select" id="customerTariffId">
+                                    <option value="">-- Sin tarifa asignada (MINORISTA) --</option>
+                                    <th:block th:each="tariff : ${tariffs}">
+                                        <option th:if="${tariff.active}" th:value="${tariff.id}"
+                                            th:text="${tariff.getDisplayLabel()}">MINORISTA</option>
+                                    </th:block>
+                                </select>
+                                <small class="text-muted">La tarifa define el descuento automático cuando este cliente
+                                    se añade a una venta.</small>
+                            </div>
                         </div>
                     </form>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
@@ -2016,6 +2191,103 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/shared/inventory-filter.js}"></script>
     <script th:src="@{/js/admin/admin-main.js}"></script>
+    <script>
+        // ── TARIFF MANAGEMENT ────────────────────────────────────────────────────
+        function openCreateTariffModal() {
+            document.getElementById('newTariffName').value = '';
+            document.getElementById('newTariffDiscount').value = '';
+            document.getElementById('newTariffDescription').value = '';
+            document.getElementById('createTariffError').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('createTariffModal')).show();
+        }
+
+        function saveTariff() {
+            var name = document.getElementById('newTariffName').value.trim().toUpperCase();
+            var discount = document.getElementById('newTariffDiscount').value;
+            var description = document.getElementById('newTariffDescription').value.trim();
+            var errorEl = document.getElementById('createTariffError');
+
+            if (!name) { errorEl.textContent = 'El nombre es obligatorio.'; errorEl.style.display = 'block'; return; }
+            if (discount === '' || isNaN(parseFloat(discount))) { errorEl.textContent = 'Introduce un descuento válido.'; errorEl.style.display = 'block'; return; }
+
+            fetch('/api/tariffs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, discountPercentage: parseFloat(discount), description })
+            }).then(function (r) {
+                if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error al crear'); });
+                return r.json();
+            }).then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('createTariffModal')).hide();
+                showToastAdmin('Tarifa creada correctamente', 'success');
+                setTimeout(function () { location.reload(); }, 800);
+            }).catch(function (e) {
+                errorEl.textContent = e.message;
+                errorEl.style.display = 'block';
+            });
+        }
+
+        function openEditTariffModal(btn) {
+            document.getElementById('editTariffId').value = btn.dataset.id;
+            document.getElementById('editTariffNameLabel').textContent = btn.dataset.name;
+            document.getElementById('editTariffDiscount').value = btn.dataset.discount;
+            document.getElementById('editTariffDescription').value = btn.dataset.description;
+            document.getElementById('editTariffError').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('editTariffModal')).show();
+        }
+
+        function updateTariff() {
+            var id = document.getElementById('editTariffId').value;
+            var discount = document.getElementById('editTariffDiscount').value;
+            var description = document.getElementById('editTariffDescription').value.trim();
+            var errorEl = document.getElementById('editTariffError');
+
+            if (discount === '' || isNaN(parseFloat(discount))) { errorEl.textContent = 'Introduce un descuento válido.'; errorEl.style.display = 'block'; return; }
+
+            fetch('/api/tariffs/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discountPercentage: parseFloat(discount), description })
+            }).then(function (r) {
+                if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error al actualizar'); });
+                return r.json();
+            }).then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('editTariffModal')).hide();
+                showToastAdmin('Tarifa actualizada correctamente', 'success');
+                setTimeout(function () { location.reload(); }, 800);
+            }).catch(function (e) {
+                errorEl.textContent = e.message;
+                errorEl.style.display = 'block';
+            });
+        }
+
+        function deactivateTariff(id, name) {
+            if (!confirm('¿Desactivar la tarifa "' + name + '"? Los clientes que la tengan asignada pasarán a MINORISTA.')) return;
+            fetch('/api/tariffs/' + id + '/deactivate', { method: 'DELETE' })
+                .then(function (r) { if (!r.ok) return r.json().then(function (d) { throw new Error(d.error); }); return r.json(); })
+                .then(function () { showToastAdmin('Tarifa desactivada', 'success'); setTimeout(function () { location.reload(); }, 800); })
+                .catch(function (e) { showToastAdmin(e.message || 'Error al desactivar', 'warning'); });
+        }
+
+        function activateTariff(id) {
+            fetch('/api/tariffs/' + id + '/activate', { method: 'POST' })
+                .then(function (r) { if (!r.ok) throw new Error('Error'); return r.json(); })
+                .then(function () { showToastAdmin('Tarifa activada', 'success'); setTimeout(function () { location.reload(); }, 800); })
+                .catch(function (e) { showToastAdmin('Error al activar', 'warning'); });
+        }
+
+        function showToastAdmin(message, type) {
+            var toastEl = document.getElementById('toastMsg');
+            var toastText = document.getElementById('toastText');
+            var toastIcon = document.getElementById('toastIcon');
+            if (!toastEl) return;
+            toastText.textContent = message;
+            toastEl.className = 'toast toast-custom show ' + (type === 'success' ? 'toast-success' : 'toast-warning');
+            toastIcon.className = 'bi ' + (type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-warning');
+            var bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            bsToast.show();
+        }
+    </script>
 </body>
 
 </html>

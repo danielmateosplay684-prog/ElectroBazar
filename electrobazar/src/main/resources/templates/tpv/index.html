@@ -174,11 +174,31 @@
             </div>
         </main>
 
-        <!-- TICKET -->
         <aside class="tpv-ticket">
             <div class="ticket-header">
                 <span class="ticket-title"><i class="bi bi-receipt me-1"></i> Ticket</span>
                 <span class="ticket-count" id="ticketCount">0</span>
+            </div>
+
+            <!-- Tariff badge + selector -->
+            <div id="tariffBar"
+                style="display:none; padding: 0.5rem 0.75rem; background: var(--surface); border-bottom: 1px solid var(--border); gap: 0.5rem; align-items: center;">
+                <div
+                    style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.4rem;">
+                    <div style="display:flex; align-items:center; gap:0.4rem;">
+                        <i class="bi bi-tags-fill" style="font-size:0.85rem;"></i>
+                        <span style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">Tarifa:</span>
+                        <span id="tariffBadge" class="tariff-badge">MINORISTA</span>
+                    </div>
+                    <select id="tariffSelector"
+                        style="font-size:0.78rem; padding: 0.2rem 0.5rem; border-radius:6px; border: 1px solid var(--border); background: var(--primary); color: var(--text-main); cursor:pointer;"
+                        onchange="onTariffChange(this.value, this.options[this.selectedIndex].dataset.discount, this.options[this.selectedIndex].text)">
+                        <th:block th:each="tariff : ${tariffs}">
+                            <option th:value="${tariff.id}" th:attr="data-discount=${tariff.discountPercentage}"
+                                th:text="${tariff.getDisplayLabel()}">MINORISTA</option>
+                        </th:block>
+                    </select>
+                </div>
             </div>
 
             <div class="ticket-lines" id="ticketLines">
@@ -189,6 +209,18 @@
             </div>
 
             <div class="ticket-footer">
+                <!-- Subtotal without discount -->
+                <div id="originalTotalRow"
+                    style="display:none; justify-content:space-between; padding:0.25rem 0; font-size:0.82rem; color:var(--text-muted);">
+                    <span>Precio sin descuento</span>
+                    <span id="originalTotal" style="text-decoration:line-through;">0.00&euro;</span>
+                </div>
+                <div id="discountRow"
+                    style="display:none; justify-content:space-between; padding:0.25rem 0; font-size:0.82rem; color:#27ae60;">
+                    <span id="discountLabel">Descuento (0%)</span>
+                    <span id="discountAmount">-0.00&euro;</span>
+                </div>
+
                 <div class="ticket-total-row">
                     <span class="ticket-total-label">Total</span>
                     <span class="ticket-total-amount" id="ticketTotal">0.00&euro;</span>
@@ -211,6 +243,7 @@
                     <input type="hidden" name="customerType" id="customerTypeInput">
                     <input type="hidden" name="receivedAmount" id="receivedAmountInput">
                     <input type="hidden" name="requestInvoice" id="requestInvoiceInput" value="false">
+                    <input type="hidden" name="tariffId" id="tariffIdInput">
                     <div id="formLines"></div>
                     <button type="button" class="btn-cobrar" id="btnCobrar" onclick="openCustomerModal()" disabled>
                         <i class="bi bi-lightning-fill me-1"></i> Cobrar

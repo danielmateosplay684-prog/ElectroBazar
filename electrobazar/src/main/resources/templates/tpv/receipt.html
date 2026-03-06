@@ -51,8 +51,17 @@
             <div class="t-items">
                 <div th:each="line : ${sale.lines}" class="t-item">
                     <span class="t-item-name" th:text="${line.product.name}">Producto</span>
-                    <span class="t-item-unit"
-                        th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' &euro;/ud.'">0.00 &euro;/ud.</span>
+                    <span class="t-item-unit">
+                        <!-- If discounted: show strikethrough original + discounted price -->
+                        <span th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
+                            style="text-decoration:line-through;color:var(--text-muted);font-size:0.75rem;"
+                            th:text="${#numbers.formatDecimal(line.originalUnitPrice, 1, 2)} + ' &euro;'"></span>
+                        <span th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
+                            style="background:rgba(39,174,96,0.15);color:#27ae60;border-radius:4px;padding:0.05rem 0.25rem;font-size:0.7rem;font-weight:700;margin-left:0.2rem;"
+                            th:text="'-' + ${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '%'"></span>
+                        <span th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' &euro;/ud.'">
+                            0.00 &euro;/ud.</span>
+                    </span>
                     <span class="t-item-qty" th:text="${line.quantity} + ' ud.'">1 ud.</span>
                     <span class="t-item-price" th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)} + ' &euro;'">0.00
                         &euro;</span>
@@ -107,6 +116,8 @@
                         1, 2)} + ' &euro;'">0.00 &euro;</span>
                 </div>
             </div>
+
+
 
             <div class="t-total">
                 <span class="t-total-label">Total</span>

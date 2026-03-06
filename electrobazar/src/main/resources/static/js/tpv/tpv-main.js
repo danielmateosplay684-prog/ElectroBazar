@@ -1,6 +1,12 @@
 ﻿// -- Estado del ticket --
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
+// -- Estado de tarifa --
+var currentTariffId = null;
+var currentDiscountPct = 0; // 0–100
+var currentTariffLabel = 'MINORISTA';
+
+
 function addToTicket(card) {
     var id = card.dataset.id;
     var name = card.dataset.name;
@@ -139,7 +145,32 @@ function renderTicket() {
     linesEl.innerHTML = linesHTML;
     formLines.innerHTML = formHTML;
     countEl.textContent = totalItems;
-    totalEl.textContent = totalAmount.toFixed(2) + '\u20AC';
+
+    // ── Discount display ──────────────────────────────────────────────────
+    var originalTotalRow = document.getElementById('originalTotalRow');
+    var discountRow = document.getElementById('discountRow');
+    var discountLabelEl = document.getElementById('discountLabel');
+    var discountAmountEl = document.getElementById('discountAmount');
+    var originalTotalEl = document.getElementById('originalTotal');
+
+    if (currentDiscountPct > 0) {
+        var originalAmount = 0;
+        ids.forEach(function (id) { originalAmount += ticket[id].price * ticket[id].quantity; });
+        var discountedAmount = originalAmount * (1 - currentDiscountPct / 100);
+        var discountSaving = originalAmount - discountedAmount;
+
+        if (originalTotalRow) { originalTotalRow.style.display = 'flex'; }
+        if (discountRow) { discountRow.style.display = 'flex'; }
+        if (originalTotalEl) { originalTotalEl.textContent = originalAmount.toFixed(2) + '\u20AC'; }
+        if (discountLabelEl) { discountLabelEl.textContent = 'Descuento (' + currentDiscountPct + '%)'; }
+        if (discountAmountEl) { discountAmountEl.textContent = '-' + discountSaving.toFixed(2) + '\u20AC'; }
+        totalEl.textContent = discountedAmount.toFixed(2) + '\u20AC';
+    } else {
+        if (originalTotalRow) { originalTotalRow.style.display = 'none'; }
+        if (discountRow) { discountRow.style.display = 'none'; }
+        totalEl.textContent = totalAmount.toFixed(2) + '\u20AC';
+    }
+
     cobrarBtn.disabled = false;
     if (suspenderBtn) { suspenderBtn.disabled = false; suspenderBtn.style.opacity = '1'; }
 }
@@ -749,11 +780,19 @@ function selectCustomer(c) {
     document.getElementById('customerSearchInput').value = '';
     document.getElementById('customerSearchResults').style.display = 'none';
     document.getElementById('selectedCustomerDisplay').style.display = 'block';
+
+    // Auto-apply the customer's tariff
+    if (c.tariff) {
+        applyTariffById(c.tariff.id, parseFloat(c.tariff.discountPercentage || 0), c.tariff.name +
+            (parseFloat(c.tariff.discountPercentage) > 0 ? ' -' + parseFloat(c.tariff.discountPercentage) + '%' : ''));
+    }
 }
 
 function clearSelectedCustomer() {
     document.getElementById('existingCustomerId').value = '';
     document.getElementById('selectedCustomerDisplay').style.display = 'none';
+    // Reset tariff to MINORISTA when customer is cleared
+    resetTariffToDefault();
 }
 
 // Cerrar resultados al hacer click fuera
@@ -1108,3 +1147,101 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+// ── TARIFF SYSTEM ────────────────────────────────────────────────────────────
+
+/**
+ * Called when the cashier manually changes the tariff selector.
+ */
+function onTariffChange(tariffId, discountPct, labelText) {
+    applyTariffById(tariffId, parseFloat(discountPct || 0), labelText);
+}
+
+/**
+ * Applies a tariff: updates state, form input, badge, and re-renders the ticket.
+ */
+function applyTariffById(tariffId, discountPct, labelText) {
+    currentTariffId = tariffId;
+    currentDiscountPct = isNaN(discountPct) ? 0 : discountPct;
+    currentTariffLabel = labelText || 'MINORISTA';
+
+    // Update hidden form input
+    var tariffInput = document.getElementById('tariffIdInput');
+    if (tariffInput) tariffInput.value = tariffId || '';
+
+    // Sync dropdown selection
+    var selector = document.getElementById('tariffSelector');
+    if (selector && tariffId) {
+        for (var i = 0; i < selector.options.length; i++) {
+            if (selector.options[i].value == tariffId) {
+                selector.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Update badge
+    updateTariffBadge();
+
+    // Show tariff bar if discount applies
+    var tariffBar = document.getElementById('tariffBar');
+    if (tariffBar) tariffBar.style.display = 'flex';
+
+    // Recalculate totals
+    renderTicket();
+}
+
+/**
+ * Resets to MINORISTA (no discount) when customer is cleared or page loads.
+ */
+function resetTariffToDefault() {
+    var selector = document.getElementById('tariffSelector');
+    var firstOption = selector ? selector.options[0] : null;
+    if (firstOption) {
+        // Find MINORISTA option (first with 0 discount)
+        for (var i = 0; i < selector.options.length; i++) {
+            if (parseFloat(selector.options[i].dataset.discount) === 0) {
+                selector.selectedIndex = i;
+                applyTariffById(selector.options[i].value, 0, selector.options[i].text);
+                return;
+            }
+        }
+        applyTariffById(firstOption.value, parseFloat(firstOption.dataset.discount || 0), firstOption.text);
+    }
+}
+
+/**
+ * Updates the tariff badge colour and text.
+ */
+function updateTariffBadge() {
+    var badge = document.getElementById('tariffBadge');
+    if (!badge) return;
+    badge.textContent = currentTariffLabel;
+    // Colour coding
+    badge.style.background = 'transparent';
+    badge.style.border = '1px solid';
+    if (currentDiscountPct === 0) {
+        badge.style.color = 'var(--text-muted)';
+        badge.style.borderColor = 'var(--border)';
+    } else if (currentDiscountPct >= 15) {
+        badge.style.color = '#27ae60';
+        badge.style.borderColor = 'rgba(39,174,96,0.4)';
+        badge.style.background = 'rgba(39,174,96,0.1)';
+    } else {
+        badge.style.color = '#f39c12';
+        badge.style.borderColor = 'rgba(243,156,18,0.4)';
+        badge.style.background = 'rgba(243,156,18,0.1)';
+    }
+    badge.style.padding = '0.15rem 0.45rem';
+    badge.style.borderRadius = '6px';
+    badge.style.fontSize = '0.75rem';
+    badge.style.fontWeight = '700';
+}
+
+// Initialise tariff selector to MINORISTA on load
+document.addEventListener('DOMContentLoaded', function () {
+    var tariffBar = document.getElementById('tariffBar');
+    if (tariffBar) tariffBar.style.display = 'flex'; // Always show tariff bar
+    resetTariffToDefault();
+});
+

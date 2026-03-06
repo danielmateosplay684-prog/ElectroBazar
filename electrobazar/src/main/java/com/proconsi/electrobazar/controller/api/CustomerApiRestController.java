@@ -1,6 +1,8 @@
 package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.model.Customer;
+import com.proconsi.electrobazar.model.Tariff;
+import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,7 @@ import java.util.Map;
 public class CustomerApiRestController {
 
     private final CustomerService customerService;
+    private final TariffRepository tariffRepository;
 
     @GetMapping
     public ResponseEntity<List<Customer>> getAll() {
@@ -34,18 +37,9 @@ public class CustomerApiRestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Customer customer) {
+    public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
         try {
-            // apply sensible defaults to avoid NPE or DB constraint violations
-            if (customer.getType() == null) {
-                customer.setType(Customer.CustomerType.INDIVIDUAL);
-            }
-            if (customer.getActive() == null) {
-                customer.setActive(true);
-            }
-            if (customer.getHasRecargoEquivalencia() == null) {
-                customer.setHasRecargoEquivalencia(false);
-            }
+            Customer customer = buildCustomerFromBody(body, new Customer());
 
             // minimal server-side validation so callers realise why a request failed
             if (customer.getName() == null || customer.getName().trim().isEmpty()) {
@@ -58,13 +52,11 @@ public class CustomerApiRestController {
             Customer saved = customerService.save(customer);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (DataIntegrityViolationException dive) {
-            // likely a constraint violation such as duplicate taxId
             dive.printStackTrace();
             String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "Violación de integridad: " + msg));
         } catch (Exception e) {
-            // log error and return message to client
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno al crear cliente: " + e.getMessage()));
@@ -72,21 +64,13 @@ public class CustomerApiRestController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Customer customer) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         try {
-            // ensure id and defaults
-            customer.setId(id);
-            if (customer.getType() == null) {
-                customer.setType(Customer.CustomerType.INDIVIDUAL);
-            }
-            if (customer.getActive() == null) {
-                customer.setActive(true);
-            }
-            if (customer.getHasRecargoEquivalencia() == null) {
-                customer.setHasRecargoEquivalencia(false);
-            }
-            Customer updated = customerService.update(id, customer);
-            return ResponseEntity.ok(updated);
+            Customer existing = customerService.findById(id);
+            Customer updated = buildCustomerFromBody(body, existing);
+            updated.setId(id);
+            Customer saved = customerService.update(id, updated);
+            return ResponseEntity.ok(saved);
         } catch (DataIntegrityViolationException dive) {
             dive.printStackTrace();
             String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();
@@ -103,5 +87,56 @@ public class CustomerApiRestController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         customerService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── Helper ──────────────────────────────────────────────────────────────
+
+    private Customer buildCustomerFromBody(Map<String, Object> body, Customer customer) {
+        if (body.containsKey("name"))
+            customer.setName((String) body.get("name"));
+        if (body.containsKey("taxId"))
+            customer.setTaxId((String) body.get("taxId"));
+        if (body.containsKey("email"))
+            customer.setEmail((String) body.get("email"));
+        if (body.containsKey("phone"))
+            customer.setPhone((String) body.get("phone"));
+        if (body.containsKey("address"))
+            customer.setAddress((String) body.get("address"));
+        if (body.containsKey("city"))
+            customer.setCity((String) body.get("city"));
+        if (body.containsKey("postalCode"))
+            customer.setPostalCode((String) body.get("postalCode"));
+        if (body.containsKey("type")) {
+            try {
+                customer.setType(Customer.CustomerType.valueOf((String) body.get("type")));
+            } catch (Exception ignored) {
+                customer.setType(Customer.CustomerType.INDIVIDUAL);
+            }
+        }
+        if (customer.getType() == null)
+            customer.setType(Customer.CustomerType.INDIVIDUAL);
+
+        if (body.containsKey("active"))
+            customer.setActive(Boolean.TRUE.equals(body.get("active")));
+        if (customer.getActive() == null)
+            customer.setActive(true);
+
+        if (body.containsKey("hasRecargoEquivalencia"))
+            customer.setHasRecargoEquivalencia(Boolean.TRUE.equals(body.get("hasRecargoEquivalencia")));
+        if (customer.getHasRecargoEquivalencia() == null)
+            customer.setHasRecargoEquivalencia(false);
+
+        // Resolve tariff
+        Tariff tariff = null;
+        if (body.containsKey("tariffId") && body.get("tariffId") != null) {
+            Long tariffId = Long.parseLong(body.get("tariffId").toString());
+            tariff = tariffRepository.findById(tariffId).orElse(null);
+        } else if (body.containsKey("tariffName") && body.get("tariffName") != null) {
+            tariff = tariffRepository.findByName((String) body.get("tariffName")).orElse(null);
+        }
+        if (tariff != null)
+            customer.setTariff(tariff);
+
+        return customer;
     }
 }

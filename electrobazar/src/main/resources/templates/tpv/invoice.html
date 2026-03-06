@@ -384,16 +384,47 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="line : ${sale.lines}">
-                    <td class="name" th:text="${line.product.name}">Producto</td>
-                    <td class="r" th:text="${#numbers.formatDecimal(line.basePriceNet, 1, 2)} + ' &euro;'">0.00 &euro;
-                    </td>
-                    <td class="r" th:text="${line.quantity}">1</td>
-                    <td class="r" th:text="${#numbers.formatDecimal(line.vatRate * 100, 1, 0)} + '%'">21%</td>
-                    <td class="r" th:if="${applyRecargo}"
-                        th:text="${#numbers.formatDecimal(line.recargoRate * 100, 1, 1)} + '%'">5.2%</td>
-                    <td class="r" th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)} + ' &euro;'">0.00 &euro;</td>
-                </tr>
+                <!-- Forma A: Mostrar 3 lineas por producto si hay descuento -->
+                <th:block th:each="line : ${sale.lines}">
+                    <!-- Main Product Line (shows original price and subtotal before discount) -->
+                    <tr>
+                        <td class="name" th:text="${line.product.name}">Producto</td>
+                        <td class="r"
+                            th:text="${#numbers.formatDecimal(line.originalUnitPrice / (1 + line.vatRate), 1, 2)} + ' &euro;'">
+                            0.00 &euro;</td>
+                        <td class="r" th:text="${line.quantity}">1</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(line.vatRate * 100, 1, 0)} + '%'">21%</td>
+                        <td class="r" th:if="${applyRecargo}"
+                            th:text="${#numbers.formatDecimal(line.recargoRate * 100, 1, 1)} + '%'">5.2%</td>
+                        <td class="r"
+                            th:text="${#numbers.formatDecimal((line.originalUnitPrice / (1 + line.vatRate)) * line.quantity, 1, 2)} + ' &euro;'">
+                            0.00 &euro;</td>
+                    </tr>
+
+                    <!-- Discount Detail (only if applicable) -->
+                    <tr th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
+                        style="font-size: 11.5px; color: #555; background: #fafafa;">
+                        <td style="padding-left: 30px; border-bottom: none;"
+                            th:text="'↳ Descuento aplicado (' + ${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '%)'">
+                            ↳ Descuento 15%</td>
+                        <td class="r" style="border-bottom: none;"></td>
+                        <td class="r" style="border-bottom: none;"></td>
+                        <td class="r" style="border-bottom: none;"></td>
+                        <td class="r" th:if="${applyRecargo}" style="border-bottom: none;"></td>
+                        <td class="r" style="border-bottom: none; color: #27ae60;"
+                            th:text="'-' + ${#numbers.formatDecimal(((line.originalUnitPrice - line.unitPrice) / (1 + line.vatRate)) * line.quantity, 1, 2)} + ' &euro;'">
+                            -0.00 &euro;</td>
+                    </tr>
+
+                    <!-- Final Discounted Amount Line (only if applicable) -->
+                    <tr th:if="${line.discountPercentage != null and line.discountPercentage > 0}">
+                        <td style="padding-left: 30px; font-weight: 500;">Precio final (sin IVA)</td>
+                        <td class="r" colspan="4" th:colspan="${applyRecargo} ? 4 : 3"></td>
+                        <td class="r" style="font-weight: 600;"
+                            th:text="${#numbers.formatDecimal(line.basePriceNet * line.quantity, 1, 2)} + ' &euro;'">
+                            0.00 &euro;</td>
+                    </tr>
+                </th:block>
             </tbody>
         </table>
 
@@ -460,6 +491,7 @@
                     <td class="lbl">R. Equivalencia:</td>
                     <td class="amt" th:text="${#numbers.formatDecimal(totalRecargo, 1, 2)} + ' &euro;'">0.00 &euro;</td>
                 </tr>
+
                 <tr class="grand">
                     <td class="lbl">TOTAL:</td>
                     <td class="amt" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' &euro;'">0.00 &euro;

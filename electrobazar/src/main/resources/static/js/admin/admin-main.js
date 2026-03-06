@@ -14,7 +14,7 @@ function switchView(viewId, btnElement) {
     const views = [
         'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
         'returnsHistoryView', 'settingsView', 'workersView', 'rolesView', 'analyticsView',
-        'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView'
+        'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView', 'tarifasView'
     ];
     views.forEach(v => {
         const el = document.getElementById(v);
@@ -665,6 +665,14 @@ function openCustomerModal(id) {
                 // Load Recargo de Equivalencia flag
                 document.getElementById('customerRecargoEquivalencia').checked = c.hasRecargoEquivalencia === true;
 
+                // Load tariff
+                var tariffSelect = document.getElementById('customerTariffId');
+                if (tariffSelect && c.tariff) {
+                    tariffSelect.value = c.tariff.id;
+                } else if (tariffSelect) {
+                    tariffSelect.value = '';
+                }
+
                 toggleAdminCustomerType();
             })
             .catch(function () { showToast('Error al cargar el cliente', 'error'); });
@@ -702,7 +710,9 @@ function saveCustomer() {
         postalCode: document.getElementById('customerPostalCode').value.trim() || null,
         type: document.getElementById('customerType').value,
         active: document.getElementById('customerActive').checked,
-        hasRecargoEquivalencia: document.getElementById('customerRecargoEquivalencia').checked
+        hasRecargoEquivalencia: document.getElementById('customerRecargoEquivalencia').checked,
+        tariffId: document.getElementById('customerTariffId') && document.getElementById('customerTariffId').value
+            ? parseInt(document.getElementById('customerTariffId').value) : null
     };
 
     // additional validation for company

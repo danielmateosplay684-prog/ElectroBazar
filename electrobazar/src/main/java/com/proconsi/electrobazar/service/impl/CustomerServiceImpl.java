@@ -2,7 +2,9 @@ package com.proconsi.electrobazar.service.impl;
 
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.Customer;
+import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.CustomerRepository;
+import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final ActivityLogService activityLogService;
+    private final TariffRepository tariffRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -47,6 +50,10 @@ public class CustomerServiceImpl implements CustomerService {
         if (customer.getActive() == null) {
             customer.setActive(true);
         }
+        // Default to MINORISTA tariff if none is set
+        if (customer.getTariff() == null) {
+            tariffRepository.findByName(Tariff.MINORISTA).ifPresent(customer::setTariff);
+        }
 
         Customer saved = customerRepository.save(customer);
         activityLogService.logActivity(
@@ -74,6 +81,14 @@ public class CustomerServiceImpl implements CustomerService {
         // Persist the Recargo de Equivalencia flag
         existing.setHasRecargoEquivalencia(
                 updated.getHasRecargoEquivalencia() != null ? updated.getHasRecargoEquivalencia() : false);
+
+        // Update tariff – resolve by id from the updated object
+        if (updated.getTariff() != null && updated.getTariff().getId() != null) {
+            tariffRepository.findById(updated.getTariff().getId()).ifPresent(existing::setTariff);
+        } else if (existing.getTariff() == null) {
+            // Ensure MINORISTA is always set
+            tariffRepository.findByName(Tariff.MINORISTA).ifPresent(existing::setTariff);
+        }
 
         Customer saved = customerRepository.save(existing);
         activityLogService.logActivity(

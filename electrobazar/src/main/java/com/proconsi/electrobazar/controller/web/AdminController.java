@@ -28,6 +28,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.TicketService ticketService;
     private final com.proconsi.electrobazar.service.ReturnService returnService;
     private final com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator recargoCalculator;
+    private final com.proconsi.electrobazar.service.TariffService tariffService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(Model model, HttpSession session) {
@@ -66,6 +67,8 @@ public class AdminController {
         model.addAttribute("roles", roleService.findAll());
         model.addAttribute("returns", returnService.findByCreatedAtBetween(java.time.LocalDateTime.now().minusYears(1),
                 java.time.LocalDateTime.now()));
+        model.addAttribute("tariffs", tariffService.findAll());
+        model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
 
         return "admin/admin";
     }

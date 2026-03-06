@@ -62,6 +62,14 @@ public class Customer {
     @Builder.Default
     private Boolean hasRecargoEquivalencia = false;
 
+    /**
+     * Pricing tariff assigned to this customer.
+     * When null, the system falls back to MINORISTA (no discount).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tariff_id")
+    private Tariff tariff;
+
     public enum CustomerType {
         INDIVIDUAL,
         COMPANY

@@ -4,6 +4,7 @@ import com.proconsi.electrobazar.model.Customer;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Sale;
 import com.proconsi.electrobazar.model.SaleLine;
+import com.proconsi.electrobazar.model.Tariff;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,6 +25,15 @@ public interface SaleService {
         Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount,
                         Customer customer,
                         com.proconsi.electrobazar.model.Worker worker);
+
+        /**
+         * Creates a sale with an explicit tariff override.
+         * If tariffOverride is null, the customer's own tariff is used
+         * (or MINORISTA if the customer has none).
+         */
+        Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
+                        BigDecimal receivedAmount, Customer customer,
+                        com.proconsi.electrobazar.model.Worker worker, Tariff tariffOverride);
 
         BigDecimal sumTotalToday();
 
