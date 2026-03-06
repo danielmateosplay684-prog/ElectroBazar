@@ -2,6 +2,7 @@ body {
     font-family: var(--main-font-family, 'Barlow', sans-serif);
     font-size: var(--main-font-size, 16px);
     background: var(--primary);
+    color: var(--text-main);
 }
 
 .return-form-wrap {
@@ -47,11 +48,11 @@ body {
 }
 
 .return-section-title {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: #ffffff;
     margin: 1.2rem 0 0.6rem;
 }
 
@@ -63,9 +64,9 @@ body {
 
 .return-lines-table th {
     text-align: left;
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.76rem;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.8rem;
     border-bottom: 1px solid var(--border);
     padding: 0.4rem 0.5rem;
 }
@@ -98,7 +99,8 @@ body {
 }
 
 .muted-text {
-    color: var(--text-muted);
+    color: #ffffff;
+    font-weight: 500;
     font-size: 0.8rem;
 }
 
@@ -113,9 +115,9 @@ body {
 
 .form-label {
     display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
     margin-bottom: 0.35rem;
 }
 
@@ -125,16 +127,21 @@ body {
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface);
-    color: var(--text-main);
+    color: var(--text-main) !important;
     font-size: 0.9rem;
     font-family: inherit;
     box-sizing: border-box;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .form-control:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+    color: var(--text-main) !important;
 }
 
 .btn-danger {
@@ -222,4 +229,21 @@ body {
     60% {
         transform: translate3d(4px, 0, 0);
     }
+}
+
+.confirm-modal-overlay {
+    color: var(--text-main);
+}
+
+.confirm-modal {
+    background: var(--surface) !important;
+    color: var(--text-main);
+}
+
+.confirm-modal h3 {
+    color: #ef4444 !important;
+}
+
+.confirm-item {
+    color: var(--text-main);
 }

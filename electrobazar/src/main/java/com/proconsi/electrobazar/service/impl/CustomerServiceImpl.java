@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.proconsi.electrobazar.util.NifCifValidator;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -21,6 +23,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final ActivityLogService activityLogService;
     private final TariffRepository tariffRepository;
+    private final NifCifValidator nifCifValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -43,6 +46,11 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public Customer save(Customer customer) {
+        if (customer.getTaxId() != null && !customer.getTaxId().trim().isEmpty()) {
+            if (!nifCifValidator.isValid(customer.getTaxId())) {
+                throw new IllegalArgumentException("El NIF/CIF o NIE introducido no es válido.");
+            }
+        }
         // ensure required defaults as JPA column is not nullable
         if (customer.getType() == null) {
             customer.setType(Customer.CustomerType.INDIVIDUAL);
@@ -67,6 +75,11 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public Customer update(Long id, Customer updated) {
+        if (updated.getTaxId() != null && !updated.getTaxId().trim().isEmpty()) {
+            if (!nifCifValidator.isValid(updated.getTaxId())) {
+                throw new IllegalArgumentException("El NIF/CIF o NIE introducido no es válido.");
+            }
+        }
         Customer existing = findById(id);
 
         existing.setName(updated.getName());

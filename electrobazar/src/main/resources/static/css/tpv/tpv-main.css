@@ -796,8 +796,41 @@
 
         .pay-btn.selected {
             border-color: var(--accent);
-            background: rgba(245, 166, 35, 0.12);
+            background: rgba(var(--accent-rgb, 245, 166, 35), 0.12);
             color: var(--accent);
+        }
+
+        /* ── GLOBAL FORMS (Modals, Inputs) ── */
+        .form-control,
+        .form-select {
+            background: var(--primary);
+            border: 1px solid var(--border);
+            color: var(--text-main) !important;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--primary);
+            border-color: var(--accent);
+            color: var(--text-main) !important;
+            box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 245, 166, 35), 0.2);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Reset body and modal text colors just in case */
+        .modal-body {
+            color: var(--text-main);
         }
 
         .btn-cobrar {
@@ -1143,7 +1176,8 @@
         }
 
         /* Fix for focus rings on buttons */
-        .btn:focus, .btn-close:focus {
+        .btn:focus,
+        .btn-close:focus {
             box-shadow: 0 0 0 0.25rem rgba(var(--accent-rgb), 0.25);
         }
 

@@ -1360,19 +1360,20 @@
                             <td th:text="${c.city ?: '—'}"></td>
                             <td>
                                 <span class="badge"
-                                    th:classappend="${c.type.name() == 'COMPANY'} ? 'bg-primary' : 'bg-secondary'"
-                                    th:text="${c.type}"></span>
+                                    th:classappend="${c.type != null && c.type.name() == 'COMPANY'} ? 'badge-type-company' : 'badge-type-individual'"
+                                    th:text="${c.type != null && c.type.name() == 'COMPANY' ? 'EMPRESA' : 'INDIVIDUAL'}"></span>
                             </td>
                             <td>
-                                <span th:if="${c.tariff != null}" class="badge bg-dark"
+                                <span th:if="${c.tariff != null}" class="badge badge-tariff-custom"
                                     th:text="${c.tariff.name}"></span>
-                                <span th:unless="${c.tariff != null}" class="text-muted"
-                                    style="font-size:0.8rem">MINORISTA</span>
+                                <span th:unless="${c.tariff != null}"
+                                    class="badge badge-tariff-default">MINORISTA</span>
                             </td>
                             <td>
-                                <span th:if="${c.hasRecargoEquivalencia}" class="badge bg-warning text-dark"
+                                <span th:if="${c.hasRecargoEquivalencia}" class="badge badge-re-custom"
                                     title="Sujeto a Recargo de Equivalencia">R.E.</span>
-                                <span th:unless="${c.hasRecargoEquivalencia}" class="text-muted">—</span>
+                                <span th:unless="${c.hasRecargoEquivalencia}" class="badge"
+                                    style="color: var(--text-muted); border: 1px solid var(--border); font-size: 0.8rem; padding: 0.3rem 0.6rem;">—</span>
                             </td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
@@ -2189,6 +2190,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/util/nif-cif-validator.js}"></script>
     <script th:src="@{/js/shared/inventory-filter.js}"></script>
     <script th:src="@{/js/admin/admin-main.js}"></script>
     <script>

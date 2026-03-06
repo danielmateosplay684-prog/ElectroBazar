@@ -51,6 +51,8 @@ public class CustomerApiRestController {
             }
             Customer saved = customerService.save(customer);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("error", iae.getMessage()));
         } catch (DataIntegrityViolationException dive) {
             dive.printStackTrace();
             String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();
@@ -71,6 +73,8 @@ public class CustomerApiRestController {
             updated.setId(id);
             Customer saved = customerService.update(id, updated);
             return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("error", iae.getMessage()));
         } catch (DataIntegrityViolationException dive) {
             dive.printStackTrace();
             String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();

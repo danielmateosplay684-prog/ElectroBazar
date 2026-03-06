@@ -1,4 +1,9 @@
 ﻿// -- Estado del ticket --
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof attachNifCifValidator === 'function') {
+        attachNifCifValidator('newCustomerTaxId');
+    }
+});
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
 // -- Estado de tarifa --
@@ -461,6 +466,13 @@ function processSaleWithInvoiceValidation() {
         // sólo obligamos el taxId cuando se trate de una empresa.
         if (type === 'COMPANY' && !taxId) {
             showError('El CIF de la empresa es obligatorio');
+            return;
+        }
+
+        // Validate NIF/CIF
+        var taxInput = document.getElementById('newCustomerTaxId');
+        if (taxInput && taxInput.dataset.invalidNif === 'true') {
+            showError('Por favor, introduce un NIF/CIF válido antes de continuar.');
             return;
         }
 

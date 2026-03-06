@@ -1,4 +1,9 @@
-﻿
+﻿document.addEventListener('DOMContentLoaded', function () {
+    if (typeof attachNifCifValidator === 'function') {
+        attachNifCifValidator('customerTaxId');
+    }
+});
+
 var productModal = new bootstrap.Modal(document.getElementById('productModal'));
 var categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
 var workerModal = new bootstrap.Modal(document.getElementById('workerModal'));
@@ -718,6 +723,13 @@ function saveCustomer() {
     // additional validation for company
     if (body.type === 'COMPANY' && !body.taxId) {
         showToast('El CIF es obligatorio para empresas', 'error');
+        return;
+    }
+
+    // Validate NIF/CIF
+    var taxInput = document.getElementById('customerTaxId');
+    if (taxInput && taxInput.dataset.invalidNif === 'true') {
+        showToast('Por favor, introduce un NIF/CIF válido antes de continuar.', 'error');
         return;
     }
 
