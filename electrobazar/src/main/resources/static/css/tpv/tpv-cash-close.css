@@ -16,6 +16,10 @@
             overflow-x: hidden;
         }
 
+        h1 {
+            color: var(--text-main);
+        }
+
         .container {
             max-width: 1200px;
         }
@@ -131,7 +135,7 @@
             color: var(--text-muted) !important;
         }
 
-        .card-title {
+        .card-title, h6 {
             color: var(--text-main);
             font-weight: 700;
         }

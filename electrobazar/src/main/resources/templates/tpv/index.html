@@ -96,12 +96,13 @@
                 <i class="bi bi-arrow-counterclockwise"></i> <span>Devolver</span>
             </button>
 
-            <div th:if="${session.worker.getEffectivePermissions().contains('PREFERENCES')}" class="menu-wrapper">
+            <div class="menu-wrapper">
                 <button class="hamburger-btn" id="hamburgerBtn" title="Menú">
                     <i class="bi bi-list"></i>
                 </button>
                 <div class="menu-dropdown" id="menuDropdown">
-                    <a class="menu-item" href="/tpv/preferences" style="text-decoration:none;">
+                    <a th:if="${session.worker.getEffectivePermissions().contains('PREFERENCES')}" class="menu-item"
+                        href="/tpv/preferences" style="text-decoration:none;">
                         <i class="bi bi-gear"></i> Preferencias
                     </a>
                     <a class="menu-item" href="/logout" style="text-decoration:none; color: var(--text-muted);">
