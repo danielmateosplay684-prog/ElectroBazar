@@ -95,4 +95,23 @@ public class SaleApiRestController {
 
                 return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         }
+
+        @PostMapping("/{id}/cancel")
+        public ResponseEntity<?> cancel(
+                        @PathVariable Long id,
+                        @RequestBody java.util.Map<String, String> body,
+                        @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+
+                com.proconsi.electrobazar.model.Worker worker = null;
+                if (workerId != null) {
+                        worker = workerService.findById(workerId).orElse(null);
+                }
+                String reason = body.getOrDefault("reason", "Anulaci\u00f3n desde API");
+                try {
+                        saleService.cancelSale(id, worker, reason);
+                        return ResponseEntity.ok().build();
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest().body(e.getMessage());
+                }
+        }
 }
