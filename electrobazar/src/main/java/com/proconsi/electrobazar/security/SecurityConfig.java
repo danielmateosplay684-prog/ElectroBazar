@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
+        private final TpvTokenFilter tpvTokenFilter;
 
         @Bean
         public PasswordEncoder passwordEncoder() {
@@ -36,6 +37,18 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/login", "/register", "/error", "/logout").permitAll()
                                                 .requestMatchers("/api/workers/login").permitAll()
+
+                                                // TPV PUBLIC CATALOG (GET only)
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/categories/**")
+                                                .permitAll()
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/products/**")
+                                                .permitAll()
+
+                                                // TPV SECURED ACTION (Requires X-TPV-TOKEN)
+                                                .requestMatchers("/api/sales/with-tax/**").hasAuthority("TPV_CLIENT")
+                                                .requestMatchers("/api/sales/stats/today").hasAuthority("TPV_CLIENT")
 
                                                 // ADMIN
                                                 .requestMatchers("/api/activity-log/**").hasAuthority("ADMIN_ACCESS")
@@ -73,7 +86,8 @@ public class SecurityConfig {
                                                                                 .startsWith("/admin")))
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(tpvTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
