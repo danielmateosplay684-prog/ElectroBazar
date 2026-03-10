@@ -7,8 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.proconsi.electrobazar.dto.CashCloseInfoDTO;
+import com.proconsi.electrobazar.dto.SaleSummaryResponse;
+import com.proconsi.electrobazar.model.CashWithdrawal;
+import com.proconsi.electrobazar.model.PaymentMethod;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/cash-registers")
@@ -18,6 +24,9 @@ public class CashRegisterApiRestController {
     private final CashRegisterService cashRegisterService;
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
     private final com.proconsi.electrobazar.service.WorkerService workerService;
+    private final com.proconsi.electrobazar.service.SaleService saleService;
+    private final com.proconsi.electrobazar.service.ReturnService returnService;
+    private final com.proconsi.electrobazar.service.CashWithdrawalService cashWithdrawalService;
 
     @GetMapping("/{id}")
     public ResponseEntity<CashRegister> getById(@PathVariable Long id) {
@@ -34,6 +43,62 @@ public class CashRegisterApiRestController {
         return cashRegisterService.getOpenRegister()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/close-info")
+    public ResponseEntity<CashCloseInfoDTO> getCloseInfo() {
+        Optional<CashRegister> openRegisterOpt = cashRegisterService.getOpenRegister();
+        if (openRegisterOpt.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        CashRegister openRegister = openRegisterOpt.get();
+        BigDecimal cashSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CASH);
+        BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
+        BigDecimal cardSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD);
+        BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
+
+        List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(openRegister.getId());
+        BigDecimal totalWithdrawals = movements.stream()
+                .filter(m -> m.getType() == null || m.getType() == CashWithdrawal.MovementType.WITHDRAWAL)
+                .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalEntries = movements.stream()
+                .filter(m -> m.getType() == CashWithdrawal.MovementType.ENTRY)
+                .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        LocalDateTime startOfShift = openRegister.getOpeningTime() != null
+                ? openRegister.getOpeningTime()
+                : java.time.LocalDate.now().atStartOfDay();
+
+        BigDecimal expectedCashInDrawer = openRegister.getOpeningBalance()
+                .add(cashSalesToday)
+                .add(totalEntries)
+                .subtract(totalWithdrawals)
+                .subtract(cashRefundsToday);
+
+        SaleSummaryResponse summary = saleService.getSummaryToday();
+
+        CashCloseInfoDTO info = CashCloseInfoDTO.builder()
+                .todayRegister(openRegister)
+                .totalToday(saleService.sumTotalToday())
+                .countToday(saleService.countToday())
+                .cashSalesToday(cashSalesToday)
+                .cashRefundsToday(cashRefundsToday)
+                .cardSalesToday(cardSalesToday)
+                .cardRefundsToday(cardRefundsToday)
+                .totalWithdrawals(totalWithdrawals)
+                .totalEntries(totalEntries)
+                .expectedCashInDrawer(expectedCashInDrawer)
+                .cancelledCount(summary.getTotalCancelledCount())
+                .cancelledTotal(summary.getTotalCancelledAmount())
+                .returnsToday(returnService.findByCreatedAtBetween(startOfShift, LocalDateTime.now()))
+                .openingBalance(openRegister.getOpeningBalance())
+                .build();
+
+        return ResponseEntity.ok(info);
     }
 
     @GetMapping("/today")
