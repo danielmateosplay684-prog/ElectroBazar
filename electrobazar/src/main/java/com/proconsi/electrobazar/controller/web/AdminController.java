@@ -75,11 +75,6 @@ public class AdminController {
         return "admin/admin";
     }
 
-    @GetMapping("/api/tax-rates/active")
-    @ResponseBody
-    public java.util.List<com.proconsi.electrobazar.model.TaxRate> getActiveTaxRates() {
-        return taxRateRepository.findByActiveTrue();
-    }
 
     @GetMapping("/api/permissions")
     @ResponseBody
@@ -87,40 +82,6 @@ public class AdminController {
         return roleService.findAllPermissions();
     }
 
-    @PostMapping("/api/tax-rates")
-    @ResponseBody
-    public org.springframework.http.ResponseEntity<?> createTaxRate(
-            @RequestBody com.proconsi.electrobazar.model.TaxRate taxRate, HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return org.springframework.http.ResponseEntity.status(401).build();
-        return org.springframework.http.ResponseEntity.ok(taxRateRepository.save(taxRate));
-    }
-
-    @PutMapping("/api/tax-rates/{id}")
-    @ResponseBody
-    public org.springframework.http.ResponseEntity<?> updateTaxRate(@PathVariable Long id,
-            @RequestBody com.proconsi.electrobazar.model.TaxRate taxRate, HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return org.springframework.http.ResponseEntity.status(401).build();
-        return taxRateRepository.findById(id).map(existing -> {
-            existing.setVatRate(taxRate.getVatRate());
-            existing.setReRate(taxRate.getReRate());
-            existing.setDescription(taxRate.getDescription());
-            existing.setActive(taxRate.getActive());
-            existing.setValidFrom(taxRate.getValidFrom());
-            existing.setValidTo(taxRate.getValidTo());
-            return org.springframework.http.ResponseEntity.ok(taxRateRepository.save(existing));
-        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/api/tax-rates/{id}")
-    @ResponseBody
-    public org.springframework.http.ResponseEntity<?> deleteTaxRate(@PathVariable Long id, HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return org.springframework.http.ResponseEntity.status(401).build();
-        taxRateRepository.deleteById(id);
-        return org.springframework.http.ResponseEntity.ok().build();
-    }
 
     @PostMapping("/admin/workers/save")
     @ResponseBody
