@@ -65,7 +65,7 @@ public class RecargoEquivalenciaCalculator {
          */
         private Map<BigDecimal, BigDecimal> getVatToReRateMapDynamic() {
                 return taxRateRepository.findByActiveTrue().stream()
-                                .collect(Collectors.toMap(TaxRate::getVatRate, TaxRate::getReRate));
+                                .collect(Collectors.toMap(TaxRate::getVatRate, TaxRate::getReRate, (existing, replacement) -> replacement));
         }
 
         /**

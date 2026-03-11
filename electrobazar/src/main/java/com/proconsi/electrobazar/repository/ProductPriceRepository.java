@@ -62,6 +62,9 @@ public interface ProductPriceRepository extends JpaRepository<ProductPrice, Long
             """)
     Optional<ProductPrice> findCurrentOpenPrice(@Param("productId") Long productId);
 
+    @Query("SELECT p FROM ProductPrice p WHERE p.product.id IN :productIds AND p.endDate IS NULL")
+    List<ProductPrice> findCurrentOpenPrices(@Param("productIds") List<Long> productIds);
+
     /**
      * Finds all price records whose startDate is in the future (scheduled prices).
      * Useful for the daily scheduler to verify upcoming price transitions.

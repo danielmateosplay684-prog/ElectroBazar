@@ -343,6 +343,9 @@
                             </td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                    <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}" class="btn-icon" title="Ver Historial de Precios">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
                                     <button class="btn-icon" title="Editar descuento" th:data-id="${tariff.id}"
                                         th:data-name="${tariff.name}" th:data-discount="${tariff.discountPercentage}"
                                         th:data-description="${tariff.description ?: ''}"
@@ -1837,6 +1840,17 @@
                     <div class="mb-3">
                         <label class="form-label fw-600" style="color: var(--text-main);">Etiqueta (opcional)</label>
                         <input type="text" class="form-control" id="bulkLabel" placeholder="Ej: Incremento IPC 2026">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-600" style="color: var(--text-main);">Seleccione las tarifas a las que aplicar este incremento</label>
+                        <div class="p-3 rounded" style="background:var(--surface); border:1px solid var(--border);">
+                            <div class="form-check mb-2" th:each="t : ${tariffs}" th:if="${t.active}">
+                                <input class="form-check-input tariff-bulk-checkbox" type="checkbox" th:value="${t.id}" th:id="'bulkTariff_' + ${t.id}" checked>
+                                <label class="form-check-label" th:for="'bulkTariff_' + ${t.id}" th:text="${t.name}">Nombre Tarifa</label>
+                            </div>
+                            <div th:if="${tariffs == null or tariffs.isEmpty()}" class="text-muted small">No hay tarifas configuradas.</div>
+                        </div>
                     </div>
 
                     <button class="btn-nuevo" onclick="applyBulkPriceUpdate()">

@@ -48,22 +48,19 @@ public class ProductPrice {
     private java.math.BigDecimal basePriceNet = java.math.BigDecimal.ZERO;
 
     /**
-     * Returns the Gross Price (VAT included).
-     * Calculated on the fly: basePriceNet * (1 + vatRate)
+     * The Gross Price (VAT included).
+     * Mapped for database compatibility.
      */
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal price = java.math.BigDecimal.ZERO;
+
     public java.math.BigDecimal getPrice() {
-        if (basePriceNet == null)
-            return java.math.BigDecimal.ZERO;
-        java.math.BigDecimal rate = vatRate != null ? vatRate : new java.math.BigDecimal("0.21");
-        return basePriceNet.multiply(java.math.BigDecimal.ONE.add(rate))
-                .setScale(2, java.math.RoundingMode.HALF_UP);
+        return price;
     }
 
-    /**
-     * Sets the Net price based on a Gross price input.
-     * basePriceNet = grossPrice / (1 + vatRate)
-     */
     public void setPrice(java.math.BigDecimal grossPrice) {
+        this.price = grossPrice;
         if (grossPrice == null) {
             this.basePriceNet = java.math.BigDecimal.ZERO;
             return;

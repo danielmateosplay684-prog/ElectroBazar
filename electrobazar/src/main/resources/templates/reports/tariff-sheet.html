@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            margin: 1cm;
+            size: A4;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.4;
+            font-size: 10pt;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 18pt;
+        }
+        .tariff-name {
+            font-size: 14pt;
+            color: #3498db;
+            margin-top: 5px;
+        }
+        .info {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .info td {
+            padding: 5px;
+        }
+        .category-header {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border-left: 4px solid #3498db;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 11pt;
+            text-transform: uppercase;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        table.data-table th {
+            background-color: #2c3e50;
+            color: white;
+            text-align: left;
+            padding: 6px;
+            font-size: 9pt;
+        }
+        table.data-table td {
+            border-bottom: 1px solid #eee;
+            padding: 6px;
+            font-size: 9pt;
+        }
+        .price {
+            font-weight: bold;
+            color: #e67e22;
+            white-space: nowrap;
+        }
+        .footer {
+            position: running(footer);
+            font-size: 8pt;
+            text-align: center;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
+        }
+        @page {
+            @bottom-center {
+                content: element(footer);
+            }
+        }
+        #footer {
+            position: running(footer);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ElectroBazar - Tarifa de Precios</h1>
+        <div class="tariff-name" th:text="${tariff.name}">NOMBRE TARIFA</div>
+    </div>
+
+    <table class="info">
+        <tr>
+            <td><strong>Fecha de generación:</strong> <span th:text="${#temporals.format(generationDate, 'dd/MM/yyyy HH:mm')}">11/03/2026</span></td>
+            <td style="text-align: right;"><strong>Descuento base:</strong> <span th:text="${#numbers.formatDecimal(tariff.discountPercentage, 1, 1, 'COMMA') + '%'}">0,0%</span></td>
+        </tr>
+    </table>
+
+    <div th:each="entry : ${groupedHistory}">
+        <div class="category-header" th:text="${entry.key}">CATEGORÍA</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Producto</th>
+                    <th style="text-align: right;">Base</th>
+                    <th style="text-align: right;">Descto.</th>
+                    <th style="text-align: right;">P. Neto</th>
+                    <th style="text-align: right;">IVA %</th>
+                    <th style="text-align: right;">P. Final</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="h : ${entry.value}">
+                    <td th:text="${h.productName}">Producto</td>
+                    <td style="text-align: right;" th:text="${#numbers.formatDecimal(h.basePrice, 1, 2, 'COMMA') + ' €'}">0,00 €</td>
+                    <td style="text-align: right;" th:text="${#numbers.formatDecimal(h.discountPercent, 1, 1, 'COMMA') + '%'}">0,0%</td>
+                    <td style="text-align: right;" class="price" th:text="${#numbers.formatDecimal(h.netPrice, 1, 2, 'COMMA') + ' €'}">0,00 €</td>
+                    <td style="text-align: right;" th:text="${#numbers.formatDecimal(h.vatRate * 100, 1, 0, 'COMMA') + '%'}">21%</td>
+                    <td style="text-align: right;" class="price" th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' €'}">0,00 €</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="footer" class="footer">
+        Documento generado automáticamente por sistema ElectroBazar TPV - &copy; <span th:text="${generationDate.year}">2026</span>
+    </div>
+</body>
+</html>

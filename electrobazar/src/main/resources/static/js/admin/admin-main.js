@@ -1103,10 +1103,16 @@ function applyBulkPriceUpdate() {
         : new Date().toISOString().slice(0, 19);
     var label = document.getElementById('bulkLabel').value.trim();
 
+    var tariffIds = [];
+    document.querySelectorAll('.tariff-bulk-checkbox:checked').forEach(cb => {
+        tariffIds.push(parseInt(cb.value));
+    });
+
     var body = {
         productIds: selectedIds,
         effectiveDate: effectiveDate,
-        label: label || null
+        label: label || null,
+        tariffIds: tariffIds
     };
 
     if (priceType === 'percentage') {

@@ -23,13 +23,11 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.PdfReportService pdfReportService;
     private final com.proconsi.electrobazar.service.WorkerService workerService;
     private final com.proconsi.electrobazar.service.CustomerService customerService;
-    private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
     private final com.proconsi.electrobazar.service.RoleService roleService;
-    private final com.proconsi.electrobazar.service.TicketService ticketService;
     private final com.proconsi.electrobazar.service.ReturnService returnService;
-    private final com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator recargoCalculator;
     private final com.proconsi.electrobazar.service.TariffService tariffService;
     private final com.proconsi.electrobazar.repository.TaxRateRepository taxRateRepository;
+    private final com.proconsi.electrobazar.service.TariffPriceHistoryService tariffPriceHistoryService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(Model model, HttpSession session) {
@@ -226,6 +224,45 @@ public class AdminController {
             return org.springframework.http.ResponseEntity.ok().build();
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/admin/tariffs/{id}/history")
+    public String tariffHistory(@PathVariable Long id, Model model, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return "redirect:/tpv";
+        }
+        com.proconsi.electrobazar.model.Tariff tariff = tariffService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tarifa no encontrada"));
+        
+        model.addAttribute("tariff", tariff);
+        model.addAttribute("history", tariffPriceHistoryService.getCurrentPricesForTariff(id));
+        return "admin/tariff-price-history";
+    }
+
+    @GetMapping("/admin/tariffs/{id}/history/pdf")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> downloadTariffPdf(@PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return org.springframework.http.ResponseEntity.status(401).build();
+        }
+
+        try {
+            com.proconsi.electrobazar.model.Tariff tariff = tariffService.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Tarifa no encontrada"));
+            java.util.List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService.getCurrentPricesForTariff(id);
+            
+            byte[] pdfData = pdfReportService.generateTariffSheet(tariff, history);
+            String filename = String.format("Tarifa_%s_%s.pdf", tariff.getName(), java.time.LocalDate.now());
+
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.ByteArrayResource(pdfData);
+            return org.springframework.http.ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("Error generating tariff PDF for ID " + id, e);
+            return org.springframework.http.ResponseEntity.internalServerError().build();
         }
     }
 }

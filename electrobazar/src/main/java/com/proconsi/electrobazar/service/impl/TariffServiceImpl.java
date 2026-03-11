@@ -4,6 +4,9 @@ import com.proconsi.electrobazar.model.Customer;
 import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.CustomerRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
+import com.proconsi.electrobazar.repository.ProductRepository;
+import com.proconsi.electrobazar.repository.TariffPriceHistoryRepository;
+import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import com.proconsi.electrobazar.service.TariffService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,9 @@ public class TariffServiceImpl implements TariffService {
 
     private final TariffRepository tariffRepository;
     private final CustomerRepository customerRepository;
+    private final ProductRepository productRepository;
+    private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
+    private final RecargoEquivalenciaCalculator recargoCalculator;
 
     @Override
     @Transactional(readOnly = true)
@@ -66,7 +72,55 @@ public class TariffServiceImpl implements TariffService {
                 .active(true)
                 .systemTariff(false)
                 .build();
-        return tariffRepository.save(tariff);
+        Tariff savedTariff = tariffRepository.save(tariff);
+
+        // Auto-generate tariff history for all active products
+        List<com.proconsi.electrobazar.model.Product> products = productRepository.findByActiveTrueOrderByNameAsc();
+        List<com.proconsi.electrobazar.model.TariffPriceHistory> histories = new ArrayList<>();
+        java.time.LocalDate today = java.time.LocalDate.now();
+
+        BigDecimal discountPct = savedTariff.getDiscountPercentage();
+        BigDecimal discountMultiplier = BigDecimal.ONE.subtract(discountPct.divide(BigDecimal.valueOf(100), 10, java.math.RoundingMode.HALF_UP));
+
+        Map<BigDecimal, BigDecimal> vatToReRateMap = recargoCalculator.getVatToReRateMap();
+
+        for (com.proconsi.electrobazar.model.Product product : products) {
+            BigDecimal basePriceWithVat = product.getPrice();
+            BigDecimal vatRate = (product.getTaxRate() != null && product.getTaxRate().getVatRate() != null) 
+                    ? product.getTaxRate().getVatRate() : new BigDecimal("0.21");
+            
+            // net_price = (base_price_with_vat / (1 + vatRate)) * (1 - discountPercent/100)
+            BigDecimal netPrice = basePriceWithVat.divide(BigDecimal.ONE.add(vatRate), 10, java.math.RoundingMode.HALF_UP)
+                    .multiply(discountMultiplier).setScale(2, java.math.RoundingMode.HALF_UP);
+            
+            BigDecimal priceWithVat = netPrice.multiply(BigDecimal.ONE.add(vatRate)).setScale(2, java.math.RoundingMode.HALF_UP);
+            
+            BigDecimal normalizedVat = vatRate.stripTrailingZeros();
+            BigDecimal reRate = vatToReRateMap.entrySet().stream()
+                    .filter(entry -> entry.getKey().stripTrailingZeros().compareTo(normalizedVat) == 0)
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse(BigDecimal.ZERO);
+            
+            BigDecimal priceWithRe = netPrice.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, java.math.RoundingMode.HALF_UP);
+
+            histories.add(com.proconsi.electrobazar.model.TariffPriceHistory.builder()
+                    .product(product)
+                    .tariff(savedTariff)
+                    .basePrice(basePriceWithVat)
+                    .netPrice(netPrice)
+                    .vatRate(vatRate)
+                    .priceWithVat(priceWithVat)
+                    .reRate(reRate)
+                    .priceWithRe(priceWithRe)
+                    .discountPercent(discountPct)
+                    .validFrom(today)
+                    .validTo(null)
+                    .build());
+        }
+        tariffPriceHistoryRepository.saveAll(histories);
+
+        return savedTariff;
     }
 
     @Override

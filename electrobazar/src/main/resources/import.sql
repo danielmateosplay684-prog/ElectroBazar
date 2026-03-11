@@ -266,3 +266,36 @@ CREATE TABLE IF NOT EXISTS suspended_sale_lines (
 CREATE INDEX IF NOT EXISTS idx_suspended_sales_status ON suspended_sales(status);
 CREATE INDEX IF NOT EXISTS idx_suspended_sale_lines_sale ON suspended_sale_lines(suspended_sale_id);
 
+-- Tariffs table
+CREATE TABLE IF NOT EXISTS tariffs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    discount_percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    description VARCHAR(255),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    system_tariff BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Tariff price history table
+CREATE TABLE IF NOT EXISTS tariff_price_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    tariff_id BIGINT NOT NULL,
+    base_price DECIMAL(10,2) NOT NULL,
+    net_price DECIMAL(10,2) NOT NULL,
+    vat_rate DECIMAL(5,4) NOT NULL,
+    price_with_vat DECIMAL(10,2) NOT NULL,
+    re_rate DECIMAL(5,4) NOT NULL,
+    price_with_re DECIMAL(10,2) NOT NULL,
+    discount_percent DECIMAL(5,2) NOT NULL,
+    valid_from DATE NOT NULL,
+    valid_to DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (tariff_id) REFERENCES tariffs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_tariff_price_history_product ON tariff_price_history(product_id);
+CREATE INDEX IF NOT EXISTS idx_tariff_price_history_tariff ON tariff_price_history(tariff_id);
+CREATE INDEX IF NOT EXISTS idx_tariff_price_history_dates ON tariff_price_history(valid_from, valid_to);
+

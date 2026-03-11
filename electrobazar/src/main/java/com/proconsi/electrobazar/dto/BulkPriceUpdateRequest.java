@@ -22,4 +22,6 @@ public class BulkPriceUpdateRequest {
     private String label;
     
     private BigDecimal vatRate;       // Optional: change VAT too
+    
+    private List<Long> tariffIds;     // Tariffs to apply the change
 }

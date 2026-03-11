@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -181,7 +181,30 @@
         <aside class="tpv-ticket">
             <div class="ticket-header">
                 <span class="ticket-title"><i class="bi bi-receipt me-1"></i> Ticket</span>
+                <div id="ticketTariffBadge" class="ms-auto me-2" style="display: none;">
+                    <span id="tariffBadgeLabel" class="badge rounded-pill bg-success" style="font-size: 0.75rem;">MAYORISTA 15%</span>
+                </div>
                 <span class="ticket-count" id="ticketCount">0</span>
+            </div>
+
+            <!-- Customer Selector -->
+            <div class="customer-ticket-selector p-2 border-bottom" style="background: var(--surface);">
+                <div id="customerSearchContainer" class="position-relative">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-person-search"></i></span>
+                        <input type="text" id="sidebarCustomerSearch" class="form-control border-start-0" placeholder="Añadir cliente..." autocomplete="off">
+                    </div>
+                    <div id="sidebarCustomerResults" class="customer-dropdown-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 200px; overflow-y: auto; background: var(--secondary); border: 1px solid var(--border); border-radius: 0 0 10px 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>
+                </div>
+                <div id="sidebarSelectedCustomer" class="d-flex align-items-center justify-content-between px-2 py-1 rounded" style="display: none !important; background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.2);">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                        <i class="bi bi-person-check-fill text-accent"></i>
+                        <span id="sidebarCustomerName" class="fw-bold text-truncate" style="font-size: 0.85rem;">Nombre Cliente</span>
+                    </div>
+                    <button type="button" class="btn btn-sm p-0 border-0 text-muted" onclick="clearSidebarCustomer()">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
             </div>
 
 

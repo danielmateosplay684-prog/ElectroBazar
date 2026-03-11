@@ -39,6 +39,39 @@ public class TpvController {
     private final CashWithdrawalService cashWithdrawalService;
     private final ActivityLogService activityLogService;
     private final TariffService tariffService;
+    private final com.proconsi.electrobazar.repository.TariffPriceHistoryRepository tariffPriceHistoryRepository;
+
+    @GetMapping("/api/products/{id}/price")
+    @ResponseBody
+    public BigDecimal getProductPrice(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long tariffId) {
+        
+        Product product = productService.findById(id);
+        if (product == null) throw new RuntimeException("Producto no encontrado");
+        
+        if (tariffId == null) {
+            log.info("No tariff requested for product {}, returning base price: {}", id, product.getPrice());
+            return product.getPrice();
+        }
+        
+        Tariff tariff = tariffService.findById(tariffId)
+                .orElseThrow(() -> new RuntimeException("Tarifa no encontrada"));
+
+        return tariffPriceHistoryRepository.findCurrentByProductAndTariff(id, tariffId)
+                .map(t -> {
+                    BigDecimal price = t.getPriceWithVat();
+                    log.info("History found for product {}/tariff {}: {}", id, tariffId, price);
+                    return price;
+                })
+                .orElseGet(() -> {
+                    BigDecimal discount = tariff.getDiscountPercentage() != null ? tariff.getDiscountPercentage() : BigDecimal.ZERO;
+                    BigDecimal multiplier = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+                    BigDecimal price = product.getPrice().multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+                    log.info("No history found for product {}/tariff {}, fallback price calculated: {}", id, tariffId, price);
+                    return price;
+                });
+    }
 
     @GetMapping
     public String index(

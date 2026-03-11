@@ -10,6 +10,8 @@ var ticket = {}; // { productId: { name, price, quantity, stock } }
 var currentTariffId = null;
 var currentDiscountPct = 0; // 0–100
 var currentTariffLabel = 'MINORISTA';
+var selectedCustomer = null; // { id, name, tariff: { id, name, discountPercentage } }
+var isTariffPricingActive = false;
 
 
 function addToTicket(card) {
@@ -151,30 +153,12 @@ function renderTicket() {
     formLines.innerHTML = formHTML;
     countEl.textContent = totalItems;
 
-    // ── Discount display ──────────────────────────────────────────────────
+    // ── Discount display (now handled per-line via API/Tariff) ────────────────
     var originalTotalRow = document.getElementById('originalTotalRow');
     var discountRow = document.getElementById('discountRow');
-    var discountLabelEl = document.getElementById('discountLabel');
-    var discountAmountEl = document.getElementById('discountAmount');
-    var originalTotalEl = document.getElementById('originalTotal');
-
-    if (currentDiscountPct > 0) {
-        var originalAmount = 0;
-        ids.forEach(function (id) { originalAmount += ticket[id].price * ticket[id].quantity; });
-        var discountedAmount = originalAmount * (1 - currentDiscountPct / 100);
-        var discountSaving = originalAmount - discountedAmount;
-
-        if (originalTotalRow) { originalTotalRow.style.display = 'flex'; }
-        if (discountRow) { discountRow.style.display = 'flex'; }
-        if (originalTotalEl) { originalTotalEl.textContent = originalAmount.toFixed(2) + '\u20AC'; }
-        if (discountLabelEl) { discountLabelEl.textContent = 'Descuento (' + currentDiscountPct + '%)'; }
-        if (discountAmountEl) { discountAmountEl.textContent = '-' + discountSaving.toFixed(2) + '\u20AC'; }
-        totalEl.textContent = discountedAmount.toFixed(2) + '\u20AC';
-    } else {
-        if (originalTotalRow) { originalTotalRow.style.display = 'none'; }
-        if (discountRow) { discountRow.style.display = 'none'; }
-        totalEl.textContent = totalAmount.toFixed(2) + '\u20AC';
-    }
+    if (originalTotalRow) { originalTotalRow.style.display = 'none'; }
+    if (discountRow) { discountRow.style.display = 'none'; }
+    totalEl.textContent = totalAmount.toFixed(2) + '\u20AC';
 
     cobrarBtn.disabled = false;
     if (suspenderBtn) { suspenderBtn.disabled = false; suspenderBtn.style.opacity = '1'; }
@@ -221,8 +205,15 @@ function openCustomerModal() {
     toggleInvoiceCard(false); // Reset toggle
 
     // Reset search state
+    // Reset search state
     document.getElementById('customerSearchInput').value = '';
-    clearSelectedCustomer();
+    
+    // Pre-fill if already selected in sidebar
+    if (selectedCustomer) {
+        selectCustomer(selectedCustomer);
+    } else {
+        clearSelectedCustomer();
+    }
 
     invoiceModalInstance = new bootstrap.Modal(document.getElementById('customerModal'));
     invoiceModalInstance.show();
@@ -1263,3 +1254,129 @@ document.addEventListener('DOMContentLoaded', function () {
     resetTariffToDefault();
 });
 
+// -- Sidebar Customer Search & Price Update --
+(function () {
+    var searchInput = document.getElementById('sidebarCustomerSearch');
+    var resultsContainer = document.getElementById('sidebarCustomerResults');
+    var timeout = null;
+
+    if (!searchInput) return;
+
+    function renderSidebarResults(customers) {
+        resultsContainer.innerHTML = '';
+        if (customers.length === 0) {
+            resultsContainer.innerHTML = '<div class="p-3 text-center text-muted small">No se encontraron clientes</div>';
+        } else {
+            customers.forEach(function (c) {
+                var div = document.createElement('div');
+                div.className = 'customer-item p-2 border-bottom';
+                div.style.cursor = 'pointer';
+                div.style.backgroundColor = 'var(--surface)';
+                div.innerHTML = '<div class="fw-bold small" style="color: var(--text-main);">' + escapeHtml(c.name) + '</div>' +
+                                '<div class="text-muted" style="font-size:0.7rem">' + (c.taxId || 'Sin NIF') + ' &middot; ' + (c.city || '') + '</div>';
+                div.onclick = function () { selectSidebarCustomer(c); };
+                resultsContainer.appendChild(div);
+            });
+        }
+        resultsContainer.style.display = 'block';
+    }
+
+    searchInput.addEventListener('input', function () {
+        var query = this.value.trim();
+        clearTimeout(timeout);
+        if (query.length < 2) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        timeout = setTimeout(function () {
+            fetch('/api/customers/search?query=' + encodeURIComponent(query))
+                .then(function (r) { return r.json(); })
+                .then(renderSidebarResults);
+        }, 300);
+    });
+
+    searchInput.addEventListener('focus', function () {
+        if (this.value.trim() === '') {
+            fetch('/api/customers/search?query=')
+                .then(function (r) { return r.json(); })
+                .then(renderSidebarResults);
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.style.display = 'none';
+        }
+    });
+
+    window.selectSidebarCustomer = function (c) {
+        selectedCustomer = c;
+        document.getElementById('customerSearchContainer').style.setProperty('display', 'none', 'important');
+        var sidebarSelected = document.getElementById('sidebarSelectedCustomer');
+        sidebarSelected.style.setProperty('display', 'flex', 'important');
+        document.getElementById('sidebarCustomerName').textContent = c.name;
+        document.getElementById('sidebarCustomerSearch').value = '';
+        resultsContainer.style.display = 'none';
+        
+        // Update hidden inputs for sale form (pre-fill checkout)
+        document.getElementById('customerIdInput').value = c.id;
+        document.getElementById('customerNameInput').value = c.name;
+        document.getElementById('customerTypeInput').value = c.type;
+
+        if (c.tariff) {
+            applyTariffById(c.tariff.id, parseFloat(c.tariff.discountPercentage || 0), c.tariff.name);
+            updatePricesForTariff(c.tariff.id);
+        } else {
+            resetTariffToDefault();
+            updatePricesForTariff(null);
+        }
+    };
+
+    window.clearSidebarCustomer = function () {
+        selectedCustomer = null;
+        document.getElementById('customerSearchContainer').style.setProperty('display', 'block', 'important');
+        document.getElementById('sidebarSelectedCustomer').style.setProperty('display', 'none', 'important');
+        
+        document.getElementById('customerIdInput').value = '';
+        document.getElementById('customerNameInput').value = '';
+        document.getElementById('customerTypeInput').value = '';
+        
+        resetTariffToDefault();
+        updatePricesForTariff(null);
+    };
+
+    function updatePricesForTariff(tariffId) {
+        var productIds = Object.keys(ticket);
+        isTariffPricingActive = !!tariffId; // Set flag based on whether a tariff is active
+        if (productIds.length === 0) return;
+
+        Promise.all(productIds.map(function (id) {
+            var url = '/tpv/api/products/' + id + '/price' + (tariffId ? '?tariffId=' + tariffId : '');
+            return fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (price) { return { id: id, price: price }; });
+        })).then(function (results) {
+            results.forEach(function (res) {
+                if (ticket[res.id]) {
+                    ticket[res.id].price = res.price;
+                }
+            });
+            renderTicket();
+        });
+    }
+
+    var originalApplyTariff = window.applyTariffById;
+    window.applyTariffById = function(id, discount, label) {
+        originalApplyTariff(id, discount, label);
+        var badge = document.getElementById('ticketTariffBadge');
+        var labelEl = document.getElementById('tariffBadgeLabel');
+        if (badge && labelEl) {
+            if (discount > 0) {
+                labelEl.textContent = label + (label.includes('%') ? '' : ' ' + discount + '%');
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    };
+})();
