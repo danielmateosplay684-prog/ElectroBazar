@@ -30,4 +30,10 @@ public interface ProductRepository extends JpaRepository<Product, Long>,
     // Todos los productos con su categoría — activos e inactivos (Admin)
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate ORDER BY p.name ASC")
     List<Product> findAllWithCategory();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE Product p SET p.taxRate = :newRate WHERE p.taxRate.id IN :oldRateIds")
+    void updateTaxRateForIds(@Param("oldRateIds") List<Long> oldRateIds, @Param("newRate") com.proconsi.electrobazar.model.TaxRate newRate);
+
+    List<Product> findByTaxRateIdIn(List<Long> taxRateIds);
 }

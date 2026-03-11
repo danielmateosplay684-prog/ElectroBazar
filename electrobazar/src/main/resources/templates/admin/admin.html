@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -122,6 +122,18 @@
 
     <!-- ── Body ── -->
     <div class="admin-body">
+        <!-- Banner: Cambio de IVA pendiente -->
+        <div th:if="${not #lists.isEmpty(futureTaxRates)}" class="alert alert-warning m-4 d-flex align-items-center justify-content-between" style="border-radius: 12px; border-left: 5px solid #f39c12; background: rgba(243, 156, 18, 0.1); color: #f39c12; border: 1px solid rgba(243, 156, 18, 0.2);">
+            <div>
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span th:each="ft, iter : ${futureTaxRates}">
+                    <span>Cambio de IVA programado el </span><strong th:text="${ft.validFrom}"></strong><span>: </span>
+                    <strong th:text="${ft.description}"></strong><span> pasar&aacute; al </span>
+                    <strong th:text="${#numbers.formatDecimal(ft.vatRate * 100, 1, 1)} + '%'"></strong><span>. Se aplicar&aacute; autom&aacute;ticamente.</span>
+                    <span th:if="${!iter.last}"> | </span>
+                </span>
+            </div>
+        </div>
 
 
         <!-- ---- CONTENT VIEWS ---- -->

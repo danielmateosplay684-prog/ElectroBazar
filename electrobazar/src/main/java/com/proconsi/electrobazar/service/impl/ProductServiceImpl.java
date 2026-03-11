@@ -20,6 +20,7 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ProductPriceRepository productPriceRepository;
+    private final com.proconsi.electrobazar.repository.TaxRateRepository taxRateRepository;
     private final ActivityLogService activityLogService;
 
     @Override
@@ -188,5 +189,37 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findAllActiveWithCategory().stream()
                 .limit(limit)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void applyNewTaxRate(Long newTaxRateId) {
+        com.proconsi.electrobazar.model.TaxRate newRate = taxRateRepository.findById(newTaxRateId)
+                .orElseThrow(() -> new ResourceNotFoundException("TaxRate no encontrado: " + newTaxRateId));
+
+        // Buscar todos los TaxRates con la misma descripción (ej: "IVA General") pero distinto ID
+        List<com.proconsi.electrobazar.model.TaxRate> oldRates = taxRateRepository.findByDescriptionAndIdNot(newRate.getDescription(), newTaxRateId);
+        
+        if (oldRates.isEmpty()) return;
+
+        List<Long> oldIds = oldRates.stream().map(com.proconsi.electrobazar.model.TaxRate::getId).collect(java.util.stream.Collectors.toList());
+
+        // Actualizar todos los productos que apuntan a esos IDs viejos
+        productRepository.updateTaxRateForIds(oldIds, newRate);
+
+        // Marcar los viejos como finalizados (validTo = ayer)
+        java.time.LocalDate yesterday = java.time.LocalDate.now().minusDays(1);
+        for (com.proconsi.electrobazar.model.TaxRate old : oldRates) {
+            old.setValidTo(yesterday);
+            old.setActive(false);
+            taxRateRepository.save(old);
+        }
+
+        activityLogService.logActivity(
+                "APLICAR_IVA_MASIVO",
+                "Se ha aplicado el nuevo " + newRate.getDescription() + " (" + newRate.getVatRate().multiply(new java.math.BigDecimal(100)) + "%) de forma masiva.",
+                "Admin",
+                "TAX_RATE",
+                newTaxRateId);
     }
 }

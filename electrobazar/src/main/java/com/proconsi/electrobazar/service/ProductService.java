@@ -36,4 +36,5 @@ public interface ProductService {
     void adjustStock(Long productId, Integer quantity);
 
     List<Product> getTopProducts(int limit);
+    void applyNewTaxRate(Long newTaxRateId);
 }

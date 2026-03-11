@@ -27,6 +27,15 @@ public class TaxRateApiRestController {
 
     @PostMapping
     public TaxRate create(@RequestBody TaxRate taxRate) {
+        // Automatically set valid_to of current active TaxRate with same description
+        if (taxRate.getValidFrom() != null) {
+            taxRateRepository.findByActiveTrue().stream()
+                .filter(tr -> tr.getDescription() != null && tr.getDescription().equals(taxRate.getDescription()))
+                .forEach(tr -> {
+                    tr.setValidTo(taxRate.getValidFrom().minusDays(1));
+                    taxRateRepository.save(tr);
+                });
+        }
         return taxRateRepository.save(taxRate);
     }
 
@@ -39,6 +48,17 @@ public class TaxRateApiRestController {
             existing.setActive(taxRate.getActive());
             existing.setValidFrom(taxRate.getValidFrom());
             existing.setValidTo(taxRate.getValidTo());
+
+            // If we are updating validFrom, we might need to adjust the previous rate's validTo
+            if (taxRate.getValidFrom() != null) {
+                taxRateRepository.findByActiveTrue().stream()
+                    .filter(tr -> !tr.getId().equals(id) && tr.getDescription() != null && tr.getDescription().equals(taxRate.getDescription()))
+                    .forEach(tr -> {
+                        tr.setValidTo(taxRate.getValidFrom().minusDays(1));
+                        taxRateRepository.save(tr);
+                    });
+            }
+
             return ResponseEntity.ok(taxRateRepository.save(existing));
         }).orElse(ResponseEntity.notFound().build());
     }

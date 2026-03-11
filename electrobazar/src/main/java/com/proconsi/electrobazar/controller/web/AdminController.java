@@ -71,6 +71,7 @@ public class AdminController {
         model.addAttribute("tariffs", tariffService.findAll());
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
         model.addAttribute("taxRates", taxRateRepository.findAll());
+        model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(java.time.LocalDate.now()));
 
         return "admin/admin";
     }
@@ -211,6 +212,20 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Error generating cash close PDF for ID " + id, e);
             return org.springframework.http.ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/admin/tax-rates/{newId}/apply-to-products")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> applyNewTaxRate(@PathVariable Long newId, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return org.springframework.http.ResponseEntity.status(401).build();
+        }
+        try {
+            productService.applyNewTaxRate(newId);
+            return org.springframework.http.ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
