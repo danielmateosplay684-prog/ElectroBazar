@@ -27,16 +27,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public Ticket createTicket(Sale sale, boolean applyRecargo) {
-        int currentYear = LocalDate.now().getYear();
+        int ticketYear = sale.getCreatedAt() != null ? sale.getCreatedAt().getYear() : LocalDate.now().getYear();
         String serie = TICKET_SERIE;
 
         // Fetch (and lock) the sequence row for serie "T"
         InvoiceSequence sequence = invoiceSequenceRepository
-                .findBySerieAndYearForUpdate(serie, currentYear)
+                .findBySerieAndYearForUpdate(serie, ticketYear)
                 .orElseGet(() -> {
                     InvoiceSequence newSeq = InvoiceSequence.builder()
                             .serie(serie)
-                            .year(currentYear)
+                            .year(ticketYear)
                             .lastNumber(0)
                             .build();
                     return invoiceSequenceRepository.save(newSeq);
@@ -51,14 +51,14 @@ public class TicketServiceImpl implements TicketService {
             sequence.setLastNumber(nextNumber);
             invoiceSequenceRepository.save(sequence);
 
-            // Format: T-2026-0001
-            ticketNumber = String.format("%s-%d-%04d", serie, currentYear, nextNumber);
+            // Format: T-2026-1
+            ticketNumber = String.format("%s-%d-%d", serie, ticketYear, nextNumber);
         } while (ticketRepository.findByTicketNumber(ticketNumber).isPresent());
 
         Ticket ticket = Ticket.builder()
                 .ticketNumber(ticketNumber)
                 .serie(serie)
-                .year(currentYear)
+                .year(ticketYear)
                 .sequenceNumber(sequence.getLastNumber())
                 .sale(sale)
                 .applyRecargo(applyRecargo)

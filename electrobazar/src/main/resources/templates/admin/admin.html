@@ -1143,6 +1143,68 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-surface border-border shadow-sm">
+                        <div class="card-header border-border bg-transparent py-3">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-building me-2 text-primary"></i>Datos de la Empresa</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form th:action="@{/admin/settings}" th:object="${companySettings}" method="POST">
+                                <input type="hidden" th:field="*{id}">
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label small fw-bold">Nombre / Razón Social</label>
+                                        <input type="text" th:field="*{name}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label small fw-bold">CIF / NIF</label>
+                                        <input type="text" th:field="*{cif}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Dirección</label>
+                                    <input type="text" th:field="*{address}" class="form-control form-control-sm border-border" required>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label small fw-bold">Ciudad</label>
+                                        <input type="text" th:field="*{city}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label small fw-bold">Código Postal</label>
+                                        <input type="text" th:field="*{postalCode}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small fw-bold">Teléfono</label>
+                                        <input type="text" th:field="*{phone}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small fw-bold">Email</label>
+                                        <input type="email" th:field="*{email}" class="form-control form-control-sm border-border" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Sitio Web (Opcional)</label>
+                                    <input type="text" th:field="*{website}" class="form-control form-control-sm border-border">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Registro Mercantil (Footer Factura)</label>
+                                    <textarea th:field="*{registroMercantil}" class="form-control form-control-sm border-border" rows="2"></textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold">Texto Pie de Factura (Opcional)</label>
+                                    <textarea th:field="*{invoiceFooterText}" class="form-control form-control-sm border-border" rows="2"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-save w-100 py-2">
+                                    <i class="bi bi-save me-1"></i> Guardar Configuración
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

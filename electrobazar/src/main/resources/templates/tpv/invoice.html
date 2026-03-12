@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'Factura ' + ${invoice.invoiceNumber} + ' — ElectroBazar'">Factura — ElectroBazar</title>
+    <title th:text="'Factura ' + ${invoice.invoiceNumber} + ' — ' + ${companySettings.name}">Factura — ElectroBazar</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/icons/favicon.svg}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
@@ -321,11 +321,11 @@
             <table class="header-table">
                 <tr>
                     <td>
-                        <div class="brand">Electro<span>Bazar</span></div>
+                        <div class="brand" th:text="${companySettings.name}">ElectroBazar S.L.</div>
                         <div class="company-info">
-                            ElectroBazar S.L. &middot; CIF: B12345678<br />
-                            C/ Exemple, 12 &middot; 28001 Madrid<br />
-                            Tel: 91 123 45 67 &middot; info@electrobazar.com
+                            <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; CIF: <span th:text="${companySettings.cif}">B12345678</span><br />
+                            <span th:text="${companySettings.address}">C/ Exemple, 12</span> &middot; <span th:text="${companySettings.postalCode + ' ' + companySettings.city}">28001 Madrid</span><br />
+                            Tel: <span th:text="${companySettings.phone}">91 123 45 67</span> &middot; <span th:text="${companySettings.email}">info@electrobazar.com</span>
                         </div>
                     </td>
                     <td>
@@ -353,10 +353,10 @@
             <tr>
                 <td>
                     <div class="party-label">Emisor</div>
-                    <div class="party-name">ElectroBazar S.L.</div>
+                    <div class="party-name" th:text="${companySettings.name}">ElectroBazar S.L.</div>
                     <div class="party-detail">
-                        CIF: B12345678<br />
-                        C/ Exemple, 12, 28001 Madrid<br />
+                        CIF: <span th:text="${companySettings.cif}">B12345678</span><br />
+                        <span th:text="${companySettings.address + ', ' + companySettings.postalCode + ' ' + companySettings.city}">C/ Exemple, 12, 28001 Madrid</span><br />
                         <div style="margin-top: 8px;">
                             Le atendió: <strong
                                 th:text="${sale.worker != null ? sale.worker.username : 'Sistema'}">Admin</strong>
@@ -530,9 +530,10 @@
 
         <!-- FOOTER -->
         <div class="footer">
-            ElectroBazar S.L. &mdash; Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1<br />
+            <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &mdash; <span th:text="${companySettings.registroMercantil}">Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1</span><br />
+            <span th:if="${companySettings.invoiceFooterText != null}" th:text="${companySettings.invoiceFooterText}"><br /></span>
             Este documento tiene validez fiscal como Factura Ordinaria. Conservar para garantía y devoluciones.<br />
-            Generado por ElectroBazar TPV el <span
+            Generado por <span th:text="${companySettings.name}">ElectroBazar</span> TPV el <span
                 th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>
         </div>
     </div>

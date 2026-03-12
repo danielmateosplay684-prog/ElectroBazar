@@ -31,6 +31,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.service.TariffService tariffService;
     private final com.proconsi.electrobazar.repository.TaxRateRepository taxRateRepository;
     private final com.proconsi.electrobazar.service.TariffPriceHistoryService tariffPriceHistoryService;
+    private final com.proconsi.electrobazar.service.CompanySettingsService companySettingsService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(
@@ -82,6 +83,7 @@ public class AdminController {
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
         model.addAttribute("taxRates", taxRateRepository.findAll());
         model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(java.time.LocalDate.now()));
+        model.addAttribute("companySettings", companySettingsService.getSettings());
 
         return "admin/admin";
     }
@@ -322,5 +324,18 @@ public class AdminController {
             log.error("Error generating tariff PDF for ID " + id, e);
             return org.springframework.http.ResponseEntity.internalServerError().build();
         }
+    }
+
+    @PostMapping("/admin/settings")
+    public String saveSettings(
+            @ModelAttribute com.proconsi.electrobazar.model.CompanySettings companySettings,
+            HttpSession session,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return "redirect:/login";
+        }
+        companySettingsService.save(companySettings);
+        redirectAttributes.addFlashAttribute("successMessage", "Configuración de empresa actualizada correctamente.");
+        return "redirect:/admin?view=settingsView";
     }
 }

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title
-        th:text="'Factura Rectificativa ' + ${saleReturn.rectificativeInvoice.rectificativeNumber} + ' — ElectroBazar'">
+        th:text="'Factura Rectificativa ' + ${saleReturn.rectificativeInvoice.rectificativeNumber} + ' — ' + ${companySettings.name}">
         Factura Rectificativa — ElectroBazar</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/icons/favicon.svg}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -241,8 +241,8 @@
     <div class="invoice-paper">
         <div class="header-bar">
             <div>
-                <div class="brand">Electro<span>Bazar</span></div>
-                <div style="font-size: 10px; color: #777; margin-top: 5px;">CIF: B12345678 &middot; Madrid, España</div>
+                <div class="brand" th:text="${companySettings.name}">ElectroBazar</div>
+                <div style="font-size: 10px; color: #777; margin-top: 5px;">CIF: <span th:text="${companySettings.cif}">B12345678</span> &middot; <span th:text="${companySettings.city}">Madrid</span>, España</div>
             </div>
             <div>
                 <div class="doc-type">Factura Rectificativa</div>
@@ -273,8 +273,8 @@
             <tr>
                 <td>
                     <div class="party-label">Emisor</div>
-                    <div class="party-name">ElectroBazar S.L.</div>
-                    <div>C/ Ejemplar 12, 28001 Madrid</div>
+                    <div class="party-name" th:text="${companySettings.name}">ElectroBazar S.L.</div>
+                    <div th:text="${companySettings.address + ', ' + companySettings.postalCode + ' ' + companySettings.city}">C/ Ejemplar 12, 28001 Madrid</div>
                 </td>
                 <td>
                     <div class="party-label">Persona Receptor/a</div>
@@ -335,6 +335,8 @@
         </div>
 
         <div class="footer">
+            <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &mdash; <span th:text="${companySettings.registroMercantil}">Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1</span><br />
+            <span th:if="${companySettings.invoiceFooterText != null}" th:text="${companySettings.invoiceFooterText}"><br /></span>
             Factura Rectificativa generada al amparo del Art. 15 del R.D. 1619/2012.<br />
             Este documento anula parcial o totalmente el impacto fiscal del documento original referenciado.
         </div>

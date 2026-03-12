@@ -299,3 +299,25 @@ CREATE INDEX IF NOT EXISTS idx_tariff_price_history_product ON tariff_price_hist
 CREATE INDEX IF NOT EXISTS idx_tariff_price_history_tariff ON tariff_price_history(tariff_id);
 CREATE INDEX IF NOT EXISTS idx_tariff_price_history_dates ON tariff_price_history(valid_from, valid_to);
 
+-- ============================================
+-- Company settings table
+-- Single row (id=1) for company information
+-- ============================================
+CREATE TABLE IF NOT EXISTS company_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    cif VARCHAR(50) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    website VARCHAR(255),
+    registro_mercantil TEXT,
+    invoice_footer_text TEXT
+);
+
+-- Default company settings
+INSERT INTO company_settings (id, name, cif, address, city, postal_code, phone, email, website, registro_mercantil, invoice_footer_text)
+SELECT 1, 'ElectroBazar S.L.', 'B12345678', 'Calle Principal 123', 'León', '24001', '987654321', 'info@electrobazar.com', 'www.electrobazar.com', 'Registro Mercantil de León, Tomo 1234, Folio 56, Hoja LE-7890', 'Gracias por su compra. Plazo de devolución: 15 días con ticket original.'
+WHERE NOT EXISTS (SELECT 1 FROM company_settings WHERE id = 1);

@@ -37,16 +37,16 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public Invoice createInvoice(Sale sale) {
-        int currentYear = LocalDate.now().getYear();
+        int invoiceYear = sale.getCreatedAt() != null ? sale.getCreatedAt().getYear() : LocalDate.now().getYear();
         String serie = DEFAULT_SERIE;
 
         // Fetch (and lock) the sequence row for this serie+year, creating it if absent.
         InvoiceSequence sequence = invoiceSequenceRepository
-                .findBySerieAndYearForUpdate(serie, currentYear)
+                .findBySerieAndYearForUpdate(serie, invoiceYear)
                 .orElseGet(() -> {
                     InvoiceSequence newSeq = InvoiceSequence.builder()
                             .serie(serie)
-                            .year(currentYear)
+                            .year(invoiceYear)
                             .lastNumber(0)
                             .build();
                     return invoiceSequenceRepository.save(newSeq);
@@ -61,14 +61,14 @@ public class InvoiceServiceImpl implements InvoiceService {
             sequence.setLastNumber(nextNumber);
             invoiceSequenceRepository.save(sequence);
 
-            // Format: F-2026-0001 (serie, year, zero-padded 4-digit sequence)
-            invoiceNumber = String.format("%s-%d-%04d", serie, currentYear, nextNumber);
+            // Format: F-2026-1 (serie, year, sequence)
+            invoiceNumber = String.format("%s-%d-%d", serie, invoiceYear, nextNumber);
         } while (invoiceRepository.findByInvoiceNumber(invoiceNumber).isPresent());
 
         Invoice invoice = Invoice.builder()
                 .invoiceNumber(invoiceNumber)
                 .serie(serie)
-                .year(currentYear)
+                .year(invoiceYear)
                 .sequenceNumber(sequence.getLastNumber())
                 .sale(sale)
                 .status(Invoice.InvoiceStatus.ACTIVE)

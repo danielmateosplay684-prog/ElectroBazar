@@ -41,6 +41,7 @@ public class TpvController {
     private final ActivityLogService activityLogService;
     private final TariffService tariffService;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
+    private final CompanySettingsService companySettingsService;
 
     @GetMapping
     public String index(
@@ -237,6 +238,7 @@ public class TpvController {
         Sale sale = saleService.findById(saleId);
         model.addAttribute("sale", sale);
         model.addAttribute("autoPrint", autoPrint);
+        model.addAttribute("companySettings", companySettingsService.getSettings());
 
         // Resolve invoice (from flash or DB) — must happen before template decision
         if (!model.containsAttribute("invoice")) {
@@ -604,6 +606,7 @@ public class TpvController {
             model.addAttribute("saleReturn", saleReturn);
         }
         model.addAttribute("autoPrint", autoPrint);
+        model.addAttribute("companySettings", companySettingsService.getSettings());
 
         // Calculate common tax breakdown (positive values for standard receipt)
         Sale originalSale = saleReturn.getOriginalSale();
