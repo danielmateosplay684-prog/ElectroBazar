@@ -17,6 +17,9 @@ public class CompanySettings {
     private Long id = 1L;
 
     @Column(nullable = false)
+    private String appName;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)

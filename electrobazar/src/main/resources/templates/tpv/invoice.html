@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'Factura ' + ${invoice.invoiceNumber} + ' — ' + ${companySettings.name}">Factura — ElectroBazar</title>
+    <title th:text="'Factura ' + ${invoice.invoiceNumber} + ' — ' + ${companySettings.appName}">Factura — ElectroBazar</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/icons/favicon.svg}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
@@ -533,7 +533,7 @@
             <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &mdash; <span th:text="${companySettings.registroMercantil}">Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1</span><br />
             <span th:if="${companySettings.invoiceFooterText != null}" th:text="${companySettings.invoiceFooterText}"><br /></span>
             Este documento tiene validez fiscal como Factura Ordinaria. Conservar para garantía y devoluciones.<br />
-            Generado por <span th:text="${companySettings.name}">ElectroBazar</span> TPV el <span
+            Generado por <span th:text="${companySettings.appName}">ElectroBazar</span> TPV el <span
                 th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>
         </div>
     </div>

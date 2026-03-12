@@ -89,7 +89,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>ElectroBazar - Tarifa de Precios</h1>
+        <h1 th:text="${companySettings.appName} + ' - Tarifa de Precios'">ElectroBazar - Tarifa de Precios</h1>
         <div class="tariff-name" th:text="${tariff.name}">NOMBRE TARIFA</div>
     </div>
 
@@ -127,7 +127,7 @@
     </div>
 
     <div id="footer" class="footer">
-        Documento generado automáticamente por sistema ElectroBazar TPV - &copy; <span th:text="${generationDate.year}">2026</span>
+        Documento generado automáticamente por sistema <span th:text="${companySettings.appName}">ElectroBazar</span> TPV - &copy; <span th:text="${generationDate.year}">2026</span>
     </div>
 </body>
 </html>

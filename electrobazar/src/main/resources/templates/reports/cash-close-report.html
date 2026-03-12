@@ -148,7 +148,7 @@
 <body>
 
     <div class="header">
-        <h1>ElectroBazar TPV</h1>
+        <h1 th:text="${companySettings.appName} + ' TPV'">ElectroBazar TPV</h1>
         <p>Reporte de Cierre de Caja Diario</p>
     </div>
 
@@ -364,7 +364,7 @@
     </div>
 
     <div class="footer">
-        Este documento es un comprobante interno generado automáticamente por el sistema ElectroBazar TPV.<br />
+        Este documento es un comprobante interno generado automáticamente por el sistema <span th:text="${companySettings.appName}">ElectroBazar</span> TPV.<br />
         Generado el <span th:text="${#calendars.format(#calendars.createNow(), 'dd/MM/yyyy HH:mm:ss')}"></span>
     </div>
 

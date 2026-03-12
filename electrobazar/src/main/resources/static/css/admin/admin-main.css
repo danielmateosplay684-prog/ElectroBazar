@@ -1,4 +1,4 @@
-﻿        :root {
+        :root {
             --primary: #1a1a2e;
             --secondary: #16213e;
             --accent: #f5a623;
@@ -10,6 +10,14 @@
             --text-main: #e8eaf0;
             --border: #1e2d45;
         }
+
+        /* ── Utility classes for theme variables ── */
+        .bg-primary { background-color: var(--primary) !important; }
+        .bg-secondary { background-color: var(--secondary) !important; }
+        .bg-surface { background-color: var(--surface) !important; }
+        .border-border { border-color: var(--border) !important; }
+        .text-main { color: var(--text-main) !important; }
+        .text-muted { color: var(--text-muted) !important; }
 
         * {
             box-sizing: border-box;

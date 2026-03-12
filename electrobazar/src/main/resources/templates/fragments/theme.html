@@ -84,6 +84,8 @@
                 if (!prefs.fontSize) prefs.fontSize = '16px';
                 if (!prefs.fontFamily) prefs.fontFamily = "'Barlow', sans-serif";
 
+                const appName = /*[[${companySettings.appName}]]*/ 'ElectroBazar';
+
                 const isDark = prefs.mode === 'dark';
                 let currentAccentIdx = isDark ? prefs.darkAccent : prefs.lightAccent;
                 if (currentAccentIdx >= accentColors.length) currentAccentIdx = 0;
@@ -129,7 +131,7 @@
                 // ── Logo / favicon swap ─────────────────────────────────────
                 let logoFile = isDark ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
                 document.addEventListener('DOMContentLoaded', function () {
-                    document.querySelectorAll('img[alt="Logo"], img[alt="Logo ElectroBazar"]')
+                    document.querySelectorAll('img[alt="Logo"], img[alt="Logo ' + appName + '"]')
                         .forEach(function (img) { img.src = logoFile; });
                     
                     // Update all favicon links and remove media queries so app preference takes over
@@ -189,7 +191,7 @@
                     rs2.setProperty('--accent-hover', accentHov2);
                     rs2.setProperty('--accent-rgb', hexToRgb(accentVal2));
                     const logoFile2 = isDark2 ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
-                    document.querySelectorAll('img[alt="Logo"], img[alt="Logo ElectroBazar"]')
+                    document.querySelectorAll('img[alt="Logo"], img[alt="Logo ' + appName + '"]')
                         .forEach(function (img) { img.src = logoFile2; });
                     document.querySelectorAll('link[rel="icon"]').forEach(function(link) {
                         link.removeAttribute('media');
