@@ -29,6 +29,7 @@ public class TariffServiceImpl implements TariffService {
     private final CustomerRepository customerRepository;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
     private final RecargoEquivalenciaCalculator recargoCalculator;
+    private final com.proconsi.electrobazar.service.ActivityLogService activityLogService;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,7 +75,9 @@ public class TariffServiceImpl implements TariffService {
                 .active(true)
                 .systemTariff(false)
                 .build();
-        return tariffRepository.save(tariff);
+        Tariff saved = tariffRepository.save(tariff);
+        activityLogService.logActivity("CREAR_TARIFA", "Nueva tarifa creada: " + saved.getName() + " (" + saved.getDiscountPercentage() + "%)", "Admin", "TARIFF", saved.getId());
+        return saved;
     }
 
     @Override
@@ -83,7 +86,9 @@ public class TariffServiceImpl implements TariffService {
                 .orElseThrow(() -> new IllegalArgumentException("Tarifa no encontrada con id: " + id));
         tariff.setDiscountPercentage(discountPercentage != null ? discountPercentage : BigDecimal.ZERO);
         tariff.setDescription(description);
-        return tariffRepository.save(tariff);
+        Tariff saved = tariffRepository.save(tariff);
+        activityLogService.logActivity("ACTUALIZAR_TARIFA", "Tarifa actualizada: " + saved.getName() + " (Nuevo desc: " + saved.getDiscountPercentage() + "%)", "Admin", "TARIFF", saved.getId());
+        return saved;
     }
 
     @Override
@@ -95,6 +100,8 @@ public class TariffServiceImpl implements TariffService {
         }
         tariff.setActive(false);
         tariffRepository.save(tariff);
+
+        activityLogService.logActivity("DESACTIVAR_TARIFA", "Tarifa desactivada: " + tariff.getName(), "Admin", "TARIFF", tariff.getId());
 
         // Move all customers using this tariff back to MINORISTA
         Tariff minorista = getDefault();
@@ -228,6 +235,10 @@ public class TariffServiceImpl implements TariffService {
             tariffPriceHistoryRepository.saveAll(newRecords);
             log.info("Regenerated {} tariff_price_history records for {} products x {} tariffs.",
                     newRecords.size(), affectedProducts.size(), activeTariffs.size());
+
+            activityLogService.logActivity("REGENERAR_PRECIOS_TARIFA", 
+                String.format("Precios regenerados para %d productos en todas las tarifas activas", affectedProducts.size()), 
+                "Sistema", "TARIFF", null);
         }
     }
 }

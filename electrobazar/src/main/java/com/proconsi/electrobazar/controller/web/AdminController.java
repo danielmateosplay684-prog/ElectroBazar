@@ -32,6 +32,7 @@ public class AdminController {
     private final com.proconsi.electrobazar.repository.TaxRateRepository taxRateRepository;
     private final com.proconsi.electrobazar.service.TariffPriceHistoryService tariffPriceHistoryService;
     private final com.proconsi.electrobazar.service.CompanySettingsService companySettingsService;
+    private final ActivityLogService activityLogService;
 
     @GetMapping("/productos-categorias")
     public String productsCategories(
@@ -116,6 +117,7 @@ public class AdminController {
         workerService.findById(id).ifPresent(w -> {
             w.setActive(false);
             workerService.save(w);
+            activityLogService.logActivity("DESACTIVAR_TRABAJADOR", "Trabajador desactivado: " + w.getUsername(), "Admin", "WORKER", id);
         });
         return org.springframework.http.ResponseEntity.ok().build();
     }
@@ -149,6 +151,7 @@ public class AdminController {
 
         try {
             String result = csvImportService.importProductsCsv(file);
+            activityLogService.logActivity("IMPORTAR_CSV", "Importación CSV realizada: " + result, "Admin", "IMPORT", null);
             return org.springframework.http.ResponseEntity.ok(java.util.Map.of("ok", true, "message", result));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)

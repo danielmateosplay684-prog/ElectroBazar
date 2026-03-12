@@ -14,6 +14,7 @@ import java.util.List;
 public class TaxRateApiRestController {
 
     private final TaxRateRepository taxRateRepository;
+    private final com.proconsi.electrobazar.service.ActivityLogService activityLogService;
 
     @GetMapping
     public List<TaxRate> getAll() {
@@ -36,7 +37,9 @@ public class TaxRateApiRestController {
                     taxRateRepository.save(tr);
                 });
         }
-        return taxRateRepository.save(taxRate);
+        TaxRate saved = taxRateRepository.save(taxRate);
+        activityLogService.logActivity("CREAR_IVA", "Nuevo tipo de IVA creado: " + saved.getDescription() + " (" + saved.getVatRate().multiply(new java.math.BigDecimal("100")) + "%)", "Admin", "TAX_RATE", saved.getId());
+        return saved;
     }
 
     @PutMapping("/{id}")
@@ -59,13 +62,18 @@ public class TaxRateApiRestController {
                     });
             }
 
-            return ResponseEntity.ok(taxRateRepository.save(existing));
+            TaxRate saved = taxRateRepository.save(existing);
+            activityLogService.logActivity("ACTUALIZAR_IVA", "Tipo de IVA actualizado: " + saved.getDescription() + " (" + saved.getVatRate().multiply(new java.math.BigDecimal("100")) + "%)", "Admin", "TAX_RATE", saved.getId());
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        taxRateRepository.deleteById(id);
+        taxRateRepository.findById(id).ifPresent(tr -> {
+            taxRateRepository.deleteById(id);
+            activityLogService.logActivity("ELIMINAR_IVA", "Tipo de IVA eliminado: " + tr.getDescription(), "Admin", "TAX_RATE", id);
+        });
         return ResponseEntity.ok().build();
     }
 }

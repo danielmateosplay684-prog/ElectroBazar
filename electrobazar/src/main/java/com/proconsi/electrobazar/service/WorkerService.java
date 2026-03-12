@@ -90,14 +90,14 @@ public class WorkerService {
 
         if (workerOpt.isPresent()) {
             activityLogService.logActivity(
-                    "LOGIN",
+                    "INICIAR_SESION",
                     "Inicio de sesión exitoso: " + username,
                     username,
                     "WORKER",
                     workerOpt.get().getId());
         } else {
             activityLogService.logActivity(
-                    "LOGIN_FALLIDO",
+                    "INICIAR_SESION_FALLIDO",
                     "Intento de inicio de sesión fallido: " + username,
                     "Sistema",
                     "WORKER",

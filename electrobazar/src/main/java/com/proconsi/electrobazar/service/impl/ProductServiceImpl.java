@@ -181,6 +181,7 @@ public class ProductServiceImpl implements ProductService {
         }
         product.setStock(product.getStock() - quantity);
         productRepository.save(product);
+        activityLogService.logActivity("AJUSTE_STOCK", "Stock reducido (manual): " + product.getName() + " (-" + quantity + ")", "Admin", "PRODUCT", product.getId());
     }
 
     @Override
@@ -188,6 +189,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = findById(productId);
         product.setStock(product.getStock() + quantity);
         productRepository.save(product);
+        activityLogService.logActivity("AJUSTE_STOCK", "Stock incrementado (manual): " + product.getName() + " (+" + quantity + ")", "Admin", "PRODUCT", product.getId());
     }
 
     @Override
@@ -201,6 +203,7 @@ public class ProductServiceImpl implements ProductService {
         }
         product.setStock(newStock);
         productRepository.save(product);
+        activityLogService.logActivity("AJUSTE_STOCK", "Ajuste de stock: " + product.getName() + " (Cambio: " + quantity + ", Nuevo stock: " + newStock + ")", "Admin", "PRODUCT", product.getId());
     }
 
     @Override

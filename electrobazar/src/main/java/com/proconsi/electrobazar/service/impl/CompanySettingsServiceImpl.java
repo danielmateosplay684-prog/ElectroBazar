@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanySettingsServiceImpl implements CompanySettingsService {
 
     private final CompanySettingsRepository repository;
+    private final com.proconsi.electrobazar.service.ActivityLogService activityLogService;
 
     @Override
     @Transactional(readOnly = true)
@@ -38,6 +39,14 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
         CompanySettings existing = repository.findById(1L)
             .orElseThrow(() -> new RuntimeException("Company settings not found"));
         
+        java.util.List<String> changes = new java.util.ArrayList<>();
+        if (!java.util.Objects.equals(existing.getAppName(), incoming.getAppName())) changes.add("Nombre App");
+        if (!java.util.Objects.equals(existing.getName(), incoming.getName())) changes.add("Empresa");
+        if (!java.util.Objects.equals(existing.getCif(), incoming.getCif())) changes.add("CIF");
+        if (!java.util.Objects.equals(existing.getAddress(), incoming.getAddress())) changes.add("Dirección");
+        if (!java.util.Objects.equals(existing.getPhone(), incoming.getPhone())) changes.add("Teléfono");
+        if (!java.util.Objects.equals(existing.getEmail(), incoming.getEmail())) changes.add("Email");
+
         existing.setAppName(incoming.getAppName());
         existing.setName(incoming.getName());
         existing.setCif(incoming.getCif());
@@ -50,6 +59,14 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
         existing.setRegistroMercantil(incoming.getRegistroMercantil());
         existing.setInvoiceFooterText(incoming.getInvoiceFooterText());
         
-        return repository.save(existing);
+        CompanySettings saved = repository.save(existing);
+        
+        if (!changes.isEmpty()) {
+            activityLogService.logActivity("ACTUALIZAR_CONFIGURACION", 
+                "Configuración actualizada. Campos cambiados: " + String.join(", ", changes), 
+                "Admin", "CONFIG", 1L);
+        }
+        
+        return saved;
     }
 }

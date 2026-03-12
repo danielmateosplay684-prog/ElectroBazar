@@ -259,8 +259,14 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public void saveApplyRecargo(Long saleId, boolean applyRecargo) {
         saleRepository.findById(saleId).ifPresent(sale -> {
-            sale.setApplyRecargo(applyRecargo);
-            saleRepository.save(sale);
+            boolean old = sale.isApplyRecargo();
+            if (old != applyRecargo) {
+                sale.setApplyRecargo(applyRecargo);
+                saleRepository.save(sale);
+                activityLogService.logActivity("MODIFICAR_RECARGO", 
+                    "Recargo de equivalencia modificado en Venta #" + saleId + (applyRecargo ? " (Activado)" : " (Desactivado)"), 
+                    "Admin", "SALE", saleId);
+            }
         });
     }
 
