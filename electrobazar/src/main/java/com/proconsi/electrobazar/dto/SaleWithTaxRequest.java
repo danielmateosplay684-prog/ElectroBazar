@@ -26,6 +26,12 @@ public class SaleWithTaxRequest {
     private String notes;
 
     /**
+     * If true and a customer is provided, an invoice (factura) will be generated
+     * instead of a standard ticket. Mirrors the web TPV's requestInvoice flag.
+     */
+    private Boolean requestInvoice;
+
+    /**
      * Amount received from the customer (required for CASH payments).
      * Used to calculate change.
      */

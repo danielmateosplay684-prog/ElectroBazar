@@ -6,9 +6,11 @@ import com.proconsi.electrobazar.dto.TaxBreakdown;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.*;
 import com.proconsi.electrobazar.repository.CustomerRepository;
+import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.ProductPriceService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.SaleService;
+import com.proconsi.electrobazar.service.TicketService;
 import com.proconsi.electrobazar.service.WorkerService;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +76,8 @@ public class SaleWithTaxApiRestController {
         private final CustomerRepository customerRepository;
         private final WorkerService workerService;
         private final RecargoEquivalenciaCalculator recargoCalculator;
+        private final InvoiceService invoiceService;
+        private final TicketService ticketService;
 
         /**
          * Processes a sale with full VAT and optional Recargo de Equivalencia
@@ -218,7 +222,21 @@ public class SaleWithTaxApiRestController {
                                 customer,
                                 worker);
 
-                // ── 6. Build and return the response ──────────────────────────────────
+                // ── 6. Generate invoice or ticket ─────────────────────────────────────
+                boolean requestInvoice = Boolean.TRUE.equals(request.getRequestInvoice());
+                Invoice invoice = null;
+                try {
+                        if (requestInvoice && customer != null) {
+                                invoice = invoiceService.createInvoice(savedSale);
+                                log.info("Invoice {} generated for saleId={}", invoice.getInvoiceNumber(), savedSale.getId());
+                        } else {
+                                ticketService.createTicket(savedSale, applyRecargo);
+                        }
+                } catch (Exception e) {
+                        log.error("Error generating document for saleId={}: {}", savedSale.getId(), e.getMessage());
+                }
+
+                // ── 7. Build and return the response ──────────────────────────────────
                 SaleWithTaxResponse response = SaleWithTaxResponse.builder()
                                 .saleId(savedSale.getId())
                                 .createdAt(savedSale.getCreatedAt())
@@ -236,8 +254,8 @@ public class SaleWithTaxApiRestController {
                                 .notes(savedSale.getNotes())
                                 .build();
 
-                log.info("Sale with tax processed: saleId={}, grandTotal={} €, RE applied={}",
-                                savedSale.getId(), grandTotal, applyRecargo);
+                log.info("Sale with tax processed: saleId={}, grandTotal={} €, RE applied={}, invoice={}",
+                                savedSale.getId(), grandTotal, applyRecargo, invoice != null ? invoice.getInvoiceNumber() : "none");
 
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
