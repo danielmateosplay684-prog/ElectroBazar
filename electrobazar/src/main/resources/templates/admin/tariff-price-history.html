@@ -78,7 +78,7 @@
                 <a th:href="@{'/admin?view=' + ${returnView}}" class="btn btn-sm btn-outline-secondary mb-2">
                     <i class="bi bi-arrow-left"></i> Volver al panel
                 </a>
-                <h2 class="h3 mb-0">Historial de Precios: <span th:text="${tariff.name}" class="text-primary">TARIFA</span></h2>
+                <h2 class="h3 mb-0">Historial de Precios: <span th:text="${tariff.name}" class="text-accent">TARIFA</span></h2>
                 <p class="text-muted mb-0">Listado histórico de variaciones de precios para esta tarifa.</p>
             </div>
             <div>
@@ -109,7 +109,7 @@
                         </a>
                         <button th:if="${prevDate == null}" class="btn btn-sm btn-outline-secondary disabled me-1">&lsaquo;</button>
                         
-                        <div class="current-date-badge mx-2 px-3 py-2 bg-primary text-white rounded-3 fw-bold shadow-sm">
+                        <div class="current-date-badge mx-2 px-3 py-2 bg-primary rounded-3 fw-bold shadow-sm" style="color: var(--text-main);">
                             <i class="bi bi-calendar-event me-2"></i>
                             <span th:text="${#temporals.format(selectedDate, 'dd/MM/yyyy')}">12/03/2026</span>
                         </div>
@@ -145,8 +145,9 @@
                 <div class="search-box">
                     <label class="form-label small text-muted mb-1 d-block">Filtrar por nombre:</label>
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-                        <input type="text" id="filterProduct" class="form-control" placeholder="Producto..." onkeyup="filterTable()">
+                        <span class="input-group-text" style="background: var(--surface); color: var(--text-muted); border-color: var(--border);"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filterProduct" class="form-control" placeholder="Producto..." onkeyup="filterTable()"
+                               style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                 </div>
             </div>

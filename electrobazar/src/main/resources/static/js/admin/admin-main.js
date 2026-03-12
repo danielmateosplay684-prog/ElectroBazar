@@ -1223,7 +1223,7 @@ function openRoleModal(id) {
                 if (isSpecial) div.style.borderTop = '1px solid var(--border)';
 
                 div.innerHTML = '<input class="form-check-input role-perm-checkbox" type="checkbox" value="' + p + '" id="perm_' + p + '"' + (isChecked ? ' checked' : '') + '>' +
-                    '<label class="form-check-label ' + (isSpecial ? 'text-danger fw-bold' : '') + '" for="perm_' + p + '" style="color: var(--text-primary); cursor: pointer;">' +
+                    '<label class="form-check-label ' + (isSpecial ? 'text-danger fw-bold' : '') + '" for="perm_' + p + '" style="color: var(--text-main); cursor: pointer;">' +
                     (isSpecial ? '<i class="bi bi-shield-exclamation me-1"></i>' : '') + p +
                     '</label>';
 
@@ -1745,7 +1745,7 @@ function updateIpcPreview() {
                 <tr>
                     <td>${escHtml(p.productName)}</td>
                     <td class="text-end">${parseFloat(p.currentPrice).toFixed(2)} €</td>
-                    <td class="text-end fw-bold text-primary">${parseFloat(p.newPrice).toFixed(2)} €</td>
+                    <td class="text-end fw-bold text-accent">${parseFloat(p.newPrice).toFixed(2)} €</td>
                 </tr>
             `).join('');
         })

@@ -16,7 +16,7 @@
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
         #ipcUpdateModal .modal-content {
-            background-color: #16213e !important;
+            background-color: var(--secondary) !important;
             opacity: 1 !important;
             border: 1px solid var(--border) !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
@@ -30,7 +30,7 @@
         #ipcUpdateModal .alert-info {
             background-color: rgba(0, 123, 255, 0.1) !important;
             border: 1px solid rgba(0, 123, 255, 0.2) !important;
-            color: #72b2ff !important;
+            color: var(--text-main) !important;
         }
     </style>
 </head>
@@ -350,7 +350,7 @@
                             <td><strong th:text="${tariff.name}">MINORISTA</strong></td>
                             <td>
                                 <span th:if="${tariff.discountPercentage > 0}"
-                                    style="background:rgba(39,174,96,0.15);color:#27ae60;padding:0.15rem 0.5rem;border-radius:6px;font-weight:700;font-size:0.88rem;"
+                                    style="background:rgba(var(--accent-rgb), 0.15);color:var(--accent);padding:0.15rem 0.5rem;border-radius:6px;font-weight:700;font-size:0.88rem;"
                                     th:text="'-' + ${#numbers.formatDecimal(tariff.discountPercentage, 1, 0)} + '%'">
                                     -15%</span>
                                 <span th:unless="${tariff.discountPercentage > 0}" style="color:var(--text-muted);">0%
@@ -779,11 +779,11 @@
                         style="background: var(--surface); border: 1px solid var(--border);">
                         <div class="row g-2">
                             <div class="col-md-10">
-                                <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar
+                                <label class="form-label small mb-1" style="color: var(--text-main);">Buscar
                                     categoría</label>
                                 <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
                                     placeholder="Nombre o descripción..." oninput="debounceSharedFilter()"
-                                    style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                    style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCategoryFilters()">
@@ -864,35 +864,35 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar
                             factura/cliente</label>
                         <input type="text" id="invoiceFilterSearch" class="form-control form-control-sm"
                             placeholder="Nº, Cliente, NIF..." oninput="filterInvoices()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Tipo</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Tipo</label>
                         <select id="invoiceFilterType" class="form-select form-select-sm" onchange="filterInvoices()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Todos</option>
                             <option value="factura">Factura</option>
                             <option value="ticket">Ticket</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Método de Pago</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Método de Pago</label>
                         <select id="invoiceFilterMethod" class="form-select form-select-sm" onchange="filterInvoices()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Cualquier método</option>
                             <option value="Efectivo">Efectivo</option>
                             <option value="Tarjeta">Tarjeta</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Fecha</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Fecha</label>
                         <input type="date" id="invoiceFilterDate" class="form-control form-control-sm"
                             onchange="filterInvoices()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetInvoiceFilters()">
@@ -994,26 +994,26 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por Nº /
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por Nº /
                             Motivo</label>
                         <input type="text" id="returnFilterSearch" class="form-control form-control-sm"
                             placeholder="Ej: D-2026-0001 o Motivo..." oninput="filterReturns()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Método de Pago</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Método de Pago</label>
                         <select id="returnFilterMethod" class="form-select form-select-sm" onchange="filterReturns()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Cualquier método</option>
                             <option value="Efectivo">Efectivo</option>
                             <option value="Tarjeta">Tarjeta</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Fecha</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Fecha</label>
                         <input type="date" id="returnFilterDate" class="form-control form-control-sm"
                             onchange="filterReturns()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetReturnFilters()">
@@ -1231,18 +1231,18 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-5">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por
                             trabajador</label>
                         <input type="text" id="cashFilterWorker" class="form-control form-control-sm"
                             placeholder="Nombre de usuario..." oninput="filterCashClosures()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-5">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Fecha
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Fecha
                             (DD/MM/YYYY)</label>
                         <input type="text" id="cashFilterDate" class="form-control form-control-sm"
                             placeholder="Ej: 03/03/2026..." oninput="filterCashClosures()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCashFilters()">
@@ -1332,24 +1332,24 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por
                             nombre</label>
                         <input type="text" id="workerFilterName" class="form-control form-control-sm"
                             placeholder="Usuario..." oninput="filterWorkers()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Rol</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Rol</label>
                         <select id="workerFilterRole" class="form-select form-select-sm" onchange="filterWorkers()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Cualquier Rol</option>
                             <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}"></option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Estado</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Estado</label>
                         <select id="workerFilterStatus" class="form-select form-select-sm" onchange="filterWorkers()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Todos</option>
                             <option value="true">Activos</option>
                             <option value="false">Inactivos</option>
@@ -1443,44 +1443,44 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-6">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por
                             nombre</label>
                         <input type="text" id="roleFilterName" class="form-control form-control-sm"
                             placeholder="Buscar por nombre..." oninput="filterRoles()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Permisos
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Permisos
                             requeridos</label>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100" type="button"
                                 id="roleFilterPermBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
                                 aria-expanded="false"
-                                style="text-align: left; color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                style="text-align: left; color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                                 Seleccionar Permisos
                             </button>
                             <div class="dropdown-menu p-3 shadow"
-                                style="min-width: 250px; --bs-dropdown-bg: var(--surface); --bs-dropdown-color: var(--text-primary); --bs-dropdown-border-color: var(--border); background-color: var(--surface); border-color: var(--border);">
+                                style="min-width: 250px; --bs-dropdown-bg: var(--surface); --bs-dropdown-color: var(--text-main); --bs-dropdown-border-color: var(--border); background-color: var(--surface); border-color: var(--border);">
                                 <div class="form-check mb-2" onclick="event.stopPropagation()">
                                     <input class="form-check-input role-filter-perm" type="checkbox"
                                         value="ADMIN_ACCESS" id="rf_admin"
                                         onchange="filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', 'Seleccionar Permisos');">
                                     <label class="form-check-label small" for="rf_admin"
-                                        style="color: var(--text-primary);">ADMIN_ACCESS</label>
+                                        style="color: var(--text-main);">ADMIN_ACCESS</label>
                                 </div>
                                 <div class="form-check mb-2" onclick="event.stopPropagation()">
                                     <input class="form-check-input role-filter-perm" type="checkbox" value="CASH_CLOSE"
                                         id="rf_cash"
                                         onchange="filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', 'Seleccionar Permisos');">
                                     <label class="form-check-label small" for="rf_cash"
-                                        style="color: var(--text-primary);">CASH_CLOSE</label>
+                                        style="color: var(--text-main);">CASH_CLOSE</label>
                                 </div>
                                 <div class="form-check mb-0" onclick="event.stopPropagation()">
                                     <input class="form-check-input role-filter-perm" type="checkbox"
                                         value="MANAGE_PRODUCTS_TPV" id="rf_stock"
                                         onchange="filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', 'Seleccionar Permisos');">
                                     <label class="form-check-label small" for="rf_stock"
-                                        style="color: var(--text-primary);">MANAGE_PRODUCTS_TPV</label>
+                                        style="color: var(--text-main);">MANAGE_PRODUCTS_TPV</label>
                                 </div>
                             </div>
                         </div>
@@ -1618,24 +1618,24 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-5">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar cliente</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar cliente</label>
                         <input type="text" id="crmFilterSearch" class="form-control form-control-sm"
                             placeholder="Nombre, NIF, Email, Teléfono..." oninput="filterCRM()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Tipo</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Tipo</label>
                         <select id="crmFilterType" class="form-select form-select-sm" onchange="filterCRM()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Todos los tipos</option>
                             <option value="INDIVIDUAL">Particular</option>
                             <option value="COMPANY">Empresa / Profesional</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">R.E.</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">R.E.</label>
                         <select id="crmFilterRE" class="form-select form-select-sm" onchange="filterCRM()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                             <option value="">Todos</option>
                             <option value="yes">Con Recargo</option>
                             <option value="no">Sin Recargo</option>
@@ -1761,11 +1761,11 @@
                     style="background: var(--surface); border: 1px solid var(--border);">
                     <div class="row g-2">
                         <div class="col-md-10">
-                            <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por
+                            <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por
                                 producto</label>
                             <input type="text" id="futurePriceFilterSearch" class="form-control form-control-sm"
                                 placeholder="Nombre del producto..." oninput="filterFuturePrices()"
-                                style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFuturePriceFilters()">
@@ -1803,10 +1803,10 @@
                     style="background: var(--surface); border: 1px solid var(--border);">
                     <div class="row g-2">
                         <div class="col-md-10">
-                            <label class="form-label small mb-1" style="color: var(--text-primary);">Producto</label>
+                            <label class="form-label small mb-1" style="color: var(--text-main);">Producto</label>
                             <select class="form-select form-select-sm" id="historialProductSelect"
                                 onchange="loadPriceHistory()"
-                                style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                                 <option value="">— Selecciona un producto —</option>
                                 <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name}"></option>
                             </select>
@@ -1872,7 +1872,7 @@
             </div>
 
             <!-- Form -->
-            <div class="card" style="background:var(--bg-card);border:1px solid var(--border);max-width:700px">
+            <div class="card" style="background:var(--secondary);border:1px solid var(--border);max-width:700px">
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label fw-600" style="color: var(--text-main);">Seleccionar
@@ -1932,13 +1932,15 @@
                     <div class="mb-3">
                         <label class="form-label fw-600" style="color: var(--text-main);">Fecha de Vigencia
                             (opcional)</label>
-                        <input type="datetime-local" class="form-control" id="bulkEffectiveDate">
+                        <input type="datetime-local" class="form-control" id="bulkEffectiveDate"
+                               style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                         <small style="color: var(--text-muted);">Dejar vacío para aplicar inmediatamente</small>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-600" style="color: var(--text-main);">Etiqueta (opcional)</label>
-                        <input type="text" class="form-control" id="bulkLabel" placeholder="Ej: Incremento IPC 2026">
+                        <input type="text" class="form-control" id="bulkLabel" placeholder="Ej: Incremento IPC 2026"
+                               style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
 
                     <div class="mb-3">
@@ -1946,7 +1948,7 @@
                         <div class="p-3 rounded" style="background:var(--surface); border:1px solid var(--border);">
                             <div class="form-check mb-2" th:each="t : ${tariffs}" th:if="${t.active}">
                                 <input class="form-check-input tariff-bulk-checkbox" type="checkbox" th:value="${t.id}" th:id="'bulkTariff_' + ${t.id}" checked>
-                                <label class="form-check-label" th:for="'bulkTariff_' + ${t.id}" th:text="${t.name}">Nombre Tarifa</label>
+                                <label class="form-check-label" th:for="'bulkTariff_' + ${t.id}" th:text="${t.name}" style="color: var(--text-main);">Nombre Tarifa</label>
                             </div>
                             <div th:if="${tariffs == null or tariffs.isEmpty()}" class="text-muted small">No hay tarifas configuradas.</div>
                         </div>
@@ -1984,23 +1986,23 @@
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar por
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar por
                             usuario</label>
                         <input type="text" id="activityFilterUser" class="form-control form-control-sm"
                             placeholder="Nombre de usuario..." oninput="filterActivity()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Buscar acción</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Buscar acción</label>
                         <input type="text" id="activityFilterAction" class="form-control form-control-sm"
                             placeholder="Ej: VENTA, ELIMINAR..." oninput="filterActivity()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small mb-1" style="color: var(--text-primary);">Fecha</label>
+                        <label class="form-label small mb-1" style="color: var(--text-main);">Fecha</label>
                         <input type="date" id="activityFilterDate" class="form-control form-control-sm"
                             onchange="filterActivity()"
-                            style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                            style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetActivityFilters()">
@@ -2438,32 +2440,32 @@
                         <div class="col-md-5">
                             <h6 class="fw-bold mb-3">Configuración</h6>
                             <div class="mb-3">
-                                <label class="form-label small" style="color: var(--text-primary);">Variación IPC
+                                <label class="form-label small" style="color: var(--text-main);">Variación IPC
                                     (%)</label>
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0"
                                         style="background-color: var(--surface); border-color: var(--border); color: var(--text-muted);"><i
                                             class="bi bi-percent"></i></span>
                                     <input type="number" step="0.01" class="form-control" id="ipcValueInput"
-                                        style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                        style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                                 </div>
                                 <div id="ipcSourceNote" class="form-text mt-1" style="font-size:0.75rem">Cargando dato
                                     INE...</div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small" style="color: var(--text-primary);">Fecha de
+                                <label class="form-label small" style="color: var(--text-main);">Fecha de
                                     Vigencia</label>
                                 <input type="datetime-local" class="form-control" id="ipcEffectiveDate"
-                                    style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                    style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                                 <div class="form-text" id="ipcDateNote" style="font-size:0.75rem">Sugerido: 1 de enero
                                     del próximo año
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small" style="color: var(--text-primary);">Ámbito de
+                                <label class="form-label small" style="color: var(--text-main);">Ámbito de
                                     Aplicación</label>
                                 <select class="form-select" id="ipcScope"
-                                    style="color: var(--text-primary); background-color: var(--surface); border-color: var(--border);">
+                                    style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
                                     <option value="all">Todos los productos</option>
                                     <option value="category">Por categoría seleccionada</option>
                                 </select>
@@ -2475,11 +2477,11 @@
                             <h6 class="fw-bold mb-3 font-medium">Vista Previa (Top 5 Productos)</h6>
                             <div class="table-responsive" style="max-height: 250px;">
                                 <table class="table table-sm table-hover align-middle mb-0">
-                                    <thead class="table-light">
+                                    <thead style="background: var(--surface); border-bottom: 2px solid var(--border);">
                                         <tr style="font-size:0.75rem">
                                             <th>Producto</th>
                                             <th class="text-end">Actual</th>
-                                            <th class="text-end text-primary">Nuevo</th>
+                                            <th class="text-end text-accent">Nuevo</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ipcPreviewBody" style="font-size:0.85rem">
