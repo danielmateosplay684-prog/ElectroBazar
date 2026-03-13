@@ -50,8 +50,8 @@ public class AdminApiRestController {
     private final TemplateEngine templateEngine;
 
     @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStatsDTO> getDashboardStats() {
-        return ResponseEntity.ok(cashRegisterService.getDashboardStats());
+    public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) String period) {
+        return ResponseEntity.ok(cashRegisterService.getDashboardStats(period));
     }
 
     @PostMapping("/verify-pin")

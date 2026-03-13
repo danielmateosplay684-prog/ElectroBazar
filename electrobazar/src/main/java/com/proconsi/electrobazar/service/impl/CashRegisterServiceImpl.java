@@ -260,17 +260,33 @@ public class CashRegisterServiceImpl implements CashRegisterService {
 
         @Override
         @Transactional(readOnly = true)
-        public DashboardStatsDTO getDashboardStats() {
+        public DashboardStatsDTO getDashboardStats(String period) {
                 java.util.Optional<CashRegister> openRegister = getOpenRegister();
                 LocalDateTime from;
                 LocalDateTime to = LocalDateTime.now();
                 boolean shiftActive = openRegister.isPresent();
                 BigDecimal openingBalance = BigDecimal.ZERO;
 
-                if (shiftActive) {
-                        from = openRegister.get().getOpeningTime() != null ? openRegister.get().getOpeningTime()
-                                        : LocalDate.now().atStartOfDay();
-                        openingBalance = openRegister.get().getOpeningBalance();
+                if (period == null || period.equalsIgnoreCase("shift")) {
+                        if (shiftActive) {
+                                from = openRegister.get().getOpeningTime() != null ? openRegister.get().getOpeningTime()
+                                                : LocalDate.now().atStartOfDay();
+                                openingBalance = openRegister.get().getOpeningBalance();
+                        } else {
+                                from = LocalDate.now().atStartOfDay();
+                        }
+                } else if (period.equalsIgnoreCase("today")) {
+                        from = LocalDate.now().atStartOfDay();
+                } else if (period.equalsIgnoreCase("7days")) {
+                        from = LocalDateTime.now().minusDays(7);
+                } else if (period.equalsIgnoreCase("1month")) {
+                        from = LocalDateTime.now().minusMonths(1);
+                } else if (period.equalsIgnoreCase("6months")) {
+                        from = LocalDateTime.now().minusMonths(6);
+                } else if (period.equalsIgnoreCase("1year")) {
+                        from = LocalDateTime.now().minusYears(1);
+                } else if (period.equalsIgnoreCase("all")) {
+                        from = LocalDateTime.of(2000, 1, 1, 0, 0);
                 } else {
                         from = LocalDate.now().atStartOfDay();
                 }

@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/sales")
@@ -44,11 +46,9 @@ public class SaleApiRestController {
 
         @GetMapping("/range")
         public ResponseEntity<List<Sale>> getRange(
-                        @RequestParam("from") String from,
-                        @RequestParam("to") String to) {
-                java.time.LocalDateTime start = java.time.LocalDateTime.parse(from);
-                java.time.LocalDateTime end = java.time.LocalDateTime.parse(to);
-                return ResponseEntity.ok(saleService.findBetween(start, end));
+                        @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+                        @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+                return ResponseEntity.ok(saleService.findBetween(from, to));
         }
 
         @PostMapping
@@ -106,7 +106,7 @@ public class SaleApiRestController {
                 if (workerId != null) {
                         worker = workerService.findById(workerId).orElse(null);
                 }
-                String reason = body.getOrDefault("reason", "Anulaci\u00f3n desde API");
+                String reason = body.getOrDefault("reason", "Anulación desde API");
                 try {
                         saleService.cancelSale(id, worker, reason);
                         return ResponseEntity.ok().build();

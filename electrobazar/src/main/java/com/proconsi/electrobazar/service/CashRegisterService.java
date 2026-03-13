@@ -51,5 +51,5 @@ public interface CashRegisterService {
      */
     BigDecimal getCurrentCashBalance();
 
-    com.proconsi.electrobazar.dto.DashboardStatsDTO getDashboardStats();
+    com.proconsi.electrobazar.dto.DashboardStatsDTO getDashboardStats(String period);
 }
