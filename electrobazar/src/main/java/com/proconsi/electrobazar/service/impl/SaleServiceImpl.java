@@ -147,7 +147,10 @@ public class SaleServiceImpl implements SaleService {
             line.setVatAmount(breakdown.getVatAmount());
             line.setRecargoRate(breakdown.getRecargoRate());
             line.setRecargoAmount(breakdown.getRecargoAmount());
-            // Total for this line MUST match frontend: (unitPrice * quantity) + recargoAmount
+            // The line total must be exactly (Gross Price * Quantity) + Recargo de Equivalencia.
+            // We use the gross price (finalPrice) as the source of truth for the amount charged
+            // to the customer, avoiding the "VAT on top of net" rounding discrepancies.
+            // recargoAmount is then added according to tax rules.
             BigDecimal lineTotal = finalPrice.multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, ROUNDING)
                     .add(line.getRecargoAmount());
             line.setSubtotal(lineTotal);
