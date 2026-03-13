@@ -1,5 +1,6 @@
 package com.proconsi.electrobazar.service.impl;
 
+import com.proconsi.electrobazar.dto.CashRegisterOpenSuggestion;
 import com.proconsi.electrobazar.dto.DashboardStatsDTO;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.CashRegister;
