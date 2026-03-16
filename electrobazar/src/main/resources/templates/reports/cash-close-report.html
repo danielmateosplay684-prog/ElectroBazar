@@ -360,11 +360,11 @@
 
     <div th:if="${register?.notes != null and !register.notes.isEmpty()}" class="notes-section">
         <span class="notes-title">Observaciones del Cierre:</span>
-        <span th:text="${register.notes}">Sin observaciones.</span>
+        <span th:text="${register?.notes}">Sin observaciones.</span>
     </div>
 
     <div class="footer">
-        Este documento es un comprobante interno generado automáticamente por el sistema <span th:text="${companySettings != null ? companySettings.appName : 'ElectroBazar'}">ElectroBazar</span> TPV.<br />
+        Este documento es un comprobante interno generado automáticamente por el sistema <span th:text="${companySettings?.appName ?: 'ElectroBazar'}">ElectroBazar</span> TPV.<br />
         Generado el <span th:text="${#calendars.format(#calendars.createNow(), 'dd/MM/yyyy HH:mm:ss')}"></span>
     </div>
 
