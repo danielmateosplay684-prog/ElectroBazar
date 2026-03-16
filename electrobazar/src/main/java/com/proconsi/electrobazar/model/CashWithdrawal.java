@@ -1,5 +1,6 @@
 package com.proconsi.electrobazar.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ public class CashWithdrawal {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cash_register_id", nullable = false)
+    @JsonIgnore
     private CashRegister cashRegister;
 
     @Column(nullable = false, precision = 10, scale = 2)
