@@ -1,7 +1,10 @@
 package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.model.Customer;
+import com.proconsi.electrobazar.model.Sale;
+import com.proconsi.electrobazar.model.SaleLine;
 import com.proconsi.electrobazar.model.Tariff;
+import com.proconsi.electrobazar.repository.SaleRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +26,7 @@ public class CustomerApiRestController {
 
     private final CustomerService customerService;
     private final TariffRepository tariffRepository;
+    private final SaleRepository saleRepository;
 
     @GetMapping
     public ResponseEntity<List<Customer>> getAll() {
@@ -66,6 +72,35 @@ public class CustomerApiRestController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         customerService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/sales")
+    public ResponseEntity<List<Map<String, Object>>> getSalesByCustomer(@PathVariable Long id) {
+        List<Sale> sales = saleRepository.findByCustomerIdOrderByCreatedAtDesc(id);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Sale s : sales) {
+            Map<String, Object> saleMap = new LinkedHashMap<>();
+            saleMap.put("id", s.getId());
+            saleMap.put("createdAt", s.getCreatedAt());
+            saleMap.put("paymentMethod", s.getPaymentMethod());
+            saleMap.put("totalAmount", s.getTotalAmount());
+            saleMap.put("status", s.getStatus());
+            saleMap.put("appliedTariff", s.getAppliedTariff());
+            String workerName = (s.getWorker() != null) ? s.getWorker().getUsername() : null;
+            saleMap.put("workerName", workerName);
+            List<Map<String, Object>> lines = new ArrayList<>();
+            for (SaleLine sl : s.getLines()) {
+                Map<String, Object> lineMap = new LinkedHashMap<>();
+                lineMap.put("productName", sl.getProduct() != null ? sl.getProduct().getName() : "—");
+                lineMap.put("quantity", sl.getQuantity());
+                lineMap.put("unitPrice", sl.getUnitPrice());
+                lineMap.put("subtotal", sl.getSubtotal());
+                lines.add(lineMap);
+            }
+            saleMap.put("lines", lines);
+            result.add(saleMap);
+        }
+        return ResponseEntity.ok(result);
     }
 
     // ── Helper ──────────────────────────────────────────────────────────────

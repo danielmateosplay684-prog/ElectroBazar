@@ -69,4 +69,8 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
         @Query(value = "SELECT p.name FROM sales s JOIN sale_lines sl ON s.id = sl.sale_id JOIN products p ON sl.product_id = p.id WHERE s.created_at BETWEEN :from AND :to AND s.status = 'ACTIVE' GROUP BY p.name ORDER BY SUM(sl.quantity) DESC LIMIT 1", nativeQuery = true)
         String findTopProductNameBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+        @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "lines", "lines.product", "worker" })
+        @Query("SELECT s FROM Sale s WHERE s.customer.id = :customerId ORDER BY s.createdAt DESC")
+        List<Sale> findByCustomerIdOrderByCreatedAtDesc(@Param("customerId") Long customerId);
 }

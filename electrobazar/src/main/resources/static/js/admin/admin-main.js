@@ -838,6 +838,119 @@ function deleteCustomer(id, name) {
         .catch(function () { showToast('Error de red al eliminar el cliente', 'error'); });
 }
 
+// ── Ventas del Cliente (modal) ──────────────────────────────────────────────
+var _customerSalesModal = null;
+
+function openCustomerSalesModal(id, name) {
+    if (!_customerSalesModal) {
+        _customerSalesModal = new bootstrap.Modal(document.getElementById('customerSalesModal'));
+    }
+    document.getElementById('customerSalesModalName').textContent = name || 'Cliente';
+    document.getElementById('customerSalesBody').innerHTML =
+        '<div class="text-center py-5"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</div>';
+    var statsDiv = document.getElementById('customerSalesStats');
+    statsDiv.style.setProperty('display', 'none', 'important');
+    _customerSalesModal.show();
+
+    fetch('/api/customers/' + id + '/sales')
+        .then(function (r) {
+            if (!r.ok) throw new Error('Error HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (sales) {
+            renderCustomerSales(sales);
+        })
+        .catch(function (e) {
+            document.getElementById('customerSalesBody').innerHTML =
+                '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle me-2"></i>Error al cargar las ventas: ' + escHtml(e.message) + '</div>';
+        });
+}
+
+function renderCustomerSales(sales) {
+    var body = document.getElementById('customerSalesBody');
+    var statsDiv = document.getElementById('customerSalesStats');
+
+    if (!sales || sales.length === 0) {
+        body.innerHTML =
+            '<div class="text-center py-5" style="color:var(--text-muted);">' +
+            '<i class="bi bi-receipt fs-1 d-block mb-3"></i>' +
+            '<p class="mb-0">Este cliente no tiene ventas registradas.</p></div>';
+        statsDiv.style.setProperty('display', 'none', 'important');
+        return;
+    }
+
+    // ── stats ──
+    var totalAmt = sales.reduce(function (s, v) { return s + parseFloat(v.totalAmount || 0); }, 0);
+    var lastDate = sales[0] ? formatDateTime(sales[0].createdAt) : '—';
+    document.getElementById('csSaleCount').textContent = sales.length;
+    document.getElementById('csTotalAmount').textContent = totalAmt.toFixed(2) + ' €';
+    document.getElementById('csAvgAmount').textContent = (totalAmt / sales.length).toFixed(2) + ' €';
+    document.getElementById('csLastSale').textContent = lastDate;
+    statsDiv.style.removeProperty('display');
+    statsDiv.style.display = 'flex';
+
+    // ── tabla de ventas ──
+    var payLabel = { 'CASH': '<i class="bi bi-cash me-1"></i>Efectivo', 'CARD': '<i class="bi bi-credit-card me-1"></i>Tarjeta', 'MIXED': '<i class="bi bi-wallet me-1"></i>Mixto' };
+
+    var html = '<div class="accordion" id="csAccordion">';
+    sales.forEach(function (s, idx) {
+        var statusBadge = s.status === 'CANCELLED'
+            ? '<span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);font-size:.75rem;">ANULADA</span>'
+            : '<span class="badge" style="background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.3);font-size:.75rem;">ACTIVA</span>';
+
+        var pmLabel = payLabel[s.paymentMethod] || escHtml(s.paymentMethod || '—');
+        var dateStr = formatDateTime(s.createdAt);
+        var total = parseFloat(s.totalAmount || 0).toFixed(2);
+        var worker = s.workerName ? escHtml(s.workerName) : '<span style="color:var(--text-muted)">—</span>';
+        var tariff = s.appliedTariff ? escHtml(s.appliedTariff) : 'MINORISTA';
+
+        // lines detail
+        var linesHtml = '';
+        if (s.lines && s.lines.length > 0) {
+            linesHtml += '<table style="width:100%;border-collapse:collapse;font-size:.85rem;">' +
+                '<thead><tr>' +
+                '<th style="padding:.4rem .6rem;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);">Producto</th>' +
+                '<th style="padding:.4rem .6rem;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:center;">Cant.</th>' +
+                '<th style="padding:.4rem .6rem;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:right;">P. Unit.</th>' +
+                '<th style="padding:.4rem .6rem;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:right;">Subtotal</th>' +
+                '</tr></thead><tbody>';
+            s.lines.forEach(function (l) {
+                linesHtml += '<tr>' +
+                    '<td style="padding:.4rem .6rem;color:var(--text-main);">' + escHtml(l.productName) + '</td>' +
+                    '<td style="padding:.4rem .6rem;text-align:center;color:var(--text-muted);">' + (l.quantity || 0) + '</td>' +
+                    '<td style="padding:.4rem .6rem;text-align:right;color:var(--text-muted);">' + parseFloat(l.unitPrice || 0).toFixed(2) + ' €</td>' +
+                    '<td style="padding:.4rem .6rem;text-align:right;color:var(--text-main);font-weight:600;">' + parseFloat(l.subtotal || 0).toFixed(2) + ' €</td>' +
+                    '</tr>';
+            });
+            linesHtml += '</tbody></table>';
+        } else {
+            linesHtml = '<p class="mb-0 py-2 text-center" style="color:var(--text-muted);font-size:.85rem;">Sin líneas.</p>';
+        }
+
+        html +=
+            '<div class="accordion-item" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem;">' +
+            '<h2 class="accordion-header">' +
+            '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#csSale' + idx + '"' +
+            ' style="background:var(--surface);color:var(--text-main);border-radius:10px;gap:.75rem;">' +
+            '<span style="min-width:9rem;font-size:.8rem;color:var(--text-muted);">' + dateStr + '</span>' +
+            '<span class="me-2">' + statusBadge + '</span>' +
+            '<span style="font-size:.82rem;color:var(--text-muted);">' + pmLabel + '</span>' +
+            '<span class="ms-auto fw-bold" style="color:var(--accent);white-space:nowrap;">' + total + ' €</span>' +
+            '</button></h2>' +
+            '<div id="csSale' + idx + '" class="accordion-collapse collapse" data-bs-parent="#csAccordion">' +
+            '<div class="accordion-body pt-2">' +
+            '<div class="d-flex gap-3 mb-3 flex-wrap" style="font-size:.82rem;color:var(--text-muted);">' +
+            '<span><i class="bi bi-hash me-1"></i>Venta #' + s.id + '</span>' +
+            '<span><i class="bi bi-person me-1"></i>' + worker + '</span>' +
+            '<span><i class="bi bi-tags me-1"></i>' + tariff + '</span>' +
+            '</div>' +
+            linesHtml +
+            '</div></div></div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+}
+
 // ── Precios Temporales ────────────────────────────────────────────────────────
 
 var schedulePriceModal = new bootstrap.Modal(document.getElementById('schedulePriceModal'));
