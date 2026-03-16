@@ -148,7 +148,7 @@
 <body>
 
     <div class="header">
-        <h1 th:text="${companySettings.appName} + ' TPV'">ElectroBazar TPV</h1>
+        <h1 th:text="${(companySettings?.appName ?: 'ElectroBazar') + ' TPV'}">ElectroBazar TPV</h1>
         <p>Reporte de Cierre de Caja Diario</p>
     </div>
 
@@ -156,19 +156,19 @@
         <table class="info-table">
             <tr>
                 <td class="info-label">ID de Registro:</td>
-                <td th:text="${register.id}">12345</td>
+                <td th:text="${register?.id}">12345</td>
                 <td class="info-label">Fecha de Cierre:</td>
-                <td th:text="${#temporals.format(register.closedAt, 'dd/MM/yyyy HH:mm')}">01/01/2023 20:30</td>
+                <td th:text="${#temporals.format(register?.closedAt, 'dd/MM/yyyy HH:mm')}">01/01/2023 20:30</td>
             </tr>
             <tr>
                 <td class="info-label">Fecha del Día:</td>
-                <td th:text="${#temporals.format(register.registerDate, 'dd/MM/yyyy')}">01/01/2023</td>
+                <td th:text="${#temporals.format(register?.registerDate, 'dd/MM/yyyy')}">01/01/2023</td>
                 <td class="info-label">Estado:</td>
                 <td style="font-weight: bold;">CERRADO</td>
             </tr>
             <tr>
                 <td class="info-label">Le atendió:</td>
-                <td colspan="3" th:text="${register.worker != null ? register.worker.username : 'Sistema'}">Admin</td>
+                <td colspan="3" th:text="${register?.worker?.username ?: (register?.workerId != null ? 'ID: ' + register.workerId : 'Sistema')}">Admin</td>
             </tr>
         </table>
     </div>
@@ -186,28 +186,28 @@
                 <tr>
                     <td>Fondo de Caja (Apertura)</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.openingBalance, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.openingBalance ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €</td>
                 </tr>
                 <tr>
                     <td>Ventas en Efectivo</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.cashSales, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00
+                        th:text="${#numbers.formatDecimal(register?.cashSales ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00
                         €
                     </td>
                 </tr>
                 <tr>
                     <td>Ventas con Tarjeta</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.cardSales, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00
+                        th:text="${#numbers.formatDecimal(register?.cardSales ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00
                         €
                     </td>
                 </tr>
                 <tr>
                     <td>Devoluciones Efectivo</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(register?.cashRefunds ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €
                     </td>
@@ -215,7 +215,7 @@
                 <tr>
                     <td>Devoluciones Tarjeta</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(register?.cardRefunds ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €
                     </td>
@@ -223,7 +223,7 @@
                 <tr class="total-row">
                     <td>Total Ventas Netas del Día</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.totalSales.subtract(register.cashRefunds).subtract(register.cardRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal((register?.totalSales ?: T(java.math.BigDecimal).ZERO).subtract(register?.cashRefunds ?: T(java.math.BigDecimal).ZERO).subtract(register?.cardRefunds ?: T(java.math.BigDecimal).ZERO), 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €
                     </td>
                 </tr>
@@ -238,50 +238,50 @@
                 <tr>
                     <td>Fondo de Caja (Apertura)</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.openingBalance, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.openingBalance ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(+) Ventas en Efectivo</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.cashSales, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.cashSales ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(+) Entradas de Caja</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.totalEntries, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.totalEntries ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(-) Devoluciones en Efectivo</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(register?.cashRefunds ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(-) Retiradas de Caja</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(register.totalWithdrawals, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(register?.totalWithdrawals ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr class="total-row" style="background-color: #f1f8ff;">
                     <td>Saldo Teórico (Efectivo Esperado)</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.openingBalance.add(register.cashSales).add(register.totalEntries).subtract(register.totalWithdrawals).subtract(register.cashRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal((register?.openingBalance ?: T(java.math.BigDecimal).ZERO).add(register?.cashSales ?: T(java.math.BigDecimal).ZERO).add(register?.totalEntries ?: T(java.math.BigDecimal).ZERO).subtract(register?.totalWithdrawals ?: T(java.math.BigDecimal).ZERO).subtract(register?.cashRefunds ?: T(java.math.BigDecimal).ZERO), 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>Saldo Contado (Real en Cajón)</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.closingBalance, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.closingBalance ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00
                         €</td>
                 </tr>
                 <tr class="total-row">
                     <td>Diferencia (Descuadre Efectivo)</td>
-                    <td class="amount" th:classappend="${register.difference < 0 ? 'difference-negative' : ''}"
-                        th:text="${(register.difference > 0 ? '+' : '') + #numbers.formatDecimal(register.difference, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                    <td class="amount" th:classappend="${register?.difference != null and register?.difference lt 0 ? 'difference-negative' : ''}"
+                        th:text="${(register?.difference != null and register?.difference gt 0 ? '+' : '') + (register?.difference != null ? #numbers.formatDecimal(register.difference, 1, 'POINT', 2, 'COMMA') : '0,00')} + ' €'">
                         0,00 €
                     </td>
                 </tr>
@@ -296,19 +296,19 @@
                 <tr>
                     <td>(+) Ventas con Tarjeta</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.cardSales, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal(register?.cardSales ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr>
                     <td>(-) Devoluciones con Tarjeta</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(register?.cardRefunds ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
                 <tr class="total-row" style="background-color: #f1f8ff;">
                     <td>Total Tarjeta Esperado</td>
                     <td class="amount"
-                        th:text="${#numbers.formatDecimal(register.cardSales.subtract(register.cardRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="${#numbers.formatDecimal((register?.cardSales ?: T(java.math.BigDecimal).ZERO).subtract(register?.cardRefunds ?: T(java.math.BigDecimal).ZERO), 1, 'POINT', 2, 'COMMA')} + ' €'">
                         0,00 €</td>
                 </tr>
             </tbody>
@@ -320,7 +320,7 @@
             <tr style="font-size: 14pt; font-weight: bold;">
                 <td>TOTAL NETO (Efectivo + Tarjeta)</td>
                 <td style="text-align: right;"
-                    th:text="${#numbers.formatDecimal(register.openingBalance.add(register.cashSales).add(register.totalEntries).subtract(register.totalWithdrawals).subtract(register.cashRefunds).add(register.cardSales).subtract(register.cardRefunds), 1, 'POINT', 2, 'COMMA')} + ' €'">
+                    th:text="${#numbers.formatDecimal((register?.openingBalance ?: T(java.math.BigDecimal).ZERO).add(register?.cashSales ?: T(java.math.BigDecimal).ZERO).add(register?.totalEntries ?: T(java.math.BigDecimal).ZERO).subtract(register?.totalWithdrawals ?: T(java.math.BigDecimal).ZERO).subtract(register?.cashRefunds ?: T(java.math.BigDecimal).ZERO).add(register?.cardSales ?: T(java.math.BigDecimal).ZERO).subtract(register?.cardRefunds ?: T(java.math.BigDecimal).ZERO), 1, 'POINT', 2, 'COMMA')} + ' €'">
                     0,00 €</td>
             </tr>
         </table>
@@ -340,31 +340,31 @@
             </thead>
             <tbody>
                 <tr th:each="ret : ${returns}">
-                    <td th:text="${#temporals.format(ret.createdAt, 'HH:mm')}">14:30</td>
+                    <td th:text="${#temporals.format(ret?.createdAt, 'HH:mm')}">14:30</td>
                     <td
-                        th:text="${ret.rectificativeInvoice != null ? ret.rectificativeInvoice.rectificativeNumber : ret.returnNumber}">
+                        th:text="${ret?.rectificativeInvoice?.rectificativeNumber ?: ret?.returnNumber}">
                         D-2026-0001</td>
                     <td
-                        th:text="${(ret.rectificativeInvoice != null ? ret.rectificativeInvoice.originalInvoice.invoiceNumber : 'Ticket #' + ret.originalSale.id)}">
+                        th:text="${ret?.rectificativeInvoice?.originalInvoice?.invoiceNumber ?: ('Ticket #' + (ret?.originalSale?.id ?: '?'))}">
                         123</td>
                     <td
-                        th:text="${ret.paymentMethod == T(com.proconsi.electrobazar.model.PaymentMethod).CASH ? 'Efectivo' : 'Tarjeta'}">
+                        th:text="${ret?.paymentMethod?.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}">
                         Efectivo</td>
                     <td class="amount"
-                        th:text="'-' + ${#numbers.formatDecimal(ret.totalRefunded, 1, 'POINT', 2, 'COMMA')} + ' €'">
+                        th:text="'-' + ${#numbers.formatDecimal(ret?.totalRefunded ?: 0, 1, 'POINT', 2, 'COMMA')} + ' €'">
                         -0,00 €</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div th:if="${register.notes != null and !register.notes.isEmpty()}" class="notes-section">
+    <div th:if="${register?.notes != null and !register.notes.isEmpty()}" class="notes-section">
         <span class="notes-title">Observaciones del Cierre:</span>
         <span th:text="${register.notes}">Sin observaciones.</span>
     </div>
 
     <div class="footer">
-        Este documento es un comprobante interno generado automáticamente por el sistema <span th:text="${companySettings.appName}">ElectroBazar</span> TPV.<br />
+        Este documento es un comprobante interno generado automáticamente por el sistema <span th:text="${companySettings != null ? companySettings.appName : 'ElectroBazar'}">ElectroBazar</span> TPV.<br />
         Generado el <span th:text="${#calendars.format(#calendars.createNow(), 'dd/MM/yyyy HH:mm:ss')}"></span>
     </div>
 
