@@ -63,6 +63,10 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET,
                                                                 "/api/product-prices/future")
                                                 .hasAuthority("ADMIN_ACCESS")
+                                                .requestMatchers("/api/suspended-sales/**").hasAnyAuthority("HOLD_SALES", "ADMIN_ACCESS")
+                                                .requestMatchers("/api/roles/**").hasAuthority("ADMIN_ACCESS")
+                                                .requestMatchers("/api/sales/range").hasAnyAuthority("SALE_VIEW", "ADMIN_ACCESS")
+                                                .requestMatchers("/api/workers/**").hasAuthority("ADMIN_ACCESS")
                                                 .requestMatchers("/admin/**").hasAuthority("ADMIN_ACCESS")
                                                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN_ACCESS")
 
