@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Entity
@@ -19,6 +20,7 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre del cliente es obligatorio")
     @Column(nullable = false, length = 150)
     private String name;
 

@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,56 +38,28 @@ public class CustomerApiRestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
-        try {
-            Customer customer = buildCustomerFromBody(body, new Customer());
+    public ResponseEntity<Customer> create(@RequestBody Map<String, Object> body) {
+        Customer customer = buildCustomerFromBody(body, new Customer());
 
-            // minimal server-side validation so callers realise why a request failed
-            if (customer.getName() == null || customer.getName().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "El nombre es obligatorio"));
-            }
-            if (customer.getType() == Customer.CustomerType.COMPANY &&
-                    (customer.getTaxId() == null || customer.getTaxId().trim().isEmpty())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "El CIF es obligatorio para empresas"));
-            }
-            Customer saved = customerService.save(customer);
-            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-        } catch (IllegalArgumentException iae) {
-            return ResponseEntity.badRequest().body(Map.of("error", iae.getMessage()));
-        } catch (DataIntegrityViolationException dive) {
-            dive.printStackTrace();
-            String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Violación de integridad: " + msg));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error interno al crear cliente: " + e.getMessage()));
+        // minimal server-side validation
+        if (customer.getName() == null || customer.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
         }
+        if (customer.getType() == Customer.CustomerType.COMPANY &&
+                (customer.getTaxId() == null || customer.getTaxId().trim().isEmpty())) {
+            throw new IllegalArgumentException("El CIF es obligatorio para empresas");
+        }
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.save(customer));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<Customer> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         log.info("Customer update request for id={}: {}", id, body);
-        try {
-            Customer existing = customerService.findById(id);
-            Customer updated = buildCustomerFromBody(body, existing);
-            updated.setId(id);
-            Customer saved = customerService.update(id, updated);
-            return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException iae) {
-            log.warn("Customer update id={} rejected: {}", id, iae.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", iae.getMessage()));
-        } catch (DataIntegrityViolationException dive) {
-            dive.printStackTrace();
-            String msg = dive.getRootCause() != null ? dive.getRootCause().getMessage() : dive.getMessage();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Violación de integridad: " + msg));
-        } catch (Exception e) {
-            log.error("Customer update id={} error: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error interno al actualizar cliente: " + e.getMessage()));
-        }
+        Customer existing = customerService.findById(id);
+        Customer updated = buildCustomerFromBody(body, existing);
+        updated.setId(id);
+        return ResponseEntity.ok(customerService.update(id, updated));
     }
 
     @DeleteMapping("/{id}")

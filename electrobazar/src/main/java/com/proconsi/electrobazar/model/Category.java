@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre de la categoría es obligatorio")
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 

@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -61,7 +61,7 @@ public class ProductApiRestController {
     }
 
     @PostMapping
-    public ResponseEntity<Product> create(@RequestBody ProductRequest request) {
+    public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest request) {
         log.info("Creating product with request: {}", request);
         
         if (request.getTaxRateId() == null) {
@@ -97,7 +97,7 @@ public class ProductApiRestController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> update(@PathVariable Long id, @RequestBody ProductRequest request) {
+    public ResponseEntity<Product> update(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         log.info("Updating product {} with request: {}", id, request);
         return ResponseEntity.ok(productService.update(id, request));
     }

@@ -107,11 +107,7 @@ public class SaleApiRestController {
                         worker = workerService.findById(workerId).orElse(null);
                 }
                 String reason = body.getOrDefault("reason", "Anulación desde API");
-                try {
-                        saleService.cancelSale(id, worker, reason);
-                        return ResponseEntity.ok().build();
-                } catch (Exception e) {
-                        return ResponseEntity.badRequest().body(e.getMessage());
-                }
+                saleService.cancelSale(id, worker, reason);
+                return ResponseEntity.ok().build();
         }
 }

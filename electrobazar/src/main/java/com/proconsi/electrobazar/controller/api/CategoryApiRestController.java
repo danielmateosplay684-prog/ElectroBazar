@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -32,12 +33,12 @@ public class CategoryApiRestController {
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestBody Category category) {
+    public ResponseEntity<Category> create(@Valid @RequestBody Category category) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.save(category));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable Long id, @RequestBody Category category) {
+    public ResponseEntity<Category> update(@PathVariable Long id, @Valid @RequestBody Category category) {
         return ResponseEntity.ok(categoryService.update(id, category));
     }
 

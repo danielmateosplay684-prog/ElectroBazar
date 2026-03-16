@@ -45,63 +45,31 @@ public class TariffApiRestController {
      * Body: { "name": "VIP", "discountPercentage": 20, "description": "..." }
      */
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
-        try {
-            String name = (String) body.get("name");
-            BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
-            String description = (String) body.getOrDefault("description", "");
-            Tariff created = tariffService.create(name, discount, description);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al crear tarifa: " + e.getMessage()));
-        }
+    public ResponseEntity<Tariff> create(@RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
+        String description = (String) body.getOrDefault("description", "");
+        Tariff created = tariffService.create(name, discount, description);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    /**
-     * PUT /api/tariffs/{id} — Updates discount % and description of a tariff.
-     * Body: { "discountPercentage": 12, "description": "..." }
-     */
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        try {
-            BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
-            String description = (String) body.getOrDefault("description", "");
-            Tariff updated = tariffService.update(id, discount, description);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al actualizar tarifa: " + e.getMessage()));
-        }
+    public ResponseEntity<Tariff> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
+        String description = (String) body.getOrDefault("description", "");
+        Tariff updated = tariffService.update(id, discount, description);
+        return ResponseEntity.ok(updated);
     }
 
-    /** DELETE /api/tariffs/{id}/deactivate — Deactivates a custom tariff. */
     @DeleteMapping("/{id}/deactivate")
-    public ResponseEntity<?> deactivate(@PathVariable Long id) {
-        try {
-            tariffService.deactivate(id);
-            return ResponseEntity.ok(Map.of("message", "Tarifa desactivada correctamente."));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al desactivar tarifa: " + e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> deactivate(@PathVariable Long id) {
+        tariffService.deactivate(id);
+        return ResponseEntity.ok(Map.of("message", "Tarifa desactivada correctamente."));
     }
 
-    /** POST /api/tariffs/{id}/activate — Re-activates a custom tariff. */
     @PostMapping("/{id}/activate")
-    public ResponseEntity<?> activate(@PathVariable Long id) {
-        try {
-            tariffService.activate(id);
-            return ResponseEntity.ok(Map.of("message", "Tarifa activada correctamente."));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al activar tarifa: " + e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> activate(@PathVariable Long id) {
+        tariffService.activate(id);
+        return ResponseEntity.ok(Map.of("message", "Tarifa activada correctamente."));
     }
 }

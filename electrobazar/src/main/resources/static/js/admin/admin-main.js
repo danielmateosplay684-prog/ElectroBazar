@@ -198,31 +198,25 @@ function deleteProduct(id, name) {
         headers: token ? { 'Authorization': 'Bearer ' + token } : {}
     })
         .then(function (r) {
-            console.log('Delete response status:', r.status);
-            r.text().then(function (text) {
-                console.log('Delete response body:', text);
-                if (r.status === 409) {
-                    showToast(text || 'Conflicto al eliminar', 'error');
-                    return;
-                }
-                if (!r.ok) {
-                    showToast('Error al eliminar el producto', 'error');
-                    return;
-                }
-
+            if (r.ok) {
                 showToast('Producto "' + name + '" eliminado definitivamente');
-
                 // Remove row from DOM
                 var btn = document.querySelector('button.danger[data-id="' + id + '"]');
                 if (btn) {
                     var row = btn.closest('tr');
                     if (row) row.remove();
                 }
-            });
+            } else {
+                r.json().then(function (err) {
+                    showToast('Error al eliminar: ' + (err.error || err.message || 'Error desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al eliminar el producto', 'error');
+                });
+            }
         })
         .catch(function (err) { 
             console.error('Delete error:', err);
-            showToast('Error al eliminar el producto', 'error'); 
+            showToast('Error de red al eliminar el producto', 'error'); 
         });
 }
 
@@ -267,14 +261,21 @@ function saveCategory() {
 
     fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         .then(function (r) {
-            if (!r.ok) return r.text().then(function (t) { throw new Error(t); });
-            categoryModal.hide();
-            showToast(id ? 'Categoría actualizada correctamente' : 'Categoría creada correctamente');
-            setTimeout(function () { location.reload(); }, 900);
+            if (r.ok) {
+                categoryModal.hide();
+                showToast(id ? 'Categoría actualizada correctamente' : 'Categoría creada correctamente');
+                setTimeout(function () { location.reload(); }, 900);
+            } else {
+                r.json().then(function (err) {
+                    showToast('Error al guardar categoría: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al guardar la categoría', 'error');
+                });
+            }
         })
         .catch(function (e) {
-            var msg = e.message.indexOf('Ya existe') !== -1 ? e.message : 'Error al guardar la categoría';
-            showToast(msg, 'error');
+            console.error('Category save error:', e);
+            showToast('Error de red al guardar la categoría', 'error');
         });
 }
 
@@ -282,11 +283,18 @@ function deleteCategory(id, name) {
     if (!confirm('¿Desactivar la categoría "' + name + '"?')) return;
     fetch('/api/categories/' + id, { method: 'DELETE' })
         .then(function (r) {
-            if (!r.ok) throw new Error();
-            showToast('Categoría "' + name + '" desactivada');
-            setTimeout(function () { location.reload(); }, 900);
+            if (r.ok) {
+                showToast('Categoría "' + name + '" desactivada');
+                setTimeout(function () { location.reload(); }, 900);
+            } else {
+                r.json().then(function (err) {
+                    showToast('Error al desactivar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al desactivar la categoría', 'error');
+                });
+            }
         })
-        .catch(function () { showToast('Error al desactivar la categoría', 'error'); });
+        .catch(function () { showToast('Error de red al desactivar la categoría', 'error'); });
 }
 
 // -- Importar Productos y Categorías por CSV --
@@ -654,7 +662,11 @@ function saveWorker() {
             showToast('Trabajador guardado con éxito');
             setTimeout(function () { location.reload(); }, 1000);
         } else {
-            showToast('Error al guardar trabajador', 'error');
+            res.json().then(function (err) {
+                showToast('Error al guardar: ' + (err.error || err.message || 'Desconocido'), 'error');
+            }).catch(function () {
+                showToast('Error al guardar trabajador', 'error');
+            });
         }
     }).catch(function () {
         showToast('Error de red', 'error');
@@ -670,7 +682,11 @@ function deleteWorker(id) {
                 showToast('Trabajador eliminado');
                 setTimeout(function () { location.reload(); }, 1000);
             } else {
-                showToast('Error al eliminar', 'error');
+                res.json().then(function (err) {
+                    showToast('Error al eliminar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al eliminar trabajador', 'error');
+                });
             }
         }).catch(function () {
             showToast('Error de red', 'error');
@@ -808,11 +824,18 @@ function deleteCustomer(id, name) {
     if (!confirm('¿Seguro que quieres eliminar (desactivar) al cliente "' + name + '"?')) return;
     fetch('/api/customers/' + id, { method: 'DELETE' })
         .then(function (r) {
-            if (!r.ok) throw new Error();
-            showToast('Cliente desactivado correctamente');
-            setTimeout(function () { location.reload(); }, 900);
+            if (r.ok) {
+                showToast('Cliente desactivado correctamente');
+                setTimeout(function () { location.reload(); }, 900);
+            } else {
+                r.json().then(function (err) {
+                    showToast('Error al eliminar cliente: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al eliminar cliente', 'error');
+                });
+            }
         })
-        .catch(function () { showToast('Error al eliminar el cliente', 'error'); });
+        .catch(function () { showToast('Error de red al eliminar el cliente', 'error'); });
 }
 
 // ── Precios Temporales ────────────────────────────────────────────────────────
@@ -1263,8 +1286,14 @@ function saveRole() {
             showToast(id ? 'Rol actualizado' : 'Rol creado');
             loadRoles();
         } else {
-            showToast('Error al guardar el rol', 'error');
+            res.json().then(function (err) {
+                showToast('Error al guardar: ' + (err.error || err.message || 'Desconocido'), 'error');
+            }).catch(function () {
+                showToast('Error al guardar el rol', 'error');
+            });
         }
+    }).catch(function () {
+        showToast('Error de red al guardar el rol', 'error');
     });
 }
 
@@ -1276,8 +1305,15 @@ function deleteRole(id) {
                 showToast('Rol eliminado');
                 loadRoles();
             } else {
-                showToast('Error al eliminar el rol', 'error');
+                res.json().then(function (err) {
+                    showToast('Error al eliminar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al eliminar el rol', 'error');
+                });
             }
+        })
+        .catch(function () {
+            showToast('Error de red al eliminar el rol', 'error');
         });
 }
 

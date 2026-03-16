@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,12 +36,12 @@ public class WorkerApiRestController {
     }
 
     @PostMapping
-    public ResponseEntity<Worker> create(@RequestBody Worker worker) {
+    public ResponseEntity<Worker> create(@Valid @RequestBody Worker worker) {
         return ResponseEntity.status(HttpStatus.CREATED).body(workerService.save(worker));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Worker> update(@PathVariable Long id, @RequestBody Worker worker) {
+    public ResponseEntity<Worker> update(@PathVariable Long id, @Valid @RequestBody Worker worker) {
         worker.setId(id);
         return ResponseEntity.ok(workerService.save(worker));
     }

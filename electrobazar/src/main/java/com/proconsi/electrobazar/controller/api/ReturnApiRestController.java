@@ -170,5 +170,34 @@ public class ReturnApiRestController {
                     .body(Map.of("errorMessage", "Error al procesar la devolución: " + e.getMessage()));
         }
     }
+    /**
+     * GET /api/returns
+     *
+     * Returns a list of all returns, optionally filtered by date range.
+     * Requires ADMIN_ACCESS or similar elevated permissions.
+     */
+    @GetMapping
+    public ResponseEntity<?> getAllReturns(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime to) {
+        
+        java.time.LocalDateTime startTime = from != null ? from : java.time.LocalDateTime.now().minusYears(1);
+        java.time.LocalDateTime endTime = to != null ? to : java.time.LocalDateTime.now();
+
+        List<SaleReturn> returns = returnService.findByCreatedAtBetween(startTime, endTime);
+        return ResponseEntity.ok(returns);
+    }
+
+    /**
+     * GET /api/returns/{id}
+     *
+     * Returns the details of a specific return.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getReturnById(@PathVariable Long id) {
+        return returnService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
 

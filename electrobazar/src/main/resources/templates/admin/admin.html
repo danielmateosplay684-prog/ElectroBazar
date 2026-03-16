@@ -2699,8 +2699,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, discountPercentage: parseFloat(discount), description })
             }).then(function (r) {
-                if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error al crear'); });
-                return r.json();
+                if (r.ok) {
+                    return r.json();
+                }
+                return r.json().then(function (d) { throw new Error(d.error || d.message || 'Error al crear'); });
             }).then(function () {
                 bootstrap.Modal.getInstance(document.getElementById('createTariffModal')).hide();
                 showToastAdmin('Tarifa creada correctamente', 'success');
@@ -2733,8 +2735,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ discountPercentage: parseFloat(discount), description })
             }).then(function (r) {
-                if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Error al actualizar'); });
-                return r.json();
+                if (r.ok) {
+                    return r.json();
+                }
+                return r.json().then(function (d) { throw new Error(d.error || d.message || 'Error al actualizar'); });
             }).then(function () {
                 bootstrap.Modal.getInstance(document.getElementById('editTariffModal')).hide();
                 showToastAdmin('Tarifa actualizada correctamente', 'success');
@@ -2748,16 +2752,22 @@
         function deactivateTariff(id, name) {
             if (!confirm('¿Desactivar la tarifa "' + name + '"? Los clientes que la tengan asignada pasarán a MINORISTA.')) return;
             fetch('/api/tariffs/' + id + '/deactivate', { method: 'DELETE' })
-                .then(function (r) { if (!r.ok) return r.json().then(function (d) { throw new Error(d.error); }); return r.json(); })
+                .then(function (r) { 
+                    if (r.ok) return r.json();
+                    return r.json().then(function (d) { throw new Error(d.error || d.message); }); 
+                })
                 .then(function () { showToastAdmin('Tarifa desactivada', 'success'); setTimeout(function () { location.reload(); }, 800); })
                 .catch(function (e) { showToastAdmin(e.message || 'Error al desactivar', 'warning'); });
         }
 
         function activateTariff(id) {
             fetch('/api/tariffs/' + id + '/activate', { method: 'POST' })
-                .then(function (r) { if (!r.ok) throw new Error('Error'); return r.json(); })
+                .then(function (r) { 
+                    if (r.ok) return r.json();
+                    return r.json().then(function (d) { throw new Error(d.error || d.message || 'Error'); });
+                })
                 .then(function () { showToastAdmin('Tarifa activada', 'success'); setTimeout(function () { location.reload(); }, 800); })
-                .catch(function (e) { showToastAdmin('Error al activar', 'warning'); });
+                .catch(function (e) { showToastAdmin(e.message || 'Error al activar', 'warning'); });
         }
 
         function showToastAdmin(message, type) {
@@ -2804,8 +2814,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ description, vatRate: parseFloat(vatRate), reRate: parseFloat(reRate), validFrom, validTo, active })
             }).then(r => {
-                if (!r.ok) throw new Error('Error al guardar');
-                location.reload();
+                if (r.ok) {
+                    location.reload();
+                } else {
+                    return r.json().then(d => { throw new Error(d.error || d.message || 'Error al guardar'); });
+                }
             }).catch(e => {
                 errorEl.textContent = e.message;
                 errorEl.style.display = 'block';
@@ -2839,8 +2852,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ description, vatRate: parseFloat(vatRate), reRate: parseFloat(reRate), validFrom, validTo, active })
             }).then(r => {
-                if (!r.ok) throw new Error('Error al actualizar');
-                location.reload();
+                if (r.ok) {
+                    location.reload();
+                } else {
+                    return r.json().then(d => { throw new Error(d.error || d.message || 'Error al actualizar'); });
+                }
             }).catch(e => {
                 errorEl.textContent = e.message;
                 errorEl.style.display = 'block';
@@ -2850,7 +2866,17 @@
         function deleteTaxRate(id, msg) {
             if (!confirm('¿Eliminar el tipo de IVA "' + msg + '"?')) return;
             fetch('/admin/api/tax-rates/' + id, { method: 'DELETE' }).then(r => {
-                if (r.ok) location.reload(); else showToastAdmin('Error al eliminar', 'warning');
+                if (r.ok) {
+                    location.reload();
+                } else {
+                    return r.json().then(d => {
+                        showToastAdmin('Error: ' + (d.error || d.message || 'Error al eliminar'), 'warning');
+                    }).catch(() => {
+                        showToastAdmin('Error al eliminar', 'warning');
+                    });
+                }
+            }).catch(() => {
+                showToastAdmin('Error de red al eliminar', 'warning');
             });
         }
 

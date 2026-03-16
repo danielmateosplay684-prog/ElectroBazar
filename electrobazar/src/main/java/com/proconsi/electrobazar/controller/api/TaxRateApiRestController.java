@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -30,7 +32,7 @@ public class TaxRateApiRestController {
     }
 
     @PostMapping
-    public TaxRate create(@RequestBody TaxRate taxRate) {
+    public TaxRate create(@Valid @RequestBody TaxRate taxRate) {
         // Automatically set valid_to of current active TaxRate with same description
         if (taxRate.getValidFrom() != null) {
             taxRateRepository.findByActiveTrue().stream()
@@ -46,7 +48,7 @@ public class TaxRateApiRestController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TaxRate> update(@PathVariable Long id, @RequestBody TaxRate taxRate) {
+    public ResponseEntity<TaxRate> update(@PathVariable Long id, @Valid @RequestBody TaxRate taxRate) {
         return taxRateRepository.findById(id).map(existing -> {
             existing.setVatRate(taxRate.getVatRate());
             existing.setReRate(taxRate.getReRate());

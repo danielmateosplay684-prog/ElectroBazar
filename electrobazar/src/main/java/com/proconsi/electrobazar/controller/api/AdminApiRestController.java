@@ -190,27 +190,22 @@ public class AdminApiRestController {
     }
 
     @PostMapping("/upload-csv")
-    public ResponseEntity<?> uploadCsv(@RequestParam("file") MultipartFile file) {
-        try {
-            String result = csvImportService.importProductsCsv(file);
-            activityLogService.logActivity("IMPORTAR_CSV", "Importación CSV realizada: " + result, "Admin", "IMPORT",
-                    null);
-            return ResponseEntity.ok(Map.of("ok", true, "message", result));
-        } catch (Exception e) {
-            log.error("Error processing CSV upload", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("ok", false, "message", "Error al procesar: " + e.getMessage()));
-        }
+    public ResponseEntity<?> uploadCsv(@RequestParam("file") MultipartFile file) throws Exception {
+        String result = csvImportService.importProductsCsv(file);
+        activityLogService.logActivity("IMPORTAR_CSV", "Importación CSV realizada: " + result, "Admin", "IMPORT",
+                null);
+        return ResponseEntity.ok(Map.of("ok", true, "message", result));
     }
 
     @PostMapping("/tax-rates/{newId}/apply-to-products")
     public ResponseEntity<?> applyNewTaxRate(@PathVariable Long newId) {
-        try {
-            productService.applyNewTaxRate(newId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        productService.applyNewTaxRate(newId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/settings")
+    public ResponseEntity<CompanySettings> getSettings() {
+        return ResponseEntity.ok(companySettingsService.getSettings());
     }
 
     @PostMapping("/settings")

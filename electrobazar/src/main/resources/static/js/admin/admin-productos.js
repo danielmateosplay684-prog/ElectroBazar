@@ -120,31 +120,25 @@ function deleteProduct(id, name) {
     if (confirm('¿Seguro que quieres eliminar definitivamente el producto "' + name + '"?')) {
         fetch('/admin/products/' + id + '/hard', { method: 'DELETE', credentials: 'include', cache: 'no-store' })
             .then(function (r) {
-                console.log('Delete response status:', r.status);
-                r.text().then(function (text) {
-                    console.log('Delete response body:', text);
-                    if (r.status === 409) {
-                        showToast(text || 'Conflicto al eliminar', 'error');
-                        return;
-                    }
-                    if (!r.ok) {
-                        showToast('Error al eliminar el producto', 'error');
-                        return;
-                    }
-
+                if (r.ok) {
                     showToast('Producto "' + name + '" eliminado definitivamente');
-
                     // Remove row from DOM
                     var btn = document.querySelector('button.danger[data-id="' + id + '"]');
                     if (btn) {
                         var row = btn.closest('tr');
                         if (row) row.remove();
                     }
-                });
+                } else {
+                    r.json().then(function (err) {
+                        showToast('Error al eliminar: ' + (err.error || err.message || 'Error desconocido'), 'error');
+                    }).catch(function () {
+                        showToast('Error al eliminar el producto', 'error');
+                    });
+                }
             })
-            .catch(function (err) { 
+            .catch(function (err) {
                 console.error('Delete error:', err);
-                showToast('Error al eliminar el producto', 'error'); 
+                showToast('Error de red al eliminar el producto', 'error');
             });
     }
 }
@@ -178,14 +172,30 @@ function saveCategory() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     }).then(function (r) {
-        if (r.ok) location.reload(); else showToast('Error al guardar', 'error');
+        if (r.ok) {
+            location.reload();
+        } else {
+            r.json().then(function (err) {
+                showToast('Error al guardar categoría: ' + (err.error || err.message || 'Desconocido'), 'error');
+            }).catch(function () {
+                showToast('Error al guardar categoría', 'error');
+            });
+        }
     });
 }
 
 function deleteCategory(id, name) {
     if (confirm('¿Desactivar "' + name + '"?')) {
         fetch('/api/categories/' + id, { method: 'DELETE' }).then(function (r) {
-            if (r.ok) location.reload(); else showToast('Error al eliminar', 'error');
+            if (r.ok) {
+                location.reload();
+            } else {
+                r.json().then(function (err) {
+                    showToast('Error al eliminar categoría: ' + (err.error || err.message || 'Desconocido'), 'error');
+                }).catch(function () {
+                    showToast('Error al eliminar categoría', 'error');
+                });
+            }
         });
     }
 }
