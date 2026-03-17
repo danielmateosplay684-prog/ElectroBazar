@@ -204,13 +204,23 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                     tariffPriceHistoryRepository.save(h);
                 });
 
-                BigDecimal oldBase = product.getPrice(); // Simplified logic for bulk update
+                BigDecimal oldBase = product.getPrice();
                 BigDecimal newBase = selectedTariffIds.contains(t.getId()) ? newGross : oldBase;
                 
-                BigDecimal discountMult = BigDecimal.ONE.subtract((t.getDiscountPercentage() != null ? t.getDiscountPercentage() : BigDecimal.ZERO).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                BigDecimal net = newBase.multiply(discountMult).setScale(2, RoundingMode.HALF_UP);
+                // 1. Extraemos el multiplicador de descuento
+                BigDecimal discountMult = BigDecimal.ONE.subtract(
+                    (t.getDiscountPercentage() != null ? t.getDiscountPercentage() : BigDecimal.ZERO)
+                    .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                );
+
+                // 2. Extraemos la BASE IMPONIBLE REAL del precio bruto y aplicamos el descuento (Cálculo corregido)
+                BigDecimal net = newBase.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP)
+                                        .multiply(discountMult)
+                                        .setScale(2, RoundingMode.HALF_UP);
+
                 BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
 
+                // 3. Generamos el snapshot con los totales correctos
                 TariffPriceHistory news = TariffPriceHistory.builder()
                         .product(product).tariff(t).basePrice(newBase).netPrice(net).vatRate(vatRate)
                         .priceWithVat(net.multiply(BigDecimal.ONE.add(vatRate)).setScale(2, RoundingMode.HALF_UP))

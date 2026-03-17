@@ -31,26 +31,26 @@ function addToTicket(card) {
         ticket[id] = { name: name, price: price, quantity: 1, stock: stock };
     }
 
-    // If a customer or tariff is active, fetch the final prices before rendering
-    if (window.currentTariffId || window.currentHasRE) {
-        var url = '/tpv/api/products/' + id + '/price';
-        if (window.currentTariffId) url += '?tariffId=' + window.currentTariffId;
-
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(priceData) {
-                if (ticket[id]) {
-                    ticket[id].price = priceData.price;
-                    ticket[id].priceWithRe = priceData.priceWithRe;
-                }
-                renderTicket();
-            })
-            .catch(function() {
-                renderTicket(); // fallback: render with base price on error
-            });
-    } else {
-        renderTicket();
+    // ALWAYS fetch the price from the API to respect the "only tariffs" rule.
+    // The backend now knows to default to 'MINORISTA' if currentTariffId is null.
+    var url = '/tpv/api/products/' + id + '/price';
+    if (window.currentTariffId) {
+        url += '?tariffId=' + window.currentTariffId;
     }
+
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(priceData) {
+            if (ticket[id]) {
+                ticket[id].price = parseFloat(priceData.price);
+                ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
+            }
+            renderTicket();
+        })
+        .catch(function(err) {
+            console.error('Error fetching tariff price', err);
+            renderTicket(); // fallback to base price from card
+        });
 
     // Feedback visual en la tarjeta
     card.style.borderColor = 'var(--success)';
@@ -765,12 +765,15 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
     }
 
     var promises = productIds.map(function(id) {
-        return fetch('/tpv/api/products/' + id + '/price?tariffId=' + tariffId)
+        var url = '/tpv/api/products/' + id + '/price';
+        if (tariffId) url += '?tariffId=' + tariffId;
+        
+        return fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(priceData) {
                 if (ticket[id]) {
-                    ticket[id].price = priceData.price; // already the final price from backend
-                    ticket[id].priceWithRe = priceData.priceWithRe;
+                    ticket[id].price = parseFloat(priceData.price);
+                    ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
                 }
             });
     });
@@ -807,13 +810,16 @@ function resetTicketPrices() {
             .then(function(r) { return r.json(); })
             .then(function(priceData) {
                 if (ticket[id]) {
-                    ticket[id].price = priceData.price;
-                    ticket[id].priceWithRe = priceData.priceWithRe;
+                    ticket[id].price = parseFloat(priceData.price);
+                    ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
                 }
             });
     });
 
     Promise.all(promises).then(function() {
+        resetTariffToDefault();
+    }).catch(function(err) {
+        console.error('Error resetting ticket prices', err);
         resetTariffToDefault();
     });
 }
@@ -1275,8 +1281,7 @@ function applyTariffById(tariffId, discountPct, labelText) {
  */
 function resetTariffToDefault() {
     var selector = document.getElementById('tariffSelector');
-    var firstOption = selector ? selector.options[0] : null;
-    if (firstOption) {
+    if (selector && selector.options.length > 0) {
         // Find MINORISTA option (first with 0 discount)
         for (var i = 0; i < selector.options.length; i++) {
             if (parseFloat(selector.options[i].dataset.discount) === 0) {
@@ -1285,7 +1290,11 @@ function resetTariffToDefault() {
                 return;
             }
         }
+        var firstOption = selector.options[0];
         applyTariffById(firstOption.value, parseFloat(firstOption.dataset.discount || 0), firstOption.text);
+    } else {
+        // Fallback when no selector is present: ensure we reset to default MINORISTA state
+        applyTariffById('', 0, 'MINORISTA');
     }
 }
 

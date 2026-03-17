@@ -26,7 +26,8 @@ import java.util.*;
 
 /**
  * Controller for the Point of Sale (TPV) interface.
- * Manages sales processing, cash register operations, returns, and receipt generation.
+ * Manages sales processing, cash register operations, returns, and receipt
+ * generation.
  */
 @Slf4j
 @Controller
@@ -132,18 +133,21 @@ public class TpvController {
         boolean applyRecargo = customer != null && Boolean.TRUE.equals(customer.getHasRecargoEquivalencia());
 
         // Build sale lines using the unit prices sent by the frontend ticket.
-        // These are already the final prices (tariff-adjusted by the sidebar) — do NOT recalculate.
+        // These are already the final prices (tariff-adjusted by the sidebar) — do NOT
+        // recalculate.
         List<SaleLine> lines = new ArrayList<>();
 
         for (int i = 0; i < productIds.size(); i++) {
             Product product = productService.findById(productIds.get(i));
             int qty = quantities.get(i);
 
-            // Use the price sent from the ticket; fall back to productPriceService only if missing.
+            // Use the price sent from the ticket; fall back to productPriceService only if
+            // missing.
             BigDecimal unitPrice;
             BigDecimal vatRate;
 
-            if (unitPrices != null && i < unitPrices.size() && unitPrices.get(i) != null && !unitPrices.get(i).isBlank()) {
+            if (unitPrices != null && i < unitPrices.size() && unitPrices.get(i) != null
+                    && !unitPrices.get(i).isBlank()) {
                 // Price already final from the TPV sidebar — use as-is
                 unitPrice = new BigDecimal(unitPrices.get(i).replace(",", "."));
                 vatRate = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
@@ -200,10 +204,6 @@ public class TpvController {
         Sale sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, customer,
                 worker, tariffOverride);
 
-        // We no longer put taxBreakdowns, totalBase, etc. in flash attributes.
-        // showReceipt now computes them correctly from the finalized Sale object and
-        // discounted prices.
-
         // Generate and Store PDF in DB
         try {
             Invoice invoice = null;
@@ -233,12 +233,6 @@ public class TpvController {
 
     /**
      * Displays the receipt for a completed sale.
-     *
-     * @param saleId The ID of the sale to display the receipt for.
-     * @param autoPrint Flag to indicate if the receipt should be automatically printed.
-     * @param session The current HTTP session to retrieve worker information.
-     * @param model The model to pass data to the view.
-     * @return The receipt view (ticket or invoice).
      */
     @GetMapping("/receipt/{saleId}")
     public String showReceipt(
@@ -254,7 +248,7 @@ public class TpvController {
         model.addAttribute("autoPrint", autoPrint);
         model.addAttribute("companySettings", companySettingsService.getSettings());
 
-        // Resolve invoice (from flash or DB) — must happen before template decision
+        // Resolve invoice (from flash or DB)
         if (!model.containsAttribute("invoice")) {
             invoiceService.findBySaleId(saleId)
                     .ifPresent(inv -> model.addAttribute("invoice", inv));
@@ -266,11 +260,6 @@ public class TpvController {
                     .ifPresent(t -> model.addAttribute("ticket", t));
         }
 
-        // Always ensure tax-breakdown variables are in the model.
-        // This runs whether the sale is a ticket OR an invoice, and whether we
-        // came from a redirect (flash attrs present) or a direct URL (page reload).
-        // tpv/invoice.html references totalBase / totalVat / totalRecargo so they
-        // must be populated before we choose the template.
         if (!model.containsAttribute("taxBreakdowns")) {
             boolean applyRecargo = sale.getCustomer() != null
                     && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
@@ -295,7 +284,6 @@ public class TpvController {
             model.addAttribute("totalRecargo", totalRecargo);
         }
 
-        // Route to the correct screen template now that the model is fully populated
         if (model.containsAttribute("invoice")) {
             return "tpv/invoice";
         }
@@ -304,11 +292,7 @@ public class TpvController {
     }
 
     /**
-     * Displays the cash register closing form, including summary of daily cash movements.
-     *
-     * @param session The current HTTP session to retrieve worker information.
-     * @param model The model to pass data to the view.
-     * @return The cash close form view or a redirect if no register is open or permissions are insufficient.
+     * Displays the cash register closing form.
      */
     @GetMapping("/cash-close")
     public String cashCloseForm(HttpSession session, Model model) {
@@ -370,16 +354,6 @@ public class TpvController {
         return "tpv/cash-close";
     }
 
-    /**
-     * Processes a cash withdrawal or entry movement for the open cash register.
-     *
-     * @param amount The amount of the movement.
-     * @param reason Optional reason for the movement.
-     * @param type The type of movement (WITHDRAWAL or ENTRY).
-     * @param session The current HTTP session to retrieve worker information.
-     * @param redirectAttributes Attributes for redirecting with messages.
-     * @return A redirect to the TPV main page with a success or error message.
-     */
     @PostMapping("/withdrawal")
     public String processWithdrawal(
             @RequestParam String amount,
@@ -393,7 +367,8 @@ public class TpvController {
             return "redirect:/login";
 
         if (!worker.getEffectivePermissions().contains("CASH_CLOSE")) {
-            redirectAttributes.addFlashAttribute("errorMessage", "You do not have permission to perform cash movements.");
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "You do not have permission to perform cash movements.");
             return "redirect:/tpv";
         }
 
@@ -420,12 +395,6 @@ public class TpvController {
         return "redirect:/tpv";
     }
 
-    /**
-     * Displays the TPV preferences page.
-     *
-     * @param session The current HTTP session to retrieve worker information.
-     * @return The preferences view or a redirect to login.
-     */
     @GetMapping("/preferences")
     public String preferences(HttpSession session) {
         if (session.getAttribute("worker") == null) {
@@ -434,13 +403,6 @@ public class TpvController {
         return "tpv/preferences";
     }
 
-    /**
-     * Displays the form to open a new cash register.
-     *
-     * @param session The current HTTP session to retrieve worker information.
-     * @param model The model to pass data to the view.
-     * @return The open-register form view or a redirect to the TPV main page if a register is already open.
-     */
     @GetMapping("/open-register")
     public String openRegisterForm(HttpSession session, Model model) {
         if (session.getAttribute("worker") == null)
@@ -454,13 +416,6 @@ public class TpvController {
         return "tpv/open-register";
     }
 
-    /**
-     * Processes the opening of a new cash register.
-     *
-     * @param openingBalance The initial balance for the cash register.
-     * @param session The current HTTP session to retrieve worker information.
-     * @return A redirect to the TPV main page.
-     */
     @PostMapping("/open-register")
     public String processOpenRegister(
             @RequestParam String openingBalance,
@@ -481,16 +436,6 @@ public class TpvController {
         return "redirect:/tpv";
     }
 
-    /**
-     * Processes the closing of the current cash register.
-     *
-     * @param closingBalance The final balance counted in the cash register.
-     * @param notes Optional notes for the closing.
-     * @param retainedAmount Optional amount to be retained in the cash register for the next opening.
-     * @param session The current HTTP session to retrieve worker information.
-     * @param redirectAttributes Attributes for redirecting with messages.
-     * @return A redirect to the open-register form with a success or error message.
-     */
     @PostMapping("/cash-close")
     public String processCashClose(
             @RequestParam String closingBalance,
@@ -515,7 +460,7 @@ public class TpvController {
             try {
                 retainedAmountDecimal = new BigDecimal(retainedAmount.replace(",", "."));
             } catch (NumberFormatException e) {
-                // Ignore malformed values — treat as no retention
+                // Ignore
             }
         }
 
@@ -523,8 +468,6 @@ public class TpvController {
                 closingBalanceDecimal, notes, worker, retainedAmountDecimal);
 
         try {
-            // We no longer generate or save the PDF here. It's regenerated on download.
-
             redirectAttributes.addFlashAttribute("successMessage",
                     "Cash register closed. Difference: " + register.getDifference()
                             + "\u20AC. PDF stored in database.");
@@ -537,18 +480,11 @@ public class TpvController {
         return "redirect:/tpv/open-register";
     }
 
-    /**
-     * Checks for a ticket by ID or ticket number for a return operation.
-     *
-     * @param query The ticket ID or ticket number to search for.
-     * @return A ResponseEntity with a redirect URL if found, or an error message if not.
-     */
     @GetMapping("/return/check")
     @ResponseBody
     public ResponseEntity<?> checkTicketForReturn(@RequestParam String query) {
         try {
             Long saleId = null;
-            // 1. Try searching by ID
             if (query.matches("\\d+")) {
                 Long id = Long.parseLong(query);
                 Sale sale = saleService.findById(id);
@@ -557,7 +493,6 @@ public class TpvController {
                 }
             }
 
-            // 2. Try searching by Ticket Number
             if (saleId == null) {
                 saleId = ticketService.findByTicketNumber(query)
                         .map(t -> t.getSale().getId())
@@ -579,17 +514,9 @@ public class TpvController {
         }
     }
 
-    /**
-     * Searches for a ticket by ID or ticket number and redirects to the return form if found.
-     *
-     * @param query The ticket ID or ticket number to search for.
-     * @param redirectAttributes Attributes for redirecting with messages.
-     * @return A redirect to the return form or the TPV main page with an error message.
-     */
     @GetMapping("/return/search")
     public String searchTicketForReturn(@RequestParam String query, RedirectAttributes redirectAttributes) {
         try {
-            // Try searching by ID
             if (query.matches("\\d+")) {
                 Long id = Long.parseLong(query);
                 if (saleService.findById(id) != null) {
@@ -597,7 +524,6 @@ public class TpvController {
                 }
             }
 
-            // Try searching by Ticket Number
             return ticketService.findByTicketNumber(query)
                     .map(t -> "redirect:/tpv/return/" + t.getSale().getId())
                     .orElseGet(() -> {
@@ -610,14 +536,6 @@ public class TpvController {
         }
     }
 
-    /**
-     * Displays the return form for a specific sale.
-     *
-     * @param saleId The ID of the original sale for which to process a return.
-     * @param session The current HTTP session to retrieve worker information.
-     * @param model The model to pass data to the view.
-     * @return The return form view or a redirect to login.
-     */
     @GetMapping("/return/{saleId}")
     public String showReturnForm(@PathVariable Long saleId, HttpSession session, Model model) {
         if (session.getAttribute("worker") == null) {
@@ -640,18 +558,6 @@ public class TpvController {
         return "tpv/return-form";
     }
 
-    /**
-     * Processes a return for a sale.
-     *
-     * @param saleId The ID of the original sale.
-     * @param saleLineIds List of IDs of the sale lines to return.
-     * @param quantities List of quantities to return for each sale line.
-     * @param reason Optional reason for the return.
-     * @param paymentMethod The payment method used for the refund.
-     * @param session The current HTTP session to retrieve worker information.
-     * @param redirectAttributes Attributes for redirecting with messages.
-     * @return A redirect to the return receipt or the return form with an error message.
-     */
     @PostMapping("/return")
     public String processReturn(
             @RequestParam Long saleId,
@@ -684,15 +590,6 @@ public class TpvController {
         }
     }
 
-    /**
-     * Displays the receipt for a processed return.
-     *
-     * @param returnId The ID of the return to display the receipt for.
-     * @param autoPrint Flag to indicate if the receipt should be automatically printed.
-     * @param session The current HTTP session to retrieve worker information.
-     * @param model The model to pass data to the view.
-     * @return The return receipt view (standard or rectificative invoice).
-     */
     @GetMapping("/return-receipt/{returnId}")
     public String showReturnReceipt(
             @PathVariable Long returnId,
@@ -711,7 +608,6 @@ public class TpvController {
         model.addAttribute("autoPrint", autoPrint);
         model.addAttribute("companySettings", companySettingsService.getSettings());
 
-        // Calculate common tax breakdown (positive values for standard receipt)
         Sale originalSale = saleReturn.getOriginalSale();
         boolean applyRecargo = originalSale.isApplyRecargo();
         List<TaxBreakdown> standardBreakdowns = new ArrayList<>();
@@ -735,8 +631,6 @@ public class TpvController {
         model.addAttribute("totalRecargo", standardBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
 
-        // If the return has a rectificative invoice, prepare negative values and use
-        // specific template
         if (saleReturn.getRectificativeInvoice() != null) {
             List<TaxBreakdown> negativeBreakdowns = new ArrayList<>();
             for (TaxBreakdown bd : standardBreakdowns) {
@@ -755,8 +649,6 @@ public class TpvController {
                         .build());
             }
             model.addAttribute("taxBreakdowns", negativeBreakdowns);
-
-            // Re-calculate totals with negative amounts for the invoice
             model.addAttribute("totalBase", negativeBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
             model.addAttribute("totalVat", negativeBreakdowns.stream().map(TaxBreakdown::getVatAmount)
@@ -764,7 +656,6 @@ public class TpvController {
             model.addAttribute("totalRecargo", negativeBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
 
-            // Prepare negative lines for the table
             List<Map<String, Object>> negativeLines = new ArrayList<>();
             for (ReturnLine line : saleReturn.getLines()) {
                 if (line.getSaleLine() == null || line.getSaleLine().getProduct() == null)
@@ -787,21 +678,10 @@ public class TpvController {
         model.addAttribute("taxBreakdowns", standardBreakdowns);
         return "tpv/return-receipt";
     }
+
     /**
-     * Returns the effective unit price for a product, optionally discounted by a tariff.
-     * Used by the TPV sidebar to update ticket prices when a customer is selected.
-     *
-     * <p>Lookup order:
-     * <ol>
-     *   <li>tariff_price_history WHERE product_id = ? AND tariff_id = ? AND valid_to IS NULL → returns price_with_vat directly</li>
-     *   <li>Fallback: basePrice * (1 - tariff.discountPercentage / 100)</li>
-     * </ol></p>
-     *
-     * <p>Example: {@code GET /tpv/api/products/42/price?tariffId=3}</p>
-     *
-     * @param productId the product ID
-     * @param tariffId  optional tariff to apply discount from
-     * @return the effective price as a plain decimal number
+     * Returns the effective unit price for a product, optionally discounted by a
+     * tariff.
      */
     @GetMapping("/api/products/{productId}/price")
     @ResponseBody
@@ -814,45 +694,52 @@ public class TpvController {
             return Collections.emptyMap();
         }
 
-        // Get current active base price (from ProductPrice scheduling system)
+        Long effectiveTariffId = tariffId;
+        if (effectiveTariffId == null) {
+            effectiveTariffId = tariffService.findByName(Tariff.MINORISTA)
+                    .map(Tariff::getId)
+                    .orElse(null);
+        }
+
         ProductPrice activePrice = productPriceService.getCurrentPrice(productId, LocalDateTime.now());
         BigDecimal basePrice = (activePrice != null) ? activePrice.getPrice() : product.getPrice();
-        BigDecimal vatRate = (activePrice != null) ? activePrice.getVatRate() :
-                (product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
-                ? product.getTaxRate().getVatRate() : new BigDecimal("0.21"));
+        BigDecimal vatRate = (activePrice != null) ? activePrice.getVatRate()
+                : (product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
+                        ? product.getTaxRate().getVatRate()
+                        : new BigDecimal("0.21"));
 
-        BigDecimal finalPrice;
-        BigDecimal priceWithRe;
+        BigDecimal finalPrice = null;
+        BigDecimal priceWithRe = null;
 
-        if (tariffId == null) {
-            finalPrice = basePrice.setScale(2, RoundingMode.HALF_UP);
-            BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
-            BigDecimal netPrice = finalPrice.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP);
-            priceWithRe = netPrice.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP);
-        } else {
-            // 1. Look up the active price from tariff_price_history first
-            var historyEntry = tariffPriceHistoryRepository.findCurrentByProductAndTariff(productId, tariffId);
+        if (effectiveTariffId != null) {
+            var historyEntry = tariffPriceHistoryRepository.findCurrentByProductAndTariff(productId, effectiveTariffId);
             if (historyEntry.isPresent()) {
                 finalPrice = historyEntry.get().getPriceWithVat();
                 priceWithRe = historyEntry.get().getPriceWithRe();
-            } else {
-                // 2. Fallback: apply tariff discount % to the base price
-                finalPrice = tariffService.findById(tariffId)
+            }
+        }
+
+        if (finalPrice == null) {
+            if (effectiveTariffId != null) {
+                finalPrice = tariffService.findById(effectiveTariffId)
                         .map(tariff -> {
                             BigDecimal discount = tariff.getDiscountPercentage();
                             if (discount == null || discount.compareTo(BigDecimal.ZERO) == 0) {
-                                return basePrice.setScale(2, RoundingMode.HALF_UP);
+                                return basePrice;
                             }
                             BigDecimal factor = BigDecimal.ONE.subtract(
                                     discount.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP));
-                            return basePrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+                            return basePrice.multiply(factor);
                         })
-                        .orElse(basePrice.setScale(2, RoundingMode.HALF_UP));
-
-                BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
-                BigDecimal netPrice = finalPrice.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP);
-                priceWithRe = netPrice.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP);
+                        .orElse(basePrice);
+            } else {
+                finalPrice = basePrice;
             }
+
+            finalPrice = finalPrice.setScale(2, RoundingMode.HALF_UP);
+            BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
+            BigDecimal netPrice = finalPrice.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP);
+            priceWithRe = netPrice.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP);
         }
 
         Map<String, BigDecimal> response = new HashMap<>();

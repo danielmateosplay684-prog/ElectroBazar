@@ -46,18 +46,6 @@ public class Product {
     @Builder.Default
     private BigDecimal basePriceNet = BigDecimal.ZERO;
 
-    /**
-     * Returns the Gross Price (VAT included).
-     * Calculated on the fly: basePriceNet * (1 + ivaRate)
-     */
-    public BigDecimal getPrice() {
-        if (basePriceNet == null)
-            return BigDecimal.ZERO;
-        BigDecimal rate = taxRate != null && taxRate.getVatRate() != null ? taxRate.getVatRate()
-                : BigDecimal.ZERO;
-        return basePriceNet.multiply(BigDecimal.ONE.add(rate))
-                .setScale(2, RoundingMode.HALF_UP);
-    }
 
     /**
      * Sets the Net price based on a Gross price input.
