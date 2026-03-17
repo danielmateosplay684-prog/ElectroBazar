@@ -58,9 +58,10 @@ public class CashWithdrawalApiRestController {
             Number workerIdNum = jwtService.extractClaim(token, claims -> claims.get("workerId", Number.class));
             workerId = workerIdNum != null ? workerIdNum.longValue() : null;
             @SuppressWarnings("unchecked")
-            Set<String> rawPermissions = jwtService.extractClaim(token, claims -> claims.get("permissions", Set.class));
-            permissions = rawPermissions;
+            java.util.Collection<String> rawPermissions = jwtService.extractClaim(token, claims -> claims.get("permissions", java.util.Collection.class));
+            permissions = new java.util.HashSet<>(rawPermissions);
         } catch (Exception e) {
+            log.error("Error validando token en el controlador: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid token"));
         }
 
