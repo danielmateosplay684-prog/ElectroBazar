@@ -8,6 +8,8 @@ import com.proconsi.electrobazar.service.CashRegisterService;
 import com.proconsi.electrobazar.service.CashWithdrawalService;
 import com.proconsi.electrobazar.service.WorkerService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,7 @@ import java.util.Set;
  * Used for auditing cash drawer adjustments during a shift.
  * Requires 'CASH_CLOSE' permission.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/cash-withdrawals")
 @RequiredArgsConstructor
