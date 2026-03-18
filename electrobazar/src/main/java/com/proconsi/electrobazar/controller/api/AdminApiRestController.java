@@ -30,7 +30,8 @@ import java.util.stream.Collectors;
 
 /**
  * REST Controller for administrative and management operations.
- * Handles sensitive features such as PDF generation, stats, company configuration, 
+ * Handles sensitive features such as PDF generation, stats, company
+ * configuration,
  * CSV imports, and worker management.
  */
 @Slf4j
@@ -60,6 +61,7 @@ public class AdminApiRestController {
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
+     * 
      * @param period Time period (e.g., "today", "week", "month").
      * @return Dashboard statistics data.
      */
@@ -70,6 +72,7 @@ public class AdminApiRestController {
 
     /**
      * Verifies the super-admin master PIN before performing sensitive actions.
+     * 
      * @param body Payload containing the "pin" string.
      * @return 200 OK if valid, 401 Unauthorized otherwise.
      */
@@ -84,14 +87,17 @@ public class AdminApiRestController {
     }
 
     /**
-     * Generates and downloads the official PDF document for an existing sale (Invoice or Ticket).
+     * Generates and downloads the official PDF document for an existing sale
+     * (Invoice or Ticket).
+     * 
      * @param id The sale ID.
      * @return PDF binary resource tagged with appropriate filename.
      */
     @GetMapping("/download/invoice/{id}")
     public ResponseEntity<Resource> downloadInvoicePdf(@PathVariable Long id) {
         Sale sale = saleService.findById(id);
-        if (sale == null) return ResponseEntity.notFound().build();
+        if (sale == null)
+            return ResponseEntity.notFound().build();
 
         Context context = new Context();
         context.setVariable("sale", sale);
@@ -104,7 +110,8 @@ public class AdminApiRestController {
             ticketService.findBySaleId(id).ifPresent(t -> context.setVariable("ticket", t));
         }
 
-        boolean applyRecargo = sale.getCustomer() != null && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
+        boolean applyRecargo = sale.getCustomer() != null
+                && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
         List<TaxBreakdown> breakdowns = new ArrayList<>();
         for (SaleLine line : sale.getLines()) {
             BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
@@ -114,26 +121,33 @@ public class AdminApiRestController {
         }
         context.setVariable("taxBreakdowns", breakdowns);
         context.setVariable("applyRecargo", applyRecargo);
-        context.setVariable("totalBase", breakdowns.stream().map(TaxBreakdown::getBaseAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-        context.setVariable("totalVat", breakdowns.stream().map(TaxBreakdown::getVatAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-        context.setVariable("totalRecargo", breakdowns.stream().map(TaxBreakdown::getRecargoAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        context.setVariable("totalBase", breakdowns.stream().map(TaxBreakdown::getBaseAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        context.setVariable("totalVat", breakdowns.stream().map(TaxBreakdown::getVatAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        context.setVariable("totalRecargo", breakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
 
         String template = invoiceOpt.isPresent() ? "tpv/invoice" : "tpv/receipt";
         byte[] pdfBytes = generatePdfFromTemplate(template, context);
 
-        String filename = (invoiceOpt.isPresent() ? "Factura_" + invoiceOpt.get().getInvoiceNumber() : "Ticket_" + id) + ".pdf";
+        String filename = (invoiceOpt.isPresent() ? "Factura_" + invoiceOpt.get().getInvoiceNumber() : "Ticket_" + id)
+                + ".pdf";
         return createPdfResponse(pdfBytes, filename);
     }
 
     /**
-     * Generates and downloads the PDF receipt or rectificative invoice for a return.
+     * Generates and downloads the PDF receipt or rectificative invoice for a
+     * return.
+     * 
      * @param id The return ID.
      * @return PDF binary resource.
      */
     @GetMapping("/download/return/{id}")
     public ResponseEntity<Resource> downloadReturnPdf(@PathVariable Long id) {
         Optional<SaleReturn> returnOpt = returnService.findById(id);
-        if (returnOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (returnOpt.isEmpty())
+            return ResponseEntity.notFound().build();
         SaleReturn saleReturn = returnOpt.get();
 
         Context context = new Context();
@@ -162,9 +176,12 @@ public class AdminApiRestController {
                     .totalAmount(bd.getTotalAmount().negate()).recargoApplied(applyRecargo).build())
                     .collect(Collectors.toList());
             context.setVariable("taxBreakdowns", negativeBreakdowns);
-            context.setVariable("totalBase", negativeBreakdowns.stream().map(TaxBreakdown::getBaseAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-            context.setVariable("totalVat", negativeBreakdowns.stream().map(TaxBreakdown::getVatAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-            context.setVariable("totalRecargo", negativeBreakdowns.stream().map(TaxBreakdown::getRecargoAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalBase", negativeBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalVat", negativeBreakdowns.stream().map(TaxBreakdown::getVatAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalRecargo", negativeBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
 
             List<Map<String, Object>> negativeLines = new ArrayList<>();
             for (ReturnLine line : saleReturn.getLines()) {
@@ -182,9 +199,12 @@ public class AdminApiRestController {
         } else {
             template = "tpv/return-receipt";
             context.setVariable("taxBreakdowns", standardBreakdowns);
-            context.setVariable("totalBase", standardBreakdowns.stream().map(TaxBreakdown::getBaseAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-            context.setVariable("totalVat", standardBreakdowns.stream().map(TaxBreakdown::getVatAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
-            context.setVariable("totalRecargo", standardBreakdowns.stream().map(TaxBreakdown::getRecargoAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalBase", standardBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalVat", standardBreakdowns.stream().map(TaxBreakdown::getVatAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+            context.setVariable("totalRecargo", standardBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
         }
         context.setVariable("applyRecargo", applyRecargo);
 
@@ -195,7 +215,8 @@ public class AdminApiRestController {
 
     /**
      * Exports a specific Tariff price list to PDF.
-     * @param id Tariff ID.
+     * 
+     * @param id   Tariff ID.
      * @param date The date for which prices should be calculated (defaults to now).
      * @return PDF resource.
      */
@@ -213,6 +234,7 @@ public class AdminApiRestController {
 
     /**
      * Bulk imports products from a CSV file.
+     * 
      * @param file Multipat CSV file.
      * @return Import result summary.
      */
@@ -225,6 +247,7 @@ public class AdminApiRestController {
 
     /**
      * Manually triggers a tax rate transition across the product catalog.
+     * 
      * @param newId ID of the new Tax Rate to apply.
      * @return 200 OK.
      */
@@ -236,6 +259,7 @@ public class AdminApiRestController {
 
     /**
      * Retrieves the master company settings (name, CIF, address, legal text).
+     * 
      * @return {@link CompanySettings} entity.
      */
     @GetMapping("/settings")
@@ -245,6 +269,7 @@ public class AdminApiRestController {
 
     /**
      * Updates the master company configuration.
+     * 
      * @param companySettings New settings data.
      * @return Success message.
      */
@@ -255,33 +280,31 @@ public class AdminApiRestController {
     }
 
     /**
-     * Retrieves the current SMTP mail settings.
+     * Retrieves the current mail settings (Resend API).
      * @return Map of mail configuration.
      */
     @GetMapping("/mail-settings")
     public ResponseEntity<Map<String, String>> getMailSettings() {
         Map<String, String> settings = new HashMap<>();
-        settings.put("host", appSettingRepository.findByKey("mail.host").map(AppSetting::getValue).orElse("smtp.gmail.com"));
-        settings.put("port", appSettingRepository.findByKey("mail.port").map(AppSetting::getValue).orElse("587"));
-        settings.put("username", appSettingRepository.findByKey("mail.username").map(AppSetting::getValue).orElse(""));
-        settings.put("password", appSettingRepository.findByKey("mail.password").isPresent() ? "********" : "");
+        settings.put("apiKey", appSettingRepository.findByKey("mail.api_key").isPresent() ? "********" : "");
+        settings.put("from", appSettingRepository.findByKey("mail.from").map(AppSetting::getValue).orElse("onboarding@resend.dev"));
         return ResponseEntity.ok(settings);
     }
 
     /**
-     * Updates SMTP mail settings and encrypts the password.
-     * @param body Payload with host, port, username, and password.
+     * Updates mail settings (Resend API) and encrypts the API key.
+     * @param body Payload with apiKey and from address.
      * @return 200 OK.
      */
     @PostMapping("/mail-settings")
     public ResponseEntity<?> saveMailSettings(@RequestBody Map<String, String> body) {
-        saveAppSetting("mail.host", body.get("host"));
-        saveAppSetting("mail.port", body.get("port"));
-        saveAppSetting("mail.username", body.get("username"));
-        if (body.get("password") != null && !body.get("password").isBlank() && !body.get("password").equals("********")) {
-            saveAppSetting("mail.password", aesEncryptionUtil.encrypt(body.get("password")));
+        if (body.get("apiKey") != null && !body.get("apiKey").isBlank() && !body.get("apiKey").equals("********")) {
+            saveAppSetting("mail.api_key", aesEncryptionUtil.encrypt(body.get("apiKey")));
         }
-        return ResponseEntity.ok(Map.of("message", "Configuración de correo actualizada correctamente."));
+        if (body.get("from") != null) {
+            saveAppSetting("mail.from", body.get("from"));
+        }
+        return ResponseEntity.ok(Map.of("message", "Configuración de correo (Resend) actualizada correctamente."));
     }
 
     /**
@@ -308,6 +331,7 @@ public class AdminApiRestController {
 
     /**
      * Deactivates a worker account (Soft Delete).
+     * 
      * @param id Worker ID.
      * @return 200 OK.
      */
@@ -316,7 +340,8 @@ public class AdminApiRestController {
         workerService.findById(id).ifPresent(w -> {
             w.setActive(false);
             workerService.save(w);
-            activityLogService.logActivity("DESACTIVAR_TRABAJADOR", "Trabajador desactivado: " + w.getUsername(), "Admin", "WORKER", id);
+            activityLogService.logActivity("DESACTIVAR_TRABAJADOR", "Trabajador desactivado: " + w.getUsername(),
+                    "Admin", "WORKER", id);
         });
         return ResponseEntity.ok().build();
     }
@@ -339,7 +364,8 @@ public class AdminApiRestController {
     }
 
     private String cleanHtmlForPdf(String html) {
-        if (html == null) return "";
+        if (html == null)
+            return "";
         String cleaned = html.replaceAll("<(meta|br|hr|img|input|link)([^>]*?)(?<!/)>", "<$1$2 />");
         return cleaned.replace("&copy;", "&#169;")
                 .replace("&reg;", "&#174;")
