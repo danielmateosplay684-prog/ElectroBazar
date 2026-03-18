@@ -1418,6 +1418,55 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- SECOND ROW: MAIL SETTINGS -->
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 border-0"
+                             style="background: var(--surface); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <div class="card-header border-border bg-transparent py-3">
+                                <h5 class="m-0 fw-bold" style="color: var(--accent); font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.5px;">
+                                    <i class="bi bi-envelope-at me-2"></i>CONFIGURACIÓN CORREO (SMTP)
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <p class="text-muted small mb-4">Configura los datos del servidor para el envío automático de tickets y facturas.</p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Servidor SMTP (Host)</label>
+                                    <input type="text" id="mailHost" class="form-control" placeholder="smtp.gmail.com">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label small fw-bold">Puerto</label>
+                                        <input type="text" id="mailPort" class="form-control" placeholder="587">
+                                    </div>
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label small fw-bold">Usuario / Email</label>
+                                        <input type="text" id="mailUsername" class="form-control" placeholder="email@ejemplo.com">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Contraseña / Token APP</label>
+                                    <div class="input-group">
+                                        <input type="password" id="mailPassword" class="form-control" placeholder="********">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('mailPassword')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button class="btn-save" onclick="saveMailSettings()" style="padding: 0.6rem 1.5rem; border-radius: 8px;">
+                                        <i class="bi bi-check2-circle me-1"></i> Actualizar SMTP
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3161,18 +3210,6 @@
             });
         }
     </script>
-</body>
-
-</html> }
-
-if (matchesIva) {
-row.style.display = '';
-} else {
-row.style.display = 'none';
-}
-});
-}
-</script>
 </body>
 
 </html>

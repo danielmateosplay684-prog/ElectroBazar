@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping({"/api/admin", "/admin/api"})
 @RequiredArgsConstructor
 public class AdminApiRestController {
 
@@ -280,31 +280,33 @@ public class AdminApiRestController {
     }
 
     /**
-     * Retrieves the current mail settings (Resend API).
+     * Retrieves the current mail settings (SMTP).
      * @return Map of mail configuration.
      */
     @GetMapping("/mail-settings")
     public ResponseEntity<Map<String, String>> getMailSettings() {
         Map<String, String> settings = new HashMap<>();
-        settings.put("apiKey", appSettingRepository.findByKey("mail.api_key").isPresent() ? "********" : "");
-        settings.put("from", appSettingRepository.findByKey("mail.from").map(AppSetting::getValue).orElse("onboarding@resend.dev"));
+        settings.put("host", appSettingRepository.findByKey("mail.host").map(AppSetting::getValue).orElse(""));
+        settings.put("port", appSettingRepository.findByKey("mail.port").map(AppSetting::getValue).orElse("587"));
+        settings.put("username", appSettingRepository.findByKey("mail.username").map(AppSetting::getValue).orElse(""));
+        settings.put("password", appSettingRepository.findByKey("mail.password").isPresent() ? "••••••••" : "");
         return ResponseEntity.ok(settings);
     }
 
     /**
-     * Updates mail settings (Resend API) and encrypts the API key.
-     * @param body Payload with apiKey and from address.
+     * Updates mail settings (SMTP) and encrypts the password.
+     * @param body Payload with host, port, username and password.
      * @return 200 OK.
      */
     @PostMapping("/mail-settings")
     public ResponseEntity<?> saveMailSettings(@RequestBody Map<String, String> body) {
-        if (body.get("apiKey") != null && !body.get("apiKey").isBlank() && !body.get("apiKey").equals("********")) {
-            saveAppSetting("mail.api_key", aesEncryptionUtil.encrypt(body.get("apiKey")));
+        if (body.get("host") != null) saveAppSetting("mail.host", body.get("host"));
+        if (body.get("port") != null) saveAppSetting("mail.port", body.get("port"));
+        if (body.get("username") != null) saveAppSetting("mail.username", body.get("username"));
+        if (body.get("password") != null && !body.get("password").isBlank() && !body.get("password").equals("••••••••")) {
+            saveAppSetting("mail.password", aesEncryptionUtil.encrypt(body.get("password")));
         }
-        if (body.get("from") != null) {
-            saveAppSetting("mail.from", body.get("from"));
-        }
-        return ResponseEntity.ok(Map.of("message", "Configuración de correo (Resend) actualizada correctamente."));
+        return ResponseEntity.ok(Map.of("message", "Configuración guardada correctamente"));
     }
 
     /**

@@ -48,6 +48,8 @@ function switchView(viewId, btnElement) {
         loadRoles();
     } else if (viewId === 'preciosMasivosView') {
         loadBulkProducts();
+    } else if (viewId === 'settingsView') {
+        loadMailSettings();
     }
 }
 
@@ -1619,14 +1621,6 @@ function resetCRMFilters() {
     filterCRM();
 }
 
-function filterBulkProductList() {
-    const query = document.getElementById('bulkProductSearch').value.toLowerCase().trim();
-    document.querySelectorAll('.bulk-product-item').forEach(item => {
-        const text = item.textContent.toLowerCase();
-        item.style.display = text.includes(query) ? 'block' : 'none';
-    });
-}
-
 function filterActivity() {
     const user = document.getElementById('activityFilterUser').value.toLowerCase().trim();
     const action = document.getElementById('activityFilterAction').value.toLowerCase().trim();
@@ -1821,6 +1815,54 @@ function cancelSale(saleId) {
         .catch(() => showToast('Error de conexión', 'error'));
 }
 
+// ── MAIL SETTINGS (SMTP) ───────────────────────────────────────────────────
+
+function loadMailSettings() {
+    fetch('/admin/api/mail-settings')
+        .then(response => response.json())
+        .then(data => {
+            if (document.getElementById('mailHost')) document.getElementById('mailHost').value = data.host || '';
+            if (document.getElementById('mailPort')) document.getElementById('mailPort').value = data.port || '587';
+            if (document.getElementById('mailUsername')) document.getElementById('mailUsername').value = data.username || '';
+            if (document.getElementById('mailPassword')) document.getElementById('mailPassword').value = data.password || '';
+        })
+        .catch(error => {
+            console.error('Error loading mail settings:', error);
+            showToast('Error al cargar la configuración de correo', 'error');
+        });
+}
+
+function saveMailSettings() {
+    const host = document.getElementById('mailHost').value.trim();
+    const port = document.getElementById('mailPort').value.trim();
+    const username = document.getElementById('mailUsername').value.trim();
+    const password = document.getElementById('mailPassword').value;
+
+    const body = {
+        host: host,
+        port: port,
+        username: username,
+        password: password
+    };
+
+    fetch('/admin/api/mail-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+        .then(response => response.json())
+        .then(data => {
+            showToast(data.message || 'Configuración de correo actualizada correctamente', 'success');
+            loadMailSettings();
+        })
+        .catch(error => {
+            console.error('Error saving mail settings:', error);
+            showToast('Error al guardar la configuración de correo', 'error');
+        });
+}
+
 
 
 // -- IPC Update Integration (INE) ---------------------------------------------
@@ -1968,10 +2010,4 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
-}
-            });
-        }
-    }).catch (function () {
-    showToast('Error de red', 'error');
-});
 }
