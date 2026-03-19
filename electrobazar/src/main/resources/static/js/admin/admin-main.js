@@ -504,13 +504,15 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
     let lowStockCount = 0;
 
     salesDataRaw.forEach(function (sale) {
-        totalRevenue += sale.totalAmount || 0;
-        totalSalesCount++;
-        if (sale.lines) {
-            sale.lines.forEach(function (line) {
-                var pName = (line.product && line.product.name) ? line.product.name : 'Producto';
-                productSalesCount[pName] = (productSalesCount[pName] || 0) + (line.quantity || 0);
-            });
+        if (sale.status === 'ACTIVE' || sale.status === undefined) {
+            totalRevenue += sale.totalAmount || 0;
+            totalSalesCount++;
+            if (sale.lines) {
+                sale.lines.forEach(function (line) {
+                    var pName = (line.product && line.product.name) ? line.product.name : 'Producto';
+                    productSalesCount[pName] = (productSalesCount[pName] || 0) + (line.quantity || 0);
+                });
+            }
         }
     });
 
@@ -545,6 +547,7 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
         for (let i = 0; i < 24; i++) {
             labels.push(i + ':00');
             let sum = salesDataRaw.reduce((acc, s) => {
+                if (s.status !== 'ACTIVE' && s.status !== undefined) return acc;
                 let h = new Date(s.createdAt).getHours();
                 return h === i ? acc + (s.totalAmount || 0) : acc;
             }, 0);
@@ -560,7 +563,7 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
             let total = salesDataRaw.reduce((sum, s) => {
                 if (!s.createdAt) return sum;
                 try {
-                    // Safe date parsing and comparison
+                    if (s.status !== 'ACTIVE' && s.status !== undefined) return sum;
                     let sDateIso = new Date(s.createdAt).toISOString().split('T')[0];
                     return (sDateIso === dStr) ? sum + (s.totalAmount || 0) : sum;
                 } catch (e) { return sum; }
@@ -577,6 +580,7 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
                 if (!s.createdAt) return sum;
                 try {
                     let sDate = new Date(s.createdAt);
+                    if (s.status !== 'ACTIVE' && s.status !== undefined) return sum;
                     return (sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear()) ? sum + (s.totalAmount || 0) : sum;
                 } catch (e) { return sum; }
             }, 0);
@@ -611,11 +615,15 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
         });
     }
 
-    // 3. Category Distribution Chart
+    // 3. Category Distribution Chart (Sales based as requested)
     var catSummary = {};
-    productsDataRaw.forEach(p => {
-        var catName = p.category ? p.category.name : 'Sin Categoría';
-        catSummary[catName] = (catSummary[catName] || 0) + 1;
+    salesDataRaw.forEach(function (sale) {
+        if ((sale.status === 'ACTIVE' || sale.status === undefined) && sale.lines) {
+            sale.lines.forEach(function (line) {
+                var catName = (line.product && line.product.category) ? line.product.category.name : 'Sin Categoría';
+                catSummary[catName] = (catSummary[catName] || 0) + (line.subtotal || 0);
+            });
+        }
     });
 
     var ctxCat = document.getElementById('categoryChart');
