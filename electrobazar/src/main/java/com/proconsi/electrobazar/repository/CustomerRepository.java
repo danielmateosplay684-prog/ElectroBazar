@@ -32,5 +32,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     /**
      * Searches for active customers whose name or tax ID matches the query.
      */
-    List<Customer> findByNameContainingIgnoreCaseOrTaxIdContainingIgnoreCaseAndActiveTrue(String name, String taxId);
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM Customer c WHERE (c.name LIKE %:query% OR c.taxId LIKE %:query%) AND c.active = true ORDER BY c.name ASC")
+    List<Customer> searchActive(@org.springframework.data.repository.query.Param("query") String query);
 }

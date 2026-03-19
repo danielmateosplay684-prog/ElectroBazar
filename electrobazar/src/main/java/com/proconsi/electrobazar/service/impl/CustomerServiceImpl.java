@@ -138,7 +138,7 @@ public class CustomerServiceImpl implements CustomerService {
         if (query == null || query.trim().isEmpty()) {
             return customerRepository.findByActiveTrueOrderByNameAsc();
         }
-        return customerRepository.findByNameContainingIgnoreCaseOrTaxIdContainingIgnoreCaseAndActiveTrue(query, query);
+        return customerRepository.searchActive(query.trim());
     }
 }
 

@@ -678,11 +678,6 @@ if (customerSearchInput) {
             return;
         }
 
-        if (query.length < 2) {
-            document.getElementById('customerSearchResults').style.display = 'none';
-            return;
-        }
-
         customerSearchTimeout = setTimeout(function () {
             fetch('/api/customers/search?query=' + encodeURIComponent(query))
                 .then(function (r) { return r.json(); })
