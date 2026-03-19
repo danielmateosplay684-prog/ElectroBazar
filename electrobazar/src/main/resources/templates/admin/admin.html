@@ -624,18 +624,15 @@
                                             style="max-height: 280px; overflow-y: auto; padding-right: 5px;">
                                             <div th:each="p : ${products}" class="sel-product-item-wrap mb-1"
                                                 th:data-name="${#strings.toLowerCase(p.name)}">
-                                                <div class="form-check p-2 rounded hover-surface"
-                                                    style="border: 1px solid transparent; transition: all 0.2s;">
-                                                    <input class="form-check-input sel-product-cb ms-1" type="checkbox"
-                                                        th:value="${p.id}" th:id="'selProd' + ${p.id}">
-                                                    <label class="form-check-label w-100 ps-2"
-                                                        th:for="'selProd' + ${p.id}" style="cursor: pointer;">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="fw-500" th:text="${p.name}"
-                                                                style="color: var(--text-main);"></span>
-                                                            <span
-                                                                class="badge bg-secondary text-muted rounded-pill small px-2"
-                                                                th:text="'IVA actual: ' + (${p.taxRate != null ? #numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0) + '%' : '—'})"></span>
+                                                <div class="rounded hover-surface shadow-sm"
+                                                    style="background: var(--surface); border: 1px solid var(--border); transition: all 0.2s;">
+                                                    <label class="d-flex align-items-center p-2 m-0 w-100" style="cursor: pointer;" th:for="'selProd' + ${p.id}">
+                                                        <input class="form-check-input sel-product-cb me-3 mt-0 flex-shrink-0" type="checkbox"
+                                                            th:value="${p.id}" th:id="'selProd' + ${p.id}" style="margin-left: 5px;">
+                                                        <div class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
+                                                            <span class="fw-500" th:text="${p.name}" style="color: var(--text-main); font-size: 0.85rem;"></span>
+                                                            <span class="badge bg-secondary text-muted rounded-pill small px-2"
+                                                                th:text="'IVA: ' + (${p.taxRate != null ? #numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0) + '%' : '—'})"></span>
                                                         </div>
                                                     </label>
                                                 </div>
@@ -653,18 +650,16 @@
                                         </div>
                                         <div id="selCategoryList" class="row g-2 custom-scroll"
                                             style="max-height: 280px; overflow-y: auto;">
-                                            <div th:each="c : ${categories}" class="col-md-6">
-                                                <div class="form-check p-3 rounded-3 hover-surface shadow-sm"
+                                            <div th:each="c : ${categories}" class="col-md-6 mb-2">
+                                                <div class="rounded-3 hover-surface shadow-sm overflow-hidden"
                                                     style="background: var(--secondary); border: 1px solid var(--border); transition: all 0.2s;">
-                                                    <input class="form-check-input sel-category-cb" type="checkbox"
-                                                        th:value="${c.id}" th:id="'selCat' + ${c.id}">
-                                                    <label class="form-check-label fw-600 ps-2 w-100"
-                                                        th:for="'selCat' + ${c.id}"
-                                                        style="cursor: pointer; color: var(--text-main);">
-                                                        <span th:text="${c.name}"></span>
-                                                        <div class="text-muted small fw-normal mt-1"
-                                                            style="font-size: 0.7rem;">Incluye todos los productos de
-                                                            esta categoría</div>
+                                                    <label class="d-flex align-items-center p-3 m-0 w-100 h-100" style="cursor: pointer;" th:for="'selCat' + ${c.id}">
+                                                        <input class="form-check-input sel-category-cb me-3 mt-0 flex-shrink-0" type="checkbox"
+                                                            th:value="${c.id}" th:id="'selCat' + ${c.id}" style="margin-left: 2px;">
+                                                        <div class="flex-grow-1">
+                                                            <span class="fw-600 d-block" style="color: var(--text-main); line-height: 1.2;" th:text="${c.name}"></span>
+                                                            <div class="text-muted small fw-normal mt-1" style="font-size: 0.7rem;">Incluye productos de esta categoría</div>
+                                                        </div>
                                                     </label>
                                                 </div>
                                             </div>

@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -55,7 +54,8 @@ public class EmailApiRestController {
             return ResponseEntity.ok(Collections.singletonMap("message", "Email sent successfully"));
         } catch (Exception e) {
             log.error("Error sending email", e);
-            return ResponseEntity.status(500).body(Collections.singletonMap("error", "Failed to send email: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(Collections.singletonMap("error", "Failed to send email: " + e.getMessage()));
         }
     }
 }
