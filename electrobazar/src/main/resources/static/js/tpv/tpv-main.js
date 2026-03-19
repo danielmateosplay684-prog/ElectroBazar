@@ -736,9 +736,11 @@ function selectCustomer(c) {
     // Auto-apply the customer's tariff and update ticket prices
     if (c.tariff) {
         window.currentTariffId = c.tariff.id; // expose for addToTicket
+        window.currentTariffColor = c.tariff.color;
         updateTicketPricesForTariff(c.tariff.id, c.tariff.name, parseFloat(c.tariff.discountPercentage || 0));
     } else {
         window.currentTariffId = null;
+        window.currentTariffColor = null;
         resetTicketPrices();
     }
 }
@@ -748,6 +750,7 @@ function clearSelectedCustomer() {
     document.getElementById('selectedCustomerCard').style.display = 'none';
     document.getElementById('customerSelectionControls').style.display = 'block';
     window.currentTariffId = null; // clear so addToTicket uses base prices again
+    window.currentTariffColor = null;
     window.currentHasRE = false;
     resetTicketPrices();
 }
@@ -785,6 +788,34 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
         if (badge) {
             badge.textContent = tariffName + (discountPct > 0 ? ' -' + discountPct + '%' : '');
             badge.style.display = 'inline-block';
+            
+            // Apply subtle colors
+            badge.className = 'badge-tariff-small'; // Reset to base classes
+            
+            // If the tariff object has a custom color, use it!
+            // We need to pass the color to this function or get it from global scope
+            // For now, let's assume we can find it in the current customer if we are here
+            if (window.currentTariffColor) {
+               badge.style.backgroundColor = window.currentTariffColor + '15';
+               badge.style.color = window.currentTariffColor;
+               badge.style.borderColor = window.currentTariffColor + '30';
+               badge.style.borderStyle = 'solid';
+               badge.style.borderWidth = '1px';
+            } else {
+                badge.style.backgroundColor = '';
+                badge.style.color = '';
+                badge.style.borderColor = '';
+                var lowerName = tariffName.toLowerCase();
+                if (lowerName.includes('minorista')) {
+                    badge.classList.add('badge-tariff-minorista');
+                } else if (lowerName.includes('mayorista')) {
+                    badge.classList.add('badge-tariff-mayorista');
+                } else if (lowerName.includes('vip')) {
+                    badge.classList.add('badge-tariff-vip');
+                } else {
+                    badge.classList.add('badge-tariff-custom');
+                }
+            }
         }
     }).catch(function(err) {
         console.error('Error updating ticket prices', err);

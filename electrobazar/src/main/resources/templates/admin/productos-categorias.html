@@ -20,8 +20,8 @@
     <header class="management-header">
         <a th:href="@{/tpv}" class="m-logo">
             <img th:src="@{/icons/favicon.svg}" alt="Logo" width="32" height="32">
-            Electro<span>Bazar</span> <small style="font-size: 0.7rem; opacity: 0.6; margin-left: 0.5rem;">|
-                Gestión</small>
+            <span th:text="${companySettings.appName}">ElectroBazar</span>
+            <small style="font-size: 0.7rem; opacity: 0.6; margin-left: 0.5rem;">| Gestión</small>
         </a>
         <a th:href="@{/tpv}" class="btn-cancel"
             style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">

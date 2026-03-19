@@ -65,7 +65,8 @@ public class TariffApiRestController {
         String name = (String) body.get("name");
         BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
         String description = (String) body.getOrDefault("description", "");
-        Tariff created = tariffService.create(name, discount, description);
+        String color = (String) body.getOrDefault("color", "#94a3b8");
+        Tariff created = tariffService.create(name, discount, description, color);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -79,7 +80,8 @@ public class TariffApiRestController {
     public ResponseEntity<Tariff> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         BigDecimal discount = new BigDecimal(body.get("discountPercentage").toString());
         String description = (String) body.getOrDefault("description", "");
-        Tariff updated = tariffService.update(id, discount, description);
+        String color = (String) body.getOrDefault("color", "#94a3b8");
+        Tariff updated = tariffService.update(id, discount, description, color);
         return ResponseEntity.ok(updated);
     }
 

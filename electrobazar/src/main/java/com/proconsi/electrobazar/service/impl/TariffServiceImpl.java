@@ -69,26 +69,36 @@ public class TariffServiceImpl implements TariffService {
     }
 
     @Override
-    public Tariff create(String name, BigDecimal discount, String description) {
+    public Tariff create(String name, BigDecimal discount, String description, String color) {
         String upperName = name.toUpperCase();
         if (tariffRepository.findByName(upperName).isPresent()) {
             throw new IllegalArgumentException("A tariff named " + upperName + " already exists.");
         }
         Tariff tariff = Tariff.builder()
-                .name(upperName).discountPercentage(discount != null ? discount : BigDecimal.ZERO)
-                .description(description).active(true).systemTariff(false).build();
+                .name(upperName)
+                .discountPercentage(discount != null ? discount : BigDecimal.ZERO)
+                .description(description)
+                .color(color)
+                .active(true)
+                .systemTariff(false)
+                .build();
         Tariff saved = tariffRepository.save(tariff);
-        activityLogService.logActivity("CREAR_TARIFA", String.format("Tariff created: %s (Discount: %.2f%%)", upperName, saved.getDiscountPercentage()), "Admin", "TARIFF", saved.getId());
+        activityLogService.logActivity("CREAR_TARIFA", 
+            String.format("Tariff created: %s (Discount: %.2f%%, Color: %s)", upperName, saved.getDiscountPercentage(), color), 
+            "Admin", "TARIFF", saved.getId());
         return saved;
     }
 
     @Override
-    public Tariff update(Long id, BigDecimal discount, String description) {
+    public Tariff update(Long id, BigDecimal discount, String description, String color) {
         Tariff tariff = tariffRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Tariff #" + id + " not found."));
         tariff.setDiscountPercentage(discount != null ? discount : BigDecimal.ZERO);
         tariff.setDescription(description);
+        tariff.setColor(color);
         Tariff saved = tariffRepository.save(tariff);
-        activityLogService.logActivity("ACTUALIZAR_TARIFA", String.format("Tariff updated: %s (New Discount: %.2f%%)", saved.getName(), saved.getDiscountPercentage()), "Admin", "TARIFF", saved.getId());
+        activityLogService.logActivity("ACTUALIZAR_TARIFA", 
+            String.format("Tariff updated: %s (New Discount: %.2f%%, New Color: %s)", saved.getName(), saved.getDiscountPercentage(), color), 
+            "Admin", "TARIFF", saved.getId());
         return saved;
     }
 

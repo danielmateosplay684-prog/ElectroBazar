@@ -16,8 +16,18 @@
         .bg-secondary { background-color: var(--secondary) !important; }
         .bg-surface { background-color: var(--surface) !important; }
         .border-border { border-color: var(--border) !important; }
+        /* ── Typography & Visibility fixes ── */
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+            color: var(--text-main) !important;
+        }
+
         .text-main { color: var(--text-main) !important; }
         .text-muted { color: var(--text-muted) !important; }
+        
+        /* Brighter muted text for better contrast */
+        :root {
+            --text-muted: #aabac9; 
+        }
 
         * {
             box-sizing: border-box;
@@ -432,22 +442,74 @@
             padding: 0.3rem 0.5rem;
         }
 
-        .badge-tariff-custom {
-            background-color: rgba(168, 85, 247, 0.15);
-            /* purple */
+        /* ── CUSTOM TARIFF BADGES (Professional Muted Colors) ── */
+        .badge-tariff {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+
+        .badge-tariff-minorista {
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        .badge-tariff-mayorista {
+            background: rgba(16, 185, 129, 0.12);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .badge-tariff-vip {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .badge-tariff-especial {
+            background: rgba(168, 85, 247, 0.12);
             color: #c084fc;
-            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
+        .badge-tariff-default {
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+        }
+
+        .badge-tariff-custom {
+            background-color: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.2);
             font-size: 0.75rem;
             padding: 0.3rem 0.5rem;
         }
 
-        .badge-tariff-default {
-            background-color: rgba(148, 163, 184, 0.15);
-            /* slate */
-            color: var(--text-muted);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            font-size: 0.75rem;
-            padding: 0.3rem 0.6rem;
+        .color-swatch-p {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-swatch-p:hover {
+            transform: scale(1.2);
+        }
+
+        .color-swatch-p.active {
+            border-color: #fff;
+            box-shadow: 0 0 0 2px var(--accent);
         }
 
         .badge-re-custom {

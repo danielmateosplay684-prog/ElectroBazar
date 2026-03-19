@@ -417,10 +417,16 @@
                     </thead>
                     <tbody>
                         <tr th:each="tariff : ${tariffs}">
-                            <td><strong th:text="${tariff.name}">MINORISTA</strong></td>
+                            <td>
+                                <span class="badge-tariff"
+                                    th:style="${tariff.color != null ? 'background-color:' + tariff.color + '15; color:' + tariff.color + '; border-color:' + tariff.color + '30' : ''}"
+                                    th:classappend="${tariff.color == null ? (#strings.contains(#strings.toLowerCase(tariff.name), 'minorista') ? 'badge-tariff-minorista' : (#strings.contains(#strings.toLowerCase(tariff.name), 'mayorista') ? 'badge-tariff-mayorista' : 'badge-tariff-custom')) : ''}"
+                                    th:text="${tariff.name}">MINORISTA</span>
+                            </td>
                             <td>
                                 <span th:if="${tariff.discountPercentage > 0}"
-                                    style="background:rgba(var(--accent-rgb), 0.15);color:var(--accent);padding:0.15rem 0.5rem;border-radius:6px;font-weight:700;font-size:0.88rem;"
+                                    class="badge-discount"
+                                    th:style="${tariff.color != null ? 'background-color:' + tariff.color + '10; color:' + tariff.color + '; border: 1px solid ' + tariff.color + '25' : ''}"
                                     th:text="'-' + ${#numbers.formatDecimal(tariff.discountPercentage, 1, 0)} + '%'">
                                     -15%</span>
                                 <span th:unless="${tariff.discountPercentage > 0}" style="color:var(--text-muted);">0%
@@ -439,10 +445,8 @@
                                     th:text="${tariff.active} ? 'Sí' : 'No'"></span>
                             </td>
                             <td>
-                                <span th:if="${tariff.systemTariff}"
-                                    style="font-size:0.75rem;color:var(--text-muted);">Sistema</span>
-                                <span th:unless="${tariff.systemTariff}"
-                                    style="font-size:0.75rem;color:var(--text-muted);">Personalizada</span>
+                                <span th:if="${tariff.systemTariff}" class="badge badge-tariff-minorista" style="font-size:0.7rem">SISTEMA</span>
+                                <span th:unless="${tariff.systemTariff}" class="badge badge-tariff-mayorista" style="font-size:0.7rem">PERSONALIZADA</span>
                             </td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
@@ -453,6 +457,7 @@
                                     <button class="btn-icon" title="Editar descuento" th:data-id="${tariff.id}"
                                         th:data-name="${tariff.name}" th:data-discount="${tariff.discountPercentage}"
                                         th:data-description="${tariff.description ?: ''}"
+                                        th:data-color="${tariff.color ?: ''}"
                                         onclick="openEditTariffModal(this)">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -708,6 +713,19 @@
                             <input type="text" id="newTariffDescription" class="form-control"
                                 placeholder="Descripción opcional">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Color del Distintivo</label>
+                            <div class="d-flex flex-wrap gap-2" id="newTariffColorGrid">
+                                <div class="color-swatch-p" data-color="#94a3b8" style="background:#94a3b8" title="Slate"></div>
+                                <div class="color-swatch-p" data-color="#60a5fa" style="background:#60a5fa" title="Blue"></div>
+                                <div class="color-swatch-p" data-color="#34d399" style="background:#34d399" title="Emerald"></div>
+                                <div class="color-swatch-p" data-color="#facc15" style="background:#facc15" title="Yellow"></div>
+                                <div class="color-swatch-p" data-color="#f87171" style="background:#f87171" title="Red"></div>
+                                <div class="color-swatch-p" data-color="#c084fc" style="background:#c084fc" title="Purple"></div>
+                                <div class="color-swatch-p" data-color="#fb923c" style="background:#fb923c" title="Orange"></div>
+                            </div>
+                            <input type="hidden" id="newTariffColor" value="#94a3b8">
+                        </div>
                         <div id="createTariffError" class="alert alert-danger" style="display:none;"></div>
                     </div>
                     <div class="modal-footer border-0">
@@ -738,6 +756,19 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Descripción</label>
                             <input type="text" id="editTariffDescription" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Color del Distintivo</label>
+                            <div class="d-flex flex-wrap gap-2" id="editTariffColorGrid">
+                                <div class="color-swatch-p" data-color="#94a3b8" style="background:#94a3b8"></div>
+                                <div class="color-swatch-p" data-color="#60a5fa" style="background:#60a5fa"></div>
+                                <div class="color-swatch-p" data-color="#34d399" style="background:#34d399"></div>
+                                <div class="color-swatch-p" data-color="#facc15" style="background:#facc15"></div>
+                                <div class="color-swatch-p" data-color="#f87171" style="background:#f87171"></div>
+                                <div class="color-swatch-p" data-color="#c084fc" style="background:#c084fc"></div>
+                                <div class="color-swatch-p" data-color="#fb923c" style="background:#fb923c"></div>
+                            </div>
+                            <input type="hidden" id="editTariffColor" value="">
                         </div>
                         <div id="editTariffError" class="alert alert-danger" style="display:none;"></div>
                     </div>
@@ -1413,7 +1444,7 @@
                                 <h5 class="mb-0 fw-bold">Seguridad del Sistema</h5>
                             </div>
                             <div class="card-body p-4">
-                                <p class="small mb-4 text-muted">Ajusta el PIN de acceso para cierres de caja y funciones de administración.</p>
+                                <p class="small mb-4 text-muted">PIN de acceso al panel de administración.</p>
                                 <form id="changePinForm" onsubmit="event.preventDefault(); updateAdminPin();">
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">PIN Actual</label>
@@ -1965,10 +1996,12 @@
                                     th:text="${c.type != null && c.type.name() == 'COMPANY' ? 'EMPRESA' : 'INDIVIDUAL'}"></span>
                             </td>
                             <td>
-                                <span th:if="${c.tariff != null}" class="badge badge-tariff-custom"
+                                <span th:if="${c.tariff != null}" class="badge"
+                                    th:style="${c.tariff.color != null ? 'background-color:' + c.tariff.color + '15; color:' + c.tariff.color + '; border-color:' + c.tariff.color + '30' : ''}"
+                                    th:classappend="${c.tariff.color == null ? (#strings.contains(#strings.toLowerCase(c.tariff.name), 'minorista') ? 'badge-tariff-minorista' : (#strings.contains(#strings.toLowerCase(c.tariff.name), 'mayorista') ? 'badge-tariff-mayorista' : 'badge-tariff-custom')) : ''}"
                                     th:text="${c.tariff.name}"></span>
                                 <span th:unless="${c.tariff != null}"
-                                    class="badge badge-tariff-default">MINORISTA</span>
+                                    class="badge badge-tariff-minorista">MINORISTA</span>
                             </td>
                             <td>
                                 <span th:if="${c.hasRecargoEquivalencia}" class="badge badge-re-custom"
@@ -2883,7 +2916,9 @@
             document.getElementById('newTariffName').value = '';
             document.getElementById('newTariffDiscount').value = '';
             document.getElementById('newTariffDescription').value = '';
+            document.getElementById('newTariffColor').value = '#94a3b8'; // Default
             document.getElementById('createTariffError').style.display = 'none';
+            initColorPicker('newTariffColorGrid', 'newTariffColor', '#94a3b8');
             new bootstrap.Modal(document.getElementById('createTariffModal')).show();
         }
 
@@ -2891,6 +2926,7 @@
             var name = document.getElementById('newTariffName').value.trim().toUpperCase();
             var discount = document.getElementById('newTariffDiscount').value;
             var description = document.getElementById('newTariffDescription').value.trim();
+            var color = document.getElementById('newTariffColor').value;
             var errorEl = document.getElementById('createTariffError');
 
             if (!name) { errorEl.textContent = 'El nombre es obligatorio.'; errorEl.style.display = 'block'; return; }
@@ -2899,7 +2935,7 @@
             fetch('/api/tariffs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, discountPercentage: parseFloat(discount), description })
+                body: JSON.stringify({ name, discountPercentage: parseFloat(discount), description, color })
             }).then(function (r) {
                 if (r.ok) {
                     return r.json();
@@ -2920,7 +2956,9 @@
             document.getElementById('editTariffNameLabel').textContent = btn.dataset.name;
             document.getElementById('editTariffDiscount').value = btn.dataset.discount;
             document.getElementById('editTariffDescription').value = btn.dataset.description;
+            document.getElementById('editTariffColor').value = btn.dataset.color || '#94a3b8';
             document.getElementById('editTariffError').style.display = 'none';
+            initColorPicker('editTariffColorGrid', 'editTariffColor', btn.dataset.color || '#94a3b8');
             new bootstrap.Modal(document.getElementById('editTariffModal')).show();
         }
 
@@ -2928,6 +2966,7 @@
             var id = document.getElementById('editTariffId').value;
             var discount = document.getElementById('editTariffDiscount').value;
             var description = document.getElementById('editTariffDescription').value.trim();
+            var color = document.getElementById('editTariffColor').value;
             var errorEl = document.getElementById('editTariffError');
 
             if (discount === '' || isNaN(parseFloat(discount))) { errorEl.textContent = 'Introduce un descuento válido.'; errorEl.style.display = 'block'; return; }
@@ -2935,7 +2974,7 @@
             fetch('/api/tariffs/' + id, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ discountPercentage: parseFloat(discount), description })
+                body: JSON.stringify({ discountPercentage: parseFloat(discount), description, color })
             }).then(function (r) {
                 if (r.ok) {
                     return r.json();
@@ -2959,7 +2998,23 @@
                     return r.json().then(function (d) { throw new Error(d.error || d.message); });
                 })
                 .then(function () { showToastAdmin('Tarifa desactivada', 'success'); setTimeout(function () { location.reload(); }, 800); })
-                .catch(function (e) { showToastAdmin(e.message || 'Error al desactivar', 'warning'); });
+                .then(function () { showToastAdmin(e.message || 'Error al desactivar', 'warning'); });
+        }
+
+        function initColorPicker(gridId, inputId, activeColor) {
+            const grid = document.getElementById(gridId);
+            const input = document.getElementById(inputId);
+            const swatches = grid.querySelectorAll('.color-swatch-p');
+            
+            swatches.forEach(sw => {
+                const color = sw.dataset.color;
+                sw.classList.toggle('active', color === activeColor);
+                sw.onclick = function() {
+                    swatches.forEach(s => s.classList.remove('active'));
+                    sw.classList.add('active');
+                    input.value = color;
+                };
+            });
         }
 
         function activateTariff(id) {

@@ -23,32 +23,48 @@ import java.math.BigDecimal;
 public class TariffDataInitializer implements CommandLineRunner {
 
     private final TariffRepository tariffRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        // Automatic patch for database: Add color column if it doesn't exist
+        try {
+            jdbcTemplate.execute("ALTER TABLE tariffs ADD COLUMN color VARCHAR(7)");
+            log.info(">>> Database Patch: Added 'color' column to 'tariffs' table.");
+        } catch (Exception e) {
+            // Probably column already exists or other error, safe to ignore
+        }
+
         seedSystemTariff(Tariff.MINORISTA, BigDecimal.ZERO,
-                "Tarifa estándar para clientes minoristas. Sin descuento.");
+                "Tarifa estándar para clientes minoristas. Sin descuento.", "#94a3b8");
         seedSystemTariff(Tariff.MAYORISTA, new BigDecimal("15.00"),
-                "Tarifa mayorista con descuento del 15% sobre precio de catálogo.");
+                "Tarifa mayorista con descuento del 15%.", "#34d399");
         seedSystemTariff(Tariff.EMPLEADO, new BigDecimal("10.00"),
-                "Tarifa empleado con descuento del 10% sobre precio de catálogo.");
-        log.info(">>> System tariffs initialized: MINORISTA (0%), MAYORISTA (15%), EMPLEADO (10%)");
+                "Tarifa empleado con descuento del 10%.", "#60a5fa");
+        log.info(">>> System tariffs initialized (with professional colors)");
     }
 
-    private void seedSystemTariff(String name, BigDecimal defaultDiscount, String description) {
+    private void seedSystemTariff(String name, BigDecimal defaultDiscount, String description, String defaultColor) {
         tariffRepository.findByName(name).ifPresentOrElse(
                 t -> {
                     // Enforce the system flag even if someone removed it
+                    boolean changed = false;
                     if (!Boolean.TRUE.equals(t.getSystemTariff())) {
                         t.setSystemTariff(true);
-                        tariffRepository.save(t);
+                        changed = true;
                     }
+                    if (t.getColor() == null) {
+                        t.setColor(defaultColor);
+                        changed = true;
+                    }
+                    if (changed) tariffRepository.save(t);
                 },
                 () -> {
                     Tariff tariff = Tariff.builder()
                             .name(name)
                             .discountPercentage(defaultDiscount)
                             .description(description)
+                            .color(defaultColor)
                             .active(true)
                             .systemTariff(true)
                             .build();

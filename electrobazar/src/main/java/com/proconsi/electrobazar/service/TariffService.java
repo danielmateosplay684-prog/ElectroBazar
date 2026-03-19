@@ -49,18 +49,20 @@ public interface TariffService {
      * @param name               Name of the tariff.
      * @param discountPercentage Discount to apply on gross prices.
      * @param description        Optional description.
+     * @param color              Hex color for badges.
      * @return The saved Tariff.
      */
-    Tariff create(String name, BigDecimal discountPercentage, String description);
+    Tariff create(String name, BigDecimal discountPercentage, String description, String color);
 
     /**
      * Updates an existing custom tariff.
      * @param id                 ID of the tariff.
      * @param discountPercentage New discount value.
      * @param description        New description.
+     * @param color              New color code.
      * @return The updated Tariff.
      */
-    Tariff update(Long id, BigDecimal discountPercentage, String description);
+    Tariff update(Long id, BigDecimal discountPercentage, String description, String color);
 
     /**
      * Deactivates a tariff. Customers using it will revert to default.

@@ -1,4 +1,4 @@
-﻿        :root {
+        :root {
             /* ─────────────────────────────────────────────────────────────
                Colour tokens are injected by fragments/theme :: themeScript
                before this sheet loads, so no colour defaults are needed here.
@@ -758,11 +758,48 @@
             font-weight: 600;
         }
 
-        .ticket-total-amount {
-            font-family: 'Barlow Condensed', sans-serif;
-            font-size: 2rem;
+        /* ── CUSTOM TARIFF BADGES (Professional Muted Colors) ── */
+        .badge-tariff {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+
+        .badge-tariff-minorista {
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        .badge-tariff-mayorista {
+            background: rgba(16, 185, 129, 0.12);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .badge-tariff-vip {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .badge-tariff-especial {
+            background: rgba(168, 85, 247, 0.12);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
+        .badge-tariff-small {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 5px;
             font-weight: 700;
-            color: var(--accent);
+            text-transform: uppercase;
         }
 
         .payment-selector {

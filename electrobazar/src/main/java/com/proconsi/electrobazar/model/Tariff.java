@@ -58,6 +58,10 @@ public class Tariff implements java.io.Serializable {
     @Column(nullable = false)
     @Builder.Default
     private Boolean systemTariff = false;
+    
+    /** Color code for displaying this tariff's badges (hex). */
+    @Column(length = 7)
+    private String color;
 
     /**
      * Returns true if this tariff applies a non-zero discount.
