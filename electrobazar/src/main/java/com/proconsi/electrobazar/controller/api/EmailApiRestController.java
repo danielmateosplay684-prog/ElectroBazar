@@ -9,6 +9,7 @@ import com.proconsi.electrobazar.service.SaleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -27,16 +28,26 @@ public class EmailApiRestController {
     @PostMapping("/send-sale/{saleId}")
     public ResponseEntity<?> sendSaleEmail(@PathVariable Long saleId, @RequestParam String email) {
         log.info("Request to send sale email for Sale ID {} to {}", saleId, email);
-        try {
-            Sale sale = saleService.findById(saleId);
-            if (sale == null) {
-                return ResponseEntity.status(404).body(Collections.singletonMap("error", "Sale not found"));
-            }
 
-            // Check if it has an invoice
+        // Validate the sale exists before accepting
+        Sale sale = saleService.findById(saleId);
+        if (sale == null) {
+            return ResponseEntity.status(404).body(Collections.singletonMap("error", "Sale not found"));
+        }
+
+        // Dispatch email sending asynchronously — respond immediately so the client doesn't timeout
+        sendEmailAsync(sale, email);
+
+        return ResponseEntity.accepted()
+                .body(Collections.singletonMap("message", "Email queued for sending"));
+    }
+
+    @Async
+    public void sendEmailAsync(Sale sale, String email) {
+        try {
             byte[] pdfContent;
             String filename;
-            var invoiceOpt = invoiceService.findBySaleId(saleId);
+            var invoiceOpt = invoiceService.findBySaleId(sale.getId());
             if (invoiceOpt.isPresent()) {
                 Invoice invoice = invoiceOpt.get();
                 pdfContent = pdfReportService.generateInvoicePdf(invoice);
@@ -50,12 +61,9 @@ public class EmailApiRestController {
             String body = "Estimado cliente,\n\nAdjunto encontrará el documento de su compra.\n\nGracias por confiar en Electrobazar.";
 
             emailService.sendEmailWithAttachment(email, subject, body, filename, pdfContent);
-
-            return ResponseEntity.ok(Collections.singletonMap("message", "Email sent successfully"));
+            log.info("Email sent successfully for Sale ID {} to {}", sale.getId(), email);
         } catch (Exception e) {
-            log.error("Error sending email", e);
-            return ResponseEntity.status(500)
-                    .body(Collections.singletonMap("error", "Failed to send email: " + e.getMessage()));
+            log.error("Error sending email for Sale ID {} to {}: {}", sale.getId(), email, e.getMessage(), e);
         }
     }
 }
