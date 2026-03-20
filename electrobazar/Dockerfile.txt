@@ -9,5 +9,15 @@ RUN chmod +x mvnw && ./mvnw clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+
+# Importar certificado del INE
+COPY src/main/resources/certs/ine_cert.crt /tmp/ine_cert.crt
+RUN keytool -import -alias ine-cert \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -file /tmp/ine_cert.crt \
+    -storepass changeit \
+    -noprompt && \
+    rm /tmp/ine_cert.crt
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

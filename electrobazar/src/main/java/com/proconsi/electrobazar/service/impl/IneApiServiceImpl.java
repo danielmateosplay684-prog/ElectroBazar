@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 
 /**
  * Implementation of {@link IneApiService}.
- * Encapsulates communication with the Spanish INE (Instituto Nacional de Estadística) API.
+ * Encapsulates communication with the Spanish INE (Instituto Nacional de
+ * Estadística) API.
  * Includes a 24-hour manual cache to minimize external network calls.
  */
 @Slf4j
@@ -35,44 +36,55 @@ public class IneApiServiceImpl implements IneApiService {
         }
 
         try {
-            log.info("Requesting latest IPC from INE...");
+            log.info(">>> [INE] Iniciando llamada a API del INE...");
+            log.info(">>> [INE] URL: {}", INE_URL);
 
+            // Primero obtén el raw JSON para ver qué devuelve exactamente
             String rawJson = restTemplate.getForObject(INE_URL, String.class);
+            log.info(">>> [INE] Respuesta raw: {}", rawJson);
+
             if (rawJson == null || rawJson.isEmpty()) {
-                log.warn("INE API returned an empty response.");
-                return cachedIpc; // Return stale value if available
+                log.error(">>> [INE] La respuesta fue NULL o vacía");
+                return cachedIpc;
             }
 
-            IneIpcResponse response = null;
-            if (rawJson.trim().startsWith("[")) {
-                IneIpcResponse[] list = restTemplate.getForObject(INE_URL, IneIpcResponse[].class);
-                if (list != null && list.length > 0) response = list[0];
-            } else {
-                response = restTemplate.getForObject(INE_URL, IneIpcResponse.class);
+            IneIpcResponse response = restTemplate.getForObject(INE_URL, IneIpcResponse.class);
+            log.info(">>> [INE] Response parseado: {}", response);
+
+            if (response == null) {
+                log.error(">>> [INE] El parseo devolvió NULL");
+                return cachedIpc;
             }
 
-            if (response != null && response.getData() != null && !response.getData().isEmpty()) {
-                BigDecimal value = response.getData().stream()
-                        .map(IneIpcResponse.IneDataPoint::getValor)
-                        .filter(v -> v != null)
-                        .findFirst()
-                        .orElse(null);
-
-                if (value != null) {
-                    this.cachedIpc = value;
-                    this.cacheExpiry = LocalDateTime.now().plusHours(24);
-                    log.info("IPC successfully updated and cached for 24h: {}%", value);
-                    return value;
-                }
+            if (response.getData() == null) {
+                log.error(">>> [INE] response.getData() es NULL");
+                return cachedIpc;
             }
-            log.warn("INE API response was valid but contained no data points.");
+
+            log.info(">>> [INE] Número de data points: {}", response.getData().size());
+            response.getData().forEach(d -> log.info(">>> [INE] DataPoint: anyo={}, mes={}, valor={}", d.getAnyo(),
+                    d.getMes(), d.getValor()));
+
+            BigDecimal value = response.getData()
+                    .stream()
+                    .filter(d -> d.getValor() != null)
+                    .reduce((first, second) -> second)
+                    .map(IneIpcResponse.IneDataPoint::getValor)
+                    .orElse(null);
+
+            log.info(">>> [INE] Valor final extraído: {}", value);
+
+            if (value != null) {
+                this.cachedIpc = value;
+                this.cacheExpiry = LocalDateTime.now().plusHours(24);
+                return value;
+            }
+
         } catch (Exception e) {
-            log.error("Failed to fetch IPC from INE. Error: {}", e.getMessage());
+            log.error(">>> [INE] EXCEPCIÓN: tipo={}, mensaje={}", e.getClass().getName(), e.getMessage());
+            log.error(">>> [INE] Stack trace completo:", e);
         }
 
-        // Fallback to last successful value even if expired
         return cachedIpc;
     }
 }
-
-

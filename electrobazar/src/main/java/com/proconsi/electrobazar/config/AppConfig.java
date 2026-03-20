@@ -6,14 +6,16 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * General application configuration.
- * This class defines beans and global configurations necessary for the application's operation.
+ * This class defines beans and global configurations necessary for the
+ * application's operation.
  */
 @Configuration
 public class AppConfig {
 
     /**
      * Defines a RestTemplate HTTP client for making requests to external APIs.
-     * An interceptor is configured to add an identifying User-Agent to each request,
+     * An interceptor is configured to add an identifying User-Agent to each
+     * request,
      * allowing external services to identify the source of the requests.
      */
     @Bean
