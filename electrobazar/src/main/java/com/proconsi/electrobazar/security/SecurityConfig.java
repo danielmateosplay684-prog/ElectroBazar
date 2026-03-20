@@ -104,6 +104,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/email/**").hasAnyAuthority("CRM_ACCESS", "ADMIN_ACCESS", "TPV_CLIENT")
                 
                 // CATCH-ALL FOR ADMIN AND USER INTERFACES
+                // Exceptions for escalation endpoints (accessible to any authenticated worker)
+                .requestMatchers("/admin/login", "/api/admin/verify-pin").authenticated()
                 .requestMatchers("/admin/**").hasAuthority("ADMIN_ACCESS")
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN_ACCESS")
                 .requestMatchers("/admin/api/**").hasAuthority("ADMIN_ACCESS")

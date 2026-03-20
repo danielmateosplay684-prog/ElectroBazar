@@ -38,6 +38,10 @@ public class WorkerService {
                 .toList();
     }
 
+    public Optional<Worker> findByUsername(String username) {
+        return workerRepository.findByUsername(username);
+    }
+
     /**
      * Finds a specific worker by ID.
      * @param id Primary key.

@@ -58,6 +58,7 @@ public class AdminApiRestController {
     private final ActivityLogService activityLogService;
     private final RecargoEquivalenciaCalculator recargoCalculator;
     private final TemplateEngine templateEngine;
+    private final JwtService jwtService;
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
@@ -80,7 +81,26 @@ public class AdminApiRestController {
     public ResponseEntity<?> verifyPin(@RequestBody Map<String, String> body) {
         String pin = body.get("pin");
         if (adminPinService.verifyPin(pin)) {
-            return ResponseEntity.ok().build();
+            // Escalation logic for API/Mobile: Return a new token with ADMIN_ACCESS
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                String username = auth.getName();
+                Optional<Worker> workerOpt = workerService.findByUsername(username);
+
+                if (workerOpt.isPresent()) {
+                    Worker worker = workerOpt.get();
+                    Set<String> permissions = worker.getEffectivePermissions();
+                    permissions.add("ADMIN_ACCESS"); // Temporarily escalate for this token
+
+                    String newToken = jwtService.generateToken(worker.getUsername(), worker.getId(), permissions);
+                    return ResponseEntity.ok(Map.of(
+                            "ok", true,
+                            "token", newToken,
+                            "worker", worker
+                    ));
+                }
+            }
+            return ResponseEntity.ok(Map.of("ok", true));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "PIN incorrecto"));
         }
