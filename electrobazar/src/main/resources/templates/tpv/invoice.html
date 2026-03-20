@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap"
         rel="stylesheet">
     <th:block th:if="${pdfMode == null}" th:replace="~{fragments/theme :: themeScript}" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
     <style>
         /* ── Diseño de Factura Real A4 para Pantalla ── */
         :root {
@@ -56,7 +57,7 @@
         /* ── Header ── */
         .header-bar {
             width: 100%;
-            border-bottom: 3px solid var(--invoice-accent);
+            border-bottom: 3px solid #1a1a1a;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
@@ -276,7 +277,7 @@
         }
 
         .btn-print {
-            background: var(--accent);
+            background: var(--text-main);
             color: var(--primary);
         }
 
@@ -308,6 +309,10 @@
                 width: 100%;
                 max-width: none;
                 padding: 0;
+            }
+
+            .modal, .modal-backdrop, .toast-container {
+                display: none !important;
             }
         }
     </style>
@@ -574,7 +579,7 @@
                 </div>
                 <div class="modal-footer" style="border-top: none; padding: 15px 25px 25px;">
                     <button type="button" id="btnConfirmEmail" class="btn w-100" 
-                            style="background: var(--accent); color: var(--primary); font-weight: 700; border-radius: 10px; padding: 12px 25px;">
+                            style="background: var(--text-main); color: var(--primary); font-weight: 700; border-radius: 10px; padding: 12px 25px;">
                         Guardar y Enviar
                     </button>
                 </div>

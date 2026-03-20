@@ -1,4 +1,4 @@
-﻿        /* ── Page shell (app-chrome, not the ticket) ── */
+        /* ── Page shell (app-chrome, not the ticket) ── */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -275,8 +275,8 @@
             align-items: center;
             gap: 0.4rem;
             padding: 0.65rem 1.25rem;
-            background: #1a1a1a;
-            color: #fff;
+            background: var(--text-main);
+            color: var(--primary);
             border: none;
             border-radius: 8px;
             font-size: 0.88rem;

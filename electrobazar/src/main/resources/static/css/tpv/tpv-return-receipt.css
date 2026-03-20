@@ -1,6 +1,6 @@
 /* Return-specific overrides — accent the header in red */
 .t-header {
-    border-top: 4px solid #ef4444;
+    border-top: 4px solid #1a1a1a;
 }
 
 .t-brand span {
@@ -8,17 +8,17 @@
 }
 
 .t-subtitle {
-    color: #ef4444;
+    color: #444;
 }
 
 .return-ref-badge {
     display: inline-block;
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: #f0f0f0;
+    border: 1px solid #ddd;
     border-radius: 6px;
     padding: 0.25rem 0.65rem;
     font-size: 0.8rem;
-    color: #ef4444;
+    color: #1a1a1a;
     font-weight: 700;
     margin-top: 0.25rem;
 }
@@ -40,13 +40,13 @@
 }
 
 .t-type-total {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: #f0f0f0;
+    color: #1a1a1a;
 }
 
 .t-type-partial {
-    background: rgba(var(--accent-rgb), 0.15);
-    color: var(--accent);
+    background: #f0f0f0;
+    color: #1a1a1a;
 }
 
 .t-refund-method {
@@ -54,12 +54,12 @@
     font-weight: 600;
     padding: 0.3rem 0.7rem;
     border-radius: 6px;
-    background: rgba(var(--accent-rgb), 0.1);
-    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    background: #f9f9f9;
+    border: 1px solid #eee;
     display: inline-block;
     margin-top: 0.3rem;
 }
 
 .t-total-amount {
-    color: #ef4444 !important;
+    color: #1a1a1a !important;
 }

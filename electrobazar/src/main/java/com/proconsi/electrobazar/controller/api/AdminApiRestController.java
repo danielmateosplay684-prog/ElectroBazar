@@ -123,6 +123,7 @@ public class AdminApiRestController {
         Context context = new Context();
         context.setVariable("sale", sale);
         context.setVariable("companySettings", companySettingsService.getSettings());
+        context.setVariable("pdfMode", true); // Ensure we hide web UI elements in PDF
 
         Optional<Invoice> invoiceOpt = invoiceService.findBySaleId(id);
         invoiceOpt.ifPresent(inv -> context.setVariable("invoice", inv));
@@ -174,6 +175,7 @@ public class AdminApiRestController {
         Context context = new Context();
         context.setVariable("saleReturn", saleReturn);
         context.setVariable("companySettings", companySettingsService.getSettings());
+        context.setVariable("pdfMode", true); // Ensure we hide web UI elements in PDF
 
         Sale originalSale = saleReturn.getOriginalSale();
         boolean applyRecargo = originalSale.isApplyRecargo();
@@ -397,6 +399,8 @@ public class AdminApiRestController {
                 .replace("&trade;", "&#8482;")
                 .replace("&nbsp;", "&#160;")
                 .replace("&euro;", "&#8364;")
+                .replace("&ordm;", "&#186;")
+                .replace("&ordf;", "&#170;")
                 .replace("&mdash;", "&#8212;")
                 .replace("&ndash;", "&#8211;")
                 .replace("&aacute;", "&#225;")
