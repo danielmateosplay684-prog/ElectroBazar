@@ -1024,7 +1024,7 @@
 
                 <!-- Tab: Categorías -->
                 <div class="tab-pane fade" id="categories-pane" role="tabpanel">
-                    <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+                    <div class="filter-bar-custom">
                         <div class="row g-3">
                             <div class="col-md-9">
                                 <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-search me-2"></i>Buscar categoría</label>
@@ -1106,7 +1106,7 @@
                 </span>
             </div>
 
-            <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="filter-bar-custom">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-search me-2"></i>Buscar factura / cliente</label>
@@ -1229,7 +1229,7 @@
                 </span>
             </div>
 
-            <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="filter-bar-custom">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-search me-2"></i>Buscar por Nº / Motivo</label>
@@ -2487,11 +2487,10 @@
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content"
-                style="background:var(--secondary);color:var(--text-main);border-color:var(--border);">
-                <div class="modal-header" style="border-color:var(--border);">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title" id="roleModalLabel">Rol</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="roleForm" novalidate>
@@ -2509,8 +2508,7 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Permisos</label>
-                                <div class="p-3 rounded"
-                                    style="background:var(--primary); border:1px solid var(--border)"
+                                <div class="p-3 rounded border"
                                     id="rolePermissionsContainer">
                                     <!-- Cargado dinámicamente -->
                                 </div>
@@ -2518,7 +2516,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer" style="border-color:var(--border);">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
                         style="flex:1">Cancelar</button>
                     <button type="button" class="btn btn-save" onclick="saveRole()" style="flex:1">Guardar</button>
@@ -2529,11 +2527,10 @@
 
     <div class="modal fade" id="workerModal" tabindex="-1" aria-labelledby="workerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content"
-                style="background:var(--secondary);color:var(--text-main);border-color:var(--border);">
-                <div class="modal-header" style="border-color:var(--border);">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title" id="workerModalLabel">Trabajador</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="workerForm" novalidate>
@@ -2568,7 +2565,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer" style="border-color:var(--border);">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
                         style="flex:1">Cancelar</button>
                     <button type="button" class="btn btn-save" onclick="saveWorker()" style="flex:1">Guardar</button>
@@ -2621,13 +2618,13 @@
                                 <input type="text" class="form-control" id="customerPostalCode" required placeholder="28001">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="customerEmail">Email</label>
+                                <label class="form-label" for="customerEmail">Email (Opcional)</label>
                                 <input type="email" class="form-control" id="customerEmail"
                                     placeholder="ejemplo@correo.com">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="customerPhone">Teléfono</label>
-                                <input type="tel" class="form-control" id="customerPhone" placeholder="600 000 000">
+                                <label class="form-label" for="customerPhone">Teléfono (Opcional)</label>
+                                <input type="text" class="form-control" id="customerPhone" placeholder="600 000 000">
                             </div>
                             
                             <!-- Tariff selector -->

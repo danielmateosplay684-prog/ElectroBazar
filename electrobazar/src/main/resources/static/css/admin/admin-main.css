@@ -1,14 +1,15 @@
         :root {
-            --primary: #1a1a2e;
-            --secondary: #16213e;
+            /* Using more neutral/light-mode defaults to avoid 'dark flashes' on mobile */
+            --primary: #ffffff;
+            --secondary: #f8fafc;
+            --surface: #f1f5f9;
             --accent: #f5a623;
             --accent-hover: #e09400;
-            --surface: #0f3460;
             --success: #2ecc71;
-            --danger: #e74c3c;
-            --text-muted: #8892a4;
-            --text-main: #e8eaf0;
-            --border: #1e2d45;
+            --danger: #ef4444;
+            --text-muted: #64748b;
+            --text-main: #0f172a;
+            --border: #dae1e7;
         }
 
         /* ── Utility classes for theme variables ── */
@@ -571,7 +572,7 @@
 
         /* ── Modals ── */
         .modal-content {
-            background: var(--secondary);
+            background-color: var(--secondary);
             border: 1px solid var(--border);
             border-radius: 14px;
             color: var(--text-main);
@@ -592,11 +593,11 @@
         }
 
         .btn-close {
-            filter: invert(1) opacity(0.5);
+            filter: var(--close-filter, none) opacity(0.5);
         }
 
         .btn-close:hover {
-            filter: invert(1) opacity(1);
+            filter: var(--close-filter, none) opacity(1);
         }
 
         .modal-footer {
@@ -614,9 +615,9 @@
 
         .form-control,
         .form-select {
-            background: var(--primary);
+            background-color: var(--primary) !important;
             border: 1px solid var(--border);
-            color: var(--text-main);
+            color: var(--text-main) !important;
             border-radius: 8px;
             font-size: 0.9rem;
             font-family: inherit;
@@ -624,10 +625,10 @@
 
         .form-control:focus,
         .form-select:focus {
-            background: var(--primary);
-            border-color: var(--accent);
-            color: var(--text-main);
-            box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
+            background-color: var(--primary) !important;
+            border-color: var(--accent) !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
         }
 
         .form-control::placeholder {
@@ -635,7 +636,17 @@
         }
 
         .form-select option {
-            background: var(--secondary);
+            background-color: var(--secondary) !important;
+            color: var(--text-main) !important;
+        }
+
+        /* Reusable filter bar for standardization */
+        .filter-bar-custom {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .form-check-input {

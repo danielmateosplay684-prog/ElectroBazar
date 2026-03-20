@@ -325,17 +325,10 @@ function toggleCustomerType() {
     if (taxLabel) {
         taxLabel.innerHTML = isCompany
             ? 'CIF <span class="text-danger">*</span>'
-            : 'NIF/NIE'; // no asterisk for individual, tax ID optional
+            : 'NIF/NIE <span class="text-danger">*</span>';
     }
 
-    // browser validation: only require tax id when company
-    if (taxInput) {
-        if (isCompany) {
-            taxInput.setAttribute('required', 'required');
-        } else {
-            taxInput.removeAttribute('required');
-        }
-    }
+    if (taxInput) taxInput.setAttribute('required', 'required');
 
     // Show RE toggle only for Companies
     var reSection = document.getElementById('newCustomerReSection');

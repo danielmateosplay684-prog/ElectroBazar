@@ -806,8 +806,8 @@ function toggleAdminCustomerType() {
             taxLabel.innerHTML = 'CIF <span class="text-danger">*</span>';
             if (taxInput) taxInput.setAttribute('required', 'required');
         } else {
-            taxLabel.innerHTML = 'NIF/NIE (Opcional)';
-            if (taxInput) taxInput.removeAttribute('required');
+            taxLabel.innerHTML = 'NIF/NIE <span class="text-danger">*</span>';
+            if (taxInput) taxInput.setAttribute('required', 'required');
         }
     }
 
