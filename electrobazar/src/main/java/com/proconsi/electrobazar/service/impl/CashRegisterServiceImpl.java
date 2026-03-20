@@ -138,6 +138,18 @@ public class CashRegisterServiceImpl implements CashRegisterService {
     }
 
     @Override
+    public void checkOpenRegisterForToday() {
+        LocalDate today = LocalDate.now();
+        boolean isRegisterOpen = cashRegisterRepository.findFirstByClosedFalseOrderByRegisterDateDesc()
+                .filter(cr -> cr.getRegisterDate().equals(today))
+                .isPresent();
+
+        if (!isRegisterOpen) {
+            throw new IllegalStateException("No hay ninguna sesión de caja abierta. Abra la caja antes de realizar ventas.");
+        }
+    }
+
+    @Override
     public Optional<CashRegister> getOpenRegister() {
         return cashRegisterRepository.findFirstByClosedFalseOrderByRegisterDateDesc();
     }

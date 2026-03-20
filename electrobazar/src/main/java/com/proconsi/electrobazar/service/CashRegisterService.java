@@ -81,6 +81,12 @@ public interface CashRegisterService {
     BigDecimal getCurrentCashBalance();
 
     /**
+     * Verifies that a cash register session is open for the current day.
+     * Throws IllegalStateException if no open register exists for today.
+     */
+    void checkOpenRegisterForToday();
+
+    /**
      * Aggregates financial statistics for dashboard visualizations.
      * @param period The time range (e.g., "today", "week").
      * @return A DTO with aggregated statistics.

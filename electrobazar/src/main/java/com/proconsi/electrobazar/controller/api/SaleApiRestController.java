@@ -11,6 +11,9 @@ import com.proconsi.electrobazar.service.CustomerService;
 import com.proconsi.electrobazar.service.WorkerService;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,12 +38,14 @@ public class SaleApiRestController {
     private final WorkerService workerService;
 
     /**
-     * Retrieves all recorded sales.
-     * @return List of all {@link Sale} entities.
+     * Retrieves all recorded sales with pagination.
+     * @param pageable Pagination and sorting criteria (page, size, sort).
+     * @return Paginated result containing {@link Sale} entities.
      */
     @GetMapping
-    public ResponseEntity<List<Sale>> getAll() {
-        return ResponseEntity.ok(saleService.findAll());
+    public ResponseEntity<Page<Sale>> getAll(
+            @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(saleService.findAll(pageable));
     }
 
     /**

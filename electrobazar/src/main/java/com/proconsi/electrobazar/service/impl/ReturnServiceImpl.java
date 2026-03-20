@@ -51,6 +51,9 @@ public class ReturnServiceImpl implements ReturnService {
     @Transactional
     public SaleReturn processReturn(Long originalSaleId, List<ReturnLineRequest> lineRequests,
             String reason, PaymentMethod paymentMethod, Worker worker) {
+        
+        // POS Business Rule: Verifies that a cash register session is open for today before processing returns.
+        cashRegisterService.checkOpenRegisterForToday();
 
         Sale originalSale = saleService.findById(originalSaleId);
         List<ReturnLine> returnLines = new ArrayList<>();

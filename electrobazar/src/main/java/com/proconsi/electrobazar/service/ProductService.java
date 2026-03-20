@@ -3,6 +3,7 @@ package com.proconsi.electrobazar.service;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.TaxRate;
 import com.proconsi.electrobazar.dto.ProductRequest;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -140,4 +141,11 @@ public interface ProductService {
      * @param taxRate    The TaxRate entity to apply.
      */
     void applyTaxRateToProducts(List<Long> productIds, TaxRate taxRate);
+
+    /**
+     * Recalculates the gross labels for all products associated with a tax rate.
+     * @param taxRateId The tax rate ID.
+     * @param newVatRate The new VAT value.
+     */
+    void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate);
 }

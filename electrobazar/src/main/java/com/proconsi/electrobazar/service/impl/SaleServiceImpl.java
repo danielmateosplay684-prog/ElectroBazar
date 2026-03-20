@@ -7,10 +7,14 @@ import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.SaleRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
+import com.proconsi.electrobazar.service.CashRegisterService;
+import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.SaleService;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,8 @@ public class SaleServiceImpl implements SaleService {
     private final ActivityLogService activityLogService;
     private final RecargoEquivalenciaCalculator recargoCalculator;
     private final TariffRepository tariffRepository;
+    private final InvoiceService invoiceService;
+    private final CashRegisterService cashRegisterService;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,6 +57,12 @@ public class SaleServiceImpl implements SaleService {
     @Transactional(readOnly = true)
     public List<Sale> findAll() {
         return saleRepository.findAllWithDetails();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Sale> findAll(Pageable pageable) {
+        return saleRepository.findAll(pageable);
     }
 
     @Override
@@ -77,6 +89,10 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     public Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Customer customer, Worker worker, Tariff tariffOverride) {
+        // 0. Cash Register Guard (POS Business Rule)
+        // Verifies that a cash register session is open for today before allowing sales.
+        cashRegisterService.checkOpenRegisterForToday();
+
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("A sale must contain at least one line.");
         }
@@ -188,6 +204,11 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public void saveApplyRecargo(Long saleId, boolean apply) {
         saleRepository.findById(saleId).ifPresent(s -> {
+            // Immutability check (Ley Antifraude 11/2021)
+            if (s.getStatus() == Sale.SaleStatus.ACTIVE || s.getStatus() == Sale.SaleStatus.CANCELLED) {
+                throw new IllegalStateException("According to Spanish Law 11/2021, closed records cannot be modified.");
+            }
+
             if (s.isApplyRecargo() != apply) {
                 s.setApplyRecargo(apply);
                 saleRepository.save(s);
@@ -202,6 +223,11 @@ public class SaleServiceImpl implements SaleService {
     public void cancelSale(Long id, Worker worker, String reason) {
         Sale sale = findById(id);
         if (sale.getStatus() == Sale.SaleStatus.CANCELLED) throw new IllegalStateException("Sale already cancelled.");
+
+        // Legal requirement: Generate rectificative invoice before cancelling if original was invoiced
+        if (sale.getInvoice() != null) {
+            invoiceService.generateRectificativeInvoice(sale, reason);
+        }
 
         // Inventory Restoration
         sale.getLines().forEach(l -> productService.increaseStock(l.getProduct().getId(), l.getQuantity()));

@@ -26,4 +26,14 @@ public interface InvoiceService {
      * @return An Optional containing the Invoice, if found.
      */
     Optional<Invoice> findBySaleId(Long saleId);
+
+    /**
+     * Generates a corrective invoice (F series) with negative amounts.
+     * Links the new record to the original invoice as its rectification.
+     * 
+     * @param originalSale The sale being cancelled/rectified.
+     * @param reason       The mandatory reason for rectification.
+     * @return The negative rectificative Invoice.
+     */
+    Invoice generateRectificativeInvoice(Sale originalSale, String reason);
 }

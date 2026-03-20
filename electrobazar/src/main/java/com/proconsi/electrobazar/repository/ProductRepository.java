@@ -62,6 +62,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     void updateTaxRateForIds(@Param("oldRateIds") List<Long> oldRateIds, @Param("newRate") TaxRate newRate);
 
     /**
+     * Recalculates the gross price (VAT included) for all products belonging to a specific tax rate.
+     * Required when a VAT rate is modified globally (e.g. from 21% to 23%).
+     */
+    @Modifying
+    @Query("UPDATE Product p SET p.price = p.basePriceNet * (1 + :vatRate) WHERE p.taxRate.id = :taxRateId")
+    void updateGrossPricesByTaxRate(@Param("taxRateId") Long taxRateId, @Param("vatRate") java.math.BigDecimal vatRate);
+
+    /**
      * Finds products currently assigned to specific tax rates.
      */
     List<Product> findByTaxRateIdIn(List<Long> taxRateIds);

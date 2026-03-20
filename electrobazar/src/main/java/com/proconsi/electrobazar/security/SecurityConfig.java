@@ -7,7 +7,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,9 +59,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 1. Disable CSRF as authentication is mostly stateless (Bearer tokens) 
-            // and handled by customized filters
-            .csrf(AbstractHttpConfigurer::disable)
+            // 1. Enabling selective CSRF protection (Security Requirement)
+            // Enabling it for browser sessions (/admin, /tpv, /login)
+            // While ignoring it for API calls that use Bearer tokens
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
+            )
             
             // 2. Authorization Rules by Path and Method
             .authorizeHttpRequests(auth -> auth

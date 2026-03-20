@@ -3,6 +3,8 @@ package com.proconsi.electrobazar.repository;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Sale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,6 +28,13 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
      * Retrieves all sales with associated lines, products, customers, and workers in one trip.
      */
     @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @Query("SELECT s FROM Sale s")
+    Page<Sale> findAll(Pageable pageable);
+
+    /**
+     * Retrieves all sales with associated lines, products, customers, and workers in one trip (List version).
+     */
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
     @Query("SELECT s FROM Sale s ORDER BY s.createdAt DESC")
     List<Sale> findAllWithDetails();
 
@@ -45,6 +54,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     /**
      * Lists sales processed on the current calendar day.
      */
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
     @Query("SELECT s FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE ORDER BY s.createdAt DESC")
     List<Sale> findToday();
 

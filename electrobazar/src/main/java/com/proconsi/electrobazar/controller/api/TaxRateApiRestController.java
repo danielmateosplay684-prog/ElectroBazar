@@ -13,6 +13,7 @@ import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -87,6 +88,8 @@ public class TaxRateApiRestController {
      * @return 200 OK with the updated {@link TaxRate}.
      */
     @PutMapping("/{id}")
+    @Transactional
+    @CacheEvict(value = "productPrices", allEntries = true)
     public ResponseEntity<TaxRate> update(@PathVariable Long id, @Valid @RequestBody TaxRate taxRate) {
         return taxRateRepository.findById(id).map(existing -> {
             existing.setVatRate(taxRate.getVatRate());
@@ -106,7 +109,11 @@ public class TaxRateApiRestController {
             }
 
             TaxRate saved = taxRateRepository.save(existing);
-            activityLogService.logActivity("ACTUALIZAR_IVA", "Tipo de IVA actualizado: " + saved.getDescription() + " (" + saved.getVatRate().multiply(new BigDecimal("100")) + "%)", "Admin", "TAX_RATE", saved.getId());
+            
+            // 1. Recalcular precios brutos de productos masivamente
+            productRepository.updateGrossPricesByTaxRate(saved.getId(), saved.getVatRate());
+
+            activityLogService.logActivity("ACTUALIZAR_IVA", "Tipo de IVA y precios brutos actualizados: " + saved.getDescription() + " (" + saved.getVatRate().multiply(new BigDecimal("100")) + "%)", "Admin", "TAX_RATE", saved.getId());
             return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }

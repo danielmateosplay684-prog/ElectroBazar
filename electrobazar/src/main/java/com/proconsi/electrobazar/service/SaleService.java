@@ -7,6 +7,8 @@ import com.proconsi.electrobazar.model.SaleLine;
 import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +30,13 @@ public interface SaleService {
      * @return List of sales.
      */
     List<Sale> findAll();
+
+    /**
+     * Retrieves all sales records with pagination.
+     * @param pageable Pagination and sorting criteria.
+     * @return Page of sales.
+     */
+    Page<Sale> findAll(Pageable pageable);
 
     /**
      * Retrieves sales processed on the current day.
