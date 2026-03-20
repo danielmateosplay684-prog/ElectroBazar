@@ -4,22 +4,34 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * General application configuration.
- * This class defines beans and global configurations necessary for the
- * application's operation.
- */
+import javax.net.ssl.*;
+import java.security.cert.X509Certificate;
+
 @Configuration
 public class AppConfig {
 
-    /**
-     * Defines a RestTemplate HTTP client for making requests to external APIs.
-     * An interceptor is configured to add an identifying User-Agent to each
-     * request,
-     * allowing external services to identify the source of the requests.
-     */
     @Bean
-    public RestTemplate restTemplate() {
+    public RestTemplate restTemplate() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[] {
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+        };
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+
         RestTemplate rt = new RestTemplate();
         rt.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("User-Agent", "Electrobazar-TPV/1.0 (Java Client)");
