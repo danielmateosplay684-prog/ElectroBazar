@@ -10,14 +10,18 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Importar certificado del INE
-COPY src/main/resources/certs/ine_cert.crt /tmp/ine_cert.crt
-RUN keytool -import -alias ine-cert \
+# Importar certificados FNMT (CA que firma el certificado del INE)
+COPY src/main/resources/certs/fnmt_raiz.cer /tmp/fnmt_raiz.cer
+COPY src/main/resources/certs/fnmt_componentes.cer /tmp/fnmt_componentes.cer
+RUN keytool -import -alias fnmt-raiz \
     -keystore $JAVA_HOME/lib/security/cacerts \
-    -file /tmp/ine_cert.crt \
-    -storepass changeit \
-    -noprompt && \
-    rm /tmp/ine_cert.crt
+    -file /tmp/fnmt_raiz.cer \
+    -storepass changeit -noprompt && \
+    keytool -import -alias fnmt-componentes \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -file /tmp/fnmt_componentes.cer \
+    -storepass changeit -noprompt && \
+    rm /tmp/fnmt_raiz.cer /tmp/fnmt_componentes.cer
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
