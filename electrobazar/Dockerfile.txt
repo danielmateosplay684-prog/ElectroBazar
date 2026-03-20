@@ -10,18 +10,28 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Importar certificados FNMT (CA que firma el certificado del INE)
+# Copiar certificados FNMT
 COPY src/main/resources/certs/fnmt_raiz.cer /tmp/fnmt_raiz.cer
 COPY src/main/resources/certs/fnmt_componentes.cer /tmp/fnmt_componentes.cer
-RUN keytool -import -alias fnmt-raiz \
-    -keystore $JAVA_HOME/lib/security/cacerts \
-    -file /tmp/fnmt_raiz.cer \
-    -storepass changeit -noprompt && \
+
+# Instalar openssl para convertir DER a PEM si es necesario, luego importar
+RUN apk add --no-cache openssl && \
+    openssl x509 -inform DER -in /tmp/fnmt_raiz.cer -out /tmp/fnmt_raiz.pem 2>/dev/null || \
+    cp /tmp/fnmt_raiz.cer /tmp/fnmt_raiz.pem && \
+    openssl x509 -inform DER -in /tmp/fnmt_componentes.cer -out /tmp/fnmt_componentes.pem 2>/dev/null || \
+    cp /tmp/fnmt_componentes.cer /tmp/fnmt_componentes.pem && \
+    keytool -import -alias fnmt-raiz \
+        -keystore $JAVA_HOME/lib/security/cacerts \
+        -file /tmp/fnmt_raiz.pem \
+        -storepass changeit -noprompt -trustcacerts && \
     keytool -import -alias fnmt-componentes \
-    -keystore $JAVA_HOME/lib/security/cacerts \
-    -file /tmp/fnmt_componentes.cer \
-    -storepass changeit -noprompt && \
-    rm /tmp/fnmt_raiz.cer /tmp/fnmt_componentes.cer
+        -keystore $JAVA_HOME/lib/security/cacerts \
+        -file /tmp/fnmt_componentes.pem \
+        -storepass changeit -noprompt -trustcacerts && \
+    echo "=== Certificados FNMT importados ===" && \
+    keytool -list -keystore $JAVA_HOME/lib/security/cacerts \
+        -storepass changeit | grep fnmt && \
+    rm /tmp/fnmt_raiz.cer /tmp/fnmt_componentes.cer /tmp/fnmt_raiz.pem /tmp/fnmt_componentes.pem
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
