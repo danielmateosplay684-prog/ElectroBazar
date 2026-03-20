@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('customerTaxId');
     }
+
+    // Restore view from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const savedView = urlParams.get('view');
+    if (savedView) {
+        const btn = document.querySelector(`.sidebar-menu-btn[onclick*="'${savedView}'"]`);
+        switchView(savedView, btn);
+    }
 });
 
 var productModal = new bootstrap.Modal(document.getElementById('productModal'));
@@ -29,7 +37,13 @@ function switchView(viewId, btnElement) {
 
     // Show selected view
     const target = document.getElementById(viewId);
-    if (target) target.style.display = 'block';
+    if (target) {
+        target.style.display = 'block';
+        // Persist view in URL WITHOUT reloading
+        const url = new URL(window.location);
+        url.searchParams.set('view', viewId);
+        window.history.replaceState({}, '', url);
+    }
 
     // Update active sidebar button state
     document.querySelectorAll('.sidebar-menu-btn').forEach(function (btn) {
