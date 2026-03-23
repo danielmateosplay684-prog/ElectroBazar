@@ -589,6 +589,31 @@
             justify-content: center;
             overflow: hidden;
             margin-bottom: 0.75rem;
+            position: relative;
+        }
+
+        .stock-bubble {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--accent);
+            color: var(--primary);
+            font-size: 0.72rem;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 0.2rem 0.5rem;
+            min-width: 24px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 20;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stock-bubble.out-of-stock {
+            background: #ef4444;
+            color: #fff;
         }
 
         .product-image {

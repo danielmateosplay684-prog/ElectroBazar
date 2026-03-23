@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('newCustomerTaxId');
     }
+    updateStockBubbles();
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
@@ -113,6 +114,31 @@ function clearTicket() {
     renderTicket();
 }
 
+/**
+ * Updates the visual stock bubbles on all product cards.
+ * Subtracts the quantity currently in the ticket from the initial data-stock.
+ */
+function updateStockBubbles() {
+    document.querySelectorAll('.product-card').forEach(function (card) {
+        var id = card.dataset.id;
+        var initialStock = parseInt(card.dataset.stock) || 0;
+        var inTicket = ticket[id] ? ticket[id].quantity : 0;
+        var available = initialStock - inTicket;
+
+        var bubble = card.querySelector('.stock-bubble');
+        if (bubble) {
+            bubble.textContent = available;
+            bubble.classList.toggle('out-of-stock', available <= 0);
+            
+            // Add a little pop animation when stock changes
+            if (parseInt(bubble.textContent) !== available) {
+                bubble.style.transform = 'scale(1.3)';
+                setTimeout(function() { bubble.style.transform = 'scale(1)'; }, 150);
+            }
+        }
+    });
+}
+
 function renderTicket() {
     var linesEl = document.getElementById('ticketLines');
     var countEl = document.getElementById('ticketCount');
@@ -208,6 +234,9 @@ function renderTicket() {
 
     cobrarBtn.disabled = false;
     if (suspenderBtn) { suspenderBtn.disabled = false; suspenderBtn.style.opacity = '1'; }
+
+    // Sync bubbles
+    updateStockBubbles();
 }
 
 function selectPayment(method) {
@@ -499,6 +528,10 @@ function renderProducts(products) {
             : '<i class="bi bi-box product-icon"></i>';
 
         var catName = product.category ? escapeHtml(product.category.name) : '';
+        var initialStock = parseInt(product.stock) || 0;
+        var inTicket = ticket[product.id] ? ticket[product.id].quantity : 0;
+        var available = initialStock - inTicket;
+        var outOfStockClass = available <= 0 ? ' out-of-stock' : '';
 
         return '<div class="product-card"' +
             ' data-id="' + product.id + '"' +
@@ -506,7 +539,9 @@ function renderProducts(products) {
             ' data-price="' + product.price + '"' +
             ' data-category="' + catName + '"' +
             ' data-stock="' + product.stock + '">' +
-            ' <div class="product-image-container">' + imgHtml + ' </div>' +
+            ' <div class="product-image-container">' + 
+            ' <span class="stock-bubble' + outOfStockClass + '">' + available + '</span>' +
+            imgHtml + ' </div>' +
             ' <div class="product-info">' +
             ' <div class="product-name">' + escapeHtml(product.name) + '</div>' +
             ' <div class="product-price">' + parseFloat(product.price).toFixed(2) + '\u20AC</div>' +
