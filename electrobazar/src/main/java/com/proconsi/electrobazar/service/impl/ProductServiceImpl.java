@@ -254,4 +254,10 @@ public class ProductServiceImpl implements ProductService {
         products.forEach(p -> p.setTaxRate(taxRate));
         productRepository.saveAll(products);
     }
+
+    @Override
+    @org.springframework.cache.annotation.CacheEvict(value = "productPrices", allEntries = true)
+    public void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate) {
+        productRepository.updateGrossPricesByTaxRate(taxRateId, newVatRate);
+    }
 }

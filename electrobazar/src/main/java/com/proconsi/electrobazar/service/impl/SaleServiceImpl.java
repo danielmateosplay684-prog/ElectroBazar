@@ -202,24 +202,6 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional
-    public void saveApplyRecargo(Long saleId, boolean apply) {
-        saleRepository.findById(saleId).ifPresent(s -> {
-            // Immutability check (Ley Antifraude 11/2021)
-            if (s.getStatus() == Sale.SaleStatus.ACTIVE || s.getStatus() == Sale.SaleStatus.CANCELLED) {
-                throw new IllegalStateException("According to Spanish Law 11/2021, closed records cannot be modified.");
-            }
-
-            if (s.isApplyRecargo() != apply) {
-                s.setApplyRecargo(apply);
-                saleRepository.save(s);
-                activityLogService.logActivity("MODIFICAR_RECARGO", 
-                        "RE status changed on Sale #" + saleId + (apply ? " (Enabled)" : " (Disabled)"), "Admin", "SALE", saleId);
-            }
-        });
-    }
-
-    @Override
-    @Transactional
     public void cancelSale(Long id, Worker worker, String reason) {
         Sale sale = findById(id);
         if (sale.getStatus() == Sale.SaleStatus.CANCELLED) throw new IllegalStateException("Sale already cancelled.");

@@ -218,8 +218,7 @@ public class TpvController {
                 redirectAttributes.addFlashAttribute("successMessage",
                         "Invoice " + invoice.getInvoiceNumber() + " generated.");
             } else {
-                // For tickets: save surcharge flag and create ticket record
-                saleService.saveApplyRecargo(sale.getId(), applyRecargo);
+                // For tickets: create ticket record (the sale entity already has the correct applyRecargo flag)
                 ticketService.createTicket(sale, applyRecargo);
             }
         } catch (Exception e) {

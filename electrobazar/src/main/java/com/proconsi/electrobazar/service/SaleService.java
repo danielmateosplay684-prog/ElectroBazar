@@ -119,13 +119,6 @@ public interface SaleService {
     SaleSummaryResponse getSummaryToday();
 
     /**
-     * Updates the Recargo de Equivalencia flag for an existing sale.
-     * @param saleId       Target sale.
-     * @param applyRecargo True if RE should be considered.
-     */
-    void saveApplyRecargo(Long saleId, boolean applyRecargo);
-
-    /**
      * Cancels a sale and restores stock levels.
      * @param id     Sale ID.
      * @param worker Worker authorizing cancellation.
