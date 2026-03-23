@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('newCustomerTaxId');
     }
-    updateStockBubbles();
+    setTimeout(updateStockBubbles, 50); // Small delay to ensure all elements are rendered
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
@@ -127,11 +127,12 @@ function updateStockBubbles() {
 
         var badge = card.querySelector('.stock-badge');
         if (badge) {
+            var oldVal = parseInt(badge.textContent) || 0;
             badge.textContent = available;
             
             // Update color states
             badge.classList.remove('stock-danger', 'stock-warning', 'stock-neutral');
-            if (available === 0) {
+            if (available <= 0) {
                 badge.classList.add('stock-danger');
             } else if (available < 5) {
                 badge.classList.add('stock-warning');
@@ -139,8 +140,8 @@ function updateStockBubbles() {
                 badge.classList.add('stock-neutral');
             }
             
-            // Add a little pop animation when stock changes
-            if (parseInt(badge.textContent) !== available) {
+            // Add a little pop animation when stock value actually changes
+            if (oldVal !== available) {
                 badge.style.transform = 'scale(1.3)';
                 setTimeout(function() { badge.style.transform = 'scale(1)'; }, 150);
             }
@@ -170,6 +171,7 @@ function renderTicket() {
         cobrarBtn.disabled = true;
         if (suspenderBtn) { suspenderBtn.disabled = true; suspenderBtn.style.opacity = '0.4'; }
         formLines.innerHTML = '';
+        updateStockBubbles();
         return;
     }
 
@@ -542,7 +544,7 @@ function renderProducts(products) {
         var available = initialStock - inTicket;
         
         var badgeClass = 'stock-neutral';
-        if (available === 0) badgeClass = 'stock-danger';
+        if (available <= 0) badgeClass = 'stock-danger';
         else if (available < 5) badgeClass = 'stock-warning';
 
         return '<div class="product-card"' +
@@ -550,7 +552,7 @@ function renderProducts(products) {
             ' data-name="' + escapeHtml(product.name) + '"' +
             ' data-price="' + product.price + '"' +
             ' data-category="' + catName + '"' +
-            ' data-stock="' + product.stock + '">' +
+            ' data-stock="' + (product.stock || 0) + '">' +
             ' <div class="product-image-container">' + 
             imgHtml + 
             ' <span class="stock-badge ' + badgeClass + '">' + available + '</span>' +
@@ -561,6 +563,9 @@ function renderProducts(products) {
             ' <div class="product-category-badge">' + catName + '</div>' +
             ' </div></div>';
     }).join('');
+
+    // Ensure bubbles are up-to-date and have their correct colors/animations
+    updateStockBubbles();
 }
 
 function performSearch() {

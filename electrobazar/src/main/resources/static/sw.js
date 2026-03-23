@@ -25,13 +25,16 @@ self.addEventListener('fetch', event => {
 
     const url = new URL(event.request.url);
 
-    // Strategy: Network First for the main navigation (/tpv)
-    if (url.pathname === '/tpv' || event.request.mode === 'navigate') {
+    // Strategy: Network First for the main navigation (/tpv) and API calls
+    if (url.pathname === '/tpv' || url.pathname.includes('/api/') || event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request)
                 .then(response => {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    // Only cache successful GET responses for the main page or API
+                    if (response.ok && event.request.method === 'GET') {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    }
                     return response;
                 })
                 .catch(() => caches.match(event.request))
@@ -39,7 +42,7 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Strategy: Cache First for static assets
+    // Strategy: Cache First for other static assets (CSS, JS, Fonts, etc.)
     event.respondWith(
         caches.match(event.request).then(response => {
             return response || fetch(event.request).then(networkResponse => {
