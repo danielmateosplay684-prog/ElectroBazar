@@ -12,8 +12,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 /**
  * Main Web Security Configuration.
@@ -42,6 +44,16 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final TpvTokenFilter tpvTokenFilter;
+
+        /**
+         * Disables the 'Using generated security password' log by providing a custom
+         * UserDetailsService. Since the app uses JWT/Custom PIN auth, we provide 
+         * an empty manager to satisfy Spring Boot's requirements.
+         */
+        @Bean
+        public UserDetailsService userDetailsService() {
+                return new InMemoryUserDetailsManager();
+        }
 
         /**
          * Bean for password hashing.
@@ -129,45 +141,24 @@ public class SecurityConfig {
                                                 .hasAnyAuthority("CRM_ACCESS", "ADMIN_ACCESS", "TPV_CLIENT")
 
                                                 // CATCH-ALL FOR ADMIN AND USER INTERFACES
-                                                .requestMatchers("/admin/**").hasAuthority("ADMIN_ACCESS")
-                                                .requestMatchers("/api/admin/**").hasAuthority("ADMIN_ACCESS")
-                                                .requestMatchers("/admin/api/**").hasAuthority("ADMIN_ACCESS")
-
-                                                // GENERAL AUTHENTICATED ACCESS (Requires valid token for all /tpv and
-                                                // general
-                                                // /api calls)
-                                                .requestMatchers("/tpv/**").authenticated()
+                                                .requestMatchers("/tpv/**", "/admin/**", "/api/admin/**").authenticated()
                                                 .requestMatchers("/api/**").authenticated()
 
                                                 // Strict catch-all for any other request
                                                 .anyRequest().authenticated())
 
-                                // 3. Stateless and Interactive Exception Handling Strategies
+                                // 3. Exception Handling (Redirects vs 401)
                                 .exceptionHandling(exceptions -> exceptions
-
                                                 // For API requests, return 401 UNAUTHORIZED status instead of redirects
                                                 .defaultAuthenticationEntryPointFor(
                                                                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                                                                 request -> request.getServletPath().startsWith("/api"))
-
                                                 // For HTML requests, redirect the browser to the login page
                                                 .defaultAuthenticationEntryPointFor(
                                                                 new LoginUrlAuthenticationEntryPoint("/login"),
-                                                                request -> request.getServletPath().startsWith("/tpv"))
-
-                                                .defaultAuthenticationEntryPointFor(
-                                                                new LoginUrlAuthenticationEntryPoint("/login"),
-                                                                request -> request.getServletPath()
-                                                                                .startsWith("/admin"))
-
-                                                // Redirect user to the TPV dashboard if they try to access restricted
-                                                // admin
-                                                // pages without permission
-                                                .defaultAccessDeniedHandlerFor(
-                                                                (request, response, accessDeniedException) -> response
-                                                                                .sendRedirect("/tpv"),
-                                                                request -> request.getServletPath()
-                                                                                .startsWith("/admin")))
+                                                                request -> request.getServletPath().startsWith("/tpv") || 
+                                                                           request.getServletPath().startsWith("/admin") ||
+                                                                           request.getServletPath().equals("/")))
 
                                 // 4. Session Management Strategy
                                 // Using standard session policy for web browser interactions while keeping API
