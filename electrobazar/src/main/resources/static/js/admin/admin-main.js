@@ -1,27 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof attachNifCifValidator === 'function') {
-        attachNifCifValidator('customerTaxId');
-    }
-
-    // Restore view from URL if present
-    const urlParams = new URLSearchParams(window.location.search);
-    const savedView = urlParams.get('view');
-    if (savedView) {
-        const btn = document.querySelector(`.sidebar-menu-btn[onclick*="'${savedView}'"]`);
-        switchView(savedView, btn);
-    }
-});
-
-var productModal = new bootstrap.Modal(document.getElementById('productModal'));
-var categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
-var workerModal = new bootstrap.Modal(document.getElementById('workerModal'));
-var customerModal = new bootstrap.Modal(document.getElementById('customerModal'));
-var roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
-
-// Cache for roles
-var rolesCache = null;
-
-// -- View Switching --------------------------------------------------------
+// -- Global Function Declarations (Hoisted) --------------------------------
 function switchView(viewId, btnElement) {
     // Hide all views
     const views = [
@@ -70,6 +47,41 @@ function switchView(viewId, btnElement) {
         loadMailSettings();
     }
 }
+
+// Global Modal Variables
+var productModal, categoryModal, workerModal, customerModal, roleModal, ipcUpdateModal;
+var schedulePriceModal; // Also used in the script
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize Modals safely once DOM is ready
+    const initModal = (id) => {
+        const el = document.getElementById(id);
+        return el ? new bootstrap.Modal(el) : null;
+    };
+
+    productModal = initModal('productModal');
+    categoryModal = initModal('categoryModal');
+    workerModal = initModal('workerModal');
+    customerModal = initModal('customerModal');
+    roleModal = initModal('roleModal');
+    ipcUpdateModal = initModal('ipcUpdateModal');
+    schedulePriceModal = initModal('schedulePriceModal');
+
+    if (typeof attachNifCifValidator === 'function') {
+        attachNifCifValidator('customerTaxId');
+    }
+
+    // Restore view from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const savedView = urlParams.get('view');
+    if (savedView) {
+        const btn = document.querySelector(`.sidebar-menu-btn[onclick*="'${savedView}'"]`);
+        switchView(savedView, btn);
+    }
+});
+
+// Cache for roles
+var rolesCache = null;
 
 function showToast(msg, type) {
     if (!type) type = 'success';
@@ -465,60 +477,92 @@ function escapeHtml(str) {
 // -- Analytics & Charts --------------------------------------------------
 let salesChart, categoryChart;
 
+function onAnalyticsPeriodChange() {
+    const val = document.getElementById('analyticsPeriod').value;
+    const dateInput = document.getElementById('analyticsDate');
+    if (dateInput) {
+        dateInput.style.display = (val === 'custom') ? 'block' : 'none';
+        if (val === 'custom' && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+    }
+    updateAnalytics();
+}
+
 function updateAnalytics() {
     const periodSelect = document.getElementById('analyticsPeriod');
     const period = periodSelect ? periodSelect.value : '7days';
     const now = new Date();
     let fromDate = new Date();
-    let chartTitle = 'Ventas Últimos 7 Días';
-    let fetchAll = false;
-
-    if (period === 'today') {
-        fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas Hoy';
-    } else if (period === '7days') {
-        fromDate.setDate(now.getDate() - 7);
-        chartTitle = 'Ventas Últimos 7 Días';
-    } else if (period === '1month') {
-        fromDate.setMonth(now.getMonth() - 1);
-        chartTitle = 'Ventas Último Mes';
-    } else if (period === '6months') {
-        fromDate.setMonth(now.getMonth() - 6);
-        chartTitle = 'Ventas Últimos 6 Meses';
-    } else if (period === '1year') {
-        fromDate.setFullYear(now.getFullYear() - 1);
-        chartTitle = 'Ventas Último Año';
-    } else if (period === 'all') {
-        fetchAll = true;
-        chartTitle = 'Ventas Histórico Total';
-    }
+    let toDate = new Date();
+    let chartTitle = 'Ventas Ú\u00FAtimos 7 d\u00EDas';
 
     const toLocalISO = (d) => {
         const off = d.getTimezoneOffset() * 60000;
         return new Date(d.getTime() - off).toISOString().slice(0, 19);
     };
 
-    const url = fetchAll ? '/api/sales' : `/api/sales/range?from=${toLocalISO(fromDate)}&to=${toLocalISO(now)}`;
+    if (period === 'today') {
+        fromDate.setHours(0, 0, 0, 0);
+        chartTitle = 'Ventas Hoy';
+    } else if (period === '7days') {
+        fromDate.setDate(now.getDate() - 7);
+        chartTitle = 'Ventas Ú\u00FAtimos 7 d\u00EDas';
+    } else if (period === '1month') {
+        fromDate.setMonth(now.getMonth() - 1);
+        chartTitle = 'Ventas Ú\u00FAltimo Mes';
+    } else if (period === '6months') {
+        fromDate.setMonth(now.getMonth() - 6);
+        chartTitle = 'Ventas Ú\u00FAltimos 6 Meses';
+    } else if (period === '1year') {
+        fromDate.setFullYear(now.getFullYear() - 1);
+        chartTitle = 'Ventas Ú\u00FAltimo A\u00F1o';
+    } else if (period === 'custom') {
+        const dVal = document.getElementById('analyticsDate').value;
+        if (dVal) {
+            fromDate = new Date(dVal);
+            fromDate.setHours(0, 0, 0, 0);
+            toDate = new Date(dVal);
+            toDate.setHours(23, 59, 59, 999);
+            chartTitle = 'An\u00E1lisis del d\u00EDa ' + fromDate.toLocaleDateString('es-ES');
+        }
+    } else if (period === 'all') {
+        fromDate = new Date(0); // Epoch start
+        chartTitle = 'Ventas Hist\u00F3rico Total';
+    }
+
+    const url = `/api/sales/range?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}`;
 
     Promise.all([
-        fetch(url).then(r => { if (!r.ok) throw new Error('Error al obtener ventas: ' + r.status); return r.json(); }),
-        fetch('/api/products').then(r => { if (!r.ok) throw new Error('Error al obtener productos: ' + r.status); return r.json(); })
+        fetch(url).then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); }),
+        fetch('/api/products').then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); })
     ]).then(([sales, products]) => {
-        initCharts(sales, products, period, chartTitle);
+        // Handle Spring Data Page if it's the 'all' fallback
+        let salesArray = sales;
+        if (sales && sales.content && Array.isArray(sales.content)) {
+            salesArray = sales.content;
+        }
+        initCharts(salesArray, products, period, chartTitle);
     }).catch(err => {
         console.error('Error updating analytics:', err);
-        showToast('Error al cargar datos de análisis', 'error');
+        showToast('Error al cargar datos de an\u00E1lisis', 'error');
     });
 }
 
 function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel = 'Ventas (\u20AC)') {
     if (!salesDataRaw) {
-        // Fallback for initial load if data is still injected
         salesDataRaw = [];
         productsDataRaw = [];
     }
 
+    // Update dynamic title
+    const chartTitleEl = document.getElementById('salesChartTitle');
+    if (chartTitleEl) {
+        chartTitleEl.innerHTML = `<i class="bi bi-graph-up me-2"></i>Tendencia: ${chartLabel}`;
+    }
+
     var now = new Date();
+    // ...
 
     // 1. Stats Calculation
     let totalRevenue = 0;
@@ -1034,7 +1078,7 @@ function renderCustomerSales(sales) {
 
 // ── Precios Temporales ────────────────────────────────────────────────────────
 
-var schedulePriceModal = new bootstrap.Modal(document.getElementById('schedulePriceModal'));
+// Modal is now initialized in DOMContentLoaded at the top of the file
 
 /** RE rate map matching the server-side RecargoEquivalenciaCalculator */
 var RE_RATE_MAP = {
@@ -1942,11 +1986,8 @@ function saveMailSettings() {
         });
 }
 
-
-
-// -- IPC Update Integration (INE) ---------------------------------------------
+// Variables are now handled at the top of the file and initialized in DOMContentLoaded
 var ipcUpdateModalEl = document.getElementById('ipcUpdateModal');
-var ipcUpdateModal = ipcUpdateModalEl ? new bootstrap.Modal(ipcUpdateModalEl) : null;
 
 function openIpcUpdateModal() {
     if (!ipcUpdateModal) return;

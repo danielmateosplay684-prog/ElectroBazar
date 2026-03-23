@@ -1801,16 +1801,19 @@
                     </button>
                     <i class="bi bi-graph-up me-2"></i>Análisis de Negocio
                 </span>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
                     <select id="analyticsPeriod" class="form-select form-select-sm" style="width: 180px;"
-                        onchange="updateAnalytics()">
+                        onchange="onAnalyticsPeriodChange()">
                         <option value="today">Hoy</option>
                         <option value="7days" selected>Últimos 7 días</option>
                         <option value="1month">Último mes</option>
                         <option value="6months">Últimos 6 meses</option>
                         <option value="1year">Último año</option>
+                        <option value="custom">Día Específico</option>
                         <option value="all">Desde siempre</option>
                     </select>
+                    <input type="date" id="analyticsDate" class="form-control form-control-sm" 
+                        style="width: 150px; display: none;" onchange="updateAnalytics()">
                 </div>
             </div>
 
@@ -1858,7 +1861,7 @@
             <div class="row g-4">
                 <div class="col-md-8">
                     <div class="chart-container-p">
-                        <h6 class="mb-4 fw-bold"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas (Últimos 7 días)
+                        <h6 class="mb-4 fw-bold" id="salesChartTitle"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas (Últimos 7 días)
                         </h6>
                         <canvas id="salesChart" height="120"></canvas>
                     </div>
@@ -2361,7 +2364,7 @@
             </div>
         </div>
 
-    </div><!-- /admin-body -->
+
 
 
     <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

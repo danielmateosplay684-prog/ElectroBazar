@@ -63,6 +63,14 @@ public class SuspendedSale {
         CANCELLED
     }
 
+    public void addLine(SuspendedSaleLine line) {
+        if (this.lines == null) {
+            this.lines = new ArrayList<>();
+        }
+        this.lines.add(line);
+        line.setSuspendedSale(this);
+    }
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();

@@ -36,30 +36,32 @@ public class SuspendedSaleServiceImpl implements SuspendedSaleService {
     @Transactional
     public SuspendedSale suspend(List<SuspendedSaleLineRequest> lineRequests, String label, Worker worker) {
         if (lineRequests == null || lineRequests.isEmpty()) {
-            throw new IllegalArgumentException("Cannot suspend an empty cart.");
+            throw new IllegalArgumentException("Cannot suspend an empty sale.");
         }
 
         SuspendedSale sale = SuspendedSale.builder()
                 .worker(worker)
-                .label(label != null && !label.isBlank() ? label.trim() : null)
                 .status(SuspendedSale.SuspendedSaleStatus.SUSPENDED)
+                .label(label != null && !label.isBlank() ? label.trim() : null)
                 .build();
 
-        List<SuspendedSaleLine> lines = new ArrayList<>();
         for (SuspendedSaleLineRequest req : lineRequests) {
             Product product = productService.findById(req.getProductId());
-            lines.add(SuspendedSaleLine.builder()
-                    .suspendedSale(sale).product(product).quantity(req.getQuantity()).unitPrice(req.getUnitPrice()).build());
+            SuspendedSaleLine line = SuspendedSaleLine.builder()
+                    .product(product)
+                    .quantity(req.getQuantity())
+                    .unitPrice(req.getUnitPrice() != null ? req.getUnitPrice() : product.getPrice())
+                    .build();
+            sale.addLine(line);
         }
-        sale.setLines(lines);
 
         SuspendedSale saved = suspendedSaleRepository.save(sale);
-        
+
         String logLabel = (label != null) ? label : "Unlabeled";
         activityLogService.logActivity("SUSPENDER_VENTA", 
-                String.format("Sale parked: %s with %d item(s)", logLabel, lines.size()), 
+                String.format("Sale parked: %s with %d item(s)", logLabel, lineRequests.size()), 
                 (worker != null ? worker.getUsername() : "Anonymous"), "SALE", null);
-
+        
         return saved;
     }
 
