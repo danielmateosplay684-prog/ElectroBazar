@@ -309,6 +309,9 @@
                     <button type="button" class="pay-btn" id="btnCard" onclick="selectPayment('CARD')">
                         <i class="bi bi-credit-card"></i> Tarjeta
                     </button>
+                    <button type="button" class="pay-btn" id="btnMixed" onclick="selectPayment('MIXED')">
+                        <i class="bi bi-pie-chart-fill"></i> Mixto
+                    </button>
                 </div>
 
                 <form id="saleForm" th:action="@{/tpv/sale}" method="post">
@@ -317,8 +320,11 @@
                     <input type="hidden" name="customerName" id="customerNameInput">
                     <input type="hidden" name="customerType" id="customerTypeInput">
                     <input type="hidden" name="receivedAmount" id="receivedAmountInput">
+                    <input type="hidden" name="cashAmount" id="cashAmountInput">
+                    <input type="hidden" name="cardAmount" id="cardAmountInput">
                     <input type="hidden" name="requestInvoice" id="requestInvoiceInput" value="false">
                     <input type="hidden" name="tariffId" id="tariffIdInput">
+                    <input type="hidden" name="notes" id="notesInput">
                     <div id="formLines"></div>
                     <button type="button" class="btn-cobrar" id="btnCobrar" onclick="openCustomerModal()" disabled>
                         <i class="bi bi-lightning-fill me-1"></i> Cobrar
@@ -384,7 +390,7 @@
                                 style="background: var(--surface); color: var(--text-main); border-color: var(--border);"><i
                                     class="bi bi-cash-coin"></i></span>
                             <input type="number" id="receivedAmount" class="form-control" placeholder="0.00" step="0.01"
-                                min="0"
+                                min="0" oninput="calculateChange()"
                                 style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                             <button class="btn btn-outline-secondary" type="button" onclick="setExactAmount()"
                                 style="border-color: var(--border); background: var(--surface); color: var(--text-main); font-size: 0.9rem; font-weight: 600; border-left: none; border-right: none;">
@@ -398,6 +404,49 @@
                             <small style="color: var(--text-main);">Cambio a devolver:</small>
                             <span id="changeAmount" class="fw-bold fs-5 text-success">0.00&euro;</span>
                         </div>
+                    </div>
+
+                    <!-- Mixto: Pago combinado -->
+                    <div id="mixedInputSection" class="mb-4" style="display: none;">
+                        <div class="row gx-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">A pagar en Tarjeta</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text" style="background: var(--surface); border-color: var(--border);"><i class="bi bi-credit-card text-primary"></i></span>
+                                    <input type="number" id="mixedCardAmount" class="form-control" placeholder="0.00" step="0.01" min="0" oninput="calculateMixedChange()" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">A pagar en Efectivo</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text" style="background: var(--surface); border-color: var(--border);"><i class="bi bi-cash text-success"></i></span>
+                                    <input type="number" id="mixedCashAmount" class="form-control" placeholder="0.00" step="0.01" min="0" oninput="calculateMixedChange()" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex justify-content-between align-items-center" style="background: var(--surface); padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border);">
+                            <div>
+                                <small style="display: block; color: var(--text-muted); font-size: 0.8rem;">Restante / Cambio</small>
+                                <span id="mixedRemainingAmount" class="fw-bold fs-5 text-danger">0.00&euro; faltan</span>
+                            </div>
+                            <!-- Botones rápidos para rellenar lo que falta -->
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="fillMixedMissing('card')" title="Poner resto en tarjeta">
+                                    <i class="bi bi-credit-card"></i> Resto
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="fillMixedMissing('cash')" title="Poner resto en efectivo">
+                                    <i class="bi bi-cash"></i> Resto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Comentario opcional -->
+                    <div class="mb-3 px-1">
+                        <label class="form-label fw-bold small text-muted"><i class="bi bi-chat-left-text me-1"></i> Comentario / Nota (Opcional)</label>
+                        <textarea id="saleNotes" class="form-control" rows="2" placeholder="Ej: Entregar en mano, frágil, etc."
+                            style="background: var(--primary); color: var(--text-main); border-color: var(--border); font-size: 0.85rem; resize: none;"></textarea>
                     </div>
                 </div>
                 <!-- Alerta de validación interna del modal -->

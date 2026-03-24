@@ -19,14 +19,27 @@
     <div class="prefs-container">
         <div class="prefs-top">
             <a href="/tpv" class="btn-back">
-                <i class="bi bi-arrow-left"></i> Volver al TPV
+                <i class="bi bi-arrow-left"></i> <span th:text="#{prefs.back}">Volver al TPV</span>
             </a>
-            <div class="prefs-title"><i class="bi bi-palette2"></i> Preferencias</div>
+            <div class="prefs-title"><i class="bi bi-palette2"></i> <span th:text="#{prefs.title}">Preferencias</span></div>
+        </div>
+
+        <!-- Idioma -->
+        <div class="pref-card">
+            <div class="pref-label" th:text="#{prefs.language}">Idioma</div>
+            <div class="mode-toggle" id="langToggle">
+                <div class="mode-option" data-lang="es" id="langEs">
+                    <i class="bi bi-translate"></i> <span th:text="#{prefs.lang.es}">Español</span>
+                </div>
+                <div class="mode-option" data-lang="en" id="langEn">
+                    <i class="bi bi-translate"></i> <span th:text="#{prefs.lang.en}">Inglés</span>
+                </div>
+            </div>
         </div>
 
         <!-- Modo oscuro / claro -->
         <div class="pref-card">
-            <div class="pref-label">Apariencia</div>
+            <div class="pref-label" th:text="#{prefs.appearance}">Apariencia</div>
             <div class="mode-toggle" id="modeToggle">
                 <div class="mode-option" data-mode="dark" id="modeDark">
                     <i class="bi bi-moon-stars-fill"></i> Oscuro

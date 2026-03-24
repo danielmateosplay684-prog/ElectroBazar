@@ -525,16 +525,34 @@
             </table>
         </div>
 
+        <!-- Comentario -->
+        <div th:if="${sale.notes != null and !sale.notes.empty}" 
+            style="margin: 20px 0; padding: 15px; border-left: 4px solid var(--invoice-accent); background: #f9f9f9; font-size: 13px;">
+            <div style="font-weight: 700; font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px;">Observaciones</div>
+            <div th:text="${sale.notes}">Nota de la factura</div>
+        </div>
+
         <!-- PAYMENT -->
         <div class="payment-line">
             Forma de pago: <strong
-                th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta bancaria'}">Efectivo</strong>
-            <span th:if="${sale.receivedAmount != null}">
-                &middot; Entregado: <strong
-                    th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
-                &middot; Cambio: <strong th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
-                    &euro;</strong>
-            </span>
+                th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : (sale.paymentMethod.name() == 'CARD' ? 'Tarjeta bancaria' : 'Mixto (Efectivo y Tarjeta)')}">Efectivo</strong>
+            
+            <th:block th:if="${sale.paymentMethod.name() != 'MIXED'}">
+                <span th:if="${sale.receivedAmount != null}">
+                    &middot; Entregado: <strong
+                        th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
+                    &middot; Cambio: <strong th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
+                        &euro;</strong>
+                </span>
+            </th:block>
+
+            <th:block th:if="${sale.paymentMethod.name() == 'MIXED'}">
+                <span>
+                    &middot; Efectivo: <strong
+                        th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
+                    &middot; Tarjeta: <strong th:text="${#numbers.formatDecimal(sale.cardAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
+                </span>
+            </th:block>
         </div>
 
         <!-- FOOTER -->

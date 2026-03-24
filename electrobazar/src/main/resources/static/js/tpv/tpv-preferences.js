@@ -30,19 +30,32 @@
 
     const defaultPrefs = {
         mode: 'dark',
+        language: 'es',
         lightAccent: 1, lightPrimaryIdx: 0,
         darkAccent: 7, darkPrimaryIdx: 0
     };
 
     let prefs = JSON.parse(localStorage.getItem('tpv-prefs') || 'null');
-    if (prefs && prefs.darkPrimaryIdx >= darkP.length) prefs.darkPrimaryIdx = 0;
-    if (prefs && prefs.lightPrimaryIdx >= lightP.length) prefs.lightPrimaryIdx = 0;
-
-    if (!prefs || prefs.accent !== undefined) {
-        prefs = { ...defaultPrefs, mode: prefs ? prefs.mode : 'dark' };
+    
+    // Sync language with URL if present (Spring standard)
+    const urlParams = new URLSearchParams(window.location.search);
+    const langParam = urlParams.get('lang');
+    if (langParam) {
+        if (!prefs) prefs = { ...defaultPrefs };
+        prefs.language = langParam.toLowerCase();
+        localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
     }
-    if (prefs.darkAccent >= accentColors.length) prefs.darkAccent = 0;
-    if (prefs.lightAccent >= accentColors.length) prefs.lightAccent = 0;
+
+    if (!prefs) prefs = { ...defaultPrefs };
+    if (prefs.darkPrimaryIdx === undefined || prefs.darkPrimaryIdx >= darkP.length) prefs.darkPrimaryIdx = 0;
+    if (prefs.lightPrimaryIdx === undefined || prefs.lightPrimaryIdx >= lightP.length) prefs.lightPrimaryIdx = 0;
+
+    if (prefs.accent !== undefined) {
+        prefs = { ...defaultPrefs, mode: prefs.mode || 'dark' };
+    }
+    if (!prefs.darkAccent || prefs.darkAccent >= accentColors.length) prefs.darkAccent = 0;
+    if (!prefs.lightAccent || prefs.lightAccent >= accentColors.length) prefs.lightAccent = 0;
+    if (!prefs.language) prefs.language = 'es';
 
     const flash = document.getElementById('themeFlash');
 
@@ -122,8 +135,18 @@
             link.href = logoFile;
         });
 
-        document.getElementById('modeDark').classList.toggle('active', isDark);
-        document.getElementById('modeLight').classList.toggle('active', !isDark);
+        const mDark = document.getElementById('modeDark');
+        const mLight = document.getElementById('modeLight');
+        if (mDark) mDark.classList.toggle('active', isDark);
+        if (mLight) mLight.classList.toggle('active', !isDark);
+
+        // Update Language UI
+        const langEs = document.getElementById('langEs');
+        const langEn = document.getElementById('langEn');
+        if (langEs && langEn) {
+            langEs.classList.toggle('active', prefs.language === 'es');
+            langEn.classList.toggle('active', prefs.language === 'en');
+        }
 
         localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
         if (animate) triggerFlash();
@@ -245,19 +268,60 @@
         });
     }
 
-    document.getElementById('modeDark').addEventListener('click', () => {
-        if (prefs.mode !== 'dark') {
-            prefs.mode = 'dark';
-            apply(true);
-        }
-    });
+    const elModeDark = document.getElementById('modeDark');
+    const elModeLight = document.getElementById('modeLight');
 
-    document.getElementById('modeLight').addEventListener('click', () => {
-        if (prefs.mode !== 'light') {
-            prefs.mode = 'light';
-            apply(true);
-        }
-    });
+    if (elModeDark) {
+        elModeDark.addEventListener('click', () => {
+            if (prefs.mode !== 'dark') {
+                prefs.mode = 'dark';
+                apply(true);
+            }
+        });
+    }
+
+    if (elModeLight) {
+        elModeLight.addEventListener('click', () => {
+            if (prefs.mode !== 'light') {
+                prefs.mode = 'light';
+                apply(true);
+            }
+        });
+    }
+
+    // ── Language Selectors ──
+    const elLangEs = document.getElementById('langEs');
+    const elLangEn = document.getElementById('langEn');
+    
+    if (elLangEs) {
+        elLangEs.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log("Switching to Spanish...");
+            prefs.language = 'es';
+            localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
+            
+            setTimeout(() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('lang', 'es');
+                window.location.href = url.toString();
+            }, 50);
+        });
+    }
+
+    if (elLangEn) {
+        elLangEn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log("Switching to English...");
+            prefs.language = 'en';
+            localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
+            
+            setTimeout(() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('lang', 'en');
+                window.location.href = url.toString();
+            }, 50);
+        });
+    }
 
     document.querySelectorAll('#sizeSelector .select-option').forEach(opt => {
         opt.addEventListener('click', () => {

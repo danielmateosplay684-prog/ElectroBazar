@@ -102,7 +102,6 @@
             border-radius: 12px;
             padding: 4px;
             gap: 4px;
-            cursor: pointer;
             position: relative;
         }
 
@@ -122,6 +121,10 @@
             position: relative;
             z-index: 1;
             user-select: none;
+        }
+
+        .mode-option * {
+            pointer-events: none;
         }
 
         .mode-option i {

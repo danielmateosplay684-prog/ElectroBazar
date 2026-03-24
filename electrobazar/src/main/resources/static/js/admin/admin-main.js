@@ -1261,8 +1261,10 @@ function loadFuturePrices() {
             }).join('');
         })
         .catch(function () {
-            document.getElementById('futurePricesBody').innerHTML =
-                '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar los precios programados.</td></tr>';
+            const el = document.getElementById('futurePricesBody');
+            if (el) {
+                el.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar los precios programados.</td></tr>';
+            }
         });
 }
 
@@ -1313,8 +1315,10 @@ function loadPriceHistory() {
             }).join('');
         })
         .catch(function () {
-            document.getElementById('priceHistoryBody').innerHTML =
-                '<tr><td colspan="7" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
+            const el = document.getElementById('priceHistoryBody');
+            if (el) {
+                el.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
+            }
         });
 }
 
@@ -1351,7 +1355,10 @@ function loadBulkProducts() {
             renderBulkProductList(products);
         })
         .catch(function () {
-            document.getElementById('bulkProductList').innerHTML = '<div class="text-center text-danger py-3">Error cargando productos</div>';
+            const el = document.getElementById('bulkProductList');
+            if (el) {
+                el.innerHTML = '<div class="text-center text-danger py-3">Error cargando productos</div>';
+            }
         });
 }
 
@@ -1471,12 +1478,16 @@ function loadRoles() {
         })
         .catch(function (err) {
             console.error('Error loading roles/workers:', err);
-            document.getElementById('rolesTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos: ' + err.message + '</td></tr>';
+            const el = document.getElementById('rolesTableBody');
+            if (el) {
+                el.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos: ' + err.message + '</td></tr>';
+            }
         });
 }
 
 function renderRolesTable(roles, workers) {
     const tbody = document.getElementById('rolesTableBody');
+    if (!tbody) return;
     if (!roles || roles.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4" style="color: var(--text-muted);">No hay roles definidos</td></tr>';
         return;

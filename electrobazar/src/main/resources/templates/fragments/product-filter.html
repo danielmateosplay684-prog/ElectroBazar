@@ -4,23 +4,23 @@
     <div class="row g-3">
         <!-- Buscador -->
         <div class="col-md-2">
-            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-search me-2"></i>Buscar</label>
+            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-search me-2"></i><span th:text="#{common.search}">Buscar</span></label>
             <input type="text" id="sharedFilterSearch" class="form-control form-control-sm"
-                placeholder="Nombre, ID o desc..." autocomplete="off" oninput="debounceSharedFilter()">
+                th:placeholder="#{admin.inventory.filter.search_placeholder}" autocomplete="off" oninput="debounceSharedFilter()">
         </div>
         <!-- Select Categoría -->
         <div class="col-md-2">
-            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-tags me-2"></i>Categoría</label>
+            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-tags me-2"></i><span th:text="#{admin.common.category}">Categoría</span></label>
             <select id="sharedFilterCategory" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
-                <option value="">Todas</option>
+                <option value="" th:text="#{common.all}">Todas</option>
                 <option th:each="c : ${categories}" th:value="${c.name}" th:text="${c.name}"></option>
             </select>
         </div>
         <!-- Select IVA -->
         <div class="col-md-2">
-            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-percent me-2"></i>Tipo IVA</label>
+            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-percent me-2"></i><span th:text="#{admin.inventory.filter.iva}">Tipo IVA</span></label>
             <select id="sharedFilterIvaRate" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
-                <option value="">Todos</option>
+                <option value="" th:text="#{common.all}">Todos</option>
                 <option value="0.21">21%</option>
                 <option value="0.10">10%</option>
                 <option value="0.04">4%</option>
@@ -29,30 +29,30 @@
         </div>
         <!-- Select Stock -->
         <div class="col-md-2">
-            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-box-seam me-2"></i>Nivel Stock</label>
+            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-box-seam me-2"></i><span th:text="#{admin.inventory.filter.stock}">Nivel Stock</span></label>
             <select id="sharedFilterStock" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
-                <option value="">Todos</option>
-                <option value="low">Stock Bajo</option>
-                <option value="normal">Suficiente</option>
+                <option value="" th:text="#{common.all}">Todos</option>
+                <option value="low" th:text="#{admin.inventory.filter.stock.low}">Stock Bajo</option>
+                <option value="normal" th:text="#{admin.inventory.filter.stock.normal}">Suficiente</option>
             </select>
         </div>
         <!-- Select Activo -->
         <div class="col-md-2">
-            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-check-circle me-2"></i>Estado</label>
+            <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-check-circle me-2"></i><span th:text="#{admin.inventory.filter.status}">Estado</span></label>
             <select id="sharedFilterActive" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
-                <option value="">Todos</option>
-                <option value="true">Activos</option>
-                <option value="false">Inactivos</option>
+                <option value="" th:text="#{common.all}">Todos</option>
+                <option value="true" th:text="#{admin.inventory.filter.status.active}">Activos</option>
+                <option value="false" th:text="#{admin.inventory.filter.status.inactive}">Inactivos</option>
             </select>
         </div>
         <!-- Acciones -->
         <div class="col-md-2 d-flex align-items-end gap-1">
             <button class="btn btn-sm btn-outline-danger w-100" onclick="sharedFilterToggleLowStock()"
                 id="btnSharedLowStock">
-                <i class="bi bi-exclamation-triangle me-1"></i> Stock Bajo
+                <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="#{admin.inventory.filter.lowstock_btn}">Stock Bajo</span>
             </button>
             <button class="btn btn-sm btn-outline-secondary px-3" onclick="resetSharedBackendFilter()"
-                title="Resetear Filtros">
+                th:title="#{admin.inventory.filter.reset_title}">
                 <i class="bi bi-arrow-counterclockwise me-1"></i>
             </button>
         </div>

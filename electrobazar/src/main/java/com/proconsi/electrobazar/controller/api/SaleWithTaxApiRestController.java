@@ -168,6 +168,8 @@ public class SaleWithTaxApiRestController {
                                 request.getPaymentMethod(),
                                 request.getNotes(),
                                 request.getReceivedAmount(),
+                                request.getCashAmount(),
+                                request.getCardAmount(),
                                 customer,
                                 worker);
 

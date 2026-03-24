@@ -130,20 +130,37 @@
 
             <!-- Payment -->
             <div class="t-payment">
-                <div class="t-payment-method" th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}">
+                <div class="t-payment-method" th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : (sale.paymentMethod.name() == 'CARD' ? 'Tarjeta' : 'Mixto')}">
                     Efectivo</div>
-                <div class="t-payment-detail" th:if="${sale.receivedAmount == null}">
-                    Importe abonado: <strong
-                        th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
+                
+                <!-- If Not Mixed -->
+                <th:block th:if="${sale.paymentMethod.name() != 'MIXED'}">
+                    <div class="t-payment-detail" th:if="${sale.receivedAmount == null}">
+                        Importe abonado: <strong
+                            th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong>
+                    </div>
+                    <div class="t-payment-detail" th:if="${sale.receivedAmount != null}"
+                        style="display:flex; flex-direction:column; align-items:flex-end;">
+                        <div>Entregado: <strong
+                                th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' &euro;'">0.00
+                                &euro;</strong></div>
+                        <div>Cambio: <strong th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
+                                &euro;</strong></div>
+                    </div>
+                </th:block>
+
+                <!-- If Mixed -->
+                <div class="t-payment-detail" th:if="${sale.paymentMethod.name() == 'MIXED'}" style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div>Efectivo: <strong th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong></div>
+                    <div>Tarjeta: <strong th:text="${#numbers.formatDecimal(sale.cardAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong></div>
                 </div>
-                <div class="t-payment-detail" th:if="${sale.receivedAmount != null}"
-                    style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <div>Entregado: <strong
-                            th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' &euro;'">0.00
-                            &euro;</strong></div>
-                    <div>Cambio: <strong th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
-                            &euro;</strong></div>
-                </div>
+            </div>
+
+            <!-- Notas de venta -->
+            <div th:if="${sale.notes != null and !sale.notes.empty}" 
+                style="margin: 0.8rem 0; padding: 0.6rem; border: 1px dashed var(--border); border-radius: 8px; font-size: 0.8rem; background: rgba(var(--accent-rgb), 0.03);">
+                <div style="font-weight: 700; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.2rem;">Comentarios</div>
+                <div th:text="${sale.notes}">Nota de la venta</div>
             </div>
 
             <div class="t-footer">

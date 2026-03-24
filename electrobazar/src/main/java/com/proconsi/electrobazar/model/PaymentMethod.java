@@ -7,5 +7,7 @@ public enum PaymentMethod {
     /** Cash payment. */
     CASH,
     /** Credit or debit card payment. */
-    CARD
+    CARD,
+    /** Mixed payment (Card + Cash) */
+    MIXED
 }

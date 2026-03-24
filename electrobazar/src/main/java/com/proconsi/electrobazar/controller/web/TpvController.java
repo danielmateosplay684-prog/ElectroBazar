@@ -100,6 +100,8 @@ public class TpvController {
             @RequestParam PaymentMethod paymentMethod,
             @RequestParam(required = false) String notes,
             @RequestParam(required = false) String receivedAmount,
+            @RequestParam(required = false) String cashAmount,
+            @RequestParam(required = false) String cardAmount,
             @RequestParam(required = false, defaultValue = "false") Boolean requestInvoice,
             @RequestParam(required = false) Long tariffId,
             HttpSession session,
@@ -186,7 +188,26 @@ public class TpvController {
                     // Ignore
                 }
             }
-            sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, customer,
+
+            BigDecimal cashAmountDecimal = null;
+            if (cashAmount != null && !cashAmount.isBlank()) {
+                try {
+                    cashAmountDecimal = new BigDecimal(cashAmount.replace(",", "."));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+
+            BigDecimal cardAmountDecimal = null;
+            if (cardAmount != null && !cardAmount.isBlank()) {
+                try {
+                    cardAmountDecimal = new BigDecimal(cardAmount.replace(",", "."));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+
+            sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, cashAmountDecimal, cardAmountDecimal, customer,
                     worker, tariffOverride);
         } catch (IllegalStateException | IllegalArgumentException e) {
             log.error("Error creating sale: {}", e.getMessage());
@@ -299,8 +320,18 @@ public class TpvController {
         }
 
         CashRegister openRegister = openRegisterOpt.get();
+        LocalDateTime startOfShift = openRegister.getOpeningTime() != null
+                ? openRegister.getOpeningTime()
+                : LocalDate.now().atStartOfDay();
+
+        // 1. Fetch Summary (Combined query for Efficiency)
+        SaleSummaryResponse summary = saleService.getSummaryToday();
+        
+        // 2. Fetch Payments & Movements
         BigDecimal cashSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CASH);
+        BigDecimal cardSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD);
         BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
+        BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
 
         List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(openRegister.getId());
         BigDecimal totalWithdrawals = movements.stream()
@@ -313,33 +344,32 @@ public class TpvController {
                 .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        LocalDateTime startOfShift = openRegister.getOpeningTime() != null
-                ? openRegister.getOpeningTime()
-                : LocalDate.now().atStartOfDay();
-        model.addAttribute("returnsToday",
-                returnService.findByCreatedAtBetween(startOfShift, LocalDateTime.now()));
-
+        // 3. Expected Cash Logic
         BigDecimal expectedCashInDrawer = openRegister.getOpeningBalance()
                 .add(cashSalesToday)
                 .add(totalEntries)
                 .subtract(totalWithdrawals)
                 .subtract(cashRefundsToday);
 
-        SaleSummaryResponse summary = saleService.getSummaryToday();
+        // 4. Model Population
+        model.addAttribute("returnsToday", returnService.findByCreatedAtBetween(startOfShift, LocalDateTime.now()));
         model.addAttribute("cancelledCount", summary.getTotalCancelledCount());
         model.addAttribute("cancelledTotal", summary.getTotalCancelledAmount());
-
-        model.addAttribute("categories", categoryService.findAllActive());
-        model.addAttribute("totalToday", saleService.sumTotalToday());
-        model.addAttribute("countToday", saleService.countToday());
+        model.addAttribute("totalToday", summary.getTotalSalesAmount());
+        model.addAttribute("countToday", summary.getTotalSalesCount());
+        
         model.addAttribute("todayRegister", openRegister);
-        model.addAttribute("cashSalesToday", cashSalesToday);
+        model.addAttribute("cashSalesToday", summary.getTotalCashAmount());
         model.addAttribute("cashRefundsToday", cashRefundsToday);
-        model.addAttribute("cardSalesToday", saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD));
-        model.addAttribute("cardRefundsToday", returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD));
+        model.addAttribute("cardSalesToday", summary.getTotalCardAmount());
+        model.addAttribute("cardRefundsToday", cardRefundsToday);
         model.addAttribute("totalWithdrawals", totalWithdrawals);
         model.addAttribute("totalEntries", totalEntries);
         model.addAttribute("expectedCashInDrawer", expectedCashInDrawer);
+        
+        model.addAttribute("categories", categoryService.findAllActive());
+        model.addAttribute("companySettings", companySettingsService.getSettings());
+
         return "tpv/cash-close";
     }
 

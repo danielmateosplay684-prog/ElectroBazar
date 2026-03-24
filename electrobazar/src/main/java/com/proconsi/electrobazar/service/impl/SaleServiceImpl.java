@@ -78,17 +78,17 @@ public class SaleServiceImpl implements SaleService {
     }
 
     @Override
-    public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Worker worker) {
-        return createSale(lines, paymentMethod, notes, receivedAmount, null, worker);
+    public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Worker worker) {
+        return createSale(lines, paymentMethod, notes, receivedAmount, cashAmount, cardAmount, null, worker);
     }
 
     @Override
-    public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Customer customer, Worker worker) {
-        return createSaleWithTariff(lines, paymentMethod, notes, receivedAmount, customer, worker, null);
+    public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer, Worker worker) {
+        return createSaleWithTariff(lines, paymentMethod, notes, receivedAmount, cashAmount, cardAmount, customer, worker, null);
     }
 
     @Override
-    public Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Customer customer, Worker worker, Tariff tariffOverride) {
+    public Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer, Worker worker, Tariff tariffOverride) {
         // 0. Cash Register Guard (POS Business Rule)
         // Verifies that a cash register session is open for today before allowing sales.
         cashRegisterService.checkOpenRegisterForToday();
@@ -170,20 +170,38 @@ public class SaleServiceImpl implements SaleService {
         }
 
         BigDecimal change = null;
-        if (paymentMethod == PaymentMethod.CASH && receivedAmount != null) {
-            // Tolerance to handle tiny rounding deviations between JS client and Server
-            if (receivedAmount.add(new BigDecimal("0.01")).compareTo(finalTotal) < 0) {
+        BigDecimal actualCashAmt = BigDecimal.ZERO;
+        BigDecimal actualCardAmt = BigDecimal.ZERO;
+
+        if (paymentMethod == PaymentMethod.CASH) {
+            BigDecimal recAmt = receivedAmount != null ? receivedAmount : finalTotal;
+            if (recAmt.add(new BigDecimal("0.01")).compareTo(finalTotal) < 0) {
                 throw new IllegalArgumentException("Received amount is less than total sale amount.");
             }
-            change = receivedAmount.subtract(finalTotal);
+            change = recAmt.subtract(finalTotal);
+            actualCashAmt = finalTotal;
+        } else if (paymentMethod == PaymentMethod.CARD) {
+            actualCardAmt = finalTotal;
+        } else if (paymentMethod == PaymentMethod.MIXED) {
+            BigDecimal cmCard = cardAmount != null ? cardAmount : BigDecimal.ZERO;
+            BigDecimal cmCash = cashAmount != null ? cashAmount : BigDecimal.ZERO;
+            BigDecimal totalReceived = cmCard.add(cmCash);
+
+            if (totalReceived.add(new BigDecimal("0.01")).compareTo(finalTotal) < 0) {
+                throw new IllegalArgumentException("Mixed payment amount is less than total sale amount.");
+            }
+            change = totalReceived.subtract(finalTotal);
+            actualCardAmt = cmCard;
+            // The change is returned from the cash portion
+            actualCashAmt = cmCash.subtract(change);
         }
 
         Sale sale = Sale.builder()
                 .paymentMethod(paymentMethod).totalAmount(finalTotal).totalBase(totalBase.setScale(SCALE, ROUNDING))
                 .totalVat(totalVat.setScale(SCALE, ROUNDING)).totalRecargo(totalRecargo.setScale(SCALE, ROUNDING))
                 .totalDiscount(BigDecimal.ZERO).applyRecargo(applyRE).receivedAmount(receivedAmount).changeAmount(change)
-                .cashAmount(paymentMethod == PaymentMethod.CASH ? finalTotal : BigDecimal.ZERO)
-                .cardAmount(paymentMethod == PaymentMethod.CARD ? finalTotal : BigDecimal.ZERO)
+                .cashAmount(actualCashAmt)
+                .cardAmount(actualCardAmt)
                 .notes(notes).customer(customer).worker(worker).lines(lines).appliedTariff(tariffName)
                 .appliedDiscountPercentage(discountPct.setScale(SCALE, ROUNDING)).build();
 

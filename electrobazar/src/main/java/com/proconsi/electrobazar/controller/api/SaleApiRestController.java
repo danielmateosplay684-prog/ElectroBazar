@@ -130,10 +130,10 @@ public class SaleApiRestController {
         Sale saved;
         if (validCustomer != null) {
             saved = saleService.createSale(lines, sale.getPaymentMethod(), sale.getNotes(),
-                    sale.getReceivedAmount(), validCustomer, worker);
+                    sale.getReceivedAmount(), sale.getCashAmount(), sale.getCardAmount(), validCustomer, worker);
         } else {
             saved = saleService.createSale(lines, sale.getPaymentMethod(), sale.getNotes(),
-                    sale.getReceivedAmount(), worker);
+                    sale.getReceivedAmount(), sale.getCashAmount(), sale.getCardAmount(), worker);
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);

@@ -19,8 +19,14 @@ public class SaleWithTaxRequest {
      */
     private Long customerId;
 
-    /** The payment method used for this sale (CASH or CARD). */
+    /** The payment method used for this sale (CASH, CARD, MIXED). */
     private PaymentMethod paymentMethod;
+
+    /** Amount to pay in cash (useful for MIXED payment). */
+    private BigDecimal cashAmount;
+
+    /** Amount to pay by card (useful for MIXED payment). */
+    private BigDecimal cardAmount;
 
     /** Optional notes or comments for the sale. */
     private String notes;

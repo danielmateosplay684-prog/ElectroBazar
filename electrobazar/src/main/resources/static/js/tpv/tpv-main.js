@@ -118,6 +118,8 @@ function editQty(el, id) {
 
 function clearTicket() {
     Object.keys(ticket).forEach(function (k) { delete ticket[k]; });
+    var saleNotesTextarea = document.getElementById('saleNotes');
+    if (saleNotesTextarea) saleNotesTextarea.value = '';
     renderTicket();
 }
 
@@ -258,9 +260,13 @@ function renderTicket() {
 }
 
 function selectPayment(method) {
+    var btnCash = document.getElementById('btnCash');
+    var btnCard = document.getElementById('btnCard');
+    var btnMixed = document.getElementById('btnMixed');
     document.getElementById('paymentMethodInput').value = method;
-    document.getElementById('btnCash').classList.toggle('selected', method === 'CASH');
-    document.getElementById('btnCard').classList.toggle('selected', method === 'CARD');
+    if (btnCash) btnCash.classList.toggle('selected', method === 'CASH');
+    if (btnCard) btnCard.classList.toggle('selected', method === 'CARD');
+    if (btnMixed) btnMixed.classList.toggle('selected', method === 'MIXED');
 }
 
 function submitSale() {
@@ -273,22 +279,40 @@ var invoiceModalInstance;
 function openCustomerModal() {
     if (Object.keys(ticket).length === 0) return;
 
-    // Determine if payment is CASH
-    var isCash = document.getElementById('paymentMethodInput').value === 'CASH';
+    // Determine if payment is CASH or MIXED
+    var method = document.getElementById('paymentMethodInput').value;
+    var isCash = method === 'CASH';
+    var isMixed = method === 'MIXED';
     var cashSection = document.getElementById('cashInputSection');
+    var mixedSection = document.getElementById('mixedInputSection');
     var receivedInput = document.getElementById('receivedAmount');
     var receivedInputForm = document.getElementById('receivedAmountInput');
 
     if (isCash) {
-        cashSection.style.display = 'block';
+        if (cashSection) cashSection.style.display = 'block';
+        if (mixedSection) mixedSection.style.display = 'none';
         receivedInput.value = '';
         document.getElementById('changeAmount').textContent = '0.00\u20AC';
         receivedInputForm.value = '';
+    } else if (isMixed) {
+        if (cashSection) cashSection.style.display = 'none';
+        if (mixedSection) mixedSection.style.display = 'block';
+        document.getElementById('mixedCardAmount').value = '';
+        document.getElementById('mixedCashAmount').value = '';
+        var tTotal = document.getElementById('ticketTotal').textContent;
+        document.getElementById('mixedRemainingAmount').textContent = 'Faltan ' + tTotal;
+        document.getElementById('mixedRemainingAmount').className = 'fw-bold fs-5 text-danger';
+        receivedInputForm.value = '';
     } else {
-        cashSection.style.display = 'none';
+        if (cashSection) cashSection.style.display = 'none';
+        if (mixedSection) mixedSection.style.display = 'none';
         receivedInput.value = '';
         receivedInputForm.value = '';
     }
+
+    // Reset notes in modal
+    var saleNotesTextarea = document.getElementById('saleNotes');
+    if (saleNotesTextarea) saleNotesTextarea.value = '';
 
     // Populate amounts
     document.getElementById('cobrarAmount').textContent = document.getElementById('ticketTotal').textContent;
@@ -353,6 +377,43 @@ function setExactAmount() {
     input.value = totalVal.toFixed(2);
     // Trigger input event manually to update change calculation
     input.dispatchEvent(new Event('input'));
+}
+
+function calculateMixedChange() {
+    var cardVal = parseFloat(document.getElementById('mixedCardAmount').value) || 0;
+    var cashVal = parseFloat(document.getElementById('mixedCashAmount').value) || 0;
+    var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
+    var remainingEl = document.getElementById('mixedRemainingAmount');
+    
+    var diff = (cardVal + cashVal) - total;
+    if (diff < 0) {
+        remainingEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2) + '\u20AC';
+        remainingEl.className = 'fw-bold fs-5 text-danger';
+    } else if (diff === 0) {
+        remainingEl.textContent = '0.00\u20AC (Exacto)';
+        remainingEl.className = 'fw-bold fs-5 text-success';
+    } else {
+        remainingEl.textContent = 'Cambio: ' + diff.toFixed(2) + '\u20AC';
+        remainingEl.className = 'fw-bold fs-5 text-success';
+    }
+}
+
+function fillMixedMissing(type) {
+    var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
+    var cardInput = document.getElementById('mixedCardAmount');
+    var cashInput = document.getElementById('mixedCashAmount');
+    
+    var currentCard = parseFloat(cardInput.value) || 0;
+    var currentCash = parseFloat(cashInput.value) || 0;
+    
+    if (type === 'card') {
+        var missing = total - currentCash;
+        if (missing > 0) cardInput.value = missing.toFixed(2);
+    } else {
+        var missing = total - currentCard;
+        if (missing > 0) cashInput.value = missing.toFixed(2);
+    }
+    calculateMixedChange();
 }
 
 
@@ -473,6 +534,13 @@ function processSaleWithInvoiceValidation() {
     var paymentMethod = document.getElementById('paymentMethodInput').value;
     var receivedAmountInput = document.getElementById('receivedAmount');
     var hiddenReceivedAmount = document.getElementById('receivedAmountInput');
+    var saleNotesTextarea = document.getElementById('saleNotes');
+    var hiddenNotesInput = document.getElementById('notesInput');
+
+    // Collect notes
+    if (saleNotesTextarea && hiddenNotesInput) {
+        hiddenNotesInput.value = saleNotesTextarea.value.trim();
+    }
 
     // Determine if a customer was selected in the sidebar
     var customerId = document.getElementById('customerIdInput').value;
@@ -510,16 +578,29 @@ function processSaleWithInvoiceValidation() {
             return;
         }
         hiddenReceivedAmount.value = rVal.toFixed(2);
+    } else if (paymentMethod === 'MIXED') {
+        var cardVal = parseFloat(document.getElementById('mixedCardAmount').value) || 0;
+        var cashVal = parseFloat(document.getElementById('mixedCashAmount').value) || 0;
+        if ((cardVal + cashVal) < total) {
+            showError('La cantidad mixta entregada es menor al total a cobrar.');
+            return;
+        }
+        document.getElementById('cardAmountInput').value = cardVal.toFixed(2);
+        document.getElementById('cashAmountInput').value = cashVal.toFixed(2);
     } else {
         hiddenReceivedAmount.value = '';
     }
 
     // --- Offline Handling ---
     if (!navigator.onLine) {
+        var cashAmt = document.getElementById('cashAmountInput').value;
+        var cardAmt = document.getElementById('cardAmountInput').value;
         saveOfflineSale({
             paymentMethod: paymentMethod,
             customerId: customerId,
             receivedAmount: hiddenReceivedAmount.value,
+            cashAmount: cashAmt,
+            cardAmount: cardAmt,
             requestInvoice: hasCustomer,
             total: total,
             lines: Object.keys(ticket).map(id => ({
@@ -1581,6 +1662,8 @@ function processSyncQueue(sales) {
     formData.append('paymentMethod', sale.paymentMethod);
     if (sale.customerId) formData.append('customerId', sale.customerId);
     if (sale.receivedAmount) formData.append('receivedAmount', sale.receivedAmount);
+    if (sale.cashAmount) formData.append('cashAmount', sale.cashAmount);
+    if (sale.cardAmount) formData.append('cardAmount', sale.cardAmount);
     formData.append('requestInvoice', sale.requestInvoice);
 
     sale.lines.forEach(line => {

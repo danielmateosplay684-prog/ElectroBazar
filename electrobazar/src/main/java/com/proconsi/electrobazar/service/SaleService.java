@@ -62,7 +62,7 @@ public interface SaleService {
      * @param worker         The worker processing the sale.
      * @return The persisted Sale.
      */
-    Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Worker worker);
+    Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Worker worker);
 
     /**
      * Creates a sale for a registered customer.
@@ -75,7 +75,7 @@ public interface SaleService {
      * @param worker         The worker.
      * @return The persisted Sale.
      */
-    Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, Customer customer, Worker worker);
+    Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer, Worker worker);
 
     /**
      * Creates a sale with an explicit tariff override.
@@ -90,7 +90,7 @@ public interface SaleService {
      * @return The persisted Sale.
      */
     Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
-            BigDecimal receivedAmount, Customer customer,
+            BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
             Worker worker, Tariff tariffOverride);
 
     /**
