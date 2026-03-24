@@ -485,9 +485,17 @@ function processSaleWithInvoiceValidation() {
 
     // Validar límite de pago en efectivo (Ley 11/2021)
     var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
-    if (paymentMethod === 'CASH' && total >= 1000) {
-        showError('El pago en efectivo no está permitido para importes iguales o superiores a 1.000 € según la Ley 11/2021 de prevención del fraude fiscal. Seleccione otro método de pago.');
-        return;
+    var customerId = document.getElementById('customerIdInput').value;
+    var customerType = document.getElementById('customerTypeInput').value;
+
+    if (paymentMethod === 'CASH') {
+        if (customerType === 'COMPANY' && total >= 1000) {
+            showError('No es posible realizar pagos en efectivo superiores a 1.000€ entre empresarios (Ley 11/2021). Seleccione otro método de pago.');
+            return;
+        } else if (total >= 10000) {
+            // Particular limit warning but allow submission as per user instruction
+            showToast('Aviso: El pago en efectivo supera los 10.000 €. Superar los límites legales puede conllevar sanciones según la Ley 11/2021.', 'warning');
+        }
     }
 
     // Handle Cash Received Logic
@@ -817,6 +825,7 @@ function renderCustomerResults(customers) {
 
 function selectCustomer(c) {
     document.getElementById('customerIdInput').value = c.id;
+    document.getElementById('customerTypeInput').value = c.type;
     document.getElementById('sidebarCustomerName').textContent = c.name;
     document.getElementById('sidebarCustomerTaxId').textContent = c.taxId || 'Sin NIF';
 
@@ -841,6 +850,7 @@ function selectCustomer(c) {
 
 function clearSelectedCustomer() {
     document.getElementById('customerIdInput').value = '';
+    document.getElementById('customerTypeInput').value = '';
     document.getElementById('selectedCustomerCard').style.display = 'none';
     document.getElementById('customerSelectionControls').style.display = 'block';
     window.currentTariffId = null; // clear so addToTicket uses base prices again

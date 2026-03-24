@@ -141,6 +141,34 @@ public class SaleServiceImpl implements SaleService {
         }
 
         BigDecimal finalTotal = total.setScale(SCALE, ROUNDING);
+
+        // 3. Fiscal Validation (Ley 11/2021 Anti-fraud)
+        if (paymentMethod == PaymentMethod.CASH) {
+            BigDecimal limit = (customer != null && customer.getType() == Customer.CustomerType.COMPANY)
+                    ? new BigDecimal("1000")
+                    : new BigDecimal("10000");
+
+            if (finalTotal.compareTo(limit) > 0) {
+                String customerIdStr = (customer != null) ? (customer.getTaxId() != null ? customer.getTaxId() : "ID:" + customer.getId()) : "Anónimo";
+                String username = (worker != null) ? worker.getUsername() : "N/A";
+
+                if (customer != null && customer.getType() == Customer.CustomerType.COMPANY) {
+                    // Blocked case: log and throw
+                    activityLogService.logActivity("BLOQUEO_FISCAL",
+                            String.format("Pago bloqueado: %.2f € excede el límite de 1.000 € para empresas (Ley 11/2021). Cliente: %s",
+                                    finalTotal, customerIdStr),
+                            username, "SALE", null);
+                    throw new IllegalStateException("No es posible realizar pagos en efectivo superiores a 1.000€ entre empresarios (Ley 11/2021)");
+                } else {
+                    // Warning case: log and allow (as per "permite continuar" for particulars)
+                    activityLogService.logActivity("AVISO_FISCAL",
+                            String.format("Pago en efectivo elevado detectado: %.2f € (Límite particular: 10.000 €). Cliente: %s",
+                                    finalTotal, customerIdStr),
+                            username, "SALE", null);
+                }
+            }
+        }
+
         BigDecimal change = null;
         if (paymentMethod == PaymentMethod.CASH && receivedAmount != null) {
             // Tolerance to handle tiny rounding deviations between JS client and Server

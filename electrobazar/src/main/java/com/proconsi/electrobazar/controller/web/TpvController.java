@@ -176,33 +176,23 @@ public class TpvController {
         }
 
         Worker worker = (Worker) session.getAttribute("worker");
-
-        // Sum total from lines pre-discount just for cash limit validation (approximate
-        // but safe since discounts only reduce price)
-        BigDecimal maxPosibleAmount = lines.stream()
-                .map(l -> l.getUnitPrice().multiply(new BigDecimal(l.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        // Validate cash payment limit (Law 11/2021)
-        if (paymentMethod == PaymentMethod.CASH && maxPosibleAmount.compareTo(new BigDecimal("1000")) >= 0) {
-            activityLogService.logActivity("CASH_LIMIT_VIOLATION",
-                    "Cash payment attempt blocked for amount >= 1000€ (Estimated total: " + maxPosibleAmount
-                            + "€)",
-                    worker.getUsername(), "SALE", null);
-            redirectAttributes.addFlashAttribute("errorMessage",
-                    "Cash payment is not permitted for amounts equal to or greater than 1,000 € according to Law 11/2021 on fiscal fraud prevention. Please select another payment method.");
+        Sale sale = null;
+        try {
+            BigDecimal receivedAmountDecimal = null;
+            if (paymentMethod == PaymentMethod.CASH && receivedAmount != null && !receivedAmount.isBlank()) {
+                try {
+                    receivedAmountDecimal = new BigDecimal(receivedAmount.replace(",", "."));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, customer,
+                    worker, tariffOverride);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            log.error("Error creating sale: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/tpv";
         }
-
-        BigDecimal receivedAmountDecimal = null;
-        if (paymentMethod == PaymentMethod.CASH && receivedAmount != null && !receivedAmount.isBlank()) {
-            try {
-                receivedAmountDecimal = new BigDecimal(receivedAmount.replace(",", "."));
-            } catch (NumberFormatException e) {
-                // Ignore
-            }
-        }
-        Sale sale = saleService.createSaleWithTariff(lines, paymentMethod, notes, receivedAmountDecimal, customer,
-                worker, tariffOverride);
 
         // Generate and Store PDF in DB
         try {
