@@ -20,38 +20,44 @@
     <!-- ── HEADER ── -->
     <header class="tpv-header d-flex align-items-center justify-content-between px-3">
         <!-- Izquierda: Logo y Trabajador -->
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-4">
             <div class="tpv-logo">
                 <img th:src="@{/icons/favicon.svg}" alt="Logo" style="border-radius:6px;">
                 <span th:text="${companySettings.appName}">ElectroBazar</span>
             </div>
 
-            <div class="worker-info d-flex align-items-center gap-2"
-                style="background: var(--surface); padding: 0.4rem 0.8rem; border-radius: 10px; border: 1px solid var(--border);">
-                <i class="bi bi-person-circle text-accent"></i>
-                <span style="font-size: 0.85rem; font-weight: 600; margin-left: 2px;"
-                    th:text="${session.worker.username}">Trabajador</span>
-            </div>
+            <!-- Grupo: Trabajador + Acciones (Más cercanos entre sí) -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="worker-info d-flex align-items-center gap-2"
+                    style="background: var(--surface); padding: 0.4rem 0.8rem; border-radius: 10px; border: 1px solid var(--border);">
+                    <i class="bi bi-person-circle text-accent"></i>
+                    <span style="font-size: 0.85rem; font-weight: 600; margin-left: 2px;"
+                        th:text="${session.worker.username}">Trabajador</span>
+                </div>
 
-            <!-- Connectivity LED Indicator -->
-            <div id="connectivity-led" class="online ms-3" title="Conexión con el servidor OK">
-                <span class="led-dot"></span>
-                <span class="led-text">Online</span>
-            </div>
+                <!-- Grupo de Estado y Acciones (Mantienen su gap actual) -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Connectivity LED Indicator -->
+                    <div id="connectivity-led" class="online" title="Conexión con el servidor OK">
+                        <span class="led-dot"></span>
+                        <span class="led-text">Online</span>
+                    </div>
 
-            <!-- Botones de Acción (Admin & Gestión) -->
-            <div class="d-flex align-items-center gap-2 ms-1">
-                <button th:if="${session.worker.getEffectivePermissions().contains('ADMIN_ACCESS')}"
-                    class="btn-action-tpv p-0" id="adminLockBtn" title="Panel de Administración"
-                    onclick="openAdminPinModal()">
-                    <i class="bi bi-shield-lock"></i>
-                </button>
+                    <!-- Botones de Acción (Admin & Gestión) -->
+                    <div class="d-flex align-items-center gap-2">
+                        <button th:if="${session.worker.getEffectivePermissions().contains('ADMIN_ACCESS')}"
+                            class="btn-action-tpv p-0" id="adminLockBtn" title="Panel de Administración"
+                            onclick="openAdminPinModal()">
+                            <i class="bi bi-shield-lock"></i>
+                        </button>
 
-                <a th:if="${session.worker.getEffectivePermissions().contains('MANAGE_PRODUCTS_TPV') or session.worker.getEffectivePermissions().contains('ADMIN_ACCESS')}"
-                    th:href="@{/productos-categorias}" class="btn-action-tpv"
-                    title="Administrar productos y categorías">
-                    <i class="bi bi-box-seam"></i> <span>Inventario</span>
-                </a>
+                        <a th:if="${session.worker.getEffectivePermissions().contains('MANAGE_PRODUCTS_TPV') or session.worker.getEffectivePermissions().contains('ADMIN_ACCESS')}"
+                            th:href="@{/productos-categorias}" class="btn-action-tpv"
+                            title="Administrar productos y categorías">
+                            <i class="bi bi-box-seam"></i> <span>Inventario</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -85,9 +91,7 @@
 
             <!-- Ventas en espera badge button -->
             <button th:if="${session.worker.getEffectivePermissions().contains('HOLD_SALES')}" id="btnSuspendedList"
-                class="btn-action-tpv"
-                onclick="openSuspendedModal()"
-                title="Ventas en espera">
+                class="btn-action-tpv" onclick="openSuspendedModal()" title="Ventas en espera">
                 <i class="bi bi-hourglass-split"></i>
                 <span>En espera</span>
                 <span id="suspendedBadge"
@@ -171,9 +175,9 @@
                         <img th:if="${product.imageUrl}" th:src="${product.imageUrl}" alt="Imagen producto"
                             class="product-image">
                         <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
-                        <span class="stock-badge" 
-                              th:classappend="${product.stock == 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
-                              th:text="${product.stock}">0</span>
+                        <span class="stock-badge"
+                            th:classappend="${product.stock == 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
+                            th:text="${product.stock}">0</span>
                     </div>
                     <div class="product-info">
                         <div class="product-name" th:text="${product.name}">Nombre producto</div>
@@ -194,38 +198,40 @@
             </div>
 
             <!-- Customer Management Section -->
-            <div class="customer-section px-3 py-2" style="border-bottom: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.02);">
+            <div class="customer-section px-3 py-2"
+                style="border-bottom: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.02);">
                 <div id="selectedCustomerCard" style="display: none; animation: fadeIn 0.2s ease;">
-                    <div class="d-flex justify-content-between align-items-center p-2 rounded" 
-                         style="background: var(--surface); border: 1px solid var(--border);">
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded"
+                        style="background: var(--surface); border: 1px solid var(--border);">
                         <div class="d-flex flex-column overflow-hidden">
                             <div class="d-flex align-items-center gap-2">
-                                <span id="sidebarCustomerName" class="fw-bold truncate" style="font-size: 0.9rem; color: var(--text-main);"></span>
+                                <span id="sidebarCustomerName" class="fw-bold truncate"
+                                    style="font-size: 0.9rem; color: var(--text-main);"></span>
                                 <span id="sidebarTariffBadge" class="badge-tariff-small"></span>
                             </div>
                             <span id="sidebarCustomerTaxId" class="small text-muted" style="font-size: 0.75rem;"></span>
                         </div>
-                        <button type="button" class="btn-clear-customer ms-2" onclick="clearSelectedCustomer()" 
-                                style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.2rem;">
+                        <button type="button" class="btn-clear-customer ms-2" onclick="clearSelectedCustomer()"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.2rem;">
                             <i class="bi bi-x-circle fs-5"></i>
                         </button>
                     </div>
                 </div>
 
                 <div id="customerSelectionControls">
-                    <ul class="nav nav-pills nav-fill mb-2 gap-1 p-1 rounded" id="sidebarCustomerTabs" role="tablist" 
+                    <ul class="nav nav-pills nav-fill mb-2 gap-1 p-1 rounded" id="sidebarCustomerTabs" role="tablist"
                         style="background: var(--primary); border: 1px solid var(--border); font-size: 0.78rem;">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active py-1 px-2 rounded-pill fw-bold" id="sidebar-search-tab" 
-                                    data-bs-toggle="pill" data-bs-target="#sidebar-search-pane" type="button" role="tab"
-                                    style="color: var(--text-muted);">
+                            <button class="nav-link active py-1 px-2 rounded-pill fw-bold" id="sidebar-search-tab"
+                                data-bs-toggle="pill" data-bs-target="#sidebar-search-pane" type="button" role="tab"
+                                style="color: var(--text-muted);">
                                 <i class="bi bi-search me-1"></i> Buscar
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 rounded-pill fw-bold" id="sidebar-new-tab" data-bs-toggle="pill" 
-                                    data-bs-target="#sidebar-new-pane" type="button" role="tab"
-                                    style="color: var(--text-muted);">
+                            <button class="nav-link py-1 px-2 rounded-pill fw-bold" id="sidebar-new-tab"
+                                data-bs-toggle="pill" data-bs-target="#sidebar-new-pane" type="button" role="tab"
+                                style="color: var(--text-muted);">
                                 <i class="bi bi-person-plus me-1"></i> Nuevo
                             </button>
                         </li>
@@ -236,22 +242,26 @@
                         <div class="tab-pane fade show active" id="sidebar-search-pane" role="tabpanel">
                             <div class="position-relative">
                                 <div class="input-group input-group-sm">
-                                    <span class="input-group-text" style="background: var(--primary); border-color: var(--border); color: var(--text-muted);">
+                                    <span class="input-group-text"
+                                        style="background: var(--primary); border-color: var(--border); color: var(--text-muted);">
                                         <i class="bi bi-search"></i>
                                     </span>
-                                    <input type="text" id="customerSearchInput" class="form-control form-control-sm" 
-                                           placeholder="Nombre o NIF..." style="background: var(--primary); color: var(--text-main); border-color: var(--border);"
-                                           autocomplete="off">
+                                    <input type="text" id="customerSearchInput" class="form-control form-control-sm"
+                                        placeholder="Nombre o NIF..."
+                                        style="background: var(--primary); color: var(--text-main); border-color: var(--border);"
+                                        autocomplete="off">
                                 </div>
-                                <div id="customerSearchResults" class="customer-dropdown-sidebar" style="display: none;"></div>
+                                <div id="customerSearchResults" class="customer-dropdown-sidebar"
+                                    style="display: none;"></div>
                             </div>
                         </div>
 
                         <!-- Tab: Crear Nuevo Cliente -->
                         <div class="tab-pane fade" id="sidebar-new-pane" role="tabpanel">
                             <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openFullCustomerModal()" 
-                                        style="font-size: 0.75rem; border-color: var(--border); color: var(--text-main);">
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="openFullCustomerModal()"
+                                    style="font-size: 0.75rem; border-color: var(--border); color: var(--text-main);">
                                     <i class="bi bi-plus-lg me-1"></i> Rellenar ficha nueva
                                 </button>
                             </div>
@@ -342,22 +352,24 @@
                     <!-- Resumen del Cliente (Read-only) -->
                     <div id="checkoutCustomerSummary" class="mb-4">
                         <div id="summaryWithCustomer" style="display: none;">
-                            <div class="p-3 rounded d-flex align-items-center justify-content-between" 
-                                 style="border: 2px solid var(--accent); background: rgba(var(--accent-rgb), 0.05);">
+                            <div class="p-3 rounded d-flex align-items-center justify-content-between"
+                                style="border: 2px solid var(--accent); background: rgba(var(--accent-rgb), 0.05);">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-circle" style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary);">
+                                    <div class="icon-circle"
+                                        style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary);">
                                         <i class="bi bi-person-check-fill"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 fw-bold" id="checkoutCustomerName" style="color: var(--text-main);"></h6>
+                                        <h6 class="mb-0 fw-bold" id="checkoutCustomerName"
+                                            style="color: var(--text-main);"></h6>
                                         <small id="checkoutCustomerTaxId" style="color: var(--text-muted);"></small>
                                     </div>
                                 </div>
                                 <div class="badge bg-success rounded-pill px-3 py-2">PARA FACTURA</div>
                             </div>
                         </div>
-                        <div id="summaryNoCustomer" class="p-3 rounded text-center border-dashed" 
-                             style="border: 2px dashed var(--border); color: var(--text-muted);">
+                        <div id="summaryNoCustomer" class="p-3 rounded text-center border-dashed"
+                            style="border: 2px dashed var(--border); color: var(--text-muted);">
                             <i class="bi bi-ticket-perforated fs-3 d-block mb-1"></i>
                             <span class="fw-bold">Ticket Estándar</span><br>
                             <small>Sin cliente asignado</small>
@@ -406,73 +418,98 @@
     <!-- ── MODAL: Crear Cliente Completo ── -->
     <div class="modal fade" id="fullCustomerModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content" style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
+            <div class="modal-content"
+                style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header" style="border-color: var(--border);">
                     <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Nuevo Cliente</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: var(--close-filter, invert(1));"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        style="filter: var(--close-filter, invert(1));"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeIndividual" value="INDIVIDUAL" checked onchange="toggleCustomerType()">
+                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeIndividual"
+                                value="INDIVIDUAL" checked onchange="toggleCustomerType()">
                             <label class="form-check-label" for="typeIndividual">Particular</label>
                         </div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeCompany" value="COMPANY" onchange="toggleCustomerType()">
+                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeCompany"
+                                value="COMPANY" onchange="toggleCustomerType()">
                             <label class="form-check-label" for="typeCompany">Empresa</label>
                         </div>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label" id="lblCustomerName">Nombre y Apellidos <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerName" class="form-control" required placeholder="Nombre completo o Razón Social" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <label class="form-label" id="lblCustomerName">Nombre y Apellidos <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="newCustomerName" class="form-control" required
+                                placeholder="Nombre completo o Razón Social"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" id="lblCustomerTaxId">NIF/NIE <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerTaxId" class="form-control" required placeholder="12345678X" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <label class="form-label" id="lblCustomerTaxId">NIF/NIE <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="newCustomerTaxId" class="form-control" required
+                                placeholder="12345678X"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Dirección (Calle, Número...) <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerAddress" class="form-control" required placeholder="Calle, número, piso..." style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <label class="form-label">Dirección (Calle, Número...) <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="newCustomerAddress" class="form-control" required
+                                placeholder="Calle, número, piso..."
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-md-8">
                             <label class="form-label">Población / Ciudad <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerCity" class="form-control" required placeholder="Madrid" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <input type="text" id="newCustomerCity" class="form-control" required placeholder="Madrid"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Código Postal <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerPostalCode" class="form-control" required placeholder="28001" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <input type="text" id="newCustomerPostalCode" class="form-control" required
+                                placeholder="28001"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email (Opcional)</label>
-                            <input type="email" id="newCustomerEmail" class="form-control" placeholder="ejemplo@correo.com" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <input type="email" id="newCustomerEmail" class="form-control"
+                                placeholder="ejemplo@correo.com"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Teléfono (Opcional)</label>
-                            <input type="text" id="newCustomerPhone" class="form-control" placeholder="600 000 000" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <input type="text" id="newCustomerPhone" class="form-control" placeholder="600 000 000"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="newCustomerTariffId">
                                 <i class="bi bi-tags me-1"></i>Tarifa de Precio
                             </label>
-                            <select class="form-select" id="newCustomerTariffId" style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                            <select class="form-select" id="newCustomerTariffId"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                                 <option value="">-- Sin tarifa asignada (MINORISTA) --</option>
                                 <th:block th:each="tariff : ${tariffs}">
                                     <option th:if="${tariff.active}" th:value="${tariff.id}"
                                         th:text="${tariff.getDisplayLabel()}">MINORISTA</option>
                                 </th:block>
                             </select>
-                            <small style="color: var(--text-muted);">La tarifa define el descuento automático cuando este cliente se añade a una venta.</small>
+                            <small style="color: var(--text-muted);">La tarifa define el descuento automático cuando
+                                este cliente se añade a una venta.</small>
                         </div>
                         <div class="col-12 mt-3" id="newCustomerReSection" style="display: none;">
-                            <div class="p-3 rounded" style="border: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.05);">
+                            <div class="p-3 rounded"
+                                style="border: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.05);">
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="newCustomerHasRecargo">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox"
+                                        id="newCustomerHasRecargo">
                                     <label class="form-check-label fw-bold" for="newCustomerHasRecargo">
-                                        <i class="bi bi-percent me-1 text-accent"></i> Sujeto a Recargo de Equivalencia (RE)
+                                        <i class="bi bi-percent me-1 text-accent"></i> Sujeto a Recargo de Equivalencia
+                                        (RE)
                                     </label>
                                 </div>
-                                <small id="newCustomerReIncompatibleMsg" class="d-none mt-2 ms-4 fw-bold" style="font-size: 0.8rem; color: #ef4444;">
+                                <small id="newCustomerReIncompatibleMsg" class="d-none mt-2 ms-4 fw-bold"
+                                    style="font-size: 0.8rem; color: #ef4444;">
                                     El recargo de equivalencia solo aplica a clientes con tarifa minorista
                                 </small>
                             </div>
@@ -488,8 +525,11 @@
                     <input type="hidden" id="existingCustomerId">
                 </div>
                 <div class="modal-footer" style="border-color: var(--border);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
-                    <button type="button" class="btn" id="btnCreateCustomerSidebar" style="background: var(--accent); color: var(--primary);" onclick="createNewCustomerAjax()">Crear y Seleccionar</button>
+                    <button type="button" class="btn" data-bs-dismiss="modal"
+                        style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
+                    <button type="button" class="btn" id="btnCreateCustomerSidebar"
+                        style="background: var(--accent); color: var(--primary);"
+                        onclick="createNewCustomerAjax()">Crear y Seleccionar</button>
                 </div>
             </div>
         </div>

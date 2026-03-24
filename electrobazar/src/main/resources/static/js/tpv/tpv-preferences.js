@@ -192,7 +192,7 @@
         const customEl = document.createElement('div');
         customEl.className = 'swatch' + (prefs.customAccent ? ' selected' : '');
         
-        // Rainbow or current custom color
+        // Use custom color or rainbow gradient
         customEl.style.background = prefs.customAccent || 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)';
         customEl.title = 'Color personalizado';
         
@@ -203,13 +203,13 @@
         
         const customLabel = document.createElement('span');
         customLabel.className = 'swatch-name';
-        customLabel.textContent = 'Custom';
+        customLabel.textContent = 'Personalizado';
         
-        // Add a "plus" or "palette" icon if not selected
+        // Add a "plus" icon only if no custom color is set
         if (!prefs.customAccent) {
             const icon = document.createElement('i');
             icon.className = 'bi bi-plus-lg';
-            icon.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);';
+            icon.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5); pointer-events:none;';
             customEl.appendChild(icon);
         }
 
