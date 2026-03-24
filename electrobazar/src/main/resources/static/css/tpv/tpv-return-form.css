@@ -52,7 +52,7 @@ body {
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #ffffff;
+    color: var(--text-main);
     margin: 1.2rem 0 0.6rem;
 }
 
@@ -64,7 +64,7 @@ body {
 
 .return-lines-table th {
     text-align: left;
-    color: #ffffff;
+    color: var(--text-main);
     font-weight: 700;
     font-size: 0.8rem;
     border-bottom: 1px solid var(--border);
@@ -99,7 +99,7 @@ body {
 }
 
 .muted-text {
-    color: #ffffff;
+    color: var(--text-muted);
     font-weight: 500;
     font-size: 0.8rem;
 }
@@ -117,7 +117,7 @@ body {
     display: block;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--text-main);
     margin-bottom: 0.35rem;
 }
 
@@ -134,7 +134,8 @@ body {
 }
 
 .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
+    opacity: 0.6;
 }
 
 .form-control:focus {

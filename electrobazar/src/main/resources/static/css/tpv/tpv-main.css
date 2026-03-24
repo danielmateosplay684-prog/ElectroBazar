@@ -553,6 +553,8 @@
             user-select: none;
             position: relative;
             overflow: hidden;
+            /* Estabilización visual: Altura mínima para evitar shifts durante la carga */
+            min-height: 240px;
         }
 
         .product-card::after {
@@ -646,8 +648,12 @@
             color: var(--text-main);
             margin-bottom: 0.35rem;
             line-height: 1.3;
+            /* Altura fija para 2 líneas para evitar layout shifts */
+            height: 2.6em;
             display: -webkit-box;
             -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
             overflow: hidden;
         }
 
