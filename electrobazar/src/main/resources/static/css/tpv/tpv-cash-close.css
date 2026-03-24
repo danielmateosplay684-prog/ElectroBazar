@@ -1,4 +1,4 @@
-﻿        :root {
+        :root {
             /* ─────────────────────────────────────────────────────────────
                Colour tokens are injected by fragments/theme :: themeScript.
                ───────────────────────────────────────────────────────────── */
@@ -102,6 +102,10 @@
             transform: translateY(-2px);
         }
 
+        .stat-box i {
+            display: none;
+        }
+
         .stat-label {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -115,18 +119,53 @@
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-main);
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
+            line-height: inherit;
+        }
+
+        /* Eliminar bordes de color superiores */
+        .stat-box.accent,
+        .stat-box.primary,
+        .stat-box.success,
+        .stat-box.danger,
+        .stat-box.warning {
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-box.accent {
+            border-top: 4px solid var(--accent);
+        }
+
+        .stat-box.primary {
+            border-top: 4px solid #3498db;
+        }
+
+        .stat-box.success {
+            border-top: 4px solid var(--success);
+        }
+
+        .stat-box.danger {
+            border-top: 4px solid var(--danger);
+        }
+
+        .stat-box.warning {
+            border-top: 4px solid #f1c40f;
         }
 
         .stat-value.text-accent {
-            color: var(--accent);
+            color: var(--accent) !important;
         }
 
-        .text-danger-custom {
-            color: var(--danger);
+        .stat-value.text-success {
+            color: var(--success) !important;
         }
 
-        .text-success-custom {
-            color: var(--success);
+        .stat-value.text-danger {
+            color: var(--danger) !important;
+        }
+
+        .stat-value.text-primary {
+            color: #3498db !important;
         }
 
         .input-group-text {
@@ -135,7 +174,8 @@
             color: var(--text-muted) !important;
         }
 
-        .card-title, h6 {
+        .card-title,
+        h6 {
             color: var(--text-main);
             font-weight: 700;
         }
@@ -160,16 +200,15 @@
         }
 
         .retain-body {
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
+            display: none;
             opacity: 0;
+            transition: opacity 0.3s ease;
+            padding-top: 1rem;
         }
 
         .retain-body.open {
-            max-height: 200px;
+            display: block;
             opacity: 1;
-            margin-top: 1rem;
         }
 
         .alert-info-custom {

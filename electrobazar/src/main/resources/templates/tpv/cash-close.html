@@ -33,10 +33,11 @@
         <div class="row g-4">
             <!-- Left Column: Stats and Arqueo Form -->
             <div class="col-lg-8">
-                <!-- Compact Stats Row -->
+                <!-- Compact Stats Row (Modernized Cards) -->
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box accent">
+                            <i class="bi bi-cart-check text-accent"></i>
                             <div class="stat-label">Total de Ventas</div>
                             <div class="stat-value text-accent"
                                 th:text="${#numbers.formatDecimal(totalToday, 1, 2)} + '€'">0.00€</div>
@@ -44,59 +45,65 @@
                     </div>
                     <div class="col-6 col-md-4">
                         <div class="stat-box">
+                            <i class="bi bi-list-ul text-muted"></i>
                             <div class="stat-label">Operaciones</div>
                             <div class="stat-value" th:text="${countToday}">0</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box primary">
+                            <i class="bi bi-credit-card text-primary"></i>
                             <div class="stat-label">Cobros Tarjeta</div>
                             <div class="stat-value text-primary"
                                 th:text="${#numbers.formatDecimal(cardSalesToday, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box danger">
+                            <i class="bi bi-credit-card-2-front text-danger"></i>
                             <div class="stat-label">Tarjeta (Devol.)</div>
                             <div class="stat-value text-danger"
                                 th:text="${#numbers.formatDecimal(cardRefundsToday, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box success">
+                            <i class="bi bi-cash-coin text-success"></i>
                             <div class="stat-label">Efectivo (Ventas)</div>
                             <div class="stat-value text-success"
                                 th:text="${#numbers.formatDecimal(cashSalesToday, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box danger">
+                            <i class="bi bi-arrow-counterclockwise text-danger"></i>
                             <div class="stat-label">Efectivo (Devol.)</div>
                             <div class="stat-value text-danger"
                                 th:text="${#numbers.formatDecimal(cashRefundsToday, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box success">
+                            <i class="bi bi-box-arrow-in-right text-success"></i>
                             <div class="stat-label">Entradas</div>
                             <div class="stat-value text-success"
                                 th:text="${#numbers.formatDecimal(totalEntries ?: 0, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box">
+                        <div class="stat-box danger">
+                            <i class="bi bi-box-arrow-left text-danger"></i>
                             <div class="stat-label">Retiradas</div>
                             <div class="stat-value text-danger"
                                 th:text="${#numbers.formatDecimal(totalWithdrawals ?: 0, 1, 2)} + '€'">0.00€</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
-                        <div class="stat-box"
-                            style="border-left: 4px solid var(--danger); background: rgba(var(--bs-danger-rgb), 0.03);">
-                            <div class="stat-label text-danger">Anuladas (Histórico)</div>
-                            <div class="stat-value text-danger" style="font-size: 1.25rem;">
-                                <span th:text="${cancelledCount}">0</span> <small
-                                    style="font-size: 0.8rem; opacity: 0.7;">ops</small> /
+                        <div class="stat-box warning">
+                            <i class="bi bi-x-circle text-warning"></i>
+                            <div class="stat-label">Anuladas (Histórico)</div>
+                            <div class="stat-value" style="font-size: 1.1rem;">
+                                <span th:text="${cancelledCount}">0</span> ops /
                                 <span th:text="${#numbers.formatDecimal(cancelledTotal, 1, 2)} + '€'">0.00€</span>
                             </div>
                         </div>
