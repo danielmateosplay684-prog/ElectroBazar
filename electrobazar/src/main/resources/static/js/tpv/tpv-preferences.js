@@ -58,13 +58,25 @@
         if (currentAccentIdx >= accentColors.length) currentAccentIdx = 0;
         const currentPrimaryIdx = isDark ? prefs.darkPrimaryIdx : prefs.lightPrimaryIdx;
 
-        const accent = accentColors[currentAccentIdx] || accentColors[isDark ? 7 : 1];
-        let accentValue = accent.value;
-        let accentHover = accent.hover;
-
         const palette = isDark ? darkP : lightP;
         const p = palette[currentPrimaryIdx] || palette[0];
         const root = document.documentElement.style;
+
+        let accentValue, accentHover;
+        if (prefs.customAccent) {
+            accentValue = prefs.customAccent;
+            accentHover = accentValue;
+        } else {
+            const accent = accentColors[currentAccentIdx] || accentColors[isDark ? 7 : 1];
+            accentValue = accent.value;
+            accentHover = accent.hover;
+            if (accent.name === 'Monocromo') {
+                accentValue = isDark ? '#ffffff' : '#000000';
+                accentHover = isDark ? '#e0e0e0' : '#333333';
+                if (isDark && p.primary === '#000000') root.setProperty('--border', '#222222');
+                if (!isDark && p.primary === '#ffffff') root.setProperty('--border', '#e0e0e0');
+            }
+        }
 
         root.setProperty('--primary', p.primary);
         root.setProperty('--secondary', p.secondary);
@@ -88,12 +100,6 @@
             root.setProperty('--text-main', lightFixed.text);
         }
 
-        if (accent.name === 'Monocromo') {
-            accentValue = isDark ? '#ffffff' : '#000000';
-            accentHover = isDark ? '#e0e0e0' : '#333333';
-            if (isDark && p.primary === '#000000') root.setProperty('--border', '#222222');
-            if (!isDark && p.primary === '#ffffff') root.setProperty('--border', '#e0e0e0');
-        }
 
         function hexToRgb(hex) {
             let r = 0, g = 0, b = 0;
@@ -123,6 +129,12 @@
         if (animate) triggerFlash();
         renderSwatches();
         renderFontOptions();
+        
+        // Sync custom picker value if active
+        const customPicker = document.getElementById('customAccentPicker');
+        if (customPicker && prefs.customAccent) {
+            customPicker.value = prefs.customAccent;
+        }
     }
 
     function renderFontOptions() {
@@ -144,19 +156,28 @@
         const isDark = prefs.mode === 'dark';
         const currentAccentIdx = isDark ? prefs.darkAccent : prefs.lightAccent;
 
+        const customPicker = document.getElementById('customAccentPicker');
+        if (customPicker) {
+            // If custom accent is NOT active, we could reset the picker color, 
+            // but usually it's better to keep it as it was if there's no custom color.
+            customPicker.classList.toggle('active', !!prefs.customAccent);
+        }
+
         accentColors.forEach((c, i) => {
             const wrapper = document.createElement('div');
             wrapper.className = 'swatch-wrapper';
             const el = document.createElement('div');
-            el.className = 'swatch' + (currentAccentIdx === i ? ' selected' : '');
+            el.className = 'swatch';
             let swatchColor = c.value;
             if (c.name === 'Monocromo') swatchColor = isDark ? '#ffffff' : '#000000';
             el.style.background = swatchColor;
             el.title = c.name;
             el.addEventListener('click', () => {
+                prefs.customAccent = null; // Clear custom color when predefined is selected
                 if (isDark) prefs.darkAccent = i; else prefs.lightAccent = i;
                 apply(true);
             });
+            if (!prefs.customAccent && currentAccentIdx === i) el.classList.add('selected');
             const label = document.createElement('span');
             label.className = 'swatch-name';
             label.textContent = c.name;
@@ -164,6 +185,37 @@
             wrapper.appendChild(label);
             accentGrid.appendChild(wrapper);
         });
+
+        // ── Render Custom Swatch ──
+        const customWrapper = document.createElement('div');
+        customWrapper.className = 'swatch-wrapper';
+        const customEl = document.createElement('div');
+        customEl.className = 'swatch' + (prefs.customAccent ? ' selected' : '');
+        
+        // Rainbow or current custom color
+        customEl.style.background = prefs.customAccent || 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)';
+        customEl.title = 'Color personalizado';
+        
+        customEl.addEventListener('click', () => {
+            const picker = document.getElementById('customAccentPicker');
+            if (picker) picker.click();
+        });
+        
+        const customLabel = document.createElement('span');
+        customLabel.className = 'swatch-name';
+        customLabel.textContent = 'Custom';
+        
+        // Add a "plus" or "palette" icon if not selected
+        if (!prefs.customAccent) {
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-plus-lg';
+            icon.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);';
+            customEl.appendChild(icon);
+        }
+
+        customWrapper.appendChild(customEl);
+        customWrapper.appendChild(customLabel);
+        accentGrid.appendChild(customWrapper);
 
         const palette = isDark ? darkP : lightP;
         const currentPrimaryIdx = isDark ? prefs.darkPrimaryIdx : prefs.lightPrimaryIdx;
@@ -220,6 +272,20 @@
             apply(true);
         });
     });
+
+    const customPicker = document.getElementById('customAccentPicker');
+    if (customPicker) {
+        if (prefs.customAccent) customPicker.value = prefs.customAccent;
+        
+        customPicker.addEventListener('input', (e) => {
+            prefs.customAccent = e.target.value;
+            apply(false); // Applied live without flash
+        });
+        
+        customPicker.addEventListener('change', () => {
+            localStorage.setItem('tpv-prefs', JSON.stringify(prefs));
+        });
+    }
 
     apply(false);
 })();

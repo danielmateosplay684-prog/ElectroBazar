@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', function () {
         attachNifCifValidator('customerTaxId');
     }
 
+    // Add RE compatibility check listener
+    const adminTariffSelect = document.getElementById('customerTariffId');
+    if (adminTariffSelect) {
+        adminTariffSelect.addEventListener('change', checkCustomerReCompatibility);
+    }
+
     // Restore view from URL if present
     const urlParams = new URLSearchParams(window.location.search);
     const savedView = urlParams.get('view');
@@ -853,12 +859,43 @@ function openCustomerModal(id) {
                 }
 
                 toggleAdminCustomerType();
+                checkCustomerReCompatibility();
             })
             .catch(function () { showToast('Error al cargar el cliente', 'error'); });
     } else {
         toggleAdminCustomerType();
+        checkCustomerReCompatibility();
     }
     customerModal.show();
+}
+
+function checkCustomerReCompatibility() {
+    const tariffSelect = document.getElementById('customerTariffId');
+    const reCheckbox = document.getElementById('customerRecargoEquivalencia');
+    const reSection = document.getElementById('adminCustomerReSection');
+    const reWarning = document.getElementById('adminCustomerReIncompatibleMsg');
+    const reInfo = document.getElementById('adminCustomerReInfoMsg');
+
+    if (!tariffSelect || !reCheckbox) return;
+
+    const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
+    const tariffText = selectedOption ? selectedOption.text.toLowerCase() : "";
+    const isMinorista = (tariffSelect.value === "" || tariffText.includes("minorista"));
+
+    if (isMinorista) {
+        reCheckbox.disabled = false;
+        if (reSection) reSection.style.opacity = "1";
+        if (reWarning) reWarning.classList.add('d-none');
+        if (reInfo) reInfo.classList.remove('d-none');
+    } else {
+        reCheckbox.checked = false;
+        reCheckbox.disabled = true;
+        if (reSection) reSection.style.opacity = "0.7";
+        if (reWarning) {
+            reWarning.classList.remove('d-none');
+        }
+        if (reInfo) reInfo.classList.add('d-none');
+    }
 }
 
 function toggleAdminCustomerType() {
@@ -887,6 +924,9 @@ function toggleAdminCustomerType() {
         reSection.style.display = isCompany ? 'block' : 'none';
         if (!isCompany) {
             document.getElementById('customerRecargoEquivalencia').checked = false;
+        } else {
+            // Re-check compatibility if section becomes visible
+            checkCustomerReCompatibility();
         }
     }
 }
@@ -922,6 +962,19 @@ function saveCustomer() {
     if (taxInput && taxInput.dataset.invalidNif === 'true') {
         showToast('Por favor, introduce un NIF/CIF válido antes de continuar.', 'error');
         return;
+    }
+
+    // Double check RE compatibility before saving
+    if (body.hasRecargoEquivalencia) {
+        const tariffSelect = document.getElementById('customerTariffId');
+        const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
+        const tariffText = selectedOption ? selectedOption.text.toLowerCase() : "";
+        const isMinorista = (tariffSelect.value === "" || tariffText.includes("minorista"));
+        
+        if (!isMinorista) {
+            showToast('No es posible aplicar el recargo de equivalencia a esta tarifa', 'error');
+            return;
+        }
     }
 
     const method = id ? 'PUT' : 'POST';
@@ -1124,18 +1177,18 @@ function openSchedulePriceModal() {
 const spProductSelect = document.getElementById('spProductSelect');
 if (spProductSelect) {
     spProductSelect.addEventListener('change', function () {
-    var productId = this.value;
-    if (productId) {
-        fetch('/api/products/' + productId)
-            .then(function (r) { return r.json(); })
-            .then(function (p) {
-                if (p.taxRate && p.taxRate.vatRate) {
-                    document.getElementById('spVatRate').value = String(p.taxRate.vatRate);
-                    updateRecargoPreview();
-                }
-            })
-            .catch(function () { });
-    }
+        var productId = this.value;
+        if (productId) {
+            fetch('/api/products/' + productId)
+                .then(function (r) { return r.json(); })
+                .then(function (p) {
+                    if (p.taxRate && p.taxRate.vatRate) {
+                        document.getElementById('spVatRate').value = String(p.taxRate.vatRate);
+                        updateRecargoPreview();
+                    }
+                })
+                .catch(function () { });
+        }
     });
 }
 
@@ -2149,7 +2202,7 @@ function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const btn = event.currentTarget;
     const icon = btn.querySelector('i');
-    
+
     if (input.type === 'password') {
         input.type = 'text';
         icon.classList.remove('bi-eye');
@@ -2167,11 +2220,11 @@ function togglePassword(inputId) {
 function filterTariffComparison() {
     const query = document.getElementById('tariffComparisonSearch').value.toLowerCase();
     const rows = document.querySelectorAll('.comparison-row');
-    
+
     rows.forEach(row => {
         const productName = row.querySelector('td:first-child .fw-bold').textContent.toLowerCase();
         const categoryName = row.querySelector('td:first-child small').textContent.toLowerCase();
-        
+
         if (productName.includes(query) || categoryName.includes(query)) {
             row.style.display = '';
         } else {

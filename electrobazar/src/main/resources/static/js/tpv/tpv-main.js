@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('newCustomerTaxId');
     }
+    
+    // Add RE compatibility listener for TPV quick customer form
+    const tpvTariffSelect = document.getElementById('newCustomerTariffId');
+    if (tpvTariffSelect) {
+        tpvTariffSelect.addEventListener('change', checkNewCustomerReCompatibility);
+    }
+
     setTimeout(updateStockBubbles, 50); // Small delay to ensure all elements are rendered
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
@@ -40,15 +47,15 @@ function addToTicket(card) {
     }
 
     fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(priceData) {
+        .then(function (r) { return r.json(); })
+        .then(function (priceData) {
             if (ticket[id]) {
                 ticket[id].price = parseFloat(priceData.price);
                 ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
             }
             renderTicket();
         })
-        .catch(function(err) {
+        .catch(function (err) {
             console.error('Error fetching tariff price', err);
             renderTicket(); // fallback to base price from card
         });
@@ -129,7 +136,7 @@ function updateStockBubbles() {
         if (badge) {
             var oldVal = parseInt(badge.textContent) || 0;
             badge.textContent = available;
-            
+
             // Update color states
             badge.classList.remove('stock-danger', 'stock-warning', 'stock-neutral');
             if (available <= 0) {
@@ -139,11 +146,11 @@ function updateStockBubbles() {
             } else {
                 badge.classList.add('stock-neutral');
             }
-            
+
             // Add a little pop animation when stock value actually changes
             if (oldVal !== available) {
                 badge.style.transform = 'scale(1.3)';
-                setTimeout(function() { badge.style.transform = 'scale(1)'; }, 150);
+                setTimeout(function () { badge.style.transform = 'scale(1)'; }, 150);
             }
         }
     });
@@ -222,7 +229,7 @@ function renderTicket() {
     var reAmountEl = document.getElementById('reAmount');
     if (window.currentHasRE) {
         var totalRe = 0;
-        ids.forEach(function(id) {
+        ids.forEach(function (id) {
             var item = ticket[id];
             if (item.priceWithRe && item.price) {
                 totalRe += (item.priceWithRe - item.price) * item.quantity;
@@ -293,7 +300,7 @@ function openCustomerModal() {
     var customerId = document.getElementById('customerIdInput').value;
     var summaryWith = document.getElementById('summaryWithCustomer');
     var summaryNo = document.getElementById('summaryNoCustomer');
-    
+
     if (customerId) {
         document.getElementById('checkoutCustomerName').textContent = document.getElementById('sidebarCustomerName').textContent;
         document.getElementById('checkoutCustomerTaxId').textContent = document.getElementById('sidebarCustomerTaxId').textContent;
@@ -350,6 +357,32 @@ function setExactAmount() {
 
 
 
+function checkNewCustomerReCompatibility() {
+    const tariffSelect = document.getElementById('newCustomerTariffId');
+    const reCheckbox = document.getElementById('newCustomerHasRecargo');
+    const reSection = document.getElementById('newCustomerReSection');
+    const reWarning = document.getElementById('newCustomerReIncompatibleMsg');
+
+    if (!tariffSelect || !reCheckbox) return;
+
+    const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
+    const tariffText = selectedOption ? selectedOption.text.toLowerCase() : "";
+    const isMinorista = (tariffSelect.value === "" || tariffText.includes("minorista"));
+
+    if (isMinorista) {
+        reCheckbox.disabled = false;
+        if (reSection) reSection.style.opacity = "1";
+        if (reWarning) reWarning.classList.add('d-none');
+    } else {
+        reCheckbox.checked = false;
+        reCheckbox.disabled = true;
+        if (reSection) reSection.style.opacity = "0.7";
+        if (reWarning) {
+            reWarning.classList.remove('d-none');
+        }
+    }
+}
+
 function toggleCustomerType() {
     var isCompany = document.getElementById('typeCompany').checked;
     var nameLabel = document.getElementById('lblCustomerName');
@@ -376,6 +409,9 @@ function toggleCustomerType() {
         reSection.style.display = isCompany ? 'block' : 'none';
         if (!isCompany) {
             document.getElementById('newCustomerHasRecargo').checked = false;
+        } else {
+            // Check compatibility if section becomes visible
+            checkNewCustomerReCompatibility();
         }
     }
 }
@@ -542,7 +578,7 @@ function renderProducts(products) {
         var initialStock = parseInt(product.stock) || 0;
         var inTicket = ticket[product.id] ? ticket[product.id].quantity : 0;
         var available = initialStock - inTicket;
-        
+
         var badgeClass = 'stock-neutral';
         if (available <= 0) badgeClass = 'stock-danger';
         else if (available < 5) badgeClass = 'stock-warning';
@@ -553,8 +589,8 @@ function renderProducts(products) {
             ' data-price="' + product.price + '"' +
             ' data-category="' + catName + '"' +
             ' data-stock="' + (product.stock || 0) + '">' +
-            ' <div class="product-image-container">' + 
-            imgHtml + 
+            ' <div class="product-image-container">' +
+            imgHtml +
             ' <span class="stock-badge ' + badgeClass + '">' + available + '</span>' +
             ' </div>' +
             ' <div class="product-info">' +
@@ -825,13 +861,13 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
         return;
     }
 
-    var promises = productIds.map(function(id) {
+    var promises = productIds.map(function (id) {
         var url = '/tpv/api/products/' + id + '/price';
         if (tariffId) url += '?tariffId=' + tariffId;
-        
+
         return fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(priceData) {
+            .then(function (r) { return r.json(); })
+            .then(function (priceData) {
                 if (ticket[id]) {
                     ticket[id].price = parseFloat(priceData.price);
                     ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
@@ -839,26 +875,26 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
             });
     });
 
-    Promise.all(promises).then(function() {
+    Promise.all(promises).then(function () {
         // discountPct=0: prices are already final, renderTicket must not re-discount
         applyTariffById(tariffId, 0, tariffName);
         var badge = document.getElementById('sidebarTariffBadge');
         if (badge) {
             badge.textContent = tariffName + (discountPct > 0 ? ' -' + discountPct + '%' : '');
             badge.style.display = 'inline-block';
-            
+
             // Apply subtle colors
             badge.className = 'badge-tariff-small'; // Reset to base classes
-            
+
             // If the tariff object has a custom color, use it!
             // We need to pass the color to this function or get it from global scope
             // For now, let's assume we can find it in the current customer if we are here
             if (window.currentTariffColor) {
-               badge.style.backgroundColor = window.currentTariffColor + '15';
-               badge.style.color = window.currentTariffColor;
-               badge.style.borderColor = window.currentTariffColor + '30';
-               badge.style.borderStyle = 'solid';
-               badge.style.borderWidth = '1px';
+                badge.style.backgroundColor = window.currentTariffColor + '15';
+                badge.style.color = window.currentTariffColor;
+                badge.style.borderColor = window.currentTariffColor + '30';
+                badge.style.borderStyle = 'solid';
+                badge.style.borderWidth = '1px';
             } else {
                 badge.style.backgroundColor = '';
                 badge.style.color = '';
@@ -875,7 +911,7 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
                 }
             }
         }
-    }).catch(function(err) {
+    }).catch(function (err) {
         console.error('Error updating ticket prices', err);
         applyTariffById(tariffId, 0, tariffName);
     });
@@ -894,10 +930,10 @@ function resetTicketPrices() {
         return;
     }
 
-    var promises = productIds.map(function(id) {
+    var promises = productIds.map(function (id) {
         return fetch('/tpv/api/products/' + id + '/price') // endpoint returns base price if no tariffId
-            .then(function(r) { return r.json(); })
-            .then(function(priceData) {
+            .then(function (r) { return r.json(); })
+            .then(function (priceData) {
                 if (ticket[id]) {
                     ticket[id].price = parseFloat(priceData.price);
                     ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
@@ -905,9 +941,9 @@ function resetTicketPrices() {
             });
     });
 
-    Promise.all(promises).then(function() {
+    Promise.all(promises).then(function () {
         resetTariffToDefault();
-    }).catch(function(err) {
+    }).catch(function (err) {
         console.error('Error resetting ticket prices', err);
         resetTariffToDefault();
     });
@@ -926,7 +962,8 @@ function openFullCustomerModal() {
     document.getElementById('newCustomerActive').checked = true;
     document.getElementById('typeIndividual').checked = true;
     toggleCustomerType();
-    
+    checkNewCustomerReCompatibility();
+
     var modal = new bootstrap.Modal(document.getElementById('fullCustomerModal'));
     modal.show();
 }
@@ -947,6 +984,19 @@ function createNewCustomerAjax() {
     if (!name) { showToast('El nombre es obligatorio', 'warning'); return; }
     if (!taxId) { showToast('El NIF/NIE es obligatorio', 'warning'); return; }
 
+    // Double check RE compatibility before saving
+    if (hasRecargo) {
+        const tariffSelect = document.getElementById('newCustomerTariffId');
+        const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
+        const tariffText = selectedOption ? selectedOption.text.toLowerCase() : "";
+        const isMinorista = (tariffSelect.value === "" || tariffText.includes("minorista"));
+        
+        if (!isMinorista) {
+            showToast('No es posible aplicar el recargo de equivalencia a esta tarifa', 'warning');
+            return;
+        }
+    }
+
     var newCustomer = {
         name: name, taxId: taxId, address: address, city: city,
         postalCode: postalCode, email: email, phone: phone,
@@ -959,19 +1009,19 @@ function createNewCustomerAjax() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCustomer)
     })
-    .then(function (response) {
-        if (!response.ok) throw new Error('Error al crear el cliente');
-        return response.json();
-    })
-    .then(function (savedCustomer) {
-        bootstrap.Modal.getInstance(document.getElementById('fullCustomerModal')).hide();
-        selectCustomer(savedCustomer);
-        showToast('Cliente creado y seleccionado', 'success');
-    })
-    .catch(function (err) {
-        console.error(err);
-        showToast('Error al crear el cliente', 'warning');
-    });
+        .then(function (response) {
+            if (!response.ok) throw new Error('Error al crear el cliente');
+            return response.json();
+        })
+        .then(function (savedCustomer) {
+            bootstrap.Modal.getInstance(document.getElementById('fullCustomerModal')).hide();
+            selectCustomer(savedCustomer);
+            showToast('Cliente creado y seleccionado', 'success');
+        })
+        .catch(function (err) {
+            console.error(err);
+            showToast('Error al crear el cliente', 'warning');
+        });
 }
 
 // Cerrar resultados al hacer click fuera
@@ -1438,13 +1488,13 @@ function initOfflineDB() {
         return;
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = function(e) {
+    request.onupgradeneeded = function (e) {
         let db = e.target.result;
         if (!db.objectStoreNames.contains('pending_sales')) {
             db.createObjectStore('pending_sales', { keyPath: 'id', autoIncrement: true });
         }
     };
-    request.onsuccess = function(e) {
+    request.onsuccess = function (e) {
         db = e.target.result;
         console.log('IndexedDB initialized');
         if (navigator.onLine) syncOfflineSales();
@@ -1476,16 +1526,16 @@ function saveOfflineSale(sale) {
     }
     const transaction = db.transaction(['pending_sales'], 'readwrite');
     const store = transaction.objectStore('pending_sales');
-    const request = store.add({...sale, createdAt: new Date().toISOString()});
+    const request = store.add({ ...sale, createdAt: new Date().toISOString() });
 
-    transaction.oncomplete = function() {
+    transaction.oncomplete = function () {
         showToast("Venta guardada localmente (Modo Offline)", 'success');
         clearTicket();
         if (typeof invoiceModalInstance !== 'undefined' && invoiceModalInstance) {
             invoiceModalInstance.hide();
         }
     };
-    transaction.onerror = function() {
+    transaction.onerror = function () {
         showToast("Error al guardar la venta localmente", 'warning');
     };
 }
@@ -1498,7 +1548,7 @@ function syncOfflineSales() {
         const store = transaction.objectStore('pending_sales');
         const request = store.getAll();
 
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             const sales = request.result;
             if (sales.length === 0) return;
 
@@ -1516,13 +1566,13 @@ function processSyncQueue(sales) {
         return;
     }
     const sale = sales[0];
-    
+
     const formData = new URLSearchParams();
     formData.append('paymentMethod', sale.paymentMethod);
     if (sale.customerId) formData.append('customerId', sale.customerId);
     if (sale.receivedAmount) formData.append('receivedAmount', sale.receivedAmount);
     formData.append('requestInvoice', sale.requestInvoice);
-    
+
     sale.lines.forEach(line => {
         formData.append('productIds', line.productId);
         formData.append('quantities', line.quantity);
@@ -1534,27 +1584,27 @@ function processSyncQueue(sales) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
     })
-    .then(r => {
-        if (r.ok || r.status === 400) { 
-            // 400 usually means business logic error (like out of stock now), 
-            // but we remove it from queue to avoid blockages OR move to a "dead-letter" store
-            const delTx = db.transaction(['pending_sales'], 'readwrite');
-            delTx.objectStore('pending_sales').delete(sale.id);
-            delTx.oncomplete = () => {
-                processSyncQueue(sales.slice(1));
-            };
-        }
-    })
-    .catch(err => {
-        console.error('Network error during sync', err);
-    });
+        .then(r => {
+            if (r.ok || r.status === 400) {
+                // 400 usually means business logic error (like out of stock now), 
+                // but we remove it from queue to avoid blockages OR move to a "dead-letter" store
+                const delTx = db.transaction(['pending_sales'], 'readwrite');
+                delTx.objectStore('pending_sales').delete(sale.id);
+                delTx.oncomplete = () => {
+                    processSyncQueue(sales.slice(1));
+                };
+            }
+        })
+        .catch(err => {
+            console.error('Network error during sync', err);
+        });
 }
 
 window.addEventListener('online', updateConnectivityUI);
 window.addEventListener('offline', updateConnectivityUI);
 
 // Initialization
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initOfflineDB();
     updateConnectivityUI();
 

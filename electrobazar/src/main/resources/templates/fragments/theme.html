@@ -86,6 +86,7 @@
 
                 const appName = /*[[${companySettings.appName}]]*/ 'ElectroBazar';
 
+                const rs = document.documentElement.style;
                 const isDark = prefs.mode === 'dark';
                 let currentAccentIdx = isDark ? prefs.darkAccent : prefs.lightAccent;
                 if (currentAccentIdx >= accentColors.length) currentAccentIdx = 0;
@@ -97,12 +98,19 @@
 
                 let accentValue = accent.value;
                 let accentHover = accent.hover;
-                if (currentAccentIdx === 0) {
+                let accentBase = accentValue;
+
+                // Handle custom accent color override
+                if (prefs.customAccent) {
+                    accentValue = prefs.customAccent;
+                    accentBase = accentValue;
+                    // Simple darken for hover: reduce components by 10%
+                    const c = hexToRgb(accentValue).split(',').map(v => Math.max(0, Math.floor(parseInt(v) * 0.9)));
+                    accentHover = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+                } else if (currentAccentIdx === 0) {
                     accentValue = isDark ? '#ffffff' : '#000000';
                     accentHover = isDark ? '#e0e0e0' : '#333333';
                 }
-
-                const rs = document.documentElement.style;
                 rs.setProperty('--primary', p.primary);
                 rs.setProperty('--secondary', p.secondary);
                 rs.setProperty('--surface', p.surface);
@@ -126,7 +134,13 @@
                 }
                 rs.setProperty('--accent', accentValue);
                 rs.setProperty('--accent-hover', accentHover);
-                rs.setProperty('--accent-rgb', hexToRgb(accentValue));
+                const rgb = hexToRgb(accentBase);
+                rs.setProperty('--accent-rgb', rgb);
+                
+                // Extra variants for better UI consistency
+                rs.setProperty('--accent-10', `rgba(${rgb}, 0.1)`);
+                rs.setProperty('--accent-20', `rgba(${rgb}, 0.2)`);
+                rs.setProperty('--accent-50', `rgba(${rgb}, 0.5)`);
 
                 // ── Logo / favicon swap ─────────────────────────────────────
                 let logoFile = isDark ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
@@ -157,11 +171,23 @@
                     const primaryIdx2 = isDark2 ? p2.darkPrimaryIdx : p2.lightPrimaryIdx;
                     const palette2 = isDark2 ? darkP : lightP;
                     const pal2 = palette2[primaryIdx2] || palette2[0];
-                    let accentVal2 = accentColors[accentIdx2] ? accentColors[accentIdx2].value : accentColors[0].value;
-                    let accentHov2 = accentColors[accentIdx2] ? accentColors[accentIdx2].hover : accentColors[0].hover;
-                    if (accentIdx2 === 0) {
-                        accentVal2 = isDark2 ? '#ffffff' : '#000000';
-                        accentHov2 = isDark2 ? '#e0e0e0' : '#333333';
+                    let accentVal2, accentHov2, accentBase2;
+                    
+                    if (p2.customAccent) {
+                        accentVal2 = p2.customAccent;
+                        accentBase2 = accentVal2;
+                        const c = hexToRgb(accentVal2).split(',').map(v => Math.max(0, Math.floor(parseInt(v) * 0.9)));
+                        accentHov2 = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+                    } else {
+                        const selAcc = accentColors[accentIdx2] || accentColors[0];
+                        accentVal2 = selAcc.value;
+                        accentHov2 = selAcc.hover;
+                        accentBase2 = accentVal2;
+                        if (accentIdx2 === 0) {
+                            accentVal2 = isDark2 ? '#ffffff' : '#000000';
+                            accentHov2 = isDark2 ? '#e0e0e0' : '#333333';
+                            accentBase2 = accentVal2;
+                        }
                     }
                     const rs2 = document.documentElement.style;
                     rs2.setProperty('--primary', pal2.primary);
@@ -189,7 +215,12 @@
                     }
                     rs2.setProperty('--accent', accentVal2);
                     rs2.setProperty('--accent-hover', accentHov2);
-                    rs2.setProperty('--accent-rgb', hexToRgb(accentVal2));
+                    const rgb2 = hexToRgb(accentBase2);
+                    rs2.setProperty('--accent-rgb', rgb2);
+
+                    rs2.setProperty('--accent-10', `rgba(${rgb2}, 0.1)`);
+                    rs2.setProperty('--accent-20', `rgba(${rgb2}, 0.2)`);
+                    rs2.setProperty('--accent-50', `rgba(${rgb2}, 0.5)`);
                     const logoFile2 = isDark2 ? '/icons/favicon.svg' : '/icons/favicon-light.svg';
                     document.querySelectorAll('img[alt="Logo"], img[alt="Logo ' + appName + '"]')
                         .forEach(function (img) { img.src = logoFile2; });

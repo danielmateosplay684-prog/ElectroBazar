@@ -12,7 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap"
         rel="stylesheet">
     <th:block th:replace="~{fragments/theme :: themeScript}" />
-    <link rel="stylesheet" th:href="@{/css/tpv/tpv-main.css}">
+    <link rel="stylesheet" th:href="@{/css/tpv/tpv-main.css(v=2.2)}">
 </head>
 
 <body>
@@ -465,11 +465,16 @@
                             <small style="color: var(--text-muted);">La tarifa define el descuento automático cuando este cliente se añade a una venta.</small>
                         </div>
                         <div class="col-12 mt-3" id="newCustomerReSection" style="display: none;">
-                            <div class="form-check form-switch p-3 rounded" style="border: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.05);">
-                                <input class="form-check-input ms-0 me-2" type="checkbox" id="newCustomerHasRecargo">
-                                <label class="form-check-label fw-bold" for="newCustomerHasRecargo">
-                                    <i class="bi bi-percent me-1 text-accent"></i> Sujeto a Recargo de Equivalencia (RE)
-                                </label>
+                            <div class="p-3 rounded" style="border: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.05);">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="newCustomerHasRecargo">
+                                    <label class="form-check-label fw-bold" for="newCustomerHasRecargo">
+                                        <i class="bi bi-percent me-1 text-accent"></i> Sujeto a Recargo de Equivalencia (RE)
+                                    </label>
+                                </div>
+                                <small id="newCustomerReIncompatibleMsg" class="d-none mt-2 ms-4 fw-bold" style="font-size: 0.8rem; color: #ef4444;">
+                                    El recargo de equivalencia solo aplica a clientes con tarifa minorista
+                                </small>
                             </div>
                         </div>
                         <div class="col-12 mt-2">
