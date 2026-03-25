@@ -29,6 +29,12 @@ public class CouponRestController {
                         response.put("discountType", coupon.getDiscountType());
                         response.put("discountValue", coupon.getDiscountValue());
                         response.put("description", coupon.getDescription());
+                        response.put("restrictedProductIds", coupon.getRestrictedProducts().stream()
+                                .map(com.proconsi.electrobazar.model.Product::getId)
+                                .collect(java.util.stream.Collectors.toList()));
+                        response.put("restrictedCategoryIds", coupon.getRestrictedCategories().stream()
+                                .map(com.proconsi.electrobazar.model.Category::getId)
+                                .collect(java.util.stream.Collectors.toList()));
                         return ResponseEntity.ok(response);
                     } else {
                         return ResponseEntity.badRequest().body(Map.of("valid", false, "error", "El cupón ha expirado o ya no es válido."));

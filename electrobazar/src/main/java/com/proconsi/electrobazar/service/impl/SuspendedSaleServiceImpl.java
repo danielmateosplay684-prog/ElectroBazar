@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,11 +47,20 @@ public class SuspendedSaleServiceImpl implements SuspendedSaleService {
                 .build();
 
         for (SuspendedSaleLineRequest req : lineRequests) {
-            Product product = productService.findById(req.getProductId());
+            Long pid = req.getProductId();
+            Product product = (pid != null && pid > 0) ? productService.findById(pid) : null;
+            
+            BigDecimal vat = req.getVatRate();
+            if (vat == null && product != null && product.getTaxRate() != null) {
+                vat = product.getTaxRate().getVatRate();
+            }
+
             SuspendedSaleLine line = SuspendedSaleLine.builder()
                     .product(product)
+                    .productName(req.getProductName() != null ? req.getProductName() : (product != null ? product.getName() : "Producto Comodín"))
                     .quantity(req.getQuantity())
-                    .unitPrice(req.getUnitPrice() != null ? req.getUnitPrice() : product.getPrice())
+                    .unitPrice(req.getUnitPrice() != null ? req.getUnitPrice() : (product != null ? product.getPrice() : BigDecimal.ZERO))
+                    .vatRate(vat)
                     .build();
             sale.addLine(line);
         }

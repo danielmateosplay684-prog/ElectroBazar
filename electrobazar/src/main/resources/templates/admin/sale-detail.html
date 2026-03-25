@@ -267,7 +267,7 @@
                 <tbody>
                     <tr th:each="line : ${sale.lines}">
                         <td>
-                            <div class="fw-bold text-main" th:text="${line.product.name}"></div>
+                            <div class="fw-bold text-main" th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}"></div>
                             <div th:if="${line.discountPercentage > 0}" class="small text-success">
                                 <i class="bi bi-tag-fill me-1"></i>
                                 <span th:text="${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '% Dto.'"></span>

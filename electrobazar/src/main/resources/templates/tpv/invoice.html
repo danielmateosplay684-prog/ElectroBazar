@@ -404,7 +404,7 @@
                 <th:block th:each="line, lineStat : ${sale.lines}">
                     <!-- Main Product Line (shows original price and subtotal before discount) -->
                     <tr>
-                        <td class="name" th:text="${line.product.name}">Producto</td>
+                        <td class="name" th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</td>
                         <td class="r"
                             th:text="${#numbers.formatDecimal(taxBreakdowns[lineStat.index].unitPrice, 1, 2)} + ' &euro;'">
                             0.00 &euro;</td>

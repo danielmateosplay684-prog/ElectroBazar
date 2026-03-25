@@ -52,7 +52,7 @@
             <!-- Items -->
             <div class="t-items">
                 <div th:each="line : ${sale.lines}" class="t-item">
-                    <span class="t-item-name" th:text="${line.product.name}">Producto</span>
+                    <span class="t-item-name" th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</span>
                     <span class="t-item-unit">
                         <!-- If discounted: show strikethrough original + discounted price -->
                         <span th:if="${line.discountPercentage != null and line.discountPercentage > 0}"

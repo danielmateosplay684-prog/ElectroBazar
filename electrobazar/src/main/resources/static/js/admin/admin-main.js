@@ -2250,11 +2250,159 @@ function filterTariffComparison() {
 }
 
 // -- Coupon Management --------------------------------------------------------
+var _couponProductsCache = null;
+var _couponCategoriesCache = null;
+var _selectedCouponProducts = [];
+var _selectedCouponCategories = [];
+
+function searchCouponProducts(query, initial = false) {
+    const resultsDiv = document.getElementById('couponProductSearchResults');
+    if (!resultsDiv) return;
+
+    if (!_couponProductsCache) {
+        fetch('/api/products/selection-list').then(r => r.json()).then(data => {
+            _couponProductsCache = data;
+            searchCouponProducts(query, initial);
+        });
+        return;
+    }
+
+    let filtered = _couponProductsCache;
+    if (query && query.length >= 1) {
+        const q = query.toLowerCase();
+        filtered = _couponProductsCache.filter(p => 
+            p.name.toLowerCase().includes(q) || 
+            (p.categoryName && p.categoryName.toLowerCase().includes(q))
+        );
+    }
+
+    if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    resultsDiv.innerHTML = filtered.slice(0, 100).map(p => `
+        <button type="button" class="list-group-item list-group-item-action py-2" 
+            onclick="addCouponProduct(${p.id}, '${escHtml(p.name)}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <span style="color:var(--text-main); font-size: 0.82rem; font-weight: 500;">${escHtml(p.name)}</span>
+                <small class="text-muted" style="font-size: 0.65rem;">${escHtml(p.categoryName || '')} • ${(p.price || 0).toFixed(2)}€</small>
+            </div>
+        </button>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function searchCouponCategories(query, initial = false) {
+    const resultsDiv = document.getElementById('couponCategorySearchResults');
+    if (!resultsDiv) return;
+
+    if (!_couponCategoriesCache) {
+        fetch('/api/categories').then(r => r.json()).then(data => {
+            _couponCategoriesCache = data;
+            searchCouponCategories(query, initial);
+        });
+        return;
+    }
+
+    let filtered = _couponCategoriesCache;
+    if (query && query.length >= 1) {
+        const q = query.toLowerCase();
+        filtered = _couponCategoriesCache.filter(c => c.name.toLowerCase().includes(q));
+    }
+
+    if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    resultsDiv.innerHTML = filtered.map(c => `
+        <button type="button" class="list-group-item list-group-item-action py-2" 
+            onclick="addCouponCategory(${c.id}, '${escHtml(c.name)}')">
+            <div class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-tag me-2 text-accent"></i><span style="color:var(--text-main); font-size: 0.85rem;">${escHtml(c.name)}</span></span>
+                <small class="text-muted" style="font-size: 0.7rem;">ID: ${c.id}</small>
+            </div>
+        </button>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function addCouponProduct(id, name) {
+    if (_selectedCouponProducts.some(p => p.id === id)) {
+        document.getElementById('couponProductSearchResults').style.display = 'none';
+        document.getElementById('couponProductSearch').value = '';
+        return;
+    }
+    _selectedCouponProducts.push({ id, name });
+    renderSelectedCouponProducts();
+    document.getElementById('couponProductSearchResults').style.display = 'none';
+    document.getElementById('couponProductSearch').value = '';
+}
+
+function addCouponCategory(id, name) {
+    if (_selectedCouponCategories.some(c => c.id === id)) {
+        document.getElementById('couponCategorySearchResults').style.display = 'none';
+        document.getElementById('couponCategorySearch').value = '';
+        return;
+    }
+    _selectedCouponCategories.push({ id, name });
+    renderSelectedCouponCategories();
+    document.getElementById('couponCategorySearchResults').style.display = 'none';
+    document.getElementById('couponCategorySearch').value = '';
+}
+
+function removeCouponProduct(id) {
+    _selectedCouponProducts = _selectedCouponProducts.filter(p => p.id !== id);
+    renderSelectedCouponProducts();
+}
+
+function removeCouponCategory(id) {
+    _selectedCouponCategories = _selectedCouponCategories.filter(c => c.id !== id);
+    renderSelectedCouponCategories();
+}
+
+function renderSelectedCouponProducts() {
+    const container = document.getElementById('selectedCouponProducts');
+    if (!container) return;
+    container.innerHTML = _selectedCouponProducts.map(p => `
+        <div class="badge d-flex align-items-center gap-2 p-2" 
+            style="background: rgba(var(--accent-rgb), 0.1); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-weight: 500;">
+            <span>${escHtml(p.name)}</span>
+            <i class="bi bi-x-lg cursor-pointer" onclick="removeCouponProduct(${p.id})" style="font-size: 0.7rem; opacity: 0.8;"></i>
+        </div>
+    `).join('');
+}
+
+function renderSelectedCouponCategories() {
+    const container = document.getElementById('selectedCouponCategories');
+    if (!container) return;
+    container.innerHTML = _selectedCouponCategories.map(c => `
+        <div class="badge d-flex align-items-center gap-2 p-2" 
+            style="background: rgba(var(--primary-rgb), 0.1); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: 500;">
+            <i class="bi bi-tag-fill me-1" style="color: var(--accent);"></i>
+            <span>${escHtml(c.name)}</span>
+            <i class="bi bi-x-lg cursor-pointer" onclick="removeCouponCategory(${c.id})" style="font-size: 0.7rem; opacity: 0.8;"></i>
+        </div>
+    `).join('');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('mousedown', function(e) {
+    const pResults = document.getElementById('couponProductSearchResults');
+    if (pResults && !pResults.contains(e.target) && e.target.id !== 'couponProductSearch') {
+        pResults.style.display = 'none';
+    }
+    const cResults = document.getElementById('couponCategorySearchResults');
+    if (cResults && !cResults.contains(e.target) && e.target.id !== 'couponCategorySearch') {
+        cResults.style.display = 'none';
+    }
+});
 
 function openCouponModal(btn) {
     // Reset form
     const couponIdField = document.getElementById('couponId');
-    if (!couponIdField) return; // Guard against script running on wrong page or partial load
+    if (!couponIdField) return;
 
     couponIdField.value = '';
     document.getElementById('couponCode').value = '';
@@ -2266,9 +2414,18 @@ function openCouponModal(btn) {
     document.getElementById('couponGeneric').checked = true;
     document.getElementById('couponFrom').value = '';
     document.getElementById('couponUntil').value = '';
+    
+    // Reset restrictions
+    _selectedCouponProducts = [];
+    _selectedCouponCategories = [];
+    renderSelectedCouponProducts();
+    renderSelectedCouponCategories();
+    if (document.getElementById('couponProductSearchResults')) document.getElementById('couponProductSearchResults').style.display = 'none';
+    if (document.getElementById('couponCategorySearchResults')) document.getElementById('couponCategorySearchResults').style.display = 'none';
 
     if (btn) {
-        document.getElementById('couponId').value = btn.dataset.id;
+        const id = btn.dataset.id;
+        document.getElementById('couponId').value = id;
         document.getElementById('couponCode').value = btn.dataset.code;
         document.getElementById('couponDesc').value = btn.dataset.desc;
         document.getElementById('couponType').value = btn.dataset.type;
@@ -2278,41 +2435,67 @@ function openCouponModal(btn) {
         document.getElementById('couponGeneric').checked = btn.dataset.generic === 'true';
         if (btn.dataset.from) document.getElementById('couponFrom').value = btn.dataset.from.substring(0, 16);
         if (btn.dataset.until) document.getElementById('couponUntil').value = btn.dataset.until.substring(0, 16);
+        
+        // Load restrictions from API
+        fetch('/api/coupons/' + id)
+            .then(r => r.json())
+            .then(coupon => {
+                if (coupon.restrictedProducts) {
+                    _selectedCouponProducts = coupon.restrictedProducts.map(p => ({ id: p.id, name: p.nameEs || p.name }));
+                    renderSelectedCouponProducts();
+                }
+                if (coupon.restrictedCategories) {
+                    _selectedCouponCategories = coupon.restrictedCategories.map(c => ({ id: c.id, name: c.name }));
+                    renderSelectedCouponCategories();
+                }
+            }).catch(e => console.error("Error loading coupon details", e));
     }
     
     if (couponModal) couponModal.show();
 }
 
 function saveCoupon() {
-    const id = document.getElementById('couponId').value;
+    const idField = document.getElementById('couponId');
+    const id = idField ? idField.value : '';
+    const code = document.getElementById('couponCode').value.trim().toUpperCase();
+    const valueStr = document.getElementById('couponValue').value;
+    
+    if (!code) { showToast('El código es obligatorio', 'error'); return; }
+    if (!valueStr || isNaN(parseFloat(valueStr))) { showToast('El valor del descuento no es válido', 'error'); return; }
+
     const body = {
         id: id ? parseInt(id) : null,
-        code: document.getElementById('couponCode').value.trim().toUpperCase(),
+        code: code,
         description: document.getElementById('couponDesc').value.trim(),
         discountType: document.getElementById('couponType').value,
-        discountValue: parseFloat(document.getElementById('couponValue').value),
+        discountValue: parseFloat(valueStr),
         usageLimit: document.getElementById('couponLimit').value ? parseInt(document.getElementById('couponLimit').value) : null,
         active: document.getElementById('couponActive').checked,
         generic: document.getElementById('couponGeneric').checked,
         validFrom: document.getElementById('couponFrom').value || null,
-        validUntil: document.getElementById('couponUntil').value || null
+        validUntil: document.getElementById('couponUntil').value || null,
+        restrictedProducts: _selectedCouponProducts.map(p => ({ id: p.id })),
+        restrictedCategories: _selectedCouponCategories.map(c => ({ id: c.id }))
     };
-
-    if (!body.code) { showToast('El código es obligatorio', 'error'); return; }
 
     fetch('/api/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-    }).then(r => {
+    }).then(async r => {
         if (r.ok) {
             if (couponModal) couponModal.hide();
             showToast(id ? 'Cupón actualizado' : 'Cupón creado');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('Error al guardar el cupón', 'error');
+            const data = await r.json().catch(() => ({}));
+            const msg = data.error || data.message || 'Error al guardar el cupón';
+            showToast(msg, 'error');
         }
-    }).catch(() => showToast('Error de red', 'error'));
+    }).catch(err => {
+        console.error("Coupon save error:", err);
+        showToast('Error de red al conectar con el servidor', 'error');
+    });
 }
 
 function deleteCoupon(id) {

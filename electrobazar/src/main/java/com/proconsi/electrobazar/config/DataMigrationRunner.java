@@ -37,6 +37,17 @@ public class DataMigrationRunner implements CommandLineRunner {
                 log.debug("Col " + col + " issue: " + e.getMessage());
             }
         }
+
+        log.info("Ensuring wildcard product support (nullable product_id)...");
+        try {
+            // Force product_id to be nullable in both sale and suspended sale lines
+            jdbcTemplate.execute("ALTER TABLE sale_lines MODIFY COLUMN product_id BIGINT NULL");
+            jdbcTemplate.execute("ALTER TABLE suspended_sale_lines MODIFY COLUMN product_id BIGINT NULL");
+            log.info("Successfully ensured product_id is nullable for wildcard products.");
+        } catch (Exception e) {
+            log.warn("Could not modify product_id columns (might already be NULL): " + e.getMessage());
+        }
+
         log.info("Fixing product price precision in database...");
         try {
             jdbcTemplate.execute("ALTER TABLE products MODIFY COLUMN price DECIMAL(12,4) NOT NULL");

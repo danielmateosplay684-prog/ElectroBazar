@@ -75,6 +75,42 @@ public class Coupon {
     @Builder.Default
     private Boolean generic = true;
 
+    /** Optional restriction to specific products. If empty, it's valid for all products. */
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "coupon_products",
+            joinColumns = @JoinColumn(name = "coupon_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id")
+    )
+    private java.util.Set<Product> restrictedProducts = new java.util.HashSet<>();
+
+    /** Optional restriction to specific categories. If empty, no category restriction. */
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "coupon_categories",
+            joinColumns = @JoinColumn(name = "coupon_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private java.util.Set<Category> restrictedCategories = new java.util.HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (timesUsed == null) {
+            timesUsed = 0;
+        }
+        if (active == null) {
+            active = true;
+        }
+        if (generic == null) {
+            generic = true;
+        }
+    }
+
     /**
      * Checks if the coupon is currently valid based on dates and usage limits.
      */
@@ -85,8 +121,33 @@ public class Coupon {
         if (validFrom != null && now.isBefore(validFrom)) return false;
         if (validUntil != null && now.isAfter(validUntil)) return false;
         
-        if (usageLimit != null && usageLimit > 0 && timesUsed >= usageLimit) return false;
+        if (usageLimit != null && usageLimit > 0 && (timesUsed != null && timesUsed >= usageLimit)) return false;
         
         return true;
+    }
+
+    /**
+     * Checks if this coupon is applicable to a specific product.
+     * @param product The product to check.
+     * @return True if no restrictions exist or if the product meets them.
+     */
+    public boolean isApplicableTo(Product product) {
+        if ((restrictedProducts == null || restrictedProducts.isEmpty()) && 
+            (restrictedCategories == null || restrictedCategories.isEmpty())) {
+            return true;
+        }
+
+        // Check product ID
+        boolean matchProduct = (restrictedProducts != null) && 
+            restrictedProducts.stream().anyMatch(p -> p.getId().equals(product.getId()));
+        
+        if (matchProduct) return true;
+
+        // Check category
+        if (product.getCategory() != null && restrictedCategories != null) {
+            return restrictedCategories.stream().anyMatch(c -> c.getId().equals(product.getCategory().getId()));
+        }
+
+        return false;
     }
 }

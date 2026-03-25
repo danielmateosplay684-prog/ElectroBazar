@@ -31,10 +31,14 @@ public class SaleLine {
     @JoinColumn(name = "sale_id", nullable = false)
     private Sale sale;
 
-    /** The product sold. */
+    /** The product sold. Optional for wildcard products. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = true, columnDefinition = "BIGINT NULL")
     private Product product;
+
+    /** Custom name for the product (mandatory for wildcard products). */
+    @Column(length = 255)
+    private String productName;
 
     /** Number of units sold. */
     @Column(nullable = false)
@@ -68,25 +72,31 @@ public class SaleLine {
 
     /** VAT rate at the time of sale. */
     @Column(nullable = false, precision = 5, scale = 4, name = "vat_rate")
-    private BigDecimal vatRate;
+    @Builder.Default
+    private BigDecimal vatRate = BigDecimal.ZERO;
 
     /** Gross subtotal for this line (quantity * unitPrice). */
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal subtotal;
+    @Builder.Default
+    private BigDecimal subtotal = BigDecimal.ZERO;
 
     /** Total taxable base for this line. */
     @Column(nullable = false, precision = 10, scale = 2, name = "base_amount")
-    private BigDecimal baseAmount;
+    @Builder.Default
+    private BigDecimal baseAmount = BigDecimal.ZERO;
 
     /** Total VAT amount for this line. */
     @Column(nullable = false, precision = 10, scale = 2, name = "vat_amount")
-    private BigDecimal vatAmount;
+    @Builder.Default
+    private BigDecimal vatAmount = BigDecimal.ZERO;
 
     /** Recargo de Equivalencia rate applied to this line. */
     @Column(nullable = false, precision = 5, scale = 4, name = "recargo_rate")
-    private BigDecimal recargoRate;
+    @Builder.Default
+    private BigDecimal recargoRate = BigDecimal.ZERO;
 
     /** Total RE amount for this line. */
     @Column(nullable = false, precision = 10, scale = 2, name = "recargo_amount")
-    private BigDecimal recargoAmount;
+    @Builder.Default
+    private BigDecimal recargoAmount = BigDecimal.ZERO;
 }

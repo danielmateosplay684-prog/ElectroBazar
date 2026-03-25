@@ -28,18 +28,26 @@ public class SuspendedSaleLine {
     @JoinColumn(name = "suspended_sale_id", nullable = false)
     private SuspendedSale suspendedSale;
 
-    /** The product in this line. */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "product_id", nullable = false)
+    /** The product in this line. Optional for wildcards. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "product_id", nullable = true, columnDefinition = "BIGINT NULL")
     private Product product;
+
+    /** Manual name override for wildcard products. */
+    @Column(length = 255)
+    private String productName;
 
     /** Quantity of units in the cart. */
     @Column(nullable = false)
     private Integer quantity;
 
-    /** Unit price at recovery time. */
+    /** Unit price (gross with VAT included) at suspension time. */
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
+
+    /** VAT rate at suspension time. */
+    @Column(name = "vat_rate", precision = 5, scale = 4)
+    private BigDecimal vatRate;
 }
 
 

@@ -180,9 +180,11 @@ public class PdfReportServiceImpl implements PdfReportService {
         List<TaxBreakdown> breakdowns = new ArrayList<>();
         for (SaleLine line : sale.getLines()) {
             BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
+            Long pId = (line.getProduct() != null) ? line.getProduct().getId() : null;
+            String pName = (line.getProductName() != null) ? line.getProductName() : 
+                          (line.getProduct() != null ? line.getProduct().getName() : "Producto Comodín");
             TaxBreakdown bd = recargoCalculator.calculateLineBreakdown(
-                    line.getProduct().getId(), line.getProduct().getName(),
-                    line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
+                    pId, pName, line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
             breakdowns.add(bd);
         }
         context.setVariable("taxBreakdowns", breakdowns);

@@ -200,7 +200,7 @@
                                 </td>
                                 <td>
                                     <input type="hidden" name="saleLineIds" th:value="${line.id}">
-                                    <strong th:text="${line.product.name}">Producto</strong>
+                                    <strong th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</strong>
                                 </td>
                                 <td class="muted-text" th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' €'">
                                     0.00 €</td>

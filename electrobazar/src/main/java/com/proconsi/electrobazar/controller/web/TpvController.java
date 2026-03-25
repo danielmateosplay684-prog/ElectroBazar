@@ -113,6 +113,8 @@ public class TpvController {
             @RequestParam(required = false, defaultValue = "false") Boolean requestInvoice,
             @RequestParam(required = false) Long tariffId,
             @RequestParam(required = false) String couponCode,
+            @RequestParam(required = false) List<String> productNames,
+            @RequestParam(required = false) List<String> vatRates,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
@@ -149,23 +151,25 @@ public class TpvController {
         List<SaleLine> lines = new ArrayList<>();
 
         for (int i = 0; i < productIds.size(); i++) {
-            Product product = productService.findById(productIds.get(i));
+            Long pid = productIds.get(i);
+            Product product = (pid != null && pid > 0) ? productService.findById(pid) : null;
             int qty = quantities.get(i);
 
-            // Use the price sent from the ticket; fall back to productPriceService only if
-            // missing.
-            BigDecimal unitPrice;
-            BigDecimal vatRate;
+            BigDecimal unitPrice = BigDecimal.ZERO;
+            BigDecimal vatRate = new BigDecimal("0.21");
 
             if (unitPrices != null && i < unitPrices.size() && unitPrices.get(i) != null
                     && !unitPrices.get(i).isBlank()) {
-                // Price already final from the TPV sidebar — use as-is
                 unitPrice = new BigDecimal(unitPrices.get(i).replace(",", "."));
-                vatRate = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
-                        ? product.getTaxRate().getVatRate()
-                        : new BigDecimal("0.21");
-            } else {
-                // Fallback: read from price schedule (no tariff discount applied here)
+                
+                if (product != null) {
+                    vatRate = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
+                            ? product.getTaxRate().getVatRate()
+                            : new BigDecimal("0.21");
+                } else if (vatRates != null && i < vatRates.size() && vatRates.get(i) != null && !vatRates.get(i).isBlank()) {
+                    vatRate = new BigDecimal(vatRates.get(i).replace(",", "."));
+                }
+            } else if (product != null) {
                 ProductPrice activePrice = productPriceService.getCurrentPrice(product.getId(), LocalDateTime.now());
                 if (activePrice != null) {
                     unitPrice = activePrice.getPrice();
@@ -178,8 +182,13 @@ public class TpvController {
                 }
             }
 
+            String customName = (productNames != null && i < productNames.size() && productNames.get(i) != null && !productNames.get(i).isBlank())
+                    ? productNames.get(i) 
+                    : (product != null ? product.getName() : "Producto Comodín");
+
             lines.add(SaleLine.builder()
                     .product(product)
+                    .productName(customName)
                     .quantity(qty)
                     .unitPrice(unitPrice.setScale(2, RoundingMode.HALF_UP))
                     .vatRate(vatRate)
@@ -290,9 +299,11 @@ public class TpvController {
             List<TaxBreakdown> breakdowns = new ArrayList<>();
             for (SaleLine line : sale.getLines()) {
                 BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
+                Long pId = (line.getProduct() != null) ? line.getProduct().getId() : null;
+                String pName = (line.getProductName() != null) ? line.getProductName() : 
+                              (line.getProduct() != null ? line.getProduct().getName() : "Producto Comodín");
                 TaxBreakdown bd = recargoCalculator.calculateLineBreakdown(
-                        line.getProduct().getId(), line.getProduct().getName(),
-                        line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
+                        pId, pName, line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
                 breakdowns.add(bd);
             }
             model.addAttribute("taxBreakdowns", breakdowns);

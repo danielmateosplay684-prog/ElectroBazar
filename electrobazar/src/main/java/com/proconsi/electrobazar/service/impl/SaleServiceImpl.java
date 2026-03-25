@@ -119,28 +119,44 @@ public class SaleServiceImpl implements SaleService {
         String tariffName = (effective != null) ? effective.getName() : Tariff.MINORISTA;
         BigDecimal tariffDiscountPct = (effective != null && effective.getDiscountPercentage() != null) ? effective.getDiscountPercentage() : BigDecimal.ZERO;
 
-        // 3. Calculation Loop
+        // 3. Calculation Loop for Subtotals
         BigDecimal subtotalBeforeCoupon = BigDecimal.ZERO;
+        BigDecimal eligibleSubtotal = BigDecimal.ZERO;
         boolean applyRE = (customer != null && Boolean.TRUE.equals(customer.getHasRecargoEquivalencia()));
 
         for (SaleLine line : lines) {
-            BigDecimal finalGross = line.getUnitPrice().setScale(SCALE, ROUNDING);
-            subtotalBeforeCoupon = subtotalBeforeCoupon.add(finalGross.multiply(BigDecimal.valueOf(line.getQuantity())));
+            BigDecimal lineTotal = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, ROUNDING);
+            subtotalBeforeCoupon = subtotalBeforeCoupon.add(lineTotal);
+            
+            if (coupon != null) {
+                boolean isEligible = false;
+                if (line.getProduct() != null) {
+                    isEligible = coupon.isApplicableTo(line.getProduct());
+                } else {
+                    // Wildcard products are only eligible if the coupon has no restrictions at all
+                    isEligible = (coupon.getRestrictedProducts() == null || coupon.getRestrictedProducts().isEmpty()) &&
+                                (coupon.getRestrictedCategories() == null || coupon.getRestrictedCategories().isEmpty());
+                }
+                
+                if (isEligible) {
+                    eligibleSubtotal = eligibleSubtotal.add(lineTotal);
+                }
+            }
         }
 
-        // Calculate actual coupon discount amount
-        if (coupon != null) {
+        // Calculate actual coupon discount amount based on ELIGIBLE items
+        if (coupon != null && eligibleSubtotal.compareTo(BigDecimal.ZERO) > 0) {
             if (coupon.getDiscountType() == DiscountType.PERCENTAGE) {
-                couponDiscount = subtotalBeforeCoupon.multiply(coupon.getDiscountValue().divide(new BigDecimal("100"), 10, ROUNDING));
+                couponDiscount = eligibleSubtotal.multiply(coupon.getDiscountValue().divide(new BigDecimal("100"), 10, ROUNDING));
             } else {
                 couponDiscount = coupon.getDiscountValue();
             }
-            if (couponDiscount.compareTo(subtotalBeforeCoupon) > 0) {
-                couponDiscount = subtotalBeforeCoupon;
+            if (couponDiscount.compareTo(eligibleSubtotal) > 0) {
+                couponDiscount = eligibleSubtotal;
             }
         }
 
-        // 4. Distribute coupon discount proportionally
+        // 4. Distribute coupon discount among ELIGIBLE lines and calculate totals
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal totalBase = BigDecimal.ZERO;
         BigDecimal totalVat = BigDecimal.ZERO;
@@ -148,15 +164,27 @@ public class SaleServiceImpl implements SaleService {
 
         for (int i = 0; i < lines.size(); i++) {
             SaleLine line = lines.get(i);
-            productService.decreaseStock(line.getProduct().getId(), line.getQuantity());
+            if (line.getProduct() != null) {
+                productService.decreaseStock(line.getProduct().getId(), line.getQuantity());
+            }
 
             BigDecimal lineGrossBeforeCoupon = line.getUnitPrice();
             BigDecimal lineTotalBeforeCoupon = lineGrossBeforeCoupon.multiply(BigDecimal.valueOf(line.getQuantity()));
             
             BigDecimal lineCouponDiscount = BigDecimal.ZERO;
-            if (subtotalBeforeCoupon.compareTo(BigDecimal.ZERO) > 0) {
-                lineCouponDiscount = couponDiscount.multiply(lineTotalBeforeCoupon)
-                        .divide(subtotalBeforeCoupon, 10, ROUNDING);
+            if (coupon != null && eligibleSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+                boolean isEligible = false;
+                if (line.getProduct() != null) {
+                    isEligible = coupon.isApplicableTo(line.getProduct());
+                } else {
+                    isEligible = (coupon.getRestrictedProducts() == null || coupon.getRestrictedProducts().isEmpty()) &&
+                                (coupon.getRestrictedCategories() == null || coupon.getRestrictedCategories().isEmpty());
+                }
+
+                if (isEligible) {
+                    lineCouponDiscount = couponDiscount.multiply(lineTotalBeforeCoupon)
+                            .divide(eligibleSubtotal, 10, ROUNDING);
+                }
             }
             
             BigDecimal finalLineTotal = lineTotalBeforeCoupon.subtract(lineCouponDiscount);
@@ -165,9 +193,13 @@ public class SaleServiceImpl implements SaleService {
             BigDecimal effectiveUnitPrice = finalLineTotal.divide(BigDecimal.valueOf(line.getQuantity()), 10, ROUNDING);
             
             BigDecimal vatRate = (line.getVatRate() != null) ? line.getVatRate() : 
-                                 (line.getProduct().getTaxRate() != null ? line.getProduct().getTaxRate().getVatRate() : new BigDecimal("0.21"));
+                                 (line.getProduct() != null && line.getProduct().getTaxRate() != null ? line.getProduct().getTaxRate().getVatRate() : new BigDecimal("0.21"));
 
-            TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(line.getProduct().getId(), line.getProduct().getName(), effectiveUnitPrice, line.getQuantity(), vatRate, applyRE);
+            Long pId = (line.getProduct() != null) ? line.getProduct().getId() : null;
+            String pName = (line.getProductName() != null) ? line.getProductName() : 
+                          (line.getProduct() != null ? line.getProduct().getName() : "Producto Comodín");
+
+            TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(pId, pName, effectiveUnitPrice, line.getQuantity(), vatRate, applyRE);
 
             line.setOriginalUnitPrice(lineGrossBeforeCoupon.setScale(SCALE, ROUNDING));
             line.setUnitPrice(effectiveUnitPrice.setScale(SCALE, ROUNDING));
