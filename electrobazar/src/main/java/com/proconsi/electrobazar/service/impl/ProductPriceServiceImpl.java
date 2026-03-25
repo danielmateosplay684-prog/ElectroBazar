@@ -1,8 +1,10 @@
 package com.proconsi.electrobazar.service.impl;
 
+import com.proconsi.electrobazar.dto.BulkPriceMatrixUpdateRequest;
 import com.proconsi.electrobazar.dto.BulkPriceUpdateRequest;
 import com.proconsi.electrobazar.dto.ProductPriceRequest;
 import com.proconsi.electrobazar.dto.ProductPriceResponse;
+import com.proconsi.electrobazar.dto.PriceMatrixSummaryDTO;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.ProductPrice;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -236,5 +239,165 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                 "Bulk price update for " + responses.size() + " products.", "Admin", "PRODUCT", null);
 
         return responses;
+    }
+
+    @Override
+    @Transactional
+    public void bulkMatrixUpdate(BulkPriceMatrixUpdateRequest request) {
+        LocalDateTime effectiveDate = request.getEffectiveDate() != null ? request.getEffectiveDate() : LocalDateTime.now();
+        LocalDateTime closingDate = effectiveDate.minusSeconds(1);
+
+        for (BulkPriceMatrixUpdateRequest.PriceChangeItem change : request.getChanges()) {
+            Product product = productRepository.findById(change.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product " + change.getProductId() + " not found."));
+
+            if (change.getTariffId() == null) {
+                // Update BASE price
+                productPriceRepository.findCurrentOpenPrice(product.getId()).ifPresent(current -> {
+                    current.setEndDate(closingDate);
+                    productPriceRepository.save(current);
+                });
+
+                ProductPrice nextEntry = ProductPrice.builder()
+                        .product(product)
+                        .vatRate(product.getTaxRate() != null ? product.getTaxRate().getVatRate() : new BigDecimal("0.21"))
+                        .startDate(effectiveDate)
+                        .price(change.getNewPrice())
+                        .build();
+                productPriceRepository.save(nextEntry);
+
+                // Immediate update in product table if effective date is now or past
+                if (effectiveDate.isBefore(LocalDateTime.now()) || effectiveDate.isEqual(LocalDateTime.now())) {
+                    product.setPrice(change.getNewPrice());
+                    productRepository.save(product);
+                }
+            } else {
+                // Update TARIFF specific price
+                Tariff tariff = tariffRepository.findById(change.getTariffId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Tariff " + change.getTariffId() + " not found."));
+
+                tariffPriceHistoryRepository.findCurrentByProductAndTariff(product.getId(), tariff.getId()).ifPresent(current -> {
+                    current.setValidTo(closingDate.toLocalDate());
+                    tariffPriceHistoryRepository.save(current);
+                });
+
+                BigDecimal vatRate = product.getTaxRate() != null ? product.getTaxRate().getVatRate() : new BigDecimal("0.21");
+                BigDecimal net = change.getNewPrice().divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
+
+                TariffPriceHistory history = TariffPriceHistory.builder()
+                        .product(product)
+                        .tariff(tariff)
+                        .basePrice(product.getPrice())
+                        .netPrice(net)
+                        .vatRate(vatRate)
+                        .priceWithVat(change.getNewPrice())
+                        .reRate(reRate)
+                        .priceWithRe(net.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP))
+                        .discountPercent(BigDecimal.ZERO) // Using zero because it's now a manual override
+                        .validFrom(effectiveDate.toLocalDate())
+                        .build();
+                tariffPriceHistoryRepository.save(history);
+            }
+        }
+        
+        activityLogService.logActivity("MATRIZ_PRECIOS_CAMBIO", 
+                "Bulk price matrix update processed for " + request.getChanges().size() + " entries.", "Admin", "PRICE", null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PriceMatrixSummaryDTO> getPendingMatrixUpdates() {
+        LocalDateTime now = LocalDateTime.now();
+        List<PriceMatrixSummaryDTO> results = new ArrayList<>();
+
+        // Pending Base price changes
+        productPriceRepository.findAllFuturePrices(now).forEach(p -> {
+            BigDecimal oldPrice = productPriceRepository.findActivePriceAt(p.getProduct().getId(), p.getStartDate().minusSeconds(5))
+                    .map(ProductPrice::getPrice).orElse(BigDecimal.ZERO);
+            results.add(PriceMatrixSummaryDTO.builder()
+                    .id(p.getId())
+                    .productId(p.getProduct().getId())
+                    .productName(p.getProduct().getName())
+                    .tariffName("Retail (Base)")
+                    .oldPrice(oldPrice)
+                    .newPrice(p.getPrice())
+                    .startDate(p.getStartDate())
+                    .pending(true)
+                    .build());
+        });
+
+        // Pending Tariff changes (simplified: we use validFrom > today)
+        tariffPriceHistoryRepository.findAll().stream()
+                .filter(h -> h.getValidFrom().isAfter(LocalDate.now()))
+                .forEach(h -> {
+                    BigDecimal oldPrice = tariffPriceHistoryRepository.findByProductIdOrderByValidFromDesc(h.getProduct().getId()).stream()
+                            .filter(prev -> prev.getTariff().getId().equals(h.getTariff().getId()) && prev.getValidFrom().isBefore(h.getValidFrom()))
+                            .findFirst().map(TariffPriceHistory::getPriceWithVat).orElse(BigDecimal.ZERO);
+                    results.add(PriceMatrixSummaryDTO.builder()
+                            .id(h.getId())
+                            .productId(h.getProduct().getId())
+                            .productName(h.getProduct().getName())
+                            .tariffId(h.getTariff().getId())
+                            .tariffName(h.getTariff().getName())
+                            .oldPrice(oldPrice)
+                            .newPrice(h.getPriceWithVat())
+                            .startDate(h.getValidFrom().atStartOfDay())
+                            .pending(true)
+                            .build());
+                });
+
+        results.sort(Comparator.comparing(PriceMatrixSummaryDTO::getStartDate));
+        return results;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PriceMatrixSummaryDTO> getMatrixUpdateHistory() {
+        // Just return the last 50 activities or history entries
+        List<PriceMatrixSummaryDTO> results = new ArrayList<>();
+        
+        // From Tariff History (last applied)
+        tariffPriceHistoryRepository.findAll().stream()
+                .filter(h -> h.getValidFrom().isBefore(LocalDate.now()) || h.getValidFrom().isEqual(LocalDate.now()))
+                .sorted(Comparator.comparing(TariffPriceHistory::getCreatedAt).reversed())
+                .limit(30)
+                .forEach(h -> {
+                    BigDecimal oldPrice = tariffPriceHistoryRepository.findByProductIdOrderByValidFromDesc(h.getProduct().getId()).stream()
+                            .filter(prev -> prev.getTariff().getId().equals(h.getTariff().getId()) && prev.getValidFrom().isBefore(h.getValidFrom()))
+                            .findFirst().map(TariffPriceHistory::getPriceWithVat).orElse(BigDecimal.ZERO);
+                    results.add(PriceMatrixSummaryDTO.builder()
+                            .productId(h.getProduct().getId())
+                            .productName(h.getProduct().getName())
+                            .tariffName(h.getTariff().getName())
+                            .oldPrice(oldPrice)
+                            .newPrice(h.getPriceWithVat())
+                            .createdAt(h.getCreatedAt())
+                            .pending(false)
+                            .build());
+                });
+                
+        return results;
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingPrice(Long id) {
+        // Try deleting from ProductPrice first
+        if (productPriceRepository.existsById(id)) {
+            productPriceRepository.findById(id).ifPresent(p -> {
+                if (p.getStartDate().isAfter(LocalDateTime.now())) {
+                    productPriceRepository.delete(p);
+                }
+            });
+        } 
+        // Then try TariffPriceHistory
+        else if (tariffPriceHistoryRepository.existsById(id)) {
+            tariffPriceHistoryRepository.findById(id).ifPresent(h -> {
+                if (h.getValidFrom().isAfter(LocalDate.now())) {
+                    tariffPriceHistoryRepository.delete(h);
+                }
+            });
+        }
     }
 }

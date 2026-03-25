@@ -60,6 +60,7 @@ public class AdminApiRestController {
     private final RecargoEquivalenciaCalculator recargoCalculator;
     private final TemplateEngine templateEngine;
     private final JwtService jwtService;
+    private final ProductPriceService productPriceService;
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
@@ -412,6 +413,42 @@ public class AdminApiRestController {
                 .replace("&iquest;", "&#191;")
                 .replace("&iexcl;", "&#161;")
                 .replaceAll("&(?!(?:[a-zA-Z0-9]+|#[0-9]+|#x[0-9a-fA-F]+);)", "&amp;");
+    }
+
+    /**
+     * Bulk updates multiple prices (base and tariffs) in a single transaction.
+     * @param request The price matrix update request.
+     * @return 200 OK.
+     */
+    @PostMapping("/bulk-price-update")
+    public ResponseEntity<?> bulkPriceUpdate(@RequestBody BulkPriceMatrixUpdateRequest request) {
+        productPriceService.bulkMatrixUpdate(request);
+        return ResponseEntity.ok(Map.of("message", "Precios procesados correctamente."));
+    }
+
+    /**
+     * Lists all scheduled price changes that haven't taken effect yet.
+     */
+    @GetMapping("/price-updates/pending")
+    public ResponseEntity<List<PriceMatrixSummaryDTO>> getPendingPriceUpdates() {
+        return ResponseEntity.ok(productPriceService.getPendingMatrixUpdates());
+    }
+
+    /**
+     * Lists recently applied price changes.
+     */
+    @GetMapping("/price-updates/history")
+    public ResponseEntity<List<PriceMatrixSummaryDTO>> getPriceUpdateHistory() {
+        return ResponseEntity.ok(productPriceService.getMatrixUpdateHistory());
+    }
+
+    /**
+     * Cancels a scheduled price change.
+     */
+    @DeleteMapping("/price-updates/{id}")
+    public ResponseEntity<?> deletePendingPriceUpdate(@PathVariable Long id) {
+        productPriceService.deletePendingPrice(id);
+        return ResponseEntity.ok().build();
     }
 
     private ResponseEntity<Resource> createPdfResponse(byte[] pdfBytes, String filename) {

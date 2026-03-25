@@ -2328,6 +2328,237 @@ function deleteCoupon(id) {
 }
 
 function openCashRegisterDetail(id) {
-    window.open('/admin/cash-register/' + id, '_blank', 'width=1100,height=800,scrollbars=yes');
+    window.location.href = '/admin/cash-register/' + id;
 }
+
+// -- Price Matrix Management --------------------------------------------------
+
+let priceMatrixChanges = {}; // Key: "prodId-tariffId", Value: {productId, tariffId, newPrice, originalPrice}
+let applyingPricesModal = null;
+let priceChangesHistoryModalId = null;
+
+function toggleTariffEditMode() {
+    const table = document.getElementById('tariffComparisonTable');
+    if (!table) return;
+
+    const btnToggle = document.getElementById('btnToggleTariffEdit');
+    const btnFinish = document.getElementById('btnFinishTariffEdit');
+    const isEditing = btnToggle.classList.contains('active');
+
+    if (!isEditing) {
+        // Enter Edit Mode
+        btnToggle.classList.add('active');
+        btnToggle.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancelar Edición';
+        btnFinish.style.display = 'inline-block';
+
+        // Transform cells into inputs
+        const cells = table.querySelectorAll('.price-cell, .price-value');
+        cells.forEach(el => {
+            const prodId = el.getAttribute('data-product-id');
+            const tariffId = el.getAttribute('data-tariff-id') || 'base';
+            const currentText = el.textContent.replace(' €', '').replace(',', '.').trim();
+            const currentValue = parseFloat(currentText) || 0;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.01';
+            input.className = 'form-control form-control-sm text-end';
+            input.style = 'width: 80px; display: inline-block; font-family: inherit; font-weight: 700;';
+            input.value = currentValue;
+            input.dataset.originalValue = currentValue;
+            input.dataset.productId = prodId;
+            input.dataset.tariffId = tariffId;
+            if (el.getAttribute('data-tariff-name')) input.dataset.tariffName = el.getAttribute('data-tariff-name');
+
+            input.onchange = function() {
+                const newVal = parseFloat(this.value);
+                const oldVal = parseFloat(this.dataset.originalValue);
+                const key = `${this.dataset.productId}-${this.dataset.tariffId}`;
+
+                if (newVal !== oldVal) {
+                    this.style.backgroundColor = 'rgba(245, 166, 35, 0.2)';
+                    this.style.borderColor = 'var(--accent)';
+                    
+                    priceMatrixChanges[key] = {
+                        productId: parseInt(this.dataset.productId),
+                        tariffId: this.dataset.tariffId === 'base' ? null : parseInt(this.dataset.tariffId),
+                        tariffName: this.dataset.tariffName || 'PVP Base',
+                        newPrice: newVal,
+                        originalPrice: oldVal,
+                        productName: this.closest('tr').querySelector('td:first-child .fw-bold').textContent
+                    };
+                } else {
+                    this.style.backgroundColor = '';
+                    this.style.borderColor = '';
+                    delete priceMatrixChanges[key];
+                }
+            };
+
+            el.innerHTML = '';
+            el.appendChild(input);
+        });
+    } else {
+        // Exit / Cancel Edit Mode
+        if (Object.keys(priceMatrixChanges).length > 0) {
+            if (!confirm('¿Seguro que quieres cancelar? Perderás los cambios no guardados.')) return;
+        }
+        location.reload(); // Hard reset for simplicity
+    }
+}
+
+function openApplyPricesModal() {
+    const changes = Object.values(priceMatrixChanges);
+    if (changes.length === 0) {
+        showToast('No hay cambios que aplicar', 'warning');
+        return;
+    }
+
+    const modalEl = document.getElementById('applyPricesModal');
+    if (!applyingPricesModal) applyingPricesModal = new bootstrap.Modal(modalEl);
+
+    document.getElementById('pendingChangesCount').textContent = changes.length;
+    
+    const list = document.getElementById('pendingChangesList');
+    list.innerHTML = '';
+    changes.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-white">${c.productName}</td>
+            <td><span class="badge bg-secondary">${c.tariffName}</span></td>
+            <td class="text-end fw-bold text-accent">${(c.newPrice || 0).toFixed(2)} €</td>
+        `;
+        list.appendChild(tr);
+    });
+
+    applyingPricesModal.show();
+}
+
+function submitBulkPriceUpdate() {
+    const effectiveDate = document.getElementById('applyPricesDate').value;
+    const effectiveTime = document.getElementById('applyPricesTime').value;
+    
+    if (!effectiveDate) {
+        showToast('Debes seleccionar una fecha', 'warning');
+        return;
+    }
+
+    const payload = {
+        effectiveDate: effectiveDate + 'T' + (effectiveTime || '00:00') + ':00',
+        changes: Object.values(priceMatrixChanges).map(c => ({
+            productId: c.productId,
+            tariffId: c.tariffId,
+            newPrice: c.newPrice
+        }))
+    };
+
+    fetch('/api/admin/bulk-price-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Error en la respuesta del servidor');
+        return res.json();
+    })
+    .then(data => {
+        showToast('Cambios programados correctamente', 'success');
+        if (applyingPricesModal) applyingPricesModal.hide();
+        setTimeout(() => location.reload(), 1500);
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Error al guardar los cambios', 'error');
+    });
+}
+
+function openPriceChangesHistoryModal() {
+    const modalEl = document.getElementById('priceChangesHistoryModal');
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    
+    loadPendingPriceChanges();
+    loadPastPriceChanges();
+    
+    modalInstance.show();
+}
+
+function loadPendingPriceChanges() {
+    fetch('/api/admin/price-updates/pending')
+        .then(res => res.json())
+        .then(data => {
+            const body = document.querySelector('#tablePendingPrices tbody');
+            if(!body) return;
+            body.innerHTML = '';
+            
+            if (data.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay cambios pendientes</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const date = new Date(item.startDate).toLocaleString();
+                tr.innerHTML = `
+                    <td class="text-white">${date}</td>
+                    <td class="text-white">${item.productName}</td>
+                    <td><span class="badge bg-secondary">${item.tariffName || 'PVP Base'}</span></td>
+                    <td class="text-end fw-bold text-accent">${(item.price || item.newPrice || 0).toFixed(2)} €</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletePendingPrice(${item.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        });
+}
+
+function loadPastPriceChanges() {
+    fetch('/api/admin/price-updates/history')
+        .then(res => res.json())
+        .then(data => {
+            const body = document.querySelector('#tablePastPrices tbody');
+            if(!body) return;
+            body.innerHTML = '';
+            
+            if (data.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay historial reciente</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const date = new Date(item.createdAt).toLocaleString();
+                tr.innerHTML = `
+                    <td class="text-white">${date}</td>
+                    <td class="text-white">${item.productName}</td>
+                    <td><span class="badge bg-secondary">${item.tariffName || 'PVP Base'}</span></td>
+                    <td class="text-end text-muted">${(item.oldPrice || 0).toFixed(2)} €</td>
+                    <td class="text-end fw-bold text-success">${(item.newPrice || 0).toFixed(2)} €</td>
+                `;
+                body.appendChild(tr);
+            });
+        });
+}
+
+function deletePendingPrice(id) {
+    if (!confirm('¿Seguro que quieres cancelar este cambio de precio programado?')) return;
+
+    fetch(`/api/admin/price-updates/${id}`, { method: 'DELETE' })
+        .then(res => {
+            if (res.ok) {
+                showToast('Cambio cancelado', 'success');
+                loadPendingPriceChanges();
+            } else {
+                showToast('Error al cancelar', 'error');
+            }
+        });
+}
+
+// Expose to global scope
+window.toggleTariffEditMode = toggleTariffEditMode;
+window.openApplyPricesModal = openApplyPricesModal;
+window.openPriceChangesHistoryModal = openPriceChangesHistoryModal;
+window.submitBulkPriceUpdate = submitBulkPriceUpdate;
+window.deletePendingPrice = deletePendingPrice;
 

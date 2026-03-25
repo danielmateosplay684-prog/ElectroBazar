@@ -1,8 +1,10 @@
 package com.proconsi.electrobazar.service;
 
+import com.proconsi.electrobazar.dto.BulkPriceMatrixUpdateRequest;
 import com.proconsi.electrobazar.dto.BulkPriceUpdateRequest;
 import com.proconsi.electrobazar.dto.ProductPriceRequest;
 import com.proconsi.electrobazar.dto.ProductPriceResponse;
+import com.proconsi.electrobazar.dto.PriceMatrixSummaryDTO;
 import com.proconsi.electrobazar.model.ProductPrice;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,4 +67,27 @@ public interface ProductPriceService {
      * @return A list of the newly created price records.
      */
     List<ProductPriceResponse> bulkSchedulePrice(BulkPriceUpdateRequest request);
+
+    /**
+     * Executes bulk price matrix updates for multiple product + tariff combinations.
+     *
+     * @param request The bulk update matrix.
+     */
+    void bulkMatrixUpdate(BulkPriceMatrixUpdateRequest request);
+    
+    /**
+     * Lists current scheduled price matrix changes.
+     */
+    List<PriceMatrixSummaryDTO> getPendingMatrixUpdates();
+    
+    /**
+     * Lists recently applied price changes.
+     */
+    List<PriceMatrixSummaryDTO> getMatrixUpdateHistory();
+    
+    /**
+     * Cancels a pending (future) price update.
+     * @param id The ID of the scheduled ProductPrice record.
+     */
+    void deletePendingPrice(Long id);
 }

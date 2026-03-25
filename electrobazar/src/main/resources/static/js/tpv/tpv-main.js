@@ -22,6 +22,7 @@ var currentHasRE = false;
 
 
 function addToTicket(card) {
+    if (window.tpv_is_register_open !== true) return;
     var id = card.dataset.id;
     var name = card.dataset.name;
     var price = parseFloat(card.dataset.price);
@@ -66,6 +67,7 @@ function addToTicket(card) {
 }
 
 function changeQty(id, delta) {
+    if (window.tpv_is_register_open !== true) return;
     if (!ticket[id]) return;
     var newQty = ticket[id].quantity + delta;
 
@@ -80,11 +82,13 @@ function changeQty(id, delta) {
 }
 
 function removeLine(id) {
+    if (window.tpv_is_register_open !== true) return;
     delete ticket[id];
     renderTicket();
 }
 
 function editQty(el, id) {
+    if (window.tpv_is_register_open !== true) return;
     var current = ticket[id].quantity;
     var input = document.createElement('input');
     input.type = 'number';
@@ -695,7 +699,9 @@ function renderProducts(products) {
         if (available <= 0) badgeClass = 'stock-danger';
         else if (available < 5) badgeClass = 'stock-warning';
 
-        return '<div class="product-card"' +
+        var disabledClass = window.tpv_is_register_open ? '' : ' disabled-tpv';
+
+        return '<div class="product-card' + disabledClass + '"' +
             ' data-id="' + product.id + '"' +
             ' data-name="' + escapeHtml(product.name) + '"' +
             ' data-price="' + product.price + '"' +

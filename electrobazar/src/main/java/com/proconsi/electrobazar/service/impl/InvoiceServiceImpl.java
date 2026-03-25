@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import com.proconsi.electrobazar.model.CompanySettings;
 import com.proconsi.electrobazar.repository.CompanySettingsRepository;
 import com.proconsi.electrobazar.util.QrCodeGenerator;
-import java.math.BigDecimal;
 
 /**
  * Implementation of {@link InvoiceService}.
@@ -48,7 +47,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     /**
      * Atomically increments the invoice sequence for the current year and serie.
-     * Uses PESSIMISTIC_WRITE locking to prevent race conditions and duplicate numbering.
+     * Uses PESSIMISTIC_WRITE locking to prevent race conditions and duplicate
+     * numbering.
      *
      * @param sale The sale entity to link with the invoice.
      * @return The newly generated Invoice.
@@ -103,12 +103,13 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setHashCurrentInvoice(calculateHash(invoice, previousHash));
 
         Invoice saved = invoiceRepository.save(invoice);
-        log.info("Invoice generated: {} for Sale ID {} [Hash: {}]", invoiceNumber, sale.getId(), saved.getHashCurrentInvoice());
+        log.info("Invoice generated: {} for Sale ID {} [Hash: {}]", invoiceNumber, sale.getId(),
+                saved.getHashCurrentInvoice());
 
         activityLogService.logActivity(
                 "CREAR_FACTURA",
-                String.format("Invoice %s generated for Sale #%d. Verifactu Hash: %s", 
-                              invoiceNumber, sale.getId(), saved.getHashCurrentInvoice()),
+                String.format("Invoice %s generated for Sale #%d. Verifactu Hash: %s",
+                        invoiceNumber, sale.getId(), saved.getHashCurrentInvoice()),
                 "System",
                 "INVOICE",
                 saved.getId());
@@ -126,7 +127,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public Invoice generateRectificativeInvoice(Sale originalSale, String reason) {
         Invoice originalInvoice = originalSale.getInvoice();
-        if (originalInvoice == null) return null;
+        if (originalInvoice == null)
+            return null;
 
         Sale negativeSale = Sale.builder()
                 .paymentMethod(originalSale.getPaymentMethod())
@@ -166,24 +168,24 @@ public class InvoiceServiceImpl implements InvoiceService {
     public boolean verifyChain(String serie) {
         log.info("Starting Verifactu chain verification for serie: {}", serie);
         List<Invoice> chain = invoiceRepository.findBySerieOrderByYearAscSequenceNumberAsc(serie);
-        
+
         String expectedPrevHash = INITIAL_HASH;
         for (Invoice inv : chain) {
             if (!inv.getHashPreviousInvoice().equals(expectedPrevHash)) {
-                log.warn("Corrupt chain: Invoice {} has prevHash {} but expected {}", 
-                         inv.getInvoiceNumber(), inv.getHashPreviousInvoice(), expectedPrevHash);
+                log.warn("Corrupt chain: Invoice {} has prevHash {} but expected {}",
+                        inv.getInvoiceNumber(), inv.getHashPreviousInvoice(), expectedPrevHash);
                 return false;
             }
-            
+
             String calculated = calculateHash(inv, expectedPrevHash);
             if (!inv.getHashCurrentInvoice().equals(calculated)) {
-                log.warn("Corrupt chain: Invoice {} has hash {} but recalculation yielded {}", 
-                         inv.getInvoiceNumber(), inv.getHashCurrentInvoice(), calculated);
+                log.warn("Corrupt chain: Invoice {} has hash {} but recalculation yielded {}",
+                        inv.getInvoiceNumber(), inv.getHashCurrentInvoice(), calculated);
                 return false;
             }
             expectedPrevHash = inv.getHashCurrentInvoice();
         }
-        
+
         log.info("Verifactu chain for serie {} is verified and secure.", serie);
         return true;
     }
@@ -205,7 +207,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             StringBuilder hexString = new StringBuilder();
             for (byte b : hashBytes) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1)
+                    hexString.append('0');
                 hexString.append(hex);
             }
             return hexString.toString().toUpperCase();
@@ -223,16 +226,15 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         // Format for AEAT Verifactu Portal:
         // https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=...&numserie=...&fecha=...&importe=...
-        
+
         String nif = issuerNif;
         String numSerie = invoice.getInvoiceNumber();
         String fecha = invoice.getCreatedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         String importe = invoice.getSale().getTotalAmount().setScale(2, java.math.RoundingMode.HALF_UP).toString();
-        
+
         String url = String.format(
-            "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=%s",
-            nif, numSerie, fecha, importe
-        );
+                "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=%s",
+                nif, numSerie, fecha, importe);
 
         return QrCodeGenerator.generateQrBase64(url, 250, 250);
     }
@@ -249,9 +251,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         String importe = rect.getSaleReturn().getTotalRefunded().setScale(2, java.math.RoundingMode.HALF_UP).toString();
 
         String url = String.format(
-            "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=-%s",
-            nif, numSerie, fecha, importe
-        );
+                "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=-%s",
+                nif, numSerie, fecha, importe);
 
         return QrCodeGenerator.generateQrBase64(url, 250, 250);
     }
@@ -266,7 +267,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             String data = issuerNif +
                     rect.getRectificativeNumber() +
                     rect.getCreatedAt().format(VERIFACTU_DATE_FORMAT) +
-                    "-" + rect.getSaleReturn().getTotalRefunded().setScale(2, java.math.RoundingMode.HALF_UP).toString() +
+                    "-" + rect.getSaleReturn().getTotalRefunded().setScale(2, java.math.RoundingMode.HALF_UP).toString()
+                    +
                     previousHash;
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -274,7 +276,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             StringBuilder hexString = new StringBuilder();
             for (byte b : hashBytes) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1)
+                    hexString.append('0');
                 hexString.append(hex);
             }
             return hexString.toString().toUpperCase();
@@ -296,9 +299,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         String importe = ticket.getSale().getTotalAmount().setScale(2, java.math.RoundingMode.HALF_UP).toString();
 
         String url = String.format(
-            "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=%s",
-            nif, numSerie, fecha, importe
-        );
+                "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=%s",
+                nif, numSerie, fecha, importe);
 
         return QrCodeGenerator.generateQrBase64(url, 250, 250);
     }
@@ -321,7 +323,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             StringBuilder hexString = new StringBuilder();
             for (byte b : hashBytes) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1)
+                    hexString.append('0');
                 hexString.append(hex);
             }
             return hexString.toString().toUpperCase();
@@ -331,5 +334,3 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
     }
 }
-
-

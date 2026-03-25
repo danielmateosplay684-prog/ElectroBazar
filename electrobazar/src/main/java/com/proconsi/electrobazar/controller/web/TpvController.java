@@ -46,7 +46,6 @@ public class TpvController {
     private final ReturnService returnService;
     private final TicketService ticketService;
     private final CashWithdrawalService cashWithdrawalService;
-    private final ActivityLogService activityLogService;
     private final TariffService tariffService;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
     private final CompanySettingsService companySettingsService;
@@ -75,16 +74,22 @@ public class TpvController {
         }
 
         java.util.Optional<CashRegister> openRegisterOpt = cashRegisterService.getOpenRegister();
-        if (openRegisterOpt.isEmpty()) {
-            return "redirect:/tpv/open-register";
-        }
+        boolean isRegisterOpen = openRegisterOpt.isPresent();
+        model.addAttribute("isRegisterOpen", isRegisterOpen);
 
         model.addAttribute("products", products);
         model.addAttribute("search", search);
         model.addAttribute("totalToday", saleService.sumTotalToday());
         model.addAttribute("countToday", saleService.countToday());
-        model.addAttribute("todayRegister", openRegisterOpt.get());
         model.addAttribute("tariffs", tariffService.findAllActive());
+
+        if (isRegisterOpen) {
+            model.addAttribute("todayRegister", openRegisterOpt.get());
+        } else {
+            CashRegisterOpenSuggestion suggestion = cashRegisterService.getOpenSuggestion();
+            model.addAttribute("hasSuggestion", suggestion.isHasSuggestion());
+            model.addAttribute("suggestedOpeningBalance", suggestion.getSuggestedBalance());
+        }
 
         return "tpv/index";
     }
@@ -503,7 +508,7 @@ public class TpvController {
                     "Closing performed but there was an error generating the PDF document.");
         }
 
-        return "redirect:/tpv/open-register";
+        return "redirect:/tpv";
     }
 
     @GetMapping("/return/check")

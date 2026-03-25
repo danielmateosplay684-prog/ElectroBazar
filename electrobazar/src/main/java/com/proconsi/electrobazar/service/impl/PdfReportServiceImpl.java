@@ -9,7 +9,6 @@ import com.proconsi.electrobazar.service.CompanySettingsService;
 import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.PdfReportService;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
@@ -40,11 +39,11 @@ public class PdfReportServiceImpl implements PdfReportService {
     private final RecargoEquivalenciaCalculator recargoCalculator;
     private final InvoiceService invoiceService;
 
-    public PdfReportServiceImpl(TemplateEngine templateEngine, 
-                                SaleReturnRepository saleReturnRepository,
-                                CompanySettingsService companySettingsService,
-                                RecargoEquivalenciaCalculator recargoCalculator,
-                                @Lazy InvoiceService invoiceService) {
+    public PdfReportServiceImpl(TemplateEngine templateEngine,
+            SaleReturnRepository saleReturnRepository,
+            CompanySettingsService companySettingsService,
+            RecargoEquivalenciaCalculator recargoCalculator,
+            @Lazy InvoiceService invoiceService) {
         this.templateEngine = templateEngine;
         this.saleReturnRepository = saleReturnRepository;
         this.companySettingsService = companySettingsService;
@@ -60,9 +59,10 @@ public class PdfReportServiceImpl implements PdfReportService {
             context.setVariable("register", register);
             context.setVariable("pdfMode", true);
 
-            LocalDateTime start = register.getOpeningTime() != null ? register.getOpeningTime() : register.getRegisterDate().atStartOfDay();
+            LocalDateTime start = register.getOpeningTime() != null ? register.getOpeningTime()
+                    : register.getRegisterDate().atStartOfDay();
             LocalDateTime end = register.getClosedAt() != null ? register.getClosedAt() : LocalDateTime.now();
-            
+
             List<SaleReturn> returns = saleReturnRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(start, end);
             context.setVariable("returns", returns);
 
@@ -97,8 +97,7 @@ public class PdfReportServiceImpl implements PdfReportService {
 
             Map<String, List<TariffPriceEntryDTO>> grouped = history.stream()
                     .collect(Collectors.groupingBy(
-                            h -> h.getCategoryName() != null ? h.getCategoryName() : "Uncategorized"
-                    ));
+                            h -> h.getCategoryName() != null ? h.getCategoryName() : "Uncategorized"));
             context.setVariable("groupedHistory", grouped);
 
             String htmlContent = templateEngine.process("reports/tariff-sheet", context);
@@ -148,7 +147,7 @@ public class PdfReportServiceImpl implements PdfReportService {
         log.info("Generating PDF for Sale receipt ID {}", sale.getId());
         try {
             Context context = populateSaleContext(sale);
-            
+
             if (sale.getTicket() != null) {
                 context.setVariable("ticket", sale.getTicket());
                 context.setVariable("qrCodeBase64", invoiceService.generateQrCodeBase64(sale.getTicket()));
@@ -199,38 +198,38 @@ public class PdfReportServiceImpl implements PdfReportService {
         context.setVariable("totalBase", totalBase);
         context.setVariable("totalVat", totalVat);
         context.setVariable("totalRecargo", totalRecargo);
-        
+
         return context;
     }
 
     /**
-     * Pre-processes HTML to make it compatible with OpenHTMLtoPDF's strict XML parser.
+     * Pre-processes HTML to make it compatible with OpenHTMLtoPDF's strict XML
+     * parser.
      * Ensures void tags are closed and entities are properly escaped.
      */
     private String cleanHtmlForPdf(String html) {
-        if (html == null) return "";
+        if (html == null)
+            return "";
         return html.replaceAll("<(meta|br|hr|img|input|link)([^>]*?)(?<!/)>", "<$1$2 />")
-                   .replace("&copy;", "&#169;")
-                   .replace("&reg;", "&#174;")
-                   .replace("&trade;", "&#8482;")
-                   .replace("&nbsp;", "&#160;")
-                   .replace("&euro;", "&#8364;")
-                   .replace("&middot;", "&#183;")
-                   .replace("&mdash;", "&#8212;")
-                   .replace("&ndash;", "&#8211;")
-                   .replace("&iexcl;", "&#161;")
-                   .replace("&iquest;", "&#191;")
-                   .replace("&ordm;", "&#186;")
-                   .replace("&orda;", "&#170;")
-                   .replace("&aacute;", "&#225;")
-                   .replace("&eacute;", "&#233;")
-                   .replace("&iacute;", "&#237;")
-                   .replace("&oacute;", "&#243;")
-                   .replace("&uacute;", "&#250;")
-                   .replace("&ntilde;", "&#241;")
-                   // Robustly escape any leftover unescaped ampersands to satisfy SAX XML parser
-                   .replaceAll("&(?!(?:[a-zA-Z0-9]+|#[0-9]+|#x[0-9a-fA-F]+);)", "&amp;");
+                .replace("&copy;", "&#169;")
+                .replace("&reg;", "&#174;")
+                .replace("&trade;", "&#8482;")
+                .replace("&nbsp;", "&#160;")
+                .replace("&euro;", "&#8364;")
+                .replace("&middot;", "&#183;")
+                .replace("&mdash;", "&#8212;")
+                .replace("&ndash;", "&#8211;")
+                .replace("&iexcl;", "&#161;")
+                .replace("&iquest;", "&#191;")
+                .replace("&ordm;", "&#186;")
+                .replace("&orda;", "&#170;")
+                .replace("&aacute;", "&#225;")
+                .replace("&eacute;", "&#233;")
+                .replace("&iacute;", "&#237;")
+                .replace("&oacute;", "&#243;")
+                .replace("&uacute;", "&#250;")
+                .replace("&ntilde;", "&#241;")
+                // Robustly escape any leftover unescaped ampersands to satisfy SAX XML parser
+                .replaceAll("&(?!(?:[a-zA-Z0-9]+|#[0-9]+|#x[0-9a-fA-F]+);)", "&amp;");
     }
 }
-
-
