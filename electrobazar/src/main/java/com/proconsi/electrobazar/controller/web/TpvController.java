@@ -49,6 +49,9 @@ public class TpvController {
     private final TariffService tariffService;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
     private final CompanySettingsService companySettingsService;
+    private final AdminPinService adminPinService;
+    private final ActivityLogService activityLogService;
+
 
     @GetMapping
     public String index(
@@ -780,5 +783,89 @@ public class TpvController {
         response.put("price", finalPrice);
         response.put("priceWithRe", priceWithRe);
         return response;
+    }
+
+    /**
+     * Updates the price of a cart item, either for the current session only
+     * or permanently in the database (requires admin PIN).
+     *
+     * <p>Both modes generate a mandatory fiscal audit log entry.</p>
+     */
+    @PostMapping("/cart/update-price")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateCartItemPrice(
+            @RequestParam Long productId,
+            @RequestParam String newPrice,
+            @RequestParam(defaultValue = "SESSION") String saveMode,
+            @RequestParam(required = false) String adminPin,
+            HttpSession session) {
+
+        Worker worker = (Worker) session.getAttribute("worker");
+        if (worker == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "No hay sesión activa."));
+        }
+
+        BigDecimal newPriceDecimal;
+        try {
+            newPriceDecimal = new BigDecimal(newPrice.replace(",", ".")).setScale(4, RoundingMode.HALF_UP);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "Precio inválido."));
+        }
+
+        if (newPriceDecimal.compareTo(BigDecimal.ZERO) < 0) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "El precio no puede ser negativo."));
+        }
+
+        Product product = productService.findById(productId);
+        if (product == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Producto no encontrado."));
+        }
+
+        String username = worker.getUsername();
+        BigDecimal oldPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal displayNewPrice = newPriceDecimal.setScale(2, RoundingMode.HALF_UP);
+
+        Map<String, Object> result = new HashMap<>();
+
+        if ("DATABASE".equalsIgnoreCase(saveMode)) {
+            // --- Opción B: validar PIN y guardar en DB ---
+            if (!adminPinService.verifyPin(adminPin)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Collections.singletonMap("error", "PIN de administrador incorrecto."));
+            }
+
+            product.setPrice(newPriceDecimal);
+            productService.save(product);
+            log.info("[PRICE] DB price change: product={} ({}), oldPrice={}, newPrice={}, by={}",
+                    productId, product.getName(), oldPrice, displayNewPrice, username);
+
+            activityLogService.logFiscalEvent("CAMBIO_PRECIO",
+                    String.format("PRECIO_DB | Producto: '%s' (ID: %d) | Precio anterior: %.2f€ | Nuevo precio: %.2f€ | Cajero: %s",
+                            product.getName(), productId, oldPrice, displayNewPrice, username),
+                    username);
+
+            result.put("savedToDb", true);
+            result.put("message", String.format("Precio de '%s' actualizado en BD: %.2f€", product.getName(), displayNewPrice));
+        } else {
+            // --- Opción A: solo sesión actual ---
+            log.info("[PRICE] Session price override: product={} ({}), oldPrice={}, newPrice={}, by={}",
+                    productId, product.getName(), oldPrice, displayNewPrice, username);
+
+            activityLogService.logFiscalEvent("CAMBIO_PRECIO",
+                    String.format("PRECIO_SESION | Producto: '%s' (ID: %d) | Precio anterior: %.2f€ | Nuevo precio: %.2f€ | Cajero: %s",
+                            product.getName(), productId, oldPrice, displayNewPrice, username),
+                    username);
+
+            result.put("savedToDb", false);
+            result.put("message", String.format("Precio de '%s' modificado para esta venta: %.2f€", product.getName(), displayNewPrice));
+        }
+
+        result.put("newPrice", displayNewPrice);
+        result.put("productId", productId);
+        return ResponseEntity.ok(result);
     }
 }

@@ -232,6 +232,7 @@ function renderTicket() {
                 <div class="line-actions">
                     <span class="line-subtotal">${formatPrice(subtotal)}€</span>
                     <div class="d-flex align-items-center gap-1 ms-2">
+                        <button class="btn btn-sm p-0" title="Editar precio" onclick="openEditPriceModal('${id}', '${escapeHtml(item.name)}', ${unitPrice})" style="color:#f59e0b; opacity:0.8; font-size:0.78rem;"><i class="bi bi-pencil-square"></i></button>
                         <button class="btn btn-sm p-0" onclick="changeQty('${id}',-1)" style="color:var(--text-muted);"><i class="bi bi-dash-circle"></i></button>
                         <span class="fw-bold" style="min-width:20px; text-align:center; cursor:pointer;" onclick="editQty(this, '${id}')">${item.quantity}</span>
                         <button class="btn btn-sm p-0" onclick="changeQty('${id}',1)" style="color:var(--text-muted);"><i class="bi bi-plus-circle"></i></button>
@@ -1838,3 +1839,182 @@ function formatDecimal(val, minFrac = 2, maxFrac = 4) {
         maximumFractionDigits: maxFrac
     }).format(parseFloat(val));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT PRICE MODAL LOGIC
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** State for the currently-editing cart line */
+var _editPriceProductId = null;
+var _editPriceModalInstance = null;
+
+/**
+ * Opens the price-edit modal for a given cart item.
+ * @param {string} productId  - The product ID key in the ticket object
+ * @param {string} productName - Display name of the product
+ * @param {number} currentPrice - Current unit price in the ticket
+ */
+function openEditPriceModal(productId, productName, currentPrice) {
+    if (window.tpv_is_register_open !== true) return;
+
+    _editPriceProductId = productId;
+
+    // Populate modal fields
+    document.getElementById('editPrice_productName').textContent = productName;
+    document.getElementById('editPrice_currentPrice').textContent = formatPrice(currentPrice);
+    document.getElementById('editPrice_newPrice').value = currentPrice.toFixed(2);
+
+    // Reset state
+    document.getElementById('editPrice_optA').checked = true;
+    document.getElementById('editPrice_pinSection').style.display = 'none';
+    document.getElementById('editPrice_adminPin').value = '';
+    document.getElementById('editPrice_alert').style.display = 'none';
+    document.getElementById('editPrice_success').style.display = 'none';
+    document.getElementById('editPrice_confirmBtn').disabled = false;
+
+    // Reset option border highlights
+    document.getElementById('editPrice_optA_label').style.borderColor = 'var(--border)';
+    document.getElementById('editPrice_optB_label').style.borderColor = 'var(--border)';
+
+    // Show modal
+    var modalEl = document.getElementById('editPriceModal');
+    _editPriceModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    _editPriceModalInstance.show();
+
+    // Focus the price input after transition
+    modalEl.addEventListener('shown.bs.modal', function focusPriceInput() {
+        var input = document.getElementById('editPrice_newPrice');
+        if (input) { input.focus(); input.select(); }
+        modalEl.removeEventListener('shown.bs.modal', focusPriceInput);
+    });
+}
+
+/** Called when the save-mode radio changes */
+function onEditPriceModeChange() {
+    var isDb = document.getElementById('editPrice_optB').checked;
+    var pinSection = document.getElementById('editPrice_pinSection');
+    var optALabel = document.getElementById('editPrice_optA_label');
+    var optBLabel = document.getElementById('editPrice_optB_label');
+
+    pinSection.style.display = isDb ? 'block' : 'none';
+    document.getElementById('editPrice_alert').style.display = 'none';
+
+    if (isDb) {
+        optBLabel.style.borderColor = '#ef4444';
+        optALabel.style.borderColor = 'var(--border)';
+        setTimeout(function () {
+            document.getElementById('editPrice_adminPin').focus();
+        }, 50);
+    } else {
+        optALabel.style.borderColor = 'var(--accent)';
+        optBLabel.style.borderColor = 'var(--border)';
+    }
+}
+
+/** Input event: clear error when user types a new price */
+function editPriceOnInput() {
+    document.getElementById('editPrice_alert').style.display = 'none';
+}
+
+/** Shows an error message inside the edit-price modal */
+function _editPriceShowError(msg) {
+    var alert = document.getElementById('editPrice_alert');
+    alert.textContent = msg;
+    alert.style.display = 'block';
+    // Shake animation
+    alert.style.animation = 'none';
+    void alert.offsetWidth; // reflow
+    alert.style.animation = 'editPriceShake 0.3s ease';
+}
+
+/**
+ * Submits the price change to the backend.
+ * On success, updates the local ticket state and re-renders.
+ */
+function confirmEditPrice() {
+    var productId = _editPriceProductId;
+    if (!productId || !ticket[productId]) {
+        _editPriceShowError('Producto no válido en el carrito.');
+        return;
+    }
+
+    var newPriceVal = parseFloat(document.getElementById('editPrice_newPrice').value);
+    if (isNaN(newPriceVal) || newPriceVal < 0) {
+        _editPriceShowError('Introduce un precio válido (mayor o igual a 0).');
+        return;
+    }
+
+    var saveMode = document.querySelector('input[name="editPriceSaveMode"]:checked').value;
+    var adminPin = saveMode === 'DATABASE' ? document.getElementById('editPrice_adminPin').value : '';
+
+    if (saveMode === 'DATABASE' && (!adminPin || adminPin.trim() === '')) {
+        _editPriceShowError('El PIN de administrador es obligatorio para guardar en base de datos.');
+        document.getElementById('editPrice_adminPin').focus();
+        return;
+    }
+
+    // Disable button to prevent double-click
+    var btn = document.getElementById('editPrice_confirmBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Aplicando...';
+
+    var params = new URLSearchParams({
+        productId: productId,
+        newPrice: newPriceVal.toFixed(4),
+        saveMode: saveMode,
+        adminPin: adminPin
+    });
+
+    var csrfToken  = document.querySelector('meta[name="_csrf"]')        ? document.querySelector('meta[name="_csrf"]').getAttribute('content')        : '';
+    var csrfHeader = document.querySelector('meta[name="_csrf_header"]') ? document.querySelector('meta[name="_csrf_header"]').getAttribute('content') : 'X-CSRF-TOKEN';
+
+    var headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    if (csrfToken) headers[csrfHeader] = csrfToken;
+
+    fetch('/tpv/cart/update-price', {
+        method: 'POST',
+        headers: headers,
+        body: params.toString()
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            return { status: response.status, data: data };
+        });
+    })
+    .then(function (res) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Aplicar cambio';
+
+        if (res.status !== 200) {
+            _editPriceShowError(res.data.error || 'Error al actualizar el precio.');
+            return;
+        }
+
+        // ✅ Update local ticket state with the new price
+        var adjustedPrice = parseFloat(res.data.newPrice);
+        if (ticket[productId]) {
+            ticket[productId].price = adjustedPrice;
+            // Clear any RE cached price to force recalc from base
+            ticket[productId].priceWithRe = null;
+        }
+
+        // Show success briefly, then close
+        var successEl = document.getElementById('editPrice_success');
+        successEl.textContent = '✓ ' + (res.data.message || 'Precio actualizado correctamente.');
+        successEl.style.display = 'block';
+        document.getElementById('editPrice_alert').style.display = 'none';
+
+        setTimeout(function () {
+            if (_editPriceModalInstance) _editPriceModalInstance.hide();
+            renderTicket();
+            showToast(res.data.message || 'Precio actualizado.', 'success');
+        }, 900);
+    })
+    .catch(function (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Aplicar cambio';
+        _editPriceShowError('Error de conexión. Inténtalo de nuevo.');
+        console.error('[EditPrice] Fetch error:', err);
+    });
+}
+
