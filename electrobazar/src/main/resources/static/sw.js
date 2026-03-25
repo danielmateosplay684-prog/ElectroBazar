@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpv-v2';
+const CACHE_NAME = 'tpv-v3';
 const ASSETS = [
     '/tpv',
     '/css/tpv/tpv-main.css',

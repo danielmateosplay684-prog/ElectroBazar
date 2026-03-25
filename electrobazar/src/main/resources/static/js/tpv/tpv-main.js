@@ -43,6 +43,99 @@ var currentDiscountPct = 0; // 0–100
 var currentTariffLabel = 'MINORISTA';
 var currentHasRE = false;
 var currentCoupon = null; // { code, discountType, discountValue }
+var cartTariffId = null;  // Override manual del carrito (toma prioridad sobre el cliente)
+
+/**
+ * Returns the effective tariff ID to apply for a given product line.
+ * Priority: line-level > cart-level > customer-level > null (MINORISTA default)
+ * @param {string} productId  Key in the ticket object
+ */
+function getEffectiveTariffId(productId) {
+    if (ticket[productId] && ticket[productId].lineTariffId) return ticket[productId].lineTariffId;
+    if (window.cartTariffId) return window.cartTariffId;
+    if (window.currentTariffId) return window.currentTariffId;
+    return null;
+}
+
+// -- Explicitly global tariff functions --
+window.onCartTariffChange = function(selectEl) {
+    var newTariffId = selectEl.value || null;
+    window.cartTariffId = newTariffId;
+
+    var clearBtn = document.getElementById('cartTariffClearBtn');
+    if (clearBtn) clearBtn.style.display = newTariffId ? 'inline' : 'none';
+
+    var productIds = Object.keys(ticket);
+    if (productIds.length === 0) { renderTicket(); return; }
+
+    var promises = productIds.map(function (id) {
+        if (ticket[id] && ticket[id].lineTariffId) return Promise.resolve();
+        var effectiveTariffId = getEffectiveTariffId(id);
+        var url = '/tpv/api/products/' + id + '/price';
+        if (effectiveTariffId) url += '?tariffId=' + effectiveTariffId;
+        return fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (priceData) {
+                if (ticket[id]) {
+                    ticket[id].price = parseFloat(priceData.price);
+                    ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
+                }
+            });
+    });
+
+    Promise.all(promises).then(renderTicket).catch(function (err) {
+        console.error('[CartTariff] Error refreshing prices', err);
+        renderTicket();
+    });
+};
+
+window.clearCartTariff = function() {
+    window.cartTariffId = null;
+    var sel = document.getElementById('cartTariffSelect');
+    if (sel) sel.value = '';
+    var clearBtn = document.getElementById('cartTariffClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    onCartTariffChange({ value: '' });
+};
+
+window.onLineTariffChange = function() {
+    var productId = _editPriceProductId;
+    if (!productId) return;
+
+    var tariffSel = document.getElementById('editPrice_lineTariff');
+    var spinner   = document.getElementById('editPrice_tariffFetching');
+    var priceInput = document.getElementById('editPrice_newPrice');
+    var selectedTariffId = tariffSel ? tariffSel.value : '';
+
+    var url;
+    if (!selectedTariffId) {
+        var eff = getEffectiveTariffId(productId);
+        url = '/tpv/api/products/' + productId + '/price';
+        if (eff) url += '?tariffId=' + eff;
+    } else {
+        url = '/tpv/api/products/' + productId + '/price?tariffId=' + selectedTariffId;
+    }
+
+    if (spinner) spinner.style.display = 'inline-flex';
+    fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (priceInput) priceInput.value = parseFloat(data.price).toFixed(2);
+            if (spinner) spinner.style.display = 'none';
+        })
+        .catch(function (err) {
+            if (spinner) spinner.style.display = 'none';
+            console.error('[LineTariff] Error fetching price', err);
+        });
+};
+
+window._syncLineTariffSelector = function(productId) {
+    var lineTariffSel = document.getElementById('editPrice_lineTariff');
+    if (!lineTariffSel) return;
+    lineTariffSel.value = (ticket[productId] && ticket[productId].lineTariffId)
+        ? ticket[productId].lineTariffId
+        : '';
+};
 
 
 function addToTicket(card) {
@@ -65,10 +158,11 @@ function addToTicket(card) {
     }
 
     // ALWAYS fetch the price from the API to respect the "only tariffs" rule.
-    // The backend now knows to default to 'MINORISTA' if currentTariffId is null.
+    // Priority: line-level tariff > cart tariff > customer tariff > MINORISTA default.
+    var effectiveTariffId = getEffectiveTariffId(id);
     var url = '/tpv/api/products/' + id + '/price';
-    if (window.currentTariffId) {
-        url += '?tariffId=' + window.currentTariffId;
+    if (effectiveTariffId) {
+        url += '?tariffId=' + effectiveTariffId;
     }
 
     fetch(url)
@@ -227,12 +321,12 @@ function renderTicket() {
             <div class="ticket-line">
                 <div class="line-info">
                     <span class="line-name">${escapeHtml(item.name)}</span>
-                    <span class="line-price">${formatPrice(unitPrice)}€ x ${item.quantity}</span>
+                    <span class="line-price">${formatPrice(unitPrice)}€ x ${item.quantity}${item.lineTariffLabel ? ' <span style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-left:2px;">[' + escapeHtml(item.lineTariffLabel) + ']</span>' : ''}</span>
                 </div>
                 <div class="line-actions">
                     <span class="line-subtotal">${formatPrice(subtotal)}€</span>
                     <div class="d-flex align-items-center gap-1 ms-2">
-                        <button class="btn btn-sm p-0" title="Editar precio" onclick="openEditPriceModal('${id}', '${escapeHtml(item.name)}', ${unitPrice})" style="color:#f59e0b; opacity:0.8; font-size:0.78rem;"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm p-0" title="Editar precio / tarifa" onclick="openEditPriceModal('${id}', '${escapeHtml(item.name)}', ${unitPrice})" style="color:#f59e0b; opacity:0.8; font-size:0.78rem;"><i class="bi bi-pencil-square"></i></button>
                         <button class="btn btn-sm p-0" onclick="changeQty('${id}',-1)" style="color:var(--text-muted);"><i class="bi bi-dash-circle"></i></button>
                         <span class="fw-bold" style="min-width:20px; text-align:center; cursor:pointer;" onclick="editQty(this, '${id}')">${item.quantity}</span>
                         <button class="btn btn-sm p-0" onclick="changeQty('${id}',1)" style="color:var(--text-muted);"><i class="bi bi-plus-circle"></i></button>
@@ -1043,6 +1137,9 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
     }
 
     var promises = productIds.map(function (id) {
+        // Lines with their own tariff override are NOT updated here — they keep their own price
+        if (ticket[id] && ticket[id].lineTariffId) return Promise.resolve();
+
         var url = '/tpv/api/products/' + id + '/price';
         if (tariffId) url += '?tariffId=' + tariffId;
 
@@ -2017,4 +2114,56 @@ function confirmEditPrice() {
         console.error('[EditPrice] Fetch error:', err);
     });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CART-LEVEL TARIFF OVERRIDE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// (onCartTariffChange and onLineTariffChange moved to top for global visibility)
+
+
+// Patch openEditPriceModal to also sync the tariff selector
+(function () {
+    var _orig = openEditPriceModal;
+    openEditPriceModal = function (productId, productName, currentPrice) {
+        _orig(productId, productName, currentPrice);
+        // Delay slightly so the modal DOM is ready
+        setTimeout(function () { _syncLineTariffSelector(productId); }, 10);
+    };
+})();
+
+// When the edit-price modal closes: persist the chosen lineTariffId on the ticket item.
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('editPriceModal');
+    if (!modalEl) return;
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        var productId = _editPriceProductId;
+        if (!productId || !ticket[productId]) return;
+
+        var tariffSel = document.getElementById('editPrice_lineTariff');
+        if (!tariffSel) return;
+
+        var chosenId = tariffSel.value || null;
+        var chosenLabel = chosenId
+            ? tariffSel.options[tariffSel.selectedIndex].text
+            : null;
+
+        ticket[productId].lineTariffId    = chosenId;
+        ticket[productId].lineTariffLabel = chosenLabel;
+        renderTicket();
+    });
+});
+
+// Reset cartTariffId when the ticket is cleared
+(function () {
+    var _orig = clearTicket;
+    clearTicket = function () {
+        _orig();
+        window.cartTariffId = null;
+        var sel = document.getElementById('cartTariffSelect');
+        if (sel) sel.value = '';
+        var clearBtn = document.getElementById('cartTariffClearBtn');
+        if (clearBtn) clearBtn.style.display = 'none';
+    };
+})();
 
