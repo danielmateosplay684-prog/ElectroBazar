@@ -10,7 +10,9 @@ import java.util.Set;
  * Entity representing a system user with a specific role and set of permissions.
  */
 @Entity
-@Table(name = "workers")
+@Table(name = "workers", indexes = {
+        @Index(name = "idx_workers_active_username", columnList = "active, username")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -60,10 +62,10 @@ public class Worker {
      */
     public Set<String> getEffectivePermissions() {
         if (this.role != null && this.role.getPermissions() != null) {
-            if (this.role.getPermissions().contains("ADMIN_ACCESS")) {
+            if (this.role.getPermissions().contains("ACCESO_TOTAL_ADMIN")) {
                 return new HashSet<>(java.util.Arrays.asList(
-                        "ADMIN_ACCESS", "CASH_CLOSE", "MANAGE_PRODUCTS_TPV",
-                        "RETURNS", "HOLD_SALES", "PREFERENCES"));
+                        "ACCESO_TOTAL_ADMIN", "CIERRE_CAJA", "GESTION_INVENTARIO",
+                        "GESTION_DEVOLUCIONES", "GESTION_VENTAS_PAUSADAS", "MODIFICAR_PREFERENCIAS"));
             }
             return new HashSet<>(this.role.getPermissions());
         }

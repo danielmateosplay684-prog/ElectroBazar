@@ -940,7 +940,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(coupons)}">
-                            <td colspan="8" class="text-center text-muted py-4">No hay cupones creados.</td>
+                            <td colspan="8" class="text-center text-muted py-4" th:text="#{admin.coupons.empty}">No hay cupones creados.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1803,16 +1803,16 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                                class="bi bi-credit-card-2-front me-2"></i>Pago</label>
+                                class="bi bi-credit-card-2-front me-2"></i><span th:text="#{admin.returns.filter.payment}">Pago</span></label>
                         <select id="returnFilterMethod" class="form-select form-select-sm" onchange="filterReturns()">
-                            <option value="">Cualquier método</option>
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="" th:text="#{admin.invoices.payment.any}">Cualquier método</option>
+                            <option value="Efectivo" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
+                            <option value="Tarjeta" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                                class="bi bi-calendar3 me-2"></i>Fecha</label>
+                                class="bi bi-calendar3 me-2"></i><span th:text="#{admin.returns.filter.date}">Fecha</span></label>
                         <input type="date" id="returnFilterDate" class="form-control form-control-sm"
                             onchange="filterReturns()">
                     </div>
@@ -2388,24 +2388,24 @@
                                 style="min-width: 250px; --bs-dropdown-bg: var(--surface); --bs-dropdown-color: var(--text-main); --bs-dropdown-border-color: var(--border); background-color: var(--surface); border-color: var(--border);">
                                 <div class="form-check mb-2" onclick="event.stopPropagation()">
                                     <input class="form-check-input role-filter-perm" type="checkbox"
-                                        value="ADMIN_ACCESS" id="rf_admin"
+                                        value="ACCESO_TOTAL_ADMIN" id="rf_admin"
                                         th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
                                     <label class="form-check-label small" for="rf_admin"
-                                        style="color: var(--text-main);">ADMIN_ACCESS</label>
+                                        style="color: var(--text-main);">ACCESO_TOTAL_ADMIN</label>
                                 </div>
                                 <div class="form-check mb-2" onclick="event.stopPropagation()">
-                                    <input class="form-check-input role-filter-perm" type="checkbox" value="CASH_CLOSE"
+                                    <input class="form-check-input role-filter-perm" type="checkbox" value="CIERRE_CAJA"
                                         id="rf_cash"
                                         th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
                                     <label class="form-check-label small" for="rf_cash"
-                                        style="color: var(--text-main);">CASH_CLOSE</label>
+                                        style="color: var(--text-main);">CIERRE_CAJA</label>
                                 </div>
                                 <div class="form-check mb-0" onclick="event.stopPropagation()">
                                     <input class="form-check-input role-filter-perm" type="checkbox"
-                                        value="MANAGE_PRODUCTS_TPV" id="rf_stock"
+                                        value="GESTION_INVENTARIO" id="rf_stock"
                                         th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
                                     <label class="form-check-label small" for="rf_stock"
-                                        style="color: var(--text-main);">MANAGE_PRODUCTS_TPV</label>
+                                        style="color: var(--text-main);">GESTION_INVENTARIO</label>
                                 </div>
                             </div>
                         </div>
@@ -2476,7 +2476,7 @@
                     <div class="stats-card">
                         <div class="stats-icon"><i class="bi bi-currency-euro"></i></div>
                         <div class="stats-data">
-                            <div class="stats-value" id="statTodayRevenue">0.00 �</div>
+                            <div class="stats-value" id="statTodayRevenue">0.00 €</div>
                             <div class="stats-label" id="statRevenueLabel" th:text="#{common.sales}">Ventas</div>
                         </div>
                     </div>
@@ -3641,6 +3641,28 @@
             noCats: /*[[#{admin.inventory.categories.empty}]]*/ 'No hay categorías registradas',
             actions_edit: /*[[#{common.edit}]]*/ 'Editar',
             actions_delete: /*[[#{common.delete}]]*/ 'Eliminar'
+        };
+
+        window.adminI18n = {
+            sales: /*[[#{common.sales}]]*/ 'Ventas',
+            orders: /*[[#{common.orders}]]*/ 'Pedidos',
+            trend: /*[[#{admin.analytics.trend}]]*/ 'Tendencia',
+            salesEuro: /*[[#{admin.analytics.trend.7days}]]*/ 'Ventas (€)',
+            last7days: /*[[#{admin.analytics.last7days}]]*/ 'Ventas últimos 7 días',
+            noScheduledPrices: /*[[#{admin.prices.empty}]]*/ 'No hay precios programados para el futuro.',
+            noCoupons: /*[[#{admin.coupons.empty}]]*/ 'No hay cupones creados.',
+            noActivity: /*[[#{admin.activity.empty ?: 'No hay actividad reciente.'}]]*/ 'No hay actividad reciente.',
+            noRoles: /*[[#{admin.roles.empty ?: 'No hay roles definidos.'}]]*/ 'No hay roles definidos.',
+            noProducts: /*[[#{tpv.no_products}]]*/ 'No hay productos disponibles',
+            loading: /*[[#{common.loading}]]*/ 'Cargando...',
+            today: /*[[#{common.today}]]*/ 'Hoy',
+            chartToday: /*[[#{admin.analytics.today.title ?: 'Ventas Hoy'}]]*/ 'Ventas Hoy',
+            chart7Days: /*[[#{admin.analytics.last7days}]]*/ 'Ventas Últimos 7 Días',
+            chart1Month: /*[[#{admin.analytics.1month.title ?: 'Ventas Último Mes'}]]*/ 'Ventas Último Mes',
+            chart6Months: /*[[#{admin.analytics.6months.title ?: 'Ventas Últimos 6 Meses'}]]*/ 'Ventas Últimos 6 Meses',
+            chart1Year: /*[[#{admin.analytics.1year.title ?: 'Ventas Último Año'}]]*/ 'Ventas Último Año',
+            chartCustom: /*[[#{admin.analytics.custom.title ?: 'Análisis del día'}]]*/ 'Análisis del día',
+            chartAll: /*[[#{admin.analytics.all.title ?: 'Ventas Histórico Total'}]]*/ 'Ventas Histórico Total'
         };
         /*]]>*/
     </script>

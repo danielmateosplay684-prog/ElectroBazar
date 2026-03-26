@@ -104,6 +104,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Product> findAllByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return productRepository.findAllById(ids);
+    }
+
+    @Override
     public Product save(Product product) {
         // autoTranslateProduct(product);
         Product saved = productRepository.save(product);
@@ -231,24 +238,26 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void decreaseStock(Long productId, Integer quantity) {
-        Product product = findById(productId);
-        if (product.getStock() < quantity) {
-            throw new IllegalStateException("Insufficient stock for product: " + product.getName());
+        if (quantity == null || quantity <= 0) return;
+        
+        int updated = productRepository.decreaseStockAtomic(productId, quantity);
+        if (updated == 0) {
+            Product p = findById(productId);
+            throw new IllegalStateException("Insufficient stock for product: " + p.getName());
         }
-        product.setStock(product.getStock() - quantity);
-        productRepository.save(product);
+        
+        // Audit log (only once per call)
         activityLogService.logActivity("AJUSTE_STOCK", 
-                "Disminución manual de stock: -" + quantity + " para " + product.getName(), "Admin", "PRODUCT", product.getId());
+                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Admin", "PRODUCT", productId);
     }
 
     @Override
+    @Transactional
     public void increaseStock(Long productId, Integer quantity) {
-        Product product = findById(productId);
-        product.setStock(product.getStock() + quantity);
-        productRepository.save(product);
-        activityLogService.logActivity("AJUSTE_STOCK", 
-                "Aumento manual de stock: +" + quantity + " para " + product.getName(), "Admin", "PRODUCT", product.getId());
+        if (quantity == null || quantity <= 0) return;
+        productRepository.increaseStockAtomic(productId, quantity);
     }
 
     @Override
@@ -267,7 +276,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<Product> getTopProducts(int limit) {
-        return productRepository.findAllActiveWithCategory().stream().limit(limit).collect(Collectors.toList());
+        // Use PageRequest to limit at DB level
+        return productRepository.findAllActiveWithCategory(org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
     @Override

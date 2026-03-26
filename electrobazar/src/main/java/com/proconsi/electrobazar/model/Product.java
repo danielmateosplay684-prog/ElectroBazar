@@ -10,7 +10,11 @@ import java.math.RoundingMode;
  * Contains pricing logic to sync net base price and gross price with VAT.
  */
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+        @Index(name = "idx_product_active_name", columnList = "active, name_es"),
+        @Index(name = "idx_product_category", columnList = "category_id"),
+        @Index(name = "idx_product_stock", columnList = "stock")
+})
 @Getter
 @Setter
 @NoArgsConstructor

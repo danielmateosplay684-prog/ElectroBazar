@@ -13,7 +13,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Entity representing a product category.
  */
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", indexes = {
+        @Index(name = "idx_category_active", columnList = "active, name_es")
+})
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor

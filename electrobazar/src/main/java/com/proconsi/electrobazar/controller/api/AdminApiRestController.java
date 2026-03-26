@@ -85,24 +85,24 @@ public class AdminApiRestController {
         if (adminPinService.verifyPin(pin)) {
             // Escalation logic for API/Mobile: Return a new token with ADMIN_ACCESS
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated()) {
-                String username = auth.getName();
-                Optional<Worker> workerOpt = workerService.findByUsername(username);
+                if (auth != null && auth.isAuthenticated()) {
+                    String username = auth.getName();
+                    Optional<Worker> workerOpt = workerService.findByUsername(username);
 
-                if (workerOpt.isPresent()) {
-                    Worker worker = workerOpt.get();
-                    Set<String> permissions = worker.getEffectivePermissions();
-                    permissions.add("ADMIN_ACCESS"); // Temporarily escalate for this token
+                    if (workerOpt.isPresent()) {
+                        Worker worker = workerOpt.get();
+                        Set<String> permissions = worker.getEffectivePermissions();
+                        permissions.add("ACCESO_TOTAL_ADMIN"); // Temporarily escalate for this token
 
-                    String newToken = jwtService.generateToken(worker.getUsername(), worker.getId(), permissions);
-                    return ResponseEntity.ok(Map.of(
-                            "ok", true,
-                            "token", newToken,
-                            "worker", worker
-                    ));
+                        String newToken = jwtService.generateToken(worker.getUsername(), worker.getId(), permissions);
+                        return ResponseEntity.ok(Map.of(
+                                "ok", true,
+                                "token", newToken,
+                                "worker", worker
+                        ));
+                    }
                 }
-            }
-            return ResponseEntity.ok(Map.of("ok", true));
+                return ResponseEntity.ok(Map.of("ok", true));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "PIN incorrecto"));
         }

@@ -145,16 +145,12 @@ public class TariffServiceImpl implements TariffService {
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
 
-        // 1. Close current histories
-        List<TariffPriceHistory> toClose = new ArrayList<>();
-        for (Product product : affectedProducts) {
-            for (Tariff tariff : activeTariffs) {
-                tariffPriceHistoryRepository.findCurrentByProductAndTariff(product.getId(), tariff.getId())
-                        .ifPresent(h -> {
-                            h.setValidTo(yesterday);
-                            toClose.add(h);
-                        });
-            }
+        // 1. Bulk find and close current histories for all products
+        List<Long> productIds = affectedProducts.stream().map(Product::getId).collect(java.util.stream.Collectors.toList());
+        List<TariffPriceHistory> toClose = tariffPriceHistoryRepository.findAllCurrentByProductIds(productIds);
+        
+        for (TariffPriceHistory history : toClose) {
+            history.setValidTo(yesterday);
         }
         if (!toClose.isEmpty()) tariffPriceHistoryRepository.saveAll(toClose);
 

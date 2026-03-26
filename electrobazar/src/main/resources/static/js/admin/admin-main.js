@@ -414,7 +414,9 @@ function loadActivityLog() {
         })
         .then(function (logs) {
             if (logs.length === 0) {
-                container.innerHTML = '<div class="text-center p-4" style="color: var(--text-muted);">No hay actividad reciente.</div>';
+                if (container) {
+                    container.innerHTML = `<div class="text-center p-4" style="color: var(--text-muted);">${window.adminI18n.noActivity || 'No hay actividad reciente.'}</div>`;
+                }
                 return;
             }
 
@@ -516,23 +518,23 @@ function updateAnalytics() {
 
     if (period === 'today') {
         fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas Hoy';
+        chartTitle = (window.adminI18n ? window.adminI18n.chartToday : 'Ventas Hoy');
     } else if (period === '7days') {
-        fromDate.setDate(now.getDate() - 6); // 7 days including today
+        fromDate.setDate(now.getDate() - 6);
         fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas \u00DAltimos 7 d\u00EDas';
+        chartTitle = (window.adminI18n ? window.adminI18n.chart7Days : 'Ventas Últimos 7 Días');
     } else if (period === '1month') {
         fromDate.setMonth(now.getMonth() - 1);
         fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas \u00DAltimo Mes';
+        chartTitle = (window.adminI18n ? window.adminI18n.chart1Month : 'Ventas Último Mes');
     } else if (period === '6months') {
         fromDate.setMonth(now.getMonth() - 6);
         fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas \u00DAltimos 6 Meses';
+        chartTitle = (window.adminI18n ? window.adminI18n.chart6Months : 'Ventas Últimos 6 Meses');
     } else if (period === '1year') {
         fromDate.setFullYear(now.getFullYear() - 1);
         fromDate.setHours(0, 0, 0, 0);
-        chartTitle = 'Ventas \u00DAltimo A\u00F1o';
+        chartTitle = (window.adminI18n ? window.adminI18n.chart1Year : 'Ventas Último Año');
     } else if (period === 'custom') {
         const dVal = document.getElementById('analyticsDate').value;
         if (dVal) {
@@ -540,11 +542,12 @@ function updateAnalytics() {
             fromDate.setHours(0, 0, 0, 0);
             toDate = new Date(dVal);
             toDate.setHours(23, 59, 59, 999);
-            chartTitle = 'An\u00E1lisis del d\u00EDa ' + fromDate.toLocaleDateString('es-ES');
+            const customTitleBase = (window.adminI18n ? window.adminI18n.chartCustom : 'Análisis del día');
+            chartTitle = customTitleBase + ' ' + fromDate.toLocaleDateString();
         }
     } else if (period === 'all') {
-        fromDate = new Date(0); // Epoch start
-        chartTitle = 'Ventas Hist\u00F3rico Total';
+        fromDate = new Date(0);
+        chartTitle = (window.adminI18n ? window.adminI18n.chartAll : 'Ventas Histórico Total');
     }
 
     const url = `/api/sales/range?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}`;
@@ -565,7 +568,7 @@ function updateAnalytics() {
     });
 }
 
-function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel = 'Ventas (\u20AC)') {
+function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel = (window.adminI18n ? window.adminI18n.salesEuro : 'Ventas (€)')) {
     if (!salesDataRaw) {
         salesDataRaw = [];
         productsDataRaw = [];
@@ -574,7 +577,8 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
     // Update dynamic title
     const chartTitleEl = document.getElementById('salesChartTitle');
     if (chartTitleEl) {
-        chartTitleEl.innerHTML = `<i class="bi bi-graph-up me-2"></i>Tendencia: ${chartLabel}`;
+        const trendLabel = (window.adminI18n ? window.adminI18n.trend : 'Tendencia');
+        chartTitleEl.innerHTML = `<i class="bi bi-graph-up me-2"></i>${trendLabel}: ${chartLabel}`;
     }
 
     var now = new Date();
@@ -618,9 +622,12 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
     if (document.getElementById('statTopProduct')) document.getElementById('statTopProduct').textContent = topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
     if (document.getElementById('statLowStock')) document.getElementById('statLowStock').textContent = lowStockCount;
 
-    const labelSuffix = (period === 'today' || period === 'custom') ? (period === 'today' ? ' Hoy' : '') : '';
-    if (document.getElementById('statRevenueLabel')) document.getElementById('statRevenueLabel').textContent = 'Ventas' + labelSuffix;
-    if (document.getElementById('statSalesLabel')) document.getElementById('statSalesLabel').textContent = 'Pedidos' + labelSuffix;
+    const labelSuffix = (period === 'today' || period === 'custom') ? (period === 'today' ? (' ' + (window.adminI18n ? window.adminI18n.today : 'Hoy')) : '') : '';
+    const salesLabelStr = (window.adminI18n ? window.adminI18n.sales : 'Ventas');
+    const ordersLabelStr = (window.adminI18n ? window.adminI18n.orders : 'Pedidos');
+    
+    if (document.getElementById('statRevenueLabel')) document.getElementById('statRevenueLabel').textContent = salesLabelStr + labelSuffix;
+    if (document.getElementById('statSalesLabel')) document.getElementById('statSalesLabel').textContent = ordersLabelStr + labelSuffix;
 
     // 2. Trend Chart
     let labels = [];
@@ -643,7 +650,8 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
             d.setDate(d.getDate() - i);
             // Use local date string YYYY-MM-DD instead of UTC (toISOString)
             let dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+            const locale = document.documentElement.lang || 'es-ES';
+            labels.push(d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }));
             let total = salesDataRaw.reduce((sum, s) => {
                 if (!s.createdAt) return sum;
                 try {
@@ -1248,7 +1256,9 @@ function loadFuturePrices() {
             var tbody = document.getElementById('futurePricesBody');
             if (!tbody) return;
             if (!prices || prices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="color: var(--text-muted);">No hay precios programados para el futuro.</td></tr>';
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4" style="color: var(--text-muted);">${window.adminI18n.noScheduledPrices || 'No hay precios programados para el futuro.'}</td></tr>`;
+            }
                 return;
             }
             tbody.innerHTML = prices.map(function (p) {
@@ -1369,7 +1379,7 @@ function loadBulkProducts() {
 function renderBulkProductList(products) {
     var container = document.getElementById('bulkProductList');
     if (!products || products.length === 0) {
-        container.innerHTML = '<div class="text-center py-3" style="color: var(--text-muted);">No hay productos disponibles</div>';
+        container.innerHTML = `<div class="text-center py-3" style="color: var(--text-muted);">${window.adminI18n.noProducts || 'No hay productos disponibles'}</div>`;
         return;
     }
     container.innerHTML = products.map(function (p) {
@@ -1493,7 +1503,7 @@ function renderRolesTable(roles, workers) {
     const tbody = document.getElementById('rolesTableBody');
     if (!tbody) return;
     if (!roles || roles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4" style="color: var(--text-muted);">No hay roles definidos</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4" style="color: var(--text-muted);">${window.adminI18n.noRoles || 'No hay roles definidos'}</td></tr>`;
         return;
     }
 
@@ -1558,7 +1568,7 @@ function openRoleModal(id) {
             }
 
             permissions.forEach(function (p) {
-                const isSpecial = p === 'ADMIN_ACCESS';
+                const isSpecial = p === 'ACCESO_TOTAL_ADMIN';
                 const isChecked = role && role.permissions && role.permissions.includes(p);
 
                 const div = document.createElement('div');

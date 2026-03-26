@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
  * Entity representing an activity log entry to track system actions.
  */
 @Entity
-@Table(name = "activity_logs")
+@Table(name = "activity_logs", indexes = {
+    @Index(name = "idx_activity_logs_timestamp", columnList = "timestamp")
+})
 @Getter
 @Setter
 @NoArgsConstructor

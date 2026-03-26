@@ -13,7 +13,8 @@ import java.util.List;
  */
 @Entity
 @Table(name = "returns", indexes = {
-        @Index(name = "idx_returns_sale_id", columnList = "sale_id")
+        @Index(name = "idx_returns_sale_id", columnList = "sale_id"),
+        @Index(name = "idx_returns_created_at", columnList = "created_at")
 })
 @Getter
 @Setter

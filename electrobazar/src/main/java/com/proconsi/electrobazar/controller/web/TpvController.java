@@ -81,8 +81,10 @@ public class TpvController {
 
         model.addAttribute("products", products);
         model.addAttribute("search", search);
-        model.addAttribute("totalToday", saleService.sumTotalToday());
-        model.addAttribute("countToday", saleService.countToday());
+
+        SaleSummaryResponse summary = saleService.getSummaryToday();
+        model.addAttribute("totalToday", summary.getTotalSalesAmount());
+        model.addAttribute("countToday", summary.getTotalSalesCount());
         model.addAttribute("tariffs", tariffService.findAllActive());
 
         if (isRegisterOpen) {
@@ -162,9 +164,19 @@ public class TpvController {
         // recalculate.
         List<SaleLine> lines = new ArrayList<>();
 
+        // 1. Bulk fetch all products in one query to avoid N+1 lookups
+        List<Long> distinctIds = productIds.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+        
+        java.util.Map<Long, Product> productMap = productService.findAllByIds(distinctIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Product::getId, p -> p));
+
+        // 2. Build SaleLine objects
         for (int i = 0; i < productIds.size(); i++) {
             Long pid = productIds.get(i);
-            Product product = (pid != null && pid > 0) ? productService.findById(pid) : null;
+            Product product = (pid != null && pid > 0) ? productMap.get(pid) : null;
             int qty = quantities.get(i);
 
             BigDecimal unitPrice = BigDecimal.ZERO;
@@ -369,8 +381,6 @@ public class TpvController {
         SaleSummaryResponse summary = saleService.getSummaryToday();
 
         // 2. Fetch Payments & Movements
-        BigDecimal cashSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CASH);
-        BigDecimal cardSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD);
         BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
         BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
 
@@ -387,7 +397,7 @@ public class TpvController {
 
         // 3. Expected Cash Logic
         BigDecimal expectedCashInDrawer = openRegister.getOpeningBalance()
-                .add(cashSalesToday)
+                .add(summary.getTotalCashAmount())
                 .add(totalEntries)
                 .subtract(totalWithdrawals)
                 .subtract(cashRefundsToday);
@@ -608,8 +618,10 @@ public class TpvController {
         model.addAttribute("paymentMethods", PaymentMethod.values());
 
         Map<Long, Integer> alreadyReturned = new HashMap<>();
+        List<SaleReturn> existingReturns = returnService.findByOriginalSaleId(saleId);
+
         for (SaleLine line : sale.getLines()) {
-            int returned = returnService.findByOriginalSaleId(saleId).stream()
+            int returned = existingReturns.stream()
                     .flatMap(r -> r.getLines().stream())
                     .filter(rl -> rl.getSaleLine().getId().equals(line.getId()))
                     .mapToInt(ReturnLine::getQuantity)

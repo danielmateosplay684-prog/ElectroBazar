@@ -321,7 +321,10 @@ public class SaleServiceImpl implements SaleService {
         }
 
         // Inventory Restoration
-        sale.getLines().forEach(l -> productService.increaseStock(l.getProduct().getId(), l.getQuantity()));
+        // Optimized stock restoration: No entity lookup needed before update
+        sale.getLines().stream()
+            .filter(l -> l.getProduct() != null)
+            .forEach(l -> productService.increaseStock(l.getProduct().getId(), l.getQuantity()));
 
         sale.setStatus(Sale.SaleStatus.CANCELLED);
         sale.setNotes((sale.getNotes() != null ? sale.getNotes() + " | " : "") + "ANNULLED: " + reason);

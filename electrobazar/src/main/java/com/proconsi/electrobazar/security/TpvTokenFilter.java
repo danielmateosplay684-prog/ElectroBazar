@@ -51,11 +51,11 @@ public class TpvTokenFilter extends OncePerRequestFilter {
         if (tpvToken != null && tpvToken.equals(requestToken)) {
             // Build pseudo-user for the TPV client
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    "TPV_CLIENT",
+                    "ACCESO_TPV",
                     null,
-                    Collections.singletonList(new SimpleGrantedAuthority("TPV_CLIENT")));
+                    Collections.singletonList(new SimpleGrantedAuthority("ACCESO_TPV")));
             
-            // Populate SecurityContext with the TPV_CLIENT authority
+            // Populate SecurityContext with the ACCESO_TPV authority
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 

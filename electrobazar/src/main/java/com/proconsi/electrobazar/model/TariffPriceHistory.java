@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 @Table(name = "tariff_price_history", indexes = {
     @Index(name = "idx_tph_product", columnList = "product_id"),
     @Index(name = "idx_tph_tariff", columnList = "tariff_id"),
-    @Index(name = "idx_tph_dates", columnList = "valid_from, valid_to")
+    @Index(name = "idx_tph_dates", columnList = "valid_from, valid_to"),
+    @Index(name = "idx_tph_current", columnList = "product_id, valid_to")
 })
 @Getter
 @Setter

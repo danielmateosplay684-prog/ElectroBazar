@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
  * Tracks all financial movements during a day or shift.
  */
 @Entity
-@Table(name = "cash_registers")
+@Table(name = "cash_registers", indexes = {
+    @Index(name = "idx_cash_register_date", columnList = "registerDate, closed")
+})
 @Getter
 @Setter
 @NoArgsConstructor

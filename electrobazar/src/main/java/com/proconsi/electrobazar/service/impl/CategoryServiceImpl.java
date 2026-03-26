@@ -4,6 +4,7 @@ import com.proconsi.electrobazar.exception.DuplicateResourceException;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.Category;
 import com.proconsi.electrobazar.repository.CategoryRepository;
+import com.proconsi.electrobazar.repository.ProductRepository;
 import com.proconsi.electrobazar.repository.specification.CategorySpecification;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.CategoryService;
@@ -25,6 +26,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
     private final ActivityLogService activityLogService;
     private final TranslationService translationService;
 
@@ -133,8 +135,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public void hardDelete(Long id) {
         Category category = findById(id);
-        if (category.getProducts() != null && !category.getProducts().isEmpty()) {
-            throw new IllegalStateException("Cannot delete a category that still contains products.");
+        long productCount = productRepository.countByCategoryId(id);
+        if (productCount > 0) {
+            throw new IllegalStateException("No se puede eliminar una categoría que aún contiene productos (" + productCount + ").");
         }
         categoryRepository.delete(category);
 

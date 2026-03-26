@@ -48,6 +48,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Product> findAllActiveWithCategory();
 
     /**
+     * Paginated version of active products retrieval to limit results at DB level.
+     */
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate WHERE p.active = true ORDER BY p.nameEs ASC")
+    List<Product> findAllActiveWithCategory(org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Lists all products (including inactive ones) with their associations.
      */
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate ORDER BY p.nameEs ASC")
@@ -75,7 +81,28 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Product> findByTaxRateIdIn(List<Long> taxRateIds);
 
     /**
+     * Atomic stock reduction with safety check to prevent negative inventory.
+     * Returns the number of affected rows (1 if successful, 0 if insufficient stock or not found).
+     */
+    @Modifying
+    @Query("UPDATE Product p SET p.stock = p.stock - :quantity WHERE p.id = :id AND p.stock >= :quantity")
+    int decreaseStockAtomic(@Param("id") Long id, @Param("quantity") Integer quantity);
+
+    /**
+     * Atomic stock restoration for cancellations.
+     */
+    @Modifying
+    @Query("UPDATE Product p SET p.stock = p.stock + :quantity WHERE p.id = :id")
+    void increaseStockAtomic(@Param("id") Long id, @Param("quantity") Integer quantity);
+
+    /**
      * Counts products whose stock level is below a given threshold.
      */
     long countByStockLessThan(Integer threshold);
+
+    /**
+     * Efficiently counts products assigned to a specific category.
+     * Used for safe deletion of categories without loading all product entities.
+     */
+    long countByCategoryId(Long categoryId);
 }

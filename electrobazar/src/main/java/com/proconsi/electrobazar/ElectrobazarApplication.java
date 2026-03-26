@@ -76,11 +76,11 @@ public class ElectrobazarApplication {
             Role adminRole = roleRepository.findByName("ADMIN").orElseGet(() -> {
                 Role newRole = new Role();
                 newRole.setName("ADMIN");
-                newRole.setDescription("Administrator with full access");
+                newRole.setDescription("Administrador con acceso total al sistema");
                 return newRole;
             });
             
-            adminRole.setPermissions(Set.of("MANAGE_PRODUCTS_TPV", "CASH_CLOSE", "ADMIN_ACCESS"));
+            adminRole.setPermissions(Set.of("GESTION_INVENTARIO", "CIERRE_CAJA", "ACCESO_TOTAL_ADMIN"));
             final Role finalAdminRole = roleRepository.save(adminRole);
 
             // 2. Ensure root worker is active and has the ADMIN role

@@ -27,11 +27,15 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
      */
     List<TariffPriceHistory> findByTariffIdOrderByValidFromDesc(Long tariffId);
 
-    /**
-     * Finds the currently active record (no validTo date) for a product+tariff pair.
-     */
     @Query("SELECT t FROM TariffPriceHistory t WHERE t.product.id = :productId AND t.tariff.id = :tariffId AND t.validTo IS NULL")
     Optional<TariffPriceHistory> findCurrentByProductAndTariff(@Param("productId") Long productId, @Param("tariffId") Long tariffId);
+
+    /**
+     * Efficiently retrieves active price history records for many products in bulk.
+     * Prevents N+1 query patterns during mass price updates.
+     */
+    @Query("SELECT t FROM TariffPriceHistory t WHERE t.product.id IN :productIds AND t.validTo IS NULL")
+    List<TariffPriceHistory> findAllCurrentByProductIds(@Param("productIds") List<Long> productIds);
 
     /**
      * Lists distinct dates when historical price transitions occurred for a tariff.

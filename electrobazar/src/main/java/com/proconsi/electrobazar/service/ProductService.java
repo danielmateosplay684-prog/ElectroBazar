@@ -75,6 +75,13 @@ public interface ProductService {
     Product findById(Long id);
 
     /**
+     * Efficiently fetches multiple products by their IDs.
+     * @param ids List of product IDs.
+     * @return A list of products.
+     */
+    List<Product> findAllByIds(List<Long> ids);
+
+    /**
      * Persists a new product record.
      * @param product The entity data.
      * @return The saved Product.
