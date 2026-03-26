@@ -47,6 +47,11 @@ public interface SaleService {
     Page<Sale> findAll(Pageable pageable);
 
     /**
+     * Advanced search for sales in the admin panel.
+     */
+    Page<Sale> search(String search, String type, String method, java.time.LocalDate date, Pageable pageable);
+
+    /**
      * Retrieves sales processed on the current day.
      * @return List of today's sales.
      */

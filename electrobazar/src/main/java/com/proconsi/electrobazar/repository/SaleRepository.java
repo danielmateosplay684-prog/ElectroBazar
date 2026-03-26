@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -22,9 +23,9 @@ import java.util.Optional;
  * Central hub for sales data, reporting, and dashboard statistics.
  */
 @Repository
-public interface SaleRepository extends JpaRepository<Sale, Long> {
+public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificationExecutor<Sale> {
 
-    @EntityGraph(attributePaths = { "customer", "worker" })
+    @EntityGraph(attributePaths = { "customer", "worker", "invoice", "ticket" })
     @Query("SELECT s FROM Sale s")
     Page<Sale> findAll(Pageable pageable);
 

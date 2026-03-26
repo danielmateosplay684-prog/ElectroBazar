@@ -110,6 +110,13 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Sale> search(String search, String type, String method, LocalDate date, Pageable pageable) {
+        org.springframework.data.jpa.domain.Specification<Sale> spec = com.proconsi.electrobazar.repository.specification.SaleSpecification.filterSales(search, type, method, date);
+        return saleRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Sale> findToday() {
         return saleRepository.findToday();
     }

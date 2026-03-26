@@ -19,6 +19,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -71,6 +75,44 @@ public class AdminApiRestController {
     @GetMapping("/dashboard/stats")
     public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) String period) {
         return ResponseEntity.ok(cashRegisterService.getDashboardStats(period));
+    }
+
+    /**
+     * Paginated list of sales with server-side filtering.
+     * Used for the administration billing panel.
+     */
+    @GetMapping("/sales")
+    public ResponseEntity<Map<String, Object>> getSalesPage(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String method,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Sale> salesPage = saleService.search(search, type, method, date, pageable);
+        
+        List<AdminSaleListingDTO> list = salesPage.getContent().stream().map(s -> AdminSaleListingDTO.builder()
+                .id(s.getId())
+                .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber() : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
+                .createdAt(s.getCreatedAt())
+                .type(s.getInvoice() != null ? "factura" : "ticket")
+                .status(s.getStatus() != null ? s.getStatus().name() : "ACTIVE")
+                .customerName(s.getCustomer() != null ? s.getCustomer().getName() : null)
+                .customerTaxId(s.getCustomer() != null ? s.getCustomer().getTaxId() : null)
+                .workerUsername(s.getWorker() != null ? s.getWorker().getUsername() : null)
+                .paymentMethod(s.getPaymentMethod() != null ? s.getPaymentMethod().name() : "CASH")
+                .totalAmount(s.getTotalAmount())
+                .build()).toList();
+                
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", list);
+        response.put("totalPages", salesPage.getTotalPages());
+        response.put("totalElements", salesPage.getTotalElements());
+        response.put("currentPage", salesPage.getNumber());
+        
+        return ResponseEntity.ok(response);
     }
 
     /**

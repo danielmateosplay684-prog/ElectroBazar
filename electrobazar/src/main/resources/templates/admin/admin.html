@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <th:block th:replace="~{fragments/theme :: themeScript}" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/admin/admin-main.js(v='1.4')}" defer></script>
+    <script th:src="@{/js/admin/admin-main.js(v='1.5')}" defer></script>
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
         #ipcUpdateModal .modal-content {
@@ -98,6 +98,69 @@
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
         }
 
+        /* ── Pagination ── */
+        .pagination-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .pagination-btn {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(245, 166, 35, 0.05);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .pagination-jump {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pagination-jump input {
+            width: 60px;
+            height: 34px;
+            text-align: center;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
         .form-control:focus {
             background-color: var(--secondary) !important;
             border-color: var(--accent) !important;
@@ -105,7 +168,8 @@
             box-shadow: 0 0 0 0.25rem rgba(245, 166, 35, 0.15) !important;
         }
 
-        .cash-row:hover, .invoice-row:hover {
+        .cash-row:hover,
+        .invoice-row:hover {
             background: rgba(245, 166, 35, 0.08) !important;
             transition: background 0.2s ease;
         }
@@ -462,16 +526,17 @@
                             th:text="#{admin.tariffs.comparison.title}">LISTA DE PRECIOS VIGENTES POR TARIFA</span>
                     </h6>
                     <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-sm btn-outline-accent" id="btnToggleTariffEdit" onclick="toggleTariffEditMode()"
-                                style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid var(--accent); color: var(--accent); background: transparent;">
+                        <button class="btn btn-sm btn-outline-accent" id="btnToggleTariffEdit"
+                            onclick="toggleTariffEditMode()"
+                            style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid var(--accent); color: var(--accent); background: transparent;">
                             <i class="bi bi-pencil-square me-1"></i> Modo Edición
                         </button>
                         <button class="btn btn-sm btn-accent" id="btnFinishTariffEdit" onclick="openApplyPricesModal()"
-                                style="display: none; border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; background: var(--accent); color: var(--primary); border: none;">
+                            style="display: none; border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; background: var(--accent); color: var(--primary); border: none;">
                             <i class="bi bi-check-all me-1"></i> Finalizar Edición
                         </button>
                         <button class="btn btn-sm btn-outline-info" onclick="openPriceChangesHistoryModal()"
-                                style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid #0dcaf0; color: #0dcaf0; background: transparent;">
+                            style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid #0dcaf0; color: #0dcaf0; background: transparent;">
                             <i class="bi bi-clock-history me-1"></i> Ver Cambios
                         </button>
                         <div class="input-group input-group-sm" style="width: 280px;">
@@ -941,7 +1006,8 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(coupons)}">
-                            <td colspan="8" class="text-center text-muted py-4" th:text="#{admin.coupons.empty}">No hay cupones creados.</td>
+                            <td colspan="8" class="text-center text-muted py-4" th:text="#{admin.coupons.empty}">No hay
+                                cupones creados.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1010,116 +1076,127 @@
             </div>
         </div>
 
-    <!-- Modal: Aplicar Precios (Matriz) -->
-    <div class="modal fade" id="applyPricesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Confirmar Tarifario Nuevo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info mb-4" style="background: rgba(var(--accent-rgb), 0.1); border: 1px solid var(--accent); color: var(--text-main);">
-                        <i class="bi bi-info-circle me-2"></i> Se han detectado <strong id="pendingChangesCount">0</strong> cambios en el tarifario. 
-                        Revisa los cambios y selecciona cuándo quieres que entren en vigor.
+        <!-- Modal: Aplicar Precios (Matriz) -->
+        <div class="modal fade" id="applyPricesModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Confirmar Tarifario Nuevo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    
-                    <div class="mb-4" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
-                        <table class="table table-dark table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Tarifa</th>
-                                    <th class="text-end">Precio Nuevo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pendingChangesList">
-                                <!-- JS items -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Fecha de Aplicación</label>
-                            <input type="date" id="applyPricesDate" class="form-control" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-4"
+                            style="background: rgba(var(--accent-rgb), 0.1); border: 1px solid var(--accent); color: var(--text-main);">
+                            <i class="bi bi-info-circle me-2"></i> Se han detectado <strong
+                                id="pendingChangesCount">0</strong> cambios en el tarifario.
+                            Revisa los cambios y selecciona cuándo quieres que entren en vigor.
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Hora (opcional)</label>
-                            <input type="time" id="applyPricesTime" class="form-control" value="00:00">
-                        </div>
-                    </div>
-                    <div class="form-text mt-2 text-muted">Aviso: Si eliges el día de hoy antes del cierre de caja, los precios se aplicarán al momento.</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-accent" onclick="submitBulkPriceUpdate()" style="color: #000; font-weight: 700;">
-                        Programar y Finalizar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Modal: Historial/Cambios de Precios -->
-    <div class="modal fade" id="priceChangesHistoryModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>Planificación de Precios y Tarifas</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3" id="priceHistoryTabs">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabPendingPrices">Cambios Pendientes</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPastPrices">Historial de Aplicaciones</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content border border-secondary p-3 rounded bg-dark">
-                        <div class="tab-pane fade show active" id="tabPendingPrices">
-                            <div class="table-responsive">
-                                <table class="table table-dark table-striped table-hover align-middle mb-0" id="tablePendingPrices">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha Programada</th>
-                                            <th>Producto</th>
-                                            <th>Tarifa</th>
-                                            <th class="text-end">Precio</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- JS items -->
-                                    </tbody>
-                                </table>
+                        <div class="mb-4"
+                            style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+                            <table class="table table-dark table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Tarifa</th>
+                                        <th class="text-end">Precio Nuevo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingChangesList">
+                                    <!-- JS items -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Aplicación</label>
+                                <input type="date" id="applyPricesDate" class="form-control"
+                                    th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hora (opcional)</label>
+                                <input type="time" id="applyPricesTime" class="form-control" value="00:00">
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="tabPastPrices">
-                            <div class="table-responsive">
-                                <table class="table table-dark table-striped table-hover align-middle mb-0" id="tablePastPrices">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha Cambio</th>
-                                            <th>Producto</th>
-                                            <th>Tarifa</th>
-                                            <th class="text-end">Precio Antiguo</th>
-                                            <th class="text-end">Precio Nuevo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- JS items -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div class="form-text mt-2 text-muted">Aviso: Si eliges el día de hoy antes del cierre de caja,
+                            los precios se aplicarán al momento.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-accent" onclick="submitBulkPriceUpdate()"
+                            style="color: #000; font-weight: 700;">
+                            Programar y Finalizar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- Modal: Historial/Cambios de Precios -->
+        <div class="modal fade" id="priceChangesHistoryModal" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>Planificación de Precios y
+                            Tarifas</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="nav nav-tabs mb-3" id="priceHistoryTabs">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab"
+                                    data-bs-target="#tabPendingPrices">Cambios Pendientes</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPastPrices">Historial
+                                    de Aplicaciones</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content border border-secondary p-3 rounded bg-dark">
+                            <div class="tab-pane fade show active" id="tabPendingPrices">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-striped table-hover align-middle mb-0"
+                                        id="tablePendingPrices">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha Programada</th>
+                                                <th>Producto</th>
+                                                <th>Tarifa</th>
+                                                <th class="text-end">Precio</th>
+                                                <th class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- JS items -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tabPastPrices">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-striped table-hover align-middle mb-0"
+                                        id="tablePastPrices">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha Cambio</th>
+                                                <th>Producto</th>
+                                                <th>Tarifa</th>
+                                                <th class="text-end">Precio Antiguo</th>
+                                                <th class="text-end">Precio Nuevo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- JS items -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Modal: Editar Tarifa -->
         <div class="modal fade" id="editTariffModal" tabindex="-1">
@@ -1248,19 +1325,20 @@
 
                         <!-- Product Restriction Section -->
                         <div class="mt-2 pt-3" style="border-top: 1px dashed var(--border);">
-                            <label class="form-label small fw-bold"><i class="bi bi-box-seam me-1"></i> Restringir a productos (Opcional)</label>
-                            
+                            <label class="form-label small fw-bold"><i class="bi bi-box-seam me-1"></i> Restringir a
+                                productos (Opcional)</label>
+
                             <div class="position-relative">
                                 <div class="input-group input-group-sm mb-2">
-                                    <span class="input-group-text bg-primary border-border text-muted"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="couponProductSearch" class="form-control border-border" 
-                                        placeholder="Busca productos para añadir..." 
-                                        autocomplete="off"
+                                    <span class="input-group-text bg-primary border-border text-muted"><i
+                                            class="bi bi-search"></i></span>
+                                    <input type="text" id="couponProductSearch" class="form-control border-border"
+                                        placeholder="Busca productos para añadir..." autocomplete="off"
                                         onfocus="searchCouponProducts(this.value, true)"
                                         oninput="searchCouponProducts(this.value)">
                                 </div>
-                                
-                                <div id="couponProductSearchResults" class="list-group position-absolute w-100 shadow" 
+
+                                <div id="couponProductSearchResults" class="list-group position-absolute w-100 shadow"
                                     style="z-index: 2000; display: none; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); background: var(--secondary);">
                                 </div>
                             </div>
@@ -1272,19 +1350,20 @@
 
                         <!-- Category Restriction Section -->
                         <div class="mt-4">
-                            <label class="form-label small fw-bold"><i class="bi bi-tags me-1"></i> Restringir a categorías (Opcional)</label>
-                            
+                            <label class="form-label small fw-bold"><i class="bi bi-tags me-1"></i> Restringir a
+                                categorías (Opcional)</label>
+
                             <div class="position-relative">
                                 <div class="input-group input-group-sm mb-2">
-                                    <span class="input-group-text bg-primary border-border text-muted"><i class="bi bi-tag"></i></span>
-                                    <input type="text" id="couponCategorySearch" class="form-control border-border" 
-                                        placeholder="Busca categorías para añadir..." 
-                                        autocomplete="off"
+                                    <span class="input-group-text bg-primary border-border text-muted"><i
+                                            class="bi bi-tag"></i></span>
+                                    <input type="text" id="couponCategorySearch" class="form-control border-border"
+                                        placeholder="Busca categorías para añadir..." autocomplete="off"
                                         onfocus="searchCouponCategories(this.value, true)"
                                         oninput="searchCouponCategories(this.value)">
                                 </div>
-                                
-                                <div id="couponCategorySearchResults" class="list-group position-absolute w-100 shadow" 
+
+                                <div id="couponCategorySearchResults" class="list-group position-absolute w-100 shadow"
                                     style="z-index: 2000; display: none; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); background: var(--secondary);">
                                 </div>
                             </div>
@@ -1433,7 +1512,7 @@
                 <!-- Centro: Buscador (Matches TPV Header) -->
                 <!-- The search input has been moved to the shared filter bar -->
 
-                </div>
+            </div>
 
             <ul class="nav nav-tabs mt-4 mb-0" id="mgmtTabs" role="tablist" style="border:none">
                 <li class="nav-item" role="presentation">
@@ -1479,7 +1558,8 @@
                                     <th th:text="#{common.name}">Nombre</th>
                                     <th th:text="#{common.description}">Descripción</th>
                                     <th th:title="#{admin.common.iva}" th:text="#{admin.common.iva}">IVA</th>
-                                    <th style="text-align:right; width: 100px;" th:text="#{admin.common.price}">Precio</th>
+                                    <th style="text-align:right; width: 100px;" th:text="#{admin.common.price}">Precio
+                                    </th>
                                     <th th:text="#{admin.common.stock}">Stock</th>
                                     <th th:text="#{admin.common.category}">Categoría</th>
                                     <th th:text="#{admin.taxrates.active}">Activo</th>
@@ -1514,7 +1594,8 @@
                                             style="color:var(--text-muted)">—</span>
                                     </td>
                                     <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:#000;text-align:right"
-                                        th:text="${#numbers.formatDecimal(p.price, 1, (p.price.stripTrailingZeros().scale() < 2 ? 2 : p.price.stripTrailingZeros().scale()), 'COMMA')} + ' €'"></td>
+                                        th:text="${#numbers.formatDecimal(p.price, 1, (p.price.stripTrailingZeros().scale() < 2 ? 2 : p.price.stripTrailingZeros().scale()), 'COMMA')} + ' €'">
+                                    </td>
                                     <td>
                                         <div class="d-flex flex-column align-items-center" style="gap: 0.2rem;">
                                             <span th:text="${p.stock}"
@@ -1581,7 +1662,8 @@
                     </div>
                     <div class="d-flex justify-content-end mt-2 mb-2">
                         <button class="btn-nuevo" onclick="openCategoryModal()">
-                            <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.categories.new}">Nueva Categoría</span>
+                            <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.categories.new}">Nueva
+                                Categoría</span>
                         </button>
                     </div>
                     <div class="admin-table-wrap">
@@ -1708,8 +1790,8 @@
                             th:data-taxid="${sale.customer != null ? sale.customer.taxId : ''}"
                             th:data-type="${sale.invoice != null ? 'factura' : 'ticket'}"
                             th:data-method="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
-                            th:data-date="${#temporals.format(sale.createdAt, 'yyyy-MM-dd')}"
-                            style="cursor:pointer" th:onclick="'window.location.href = \'/admin/sale/' + ${sale.id} + '\''">
+                            th:data-date="${#temporals.format(sale.createdAt, 'yyyy-MM-dd')}" style="cursor:pointer"
+                            th:onclick="'window.location.href = \'/admin/sale/' + ${sale.id} + '\''">
                             <td style="color:var(--text-muted);font-weight:600"
                                 th:text="${sale.invoice != null ? sale.invoice.invoiceNumber : (sale.ticket != null ? sale.ticket.ticketNumber : '#' + sale.id)}">
                             </td>
@@ -1769,14 +1851,35 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(sales)}">
-                            <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)"
-                                th:text="#{admin.invoices.empty}">
-                                No hay ventas registradas en el periodo especificado.
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
+
+                <!-- Pagination for Sales -->
+                <div class="pagination-wrap">
+                    <button class="pagination-btn" id="salesPagePrev" onclick="changeSalesPage(-1)" disabled>
+                        <i class="bi bi-chevron-left"></i> <span
+                            th:text="#{admin.pagination.prev} ?: 'Anterior'">Anterior</span>
+                    </button>
+
+                    <div class="pagination-info">
+                        <span th:text="#{admin.pagination.page} ?: 'Página'">Página</span>
+                        <span id="salesCurrentPage">1</span>
+                        <span th:text="#{admin.pagination.of} ?: 'de'">de</span>
+                        <span id="salesTotalPages" th:text="${salesTotalPages}">1</span>
+                    </div>
+
+                    <div class="pagination-jump">
+                        <input type="number" id="salesJumpInput" min="1" th:max="${salesTotalPages}" value="1"
+                            onchange="jumpToSalesPage(this.value)">
+                        <span class="small text-muted" th:text="#{admin.pagination.jump} ?: 'Saltar'">Saltar</span>
+                    </div>
+
+                    <button class="pagination-btn" id="salesPageNext" onclick="changeSalesPage(1)"
+                        th:disabled="${salesTotalPages <= 1}">
+                        <span th:text="#{admin.pagination.next} ?: 'Siguiente'">Siguiente</span> <i
+                            class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1804,7 +1907,8 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                                class="bi bi-credit-card-2-front me-2"></i><span th:text="#{admin.returns.filter.payment}">Pago</span></label>
+                                class="bi bi-credit-card-2-front me-2"></i><span
+                                th:text="#{admin.returns.filter.payment}">Pago</span></label>
                         <select id="returnFilterMethod" class="form-select form-select-sm" onchange="filterReturns()">
                             <option value="" th:text="#{admin.invoices.payment.any}">Cualquier método</option>
                             <option value="Efectivo" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
@@ -1813,7 +1917,8 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                                class="bi bi-calendar3 me-2"></i><span th:text="#{admin.returns.filter.date}">Fecha</span></label>
+                                class="bi bi-calendar3 me-2"></i><span
+                                th:text="#{admin.returns.filter.date}">Fecha</span></label>
                         <input type="date" id="returnFilterDate" class="form-control form-control-sm"
                             onchange="filterReturns()">
                     </div>
@@ -1845,8 +1950,8 @@
                         <tr th:each="ret : ${returns}" class="return-row" th:data-number="${ret.returnNumber}"
                             th:data-reason="${ret.reason ?: ''}"
                             th:data-method="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
-                            th:data-date="${#temporals.format(ret.createdAt, 'yyyy-MM-dd')}"
-                            style="cursor:pointer" th:onclick="'window.location.href = \'/admin/return/' + ${ret.id} + '\''">
+                            th:data-date="${#temporals.format(ret.createdAt, 'yyyy-MM-dd')}" style="cursor:pointer"
+                            th:onclick="'window.location.href = \'/admin/return/' + ${ret.id} + '\''">
                             <td style="color:var(--text-muted);font-weight:600" th:text="${ret.returnNumber}"></td>
                             <td
                                 th:text="${ret.originalSale.invoice != null ? ret.originalSale.invoice.invoiceNumber : (ret.originalSale.ticket != null ? ret.originalSale.ticket.ticketNumber : '#' + ret.originalSale.id)}">
@@ -1860,7 +1965,8 @@
                             <td th:text="${#strings.abbreviate(ret.reason ?: '—', 40)}"></td>
                             <td style="font-weight: 500;">
                                 <span th:if="${ret.worker != null}" th:text="${ret.worker.username}"></span>
-                                <span th:unless="${ret.worker != null}" th:text="#{admin.invoices.worker.system}"></span>
+                                <span th:unless="${ret.worker != null}"
+                                    th:text="#{admin.invoices.worker.system}"></span>
                             </td>
                             <td>
                                 <i th:class="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH' ? 'bi bi-cash' : 'bi bi-credit-card'}"
@@ -2180,7 +2286,8 @@
                             th:data-worker="${register.worker != null ? register.worker.username : 'Sistema'}"
                             th:data-open-date="${register.openingTime != null ? #temporals.format(register.openingTime, 'yyyy-MM-dd') : ''}"
                             th:data-close-date="${register.closedAt != null ? #temporals.format(register.closedAt, 'yyyy-MM-dd') : ''}"
-                            style="cursor:pointer" th:onclick="'window.location.href = \'/admin/cash-register/' + ${register.id} + '\''">
+                            style="cursor:pointer"
+                            th:onclick="'window.location.href = \'/admin/cash-register/' + ${register.id} + '\''">
                             <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+register.id}"></td>
                             <td
                                 th:text="${register.openingTime != null ? #temporals.format(register.openingTime, 'dd/MM/yyyy HH:mm') : '—'}">
@@ -2198,7 +2305,8 @@
                             </td>
 
                             <td style="text-align:right">
-                                <span th:if="${(register.difference ?: 0) == 0}" class="badge-active yes" th:text="'Cuadrado (0.00 €)'"></span>
+                                <span th:if="${(register.difference ?: 0) == 0}" class="badge-active yes"
+                                    th:text="'Cuadrado (0.00 €)'"></span>
                                 <span th:if="${(register.difference ?: 0) > 0}" class="badge-active yes"
                                     th:text="'+' + ${#numbers.formatDecimal(register.difference, 1, 2)} + ' €'"></span>
                                 <span th:if="${(register.difference ?: 0) < 0}" class="badge-active no"
@@ -2206,7 +2314,8 @@
                             </td>
                             <td style="font-weight: 500;">
                                 <span th:if="${register.worker != null}" th:text="${register.worker.username}"></span>
-                                <span th:unless="${register.worker != null}" th:text="#{admin.invoices.worker.system}"></span>
+                                <span th:unless="${register.worker != null}"
+                                    th:text="#{admin.invoices.worker.system}"></span>
                             </td>
 
                             <td style="text-align:right">
@@ -2315,10 +2424,10 @@
                                     th:text="#{common.inactive}">Inactivo</span>
                             </td>
                             <td>
-                                <span th:if="${w.role != null}" th:each="perm : ${w.role.permissions}"
+                                <span th:if="${w.role != null}" th:each="perm : ${w.role?.permissions}"
                                     class="badge me-1" th:text="${perm}"
                                     style="font-size: 0.65rem; background-color: rgba(148,163,184,0.15); color: var(--text-muted); border: 1px solid rgba(148,163,184,0.25);"></span>
-                                <span th:if="${w.role == null || #lists.isEmpty(w.role.permissions)}" class="small"
+                                <span th:if="${w.role == null || #lists.isEmpty(w.role?.permissions)}" class="small"
                                     style="color: var(--text-muted);" th:text="#{admin.workers.nopermissions}">Sin
                                     permisos</span>
                             </td>
@@ -2329,8 +2438,7 @@
                                     onclick="openWorkerModal(this.getAttribute('data-id'), this.getAttribute('data-username'), this.getAttribute('data-active') === 'true', null, this.getAttribute('data-role'))">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn-icon danger" th:data-id="${w.id}"
-                                    th:title="#{common.delete}"
+                                <button class="btn-icon danger" th:data-id="${w.id}" th:title="#{common.delete}"
                                     onclick="deleteWorker(this.getAttribute('data-id'))">
                                     <i class="bi bi-trash"></i>
                                 </button>

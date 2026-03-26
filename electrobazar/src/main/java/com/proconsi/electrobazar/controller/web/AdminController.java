@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import com.proconsi.electrobazar.model.Sale;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,7 +118,9 @@ public class AdminController {
         model.addAttribute("categories", categoryService.findAll());
         
         // Sales and Returns (Most critical for 30k records)
-        model.addAttribute("sales", saleService.findAll(latest50).getContent());
+        Page<Sale> salesPage = saleService.findAll(latest50);
+        model.addAttribute("sales", salesPage.getContent());
+        model.addAttribute("salesTotalPages", salesPage.getTotalPages());
         model.addAttribute("returns", returnService.findAll(latest50).getContent());
         
         // Infrastructure and Management (Limited to recent 100 for performance)

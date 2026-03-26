@@ -45,6 +45,8 @@ function switchView(viewId, btnElement) {
         loadBulkProducts();
     } else if (viewId === 'settingsView') {
         loadMailSettings();
+    } else if (viewId === 'invoicesView') {
+        fetchSalesPage(0);
     }
 }
 
@@ -84,6 +86,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (savedView) {
         const btn = document.querySelector(`.sidebar-menu-btn[onclick*="'${savedView}'"]`);
         switchView(savedView, btn);
+    }
+
+    // Initialize pagination state from DOM
+    const totalEl = document.getElementById('salesTotalPages');
+    if (totalEl) {
+        salesTotalPages = parseInt(totalEl.innerText) || 1;
     }
 });
 
@@ -1673,29 +1681,113 @@ function resetProductFilters() {
     filterProducts();
 }
 
-function filterInvoices() {
-    const query = document.getElementById('invoiceFilterSearch').value.toLowerCase().trim();
+let currentSalesPage = 0;
+let salesTotalPages = 1;
+
+async function fetchSalesPage(page) {
+    const search = (document.getElementById('invoiceFilterSearch').value || '').trim();
     const type = document.getElementById('invoiceFilterType').value;
     const method = document.getElementById('invoiceFilterMethod').value;
     const date = document.getElementById('invoiceFilterDate').value;
+    
+    const url = `/api/admin/sales?page=${page}&search=${encodeURIComponent(search)}&type=${type}&method=${method}&date=${date}`;
+    
+    // Show loading state if needed
+    const tbody = document.getElementById('invoicesTableBody');
+    if (tbody) tbody.style.opacity = '0.5';
 
-    document.querySelectorAll('.invoice-row').forEach(row => {
-        const id = (row.getAttribute('data-id') || '');
-        const number = (row.getAttribute('data-number') || '').toLowerCase();
-        const customer = (row.getAttribute('data-customer') || '').toLowerCase();
-        const taxid = (row.getAttribute('data-taxid') || '').toLowerCase();
-        const rowType = row.getAttribute('data-type');
-        const rowMethod = row.getAttribute('data-method');
-        const rowDate = row.getAttribute('data-date');
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('API server error');
+        const data = await response.json();
+        
+        currentSalesPage = data.currentPage;
+        salesTotalPages = data.totalPages;
+        
+        renderSalesTable(data.content);
+        updateSalesPaginationUI(data);
+    } catch (error) {
+        console.error('Error fetching sales:', error);
+        if (typeof showToast === 'function') showToast('Error al cargar facturas', 'error');
+    } finally {
+        if (tbody) tbody.style.opacity = '1';
+    }
+}
 
-        let matches = true;
-        if (query && !id.includes(query) && !number.includes(query) && !customer.includes(query) && !taxid.includes(query)) matches = false;
-        if (type && rowType !== type) matches = false;
-        if (method && rowMethod !== method) matches = false;
-        if (date && rowDate !== date) matches = false;
-
-        row.style.display = matches ? '' : 'none';
+function renderSalesTable(sales) {
+    const tbody = document.getElementById('invoicesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (sales.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">No se encontraron registros.</td></tr>`;
+        return;
+    }
+    
+    sales.forEach(sale => {
+        const row = document.createElement('tr');
+        row.className = 'invoice-row';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `
+            <td style="color:var(--text-muted);font-weight:600">${sale.displayId}</td>
+            <td>${new Date(sale.createdAt).toLocaleString()}</td>
+            <td>
+                ${sale.status === 'CANCELLED' ? '<span class="badge mb-1 d-block" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600;"><i class="bi bi-x-circle me-1"></i>ANULADA</span>' : ''}
+                <span class="badge-active ${sale.type === 'factura' ? 'yes' : 'no'}">${sale.type === 'factura' ? 'Factura' : 'Ticket'}</span>
+            </td>
+            <td>
+                ${sale.customerName ? `<strong>${sale.customerName}</strong><div style="font-size:0.75rem;color:var(--text-muted)">${sale.customerTaxId}</div>` : '<span style="color:var(--text-muted)">-- Consumidor Final --</span>'}
+            </td>
+            <td style="font-weight: 500;">${sale.workerUsername || 'Sistema'}</td>
+            <td>
+                <i class="${sale.paymentMethod === 'CASH' ? 'bi bi-cash' : 'bi bi-credit-card'}" style="margin-right:0.3rem"></i>
+                ${sale.paymentMethod === 'CASH' ? 'Efectivo' : 'Tarjeta'}
+            </td>
+            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main);text-align:right">${sale.totalAmount.toFixed(2)} €</td>
+            <td style="text-align:right">
+                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                    ${sale.status !== 'CANCELLED' ? `<button class="btn-icon danger" title="Anular" onclick="event.stopPropagation(); cancelSale(${sale.id})"><i class="bi bi-x-circle"></i></button>` : ''}
+                    <button type="button" class="btn-icon" title="Vista Previa" onclick="event.stopPropagation(); showDocPreview('/tpv/receipt/${sale.id}')"><i class="bi bi-eye" style="color:#3498db;"></i></button>
+                    <a href="/tpv/receipt/${sale.id}?autoPrint=true" target="_blank" class="btn-icon" title="Imprimir" onclick="event.stopPropagation();"><i class="bi bi-printer" style="color:#e74c3c;"></i></a>
+                </div>
+            </td>
+        `;
+        row.onclick = () => window.location.href = `/admin/sale/${sale.id}`;
+        tbody.appendChild(row);
     });
+}
+
+function updateSalesPaginationUI(data) {
+    const pageEl = document.getElementById('salesCurrentPage');
+    const totalEl = document.getElementById('salesTotalPages');
+    const jumpInput = document.getElementById('salesJumpInput');
+    const prevBtn = document.getElementById('salesPagePrev');
+    const nextBtn = document.getElementById('salesPageNext');
+
+    if (pageEl) pageEl.innerText = data.currentPage + 1;
+    if (totalEl) totalEl.innerText = data.totalPages;
+    if (jumpInput) {
+        jumpInput.value = data.currentPage + 1;
+        jumpInput.max = data.totalPages;
+    }
+    
+    if (prevBtn) prevBtn.disabled = data.currentPage === 0;
+    if (nextBtn) nextBtn.disabled = data.currentPage >= data.totalPages - 1;
+}
+
+function changeSalesPage(delta) {
+    fetchSalesPage(currentSalesPage + delta);
+}
+
+function jumpToSalesPage(page) {
+    let p = parseInt(page) - 1;
+    if (isNaN(p) || p < 0) p = 0;
+    if (p >= salesTotalPages) p = salesTotalPages - 1;
+    fetchSalesPage(p);
+}
+
+function filterInvoices() {
+    fetchSalesPage(0);
 }
 function resetInvoiceFilters() {
     document.getElementById('invoiceFilterSearch').value = '';
@@ -2147,17 +2239,22 @@ function debounce(func, wait) {
 }
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
-    const btn = event.currentTarget;
-    const icon = btn.querySelector('i');
+    // Usamos window.event para evitar errores de scope en browsers o pasarlo en línea no funcionales
+    const btn = window.event ? window.event.currentTarget : (event ? event.currentTarget : null);
+    const icon = btn ? btn.querySelector('i') : null;
 
-    if (input.type === 'password') {
+    if (input && input.type === 'password') {
         input.type = 'text';
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-    } else {
+        if (icon) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    } else if (input) {
         input.type = 'password';
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
+        if (icon) {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
     }
 }
 
@@ -2678,9 +2775,86 @@ function formatDecimal(val, minFrac = 2, maxFrac = 4) {
 }
 
 // Expose to global scope
+window.switchView = switchView;
+window.showToast = showToast;
+window.previewImage = previewImage;
+window.openProductModal = openProductModal;
+window.saveProduct = saveProduct;
+window.deleteProduct = deleteProduct;
+window.openCategoryModal = openCategoryModal;
+window.saveCategory = saveCategory;
+window.deleteCategory = deleteCategory;
+window.uploadCsvFile = uploadCsvFile;
+window.uploadCustomersCsvFile = uploadCustomersCsvFile;
+window.loadActivityLog = loadActivityLog;
+window.onAnalyticsPeriodChange = onAnalyticsPeriodChange;
+window.updateAnalytics = updateAnalytics;
+window.openWorkerModal = openWorkerModal;
+window.saveWorker = saveWorker;
+window.deleteWorker = deleteWorker;
+window.openCustomerModal = openCustomerModal;
+window.saveCustomer = saveCustomer;
+window.deleteCustomer = deleteCustomer;
+window.openCustomerSalesModal = openCustomerSalesModal;
+window.openSchedulePriceModal = openSchedulePriceModal;
+window.saveScheduledPrice = saveScheduledPrice;
+window.loadFuturePrices = loadFuturePrices;
+window.loadPriceHistory = loadPriceHistory;
+window.showPreciosTab = showPreciosTab;
+window.loadBulkProducts = loadBulkProducts;
+window.selectAllBulkProducts = selectAllBulkProducts;
+window.updateBulkSelectedCount = updateBulkSelectedCount;
+window.toggleBulkPriceFields = toggleBulkPriceFields;
+window.applyBulkPriceUpdate = applyBulkPriceUpdate;
+window.openRoleModal = openRoleModal;
+window.saveRole = saveRole;
+window.deleteRole = deleteRole;
+window.filterWorkers = filterWorkers;
+window.resetWorkerFilters = resetWorkerFilters;
+window.filterRoles = filterRoles;
+window.resetRolePermFilters = resetRolePermFilters;
+window.filterProducts = filterProducts;
+window.resetProductFilters = resetProductFilters;
+window.fetchSalesPage = fetchSalesPage;
+window.changeSalesPage = changeSalesPage;
+window.jumpToSalesPage = jumpToSalesPage;
+window.filterInvoices = filterInvoices;
+window.resetInvoiceFilters = resetInvoiceFilters;
+window.filterCashClosures = filterCashClosures;
+window.resetCashFilters = resetCashFilters;
+window.filterCRM = filterCRM;
+window.resetCRMFilters = resetCRMFilters;
+window.filterActivity = filterActivity;
+window.resetActivityFilters = resetActivityFilters;
+window.resetCategoryFilters = resetCategoryFilters;
+window.filterFuturePrices = filterFuturePrices;
+window.resetFuturePriceFilters = resetFuturePriceFilters;
+window.filterBulkProductList = filterBulkProductList;
+window.selectBulkByCategory = selectBulkByCategory;
+window.filterReturns = filterReturns;
+window.resetReturnFilters = resetReturnFilters;
+window.cancelSale = cancelSale;
+window.loadMailSettings = loadMailSettings;
+window.saveMailSettings = saveMailSettings;
+window.openIpcUpdateModal = openIpcUpdateModal;
+window.applyIpcConfirm = applyIpcConfirm;
+window.togglePassword = togglePassword;
+window.filterTariffComparison = filterTariffComparison;
+window.searchCouponProducts = searchCouponProducts;
+window.searchCouponCategories = searchCouponCategories;
+window.addCouponProduct = addCouponProduct;
+window.addCouponCategory = addCouponCategory;
+window.removeCouponProduct = removeCouponProduct;
+window.removeCouponCategory = removeCouponCategory;
+window.openCouponModal = openCouponModal;
+window.saveCoupon = saveCoupon;
+window.deleteCoupon = deleteCoupon;
+window.openCashRegisterDetail = openCashRegisterDetail;
+
 window.toggleTariffEditMode = toggleTariffEditMode;
 window.openApplyPricesModal = openApplyPricesModal;
 window.openPriceChangesHistoryModal = openPriceChangesHistoryModal;
 window.submitBulkPriceUpdate = submitBulkPriceUpdate;
 window.deletePendingPrice = deletePendingPrice;
+
 
