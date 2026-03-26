@@ -29,6 +29,9 @@ public interface CashRegisterRepository extends JpaRepository<CashRegister, Long
     @EntityGraph(attributePaths = { "worker" })
     List<CashRegister> findByClosedTrueOrderByRegisterDateDesc();
 
+    @EntityGraph(attributePaths = { "worker" })
+    org.springframework.data.domain.Page<CashRegister> findByClosedTrue(org.springframework.data.domain.Pageable pageable);
+
     /**
      * Finds the currently open shift, if any.
      */

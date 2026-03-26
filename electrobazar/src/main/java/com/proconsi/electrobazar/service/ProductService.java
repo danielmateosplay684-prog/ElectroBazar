@@ -3,6 +3,8 @@ package com.proconsi.electrobazar.service;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.TaxRate;
 import com.proconsi.electrobazar.dto.ProductRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -16,6 +18,13 @@ public interface ProductService {
      * @return A list of all Product entities.
      */
     List<Product> findAll();
+
+    /**
+     * Retrieves a paginated list of all products.
+     * @param pageable Pagination and sorting criteria.
+     * @return A page of products.
+     */
+    Page<Product> findAll(Pageable pageable);
 
     /**
      * Retrieves only products marked as active.

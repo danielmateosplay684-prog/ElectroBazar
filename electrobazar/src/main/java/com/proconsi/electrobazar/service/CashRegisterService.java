@@ -28,6 +28,11 @@ public interface CashRegisterService {
     List<CashRegister> findAllClosed();
 
     /**
+     * Paginated version of closed registers retrieval.
+     */
+    org.springframework.data.domain.Page<CashRegister> findAllClosed(org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Finds the register for today if it is already closed.
      * @return The CashRegister if closed, null otherwise.
      */

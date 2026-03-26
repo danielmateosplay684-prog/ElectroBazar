@@ -1,6 +1,9 @@
 package com.proconsi.electrobazar.service.impl;
 
+import com.proconsi.electrobazar.dto.AnalyticsSummaryDTO;
+import com.proconsi.electrobazar.dto.SaleSummaryResponse;
 import com.proconsi.electrobazar.dto.TaxBreakdown;
+import com.proconsi.electrobazar.dto.WorkerSaleStatsDTO;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.*;
 import com.proconsi.electrobazar.repository.CashRegisterRepository;
@@ -23,7 +26,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Implementation of {@link SaleService}.
@@ -47,6 +53,41 @@ public class SaleServiceImpl implements SaleService {
     private final InvoiceService invoiceService;
     private final CouponRepository couponRepository;
     private final CashRegisterService cashRegisterService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to) {
+        SaleSummaryResponse summary = saleRepository.getSummaryBetween(from, to);
+        String topProduct = saleRepository.findTopProductNameBetween(from, to);
+        
+        // 1. Daily Revenue (Database Aggregated)
+        List<Object[]> dailyData = saleRepository.getDailyRevenue(from, to);
+        Map<String, BigDecimal> trend = new TreeMap<>();
+        for (Object[] row : dailyData) {
+            String dateStr = row[0].toString(); // Row[0] is java.sql.Date from DATE()
+            trend.put(dateStr, (BigDecimal) row[1]);
+        }
+        
+        // 2. Category Distribution (Database Aggregated)
+        List<Object[]> catData = saleRepository.getCategoryDistribution(from, to);
+        Map<String, BigDecimal> categories = new HashMap<>();
+        for (Object[] row : catData) {
+            categories.put((String) row[0], (BigDecimal) row[1]);
+        }
+
+        return AnalyticsSummaryDTO.builder()
+                .totalSales(summary.getTotalSalesCount())
+                .totalRevenue(summary.getTotalSalesAmount())
+                .cashRevenue(summary.getTotalCashAmount())
+                .cardRevenue(summary.getTotalCardAmount())
+                .cancelledSales(summary.getTotalCancelledCount())
+                .cancelledRevenue(summary.getTotalCancelledAmount())
+                .topProductName(topProduct != null ? topProduct : "—")
+                .lowStockCount(productService.findAll().stream().filter(p -> p.getStock() < 5).count())
+                .revenueTrend(trend)
+                .categoryDistribution(categories)
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -133,7 +174,6 @@ public class SaleServiceImpl implements SaleService {
                 if (line.getProduct() != null) {
                     isEligible = coupon.isApplicableTo(line.getProduct());
                 } else {
-                    // Wildcard products are only eligible if the coupon has no restrictions at all
                     isEligible = (coupon.getRestrictedProducts() == null || coupon.getRestrictedProducts().isEmpty()) &&
                                 (coupon.getRestrictedCategories() == null || coupon.getRestrictedCategories().isEmpty());
                 }
@@ -292,7 +332,7 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional(readOnly = true)
-    public com.proconsi.electrobazar.dto.SaleSummaryResponse getSummaryToday() {
+    public SaleSummaryResponse getSummaryToday() {
         return saleRepository.getSummaryBetween(getShiftStart(), LocalDateTime.now());
     }
 
@@ -305,7 +345,7 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<com.proconsi.electrobazar.dto.WorkerSaleStatsDTO> getWorkerStatsBetween(LocalDateTime from, LocalDateTime to) {
+    public List<WorkerSaleStatsDTO> getWorkerStatsBetween(LocalDateTime from, LocalDateTime to) {
         return saleRepository.getWorkerStatsBetween(from, to);
     }
 
@@ -315,13 +355,10 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = findById(id);
         if (sale.getStatus() == Sale.SaleStatus.CANCELLED) throw new IllegalStateException("Sale already cancelled.");
 
-        // Legal requirement: Generate rectificative invoice before cancelling if original was invoiced
         if (sale.getInvoice() != null) {
             invoiceService.generateRectificativeInvoice(sale, reason);
         }
 
-        // Inventory Restoration
-        // Optimized stock restoration: No entity lookup needed before update
         sale.getLines().stream()
             .filter(l -> l.getProduct() != null)
             .forEach(l -> productService.increaseStock(l.getProduct().getId(), l.getQuantity()));

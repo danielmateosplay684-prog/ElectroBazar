@@ -14,6 +14,7 @@ import java.util.List;
 @Entity
 @Table(name = "sales", indexes = {
         @Index(name = "idx_sales_created_at", columnList = "created_at"),
+        @Index(name = "idx_sales_status", columnList = "status"),
         @Index(name = "idx_sales_payment_method", columnList = "payment_method")
 })
 @Getter

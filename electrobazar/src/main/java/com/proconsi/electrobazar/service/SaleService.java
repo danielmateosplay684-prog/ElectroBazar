@@ -7,6 +7,8 @@ import com.proconsi.electrobazar.model.SaleLine;
 import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
+import com.proconsi.electrobazar.dto.AnalyticsSummaryDTO;
+import com.proconsi.electrobazar.dto.WorkerSaleStatsDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
@@ -17,6 +19,12 @@ import java.util.List;
  * Interface defining core operations for processing and auditing sales.
  */
 public interface SaleService {
+
+    /**
+     * Retrieves a high-level analytics summary for a specific time range.
+     * Use this instead of loading full Sale lists to optimize dashboard performance.
+     */
+    AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to);
 
     /**
      * Finds a sale by ID.
@@ -54,40 +62,16 @@ public interface SaleService {
 
     /**
      * Creates a standard sale for an anonymous customer.
-     *
-     * @param lines          Product lines.
-     * @param paymentMethod  CASH or CARD.
-     * @param notes          Optional notes.
-     * @param receivedAmount Cash provided by the customer.
-     * @param worker         The worker processing the sale.
-     * @return The persisted Sale.
      */
     Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Worker worker);
 
     /**
      * Creates a sale for a registered customer.
-     *
-     * @param lines          Product lines.
-     * @param paymentMethod  CASH or CARD.
-     * @param notes          Optional notes.
-     * @param receivedAmount Cash provided.
-     * @param customer       Associated customer.
-     * @param worker         The worker.
-     * @return The persisted Sale.
      */
     Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer, Worker worker);
 
     /**
      * Creates a sale with an explicit tariff override.
-     *
-     * @param lines          Product lines.
-     * @param paymentMethod  CASH or CARD.
-     * @param notes          Optional notes.
-     * @param receivedAmount Cash provided.
-     * @param customer       Associated customer.
-     * @param worker         The worker.
-     * @param tariffOverride Specific tariff to apply (overrides customer default).
-     * @return The persisted Sale.
      */
     Sale createSaleWithTariff(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
             BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
@@ -127,11 +111,11 @@ public interface SaleService {
 
     /**
      * Retrieves sales statistics aggregated by worker for a given period.
-     * @param from Start timestamp.
-     * @param to   End timestamp.
-     * @return List of worker statistics.
      */
-    java.util.List<com.proconsi.electrobazar.dto.WorkerSaleStatsDTO> getWorkerStatsBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
+    List<WorkerSaleStatsDTO> getWorkerStatsBetween(LocalDateTime from, LocalDateTime to);
 
+    /**
+     * Cancels a sale and restores stock.
+     */
     void cancelSale(Long id, Worker worker, String reason);
 }

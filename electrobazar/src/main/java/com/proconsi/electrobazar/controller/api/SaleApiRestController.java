@@ -10,6 +10,7 @@ import com.proconsi.electrobazar.service.SaleService;
 import com.proconsi.electrobazar.service.CustomerService;
 import com.proconsi.electrobazar.service.WorkerService;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
+import com.proconsi.electrobazar.dto.AnalyticsSummaryDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -87,6 +88,17 @@ public class SaleApiRestController {
             @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         return ResponseEntity.ok(saleService.findBetween(from, to));
+    }
+
+    /**
+     * Retrieves aggregated analytics for the specified period.
+     * @return {@link AnalyticsSummaryDTO} pre-calculated statistics.
+     */
+    @GetMapping("/analytics")
+    public ResponseEntity<AnalyticsSummaryDTO> getAnalytics(
+            @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return ResponseEntity.ok(saleService.getAnalyticsSummary(from, to));
     }
 
     /**

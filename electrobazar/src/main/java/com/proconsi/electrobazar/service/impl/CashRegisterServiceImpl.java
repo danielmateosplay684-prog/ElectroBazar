@@ -54,6 +54,12 @@ public class CashRegisterServiceImpl implements CashRegisterService {
 
     @Override
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<CashRegister> findAllClosed(org.springframework.data.domain.Pageable pageable) {
+        return cashRegisterRepository.findByClosedTrue(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CashRegister findTodayIfClosed() {
         return cashRegisterRepository.findByRegisterDateAndClosedTrue(LocalDate.now())
                 .orElseThrow(() -> new ResourceNotFoundException("No cash register closure found for today."));

@@ -12,6 +12,8 @@ import com.proconsi.electrobazar.service.SaleService;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +50,12 @@ public class ReturnServiceImpl implements ReturnService {
     private final ActivityLogService activityLogService;
 
     private static final String INITIAL_HASH = "0000000000000000";
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SaleReturn> findAll(Pageable pageable) {
+        return saleReturnRepository.findAll(pageable);
+    }
 
     @Override
     @Transactional

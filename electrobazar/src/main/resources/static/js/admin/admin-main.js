@@ -550,29 +550,21 @@ function updateAnalytics() {
         chartTitle = (window.adminI18n ? window.adminI18n.chartAll : 'Ventas Histórico Total');
     }
 
-    const url = `/api/sales/range?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}`;
+    const url = `/api/sales/analytics?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}`;
 
-    Promise.all([
-        fetch(url).then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); }),
-        fetch('/api/products').then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); })
-    ]).then(([sales, products]) => {
-        // Handle Spring Data Page if it's the 'all' fallback
-        let salesArray = sales;
-        if (sales && sales.content && Array.isArray(sales.content)) {
-            salesArray = sales.content;
-        }
-        initCharts(salesArray, products, period, chartTitle);
-    }).catch(err => {
-        console.error('Error updating analytics:', err);
-        showToast('Error al cargar datos de an\u00E1lisis', 'error');
-    });
+    fetch(url)
+        .then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); })
+        .then(analytics => {
+            initCharts(analytics, period, chartTitle);
+        })
+        .catch(err => {
+            console.error('Error updating analytics:', err);
+            showToast('Error al cargar datos de análisis', 'error');
+        });
 }
 
-function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel = (window.adminI18n ? window.adminI18n.salesEuro : 'Ventas (€)')) {
-    if (!salesDataRaw) {
-        salesDataRaw = [];
-        productsDataRaw = [];
-    }
+function initCharts(analytics, period = '7days', chartLabel = (window.adminI18n ? window.adminI18n.salesEuro : 'Ventas (€)')) {
+    if (!analytics) return;
 
     // Update dynamic title
     const chartTitleEl = document.getElementById('salesChartTitle');
@@ -581,46 +573,22 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
         chartTitleEl.innerHTML = `<i class="bi bi-graph-up me-2"></i>${trendLabel}: ${chartLabel}`;
     }
 
-    var now = new Date();
-    // ...
-
-    // 1. Stats Calculation
-    let totalRevenue = 0;
-    let totalSalesCount = 0;
-    const productSalesCount = {};
-    let lowStockCount = 0;
-
-    salesDataRaw.forEach(function (sale) {
-        if (sale.status === 'ACTIVE' || sale.status === undefined) {
-            totalRevenue += sale.totalAmount || 0;
-            totalSalesCount++;
-            if (sale.lines) {
-                sale.lines.forEach(function (line) {
-                    var pName = (line.product && line.product.name) ? line.product.name : 'Producto';
-                    productSalesCount[pName] = (productSalesCount[pName] || 0) + (line.quantity || 0);
-                });
-            }
-        }
-    });
-
-    productsDataRaw.forEach(function (p) {
-        if (p.stock < 5) lowStockCount++;
-    });
-
-    let topP = '—';
-    let maxQty = 0;
-    for (const [name, qty] of Object.entries(productSalesCount)) {
-        if (qty > maxQty) {
-            maxQty = qty;
-            topP = name;
-        }
+    // 1. Update KPI Counters from Analytics DTO
+    if (document.getElementById('statTodayRevenue')) {
+        document.getElementById('statTodayRevenue').textContent = 
+            (analytics.totalRevenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
     }
-
-    // Update DOM Stats
-    if (document.getElementById('statTodayRevenue')) document.getElementById('statTodayRevenue').textContent = totalRevenue.toFixed(2) + ' €';
-    if (document.getElementById('statTodaySales')) document.getElementById('statTodaySales').textContent = totalSalesCount;
-    if (document.getElementById('statTopProduct')) document.getElementById('statTopProduct').textContent = topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
-    if (document.getElementById('statLowStock')) document.getElementById('statLowStock').textContent = lowStockCount;
+    if (document.getElementById('statTodaySales')) {
+        document.getElementById('statTodaySales').textContent = analytics.totalSales || 0;
+    }
+    if (document.getElementById('statTopProduct')) {
+        const topP = analytics.topProductName || '—';
+        document.getElementById('statTopProduct').textContent = 
+            topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
+    }
+    if (document.getElementById('statLowStock')) {
+        document.getElementById('statLowStock').textContent = analytics.lowStockCount || 0;
+    }
 
     const labelSuffix = (period === 'today' || period === 'custom') ? (period === 'today' ? (' ' + (window.adminI18n ? window.adminI18n.today : 'Hoy')) : '') : '';
     const salesLabelStr = (window.adminI18n ? window.adminI18n.sales : 'Ventas');
@@ -629,57 +597,17 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
     if (document.getElementById('statRevenueLabel')) document.getElementById('statRevenueLabel').textContent = salesLabelStr + labelSuffix;
     if (document.getElementById('statSalesLabel')) document.getElementById('statSalesLabel').textContent = ordersLabelStr + labelSuffix;
 
-    // 2. Trend Chart
+    // 2. Trend Chart (using daily revenue from server)
+    const trendData = analytics.revenueTrend || {};
     let labels = [];
     let datasetsData = [];
 
-    if (period === 'today' || period === 'custom') {
-        for (let i = 0; i < 24; i++) {
-            labels.push(i + ':00');
-            let sum = salesDataRaw.reduce((acc, s) => {
-                if (s.status !== 'ACTIVE' && s.status !== undefined) return acc;
-                let h = new Date(s.createdAt).getHours();
-                return h === i ? acc + (s.totalAmount || 0) : acc;
-            }, 0);
-            datasetsData.push(sum);
-        }
-    } else if (period === '7days' || period === '1month') {
-        let daysToTrack = period === '7days' ? 7 : 30;
-        for (let i = daysToTrack - 1; i >= 0; i--) {
-            let d = new Date();
-            d.setDate(d.getDate() - i);
-            // Use local date string YYYY-MM-DD instead of UTC (toISOString)
-            let dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const locale = document.documentElement.lang || 'es-ES';
-            labels.push(d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }));
-            let total = salesDataRaw.reduce((sum, s) => {
-                if (!s.createdAt) return sum;
-                try {
-                    if (s.status !== 'ACTIVE' && s.status !== undefined) return sum;
-                    let sDate = new Date(s.createdAt);
-                    let sDateIso = sDate.getFullYear() + '-' + String(sDate.getMonth() + 1).padStart(2, '0') + '-' + String(sDate.getDate()).padStart(2, '0');
-                    return (sDateIso === dStr) ? sum + (s.totalAmount || 0) : sum;
-                } catch (e) { return sum; }
-            }, 0);
-            datasetsData.push(total);
-        }
-    } else {
-        let monthsToTrack = (period === 'all') ? 12 : (period === '1year' ? 12 : 6);
-        for (let i = monthsToTrack - 1; i >= 0; i--) {
-            let d = new Date();
-            d.setMonth(d.getMonth() - i);
-            labels.push(d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
-            let total = salesDataRaw.reduce((sum, s) => {
-                if (!s.createdAt) return sum;
-                try {
-                    let sDate = new Date(s.createdAt);
-                    if (s.status !== 'ACTIVE' && s.status !== undefined) return sum;
-                    return (sDate.getMonth() === d.getMonth() && sDate.getFullYear() === d.getFullYear()) ? sum + (s.totalAmount || 0) : sum;
-                } catch (e) { return sum; }
-            }, 0);
-            datasetsData.push(total);
-        }
-    }
+    // Sort dates and format labels
+    Object.keys(trendData).sort().forEach(dateStr => {
+        const d = new Date(dateStr);
+        labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+        datasetsData.push(trendData[dateStr]);
+    });
 
     var ctxSales = document.getElementById('salesChart');
     if (ctxSales) {
@@ -708,17 +636,8 @@ function initCharts(salesDataRaw, productsDataRaw, period = '7days', chartLabel 
         });
     }
 
-    // 3. Category Distribution Chart (Sales based as requested)
-    var catSummary = {};
-    salesDataRaw.forEach(function (sale) {
-        if ((sale.status === 'ACTIVE' || sale.status === undefined) && sale.lines) {
-            sale.lines.forEach(function (line) {
-                var catName = (line.product && line.product.category) ? line.product.category.name : 'Sin Categoría';
-                catSummary[catName] = (catSummary[catName] || 0) + (line.subtotal || 0);
-            });
-        }
-    });
-
+    // 3. Category Distribution Chart (using category totals from server)
+    const catSummary = analytics.categoryDistribution || {};
     var ctxCat = document.getElementById('categoryChart');
     if (ctxCat) {
         if (categoryChart) categoryChart.destroy();

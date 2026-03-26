@@ -4,6 +4,8 @@ import com.proconsi.electrobazar.dto.ReturnLineRequest;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.SaleReturn;
 import com.proconsi.electrobazar.model.Worker;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,9 +13,15 @@ import java.util.Optional;
 
 /**
  * Interface defining operations for processing product returns and refunds.
- * Handles stock restoration and financial compensation.
  */
 public interface ReturnService {
+
+    /**
+     * Retrieves all returns with pagination support.
+     * @param pageable Pagination and sorting criteria.
+     * @return A page of returns.
+     */
+    Page<SaleReturn> findAll(Pageable pageable);
 
     /**
      * Processes a return for an original sale.

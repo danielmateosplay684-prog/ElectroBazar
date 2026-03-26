@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -105,23 +107,32 @@ public class AdminController {
         model.addAttribute("activeView", view);
 
         // Load all data required by the various Admin views
-        // Dashboard
-        model.addAttribute("products", productService.findAllWithCategory());
+        // Dashboard - Optimized with Limits (Load only recent 50 for heavy lists)
+        PageRequest latest50 = PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        // Products and Categories
+        PageRequest products50 = PageRequest.of(0, 50, Sort.by(Sort.Direction.ASC, "nameEs"));
+        model.addAttribute("products", productService.findAll(products50).getContent());
         model.addAttribute("categories", categoryService.findAll());
-        model.addAttribute("sales",
-                saleService.findBetween(LocalDateTime.now().minusDays(30), LocalDateTime.now()));
-        model.addAttribute("cashRegisters", cashRegisterService.findAllClosed());
+        
+        // Sales and Returns (Most critical for 30k records)
+        model.addAttribute("sales", saleService.findAll(latest50).getContent());
+        model.addAttribute("returns", returnService.findAll(latest50).getContent());
+        
+        // Infrastructure and Management (Limited to recent 100 for performance)
+        model.addAttribute("cashRegisters", cashRegisterService.findAllClosed(PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "registerDate"))).getContent());
         model.addAttribute("workers", workerService.findAll());
-        model.addAttribute("customers", customerService.findAll());
+        model.addAttribute("customers", customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
         model.addAttribute("roles", roleService.findAll());
-        model.addAttribute("returns", returnService.findByCreatedAtBetween(LocalDateTime.now().minusDays(30),
-                LocalDateTime.now()));
         model.addAttribute("tariffs", tariffService.findAll());
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
         model.addAttribute("taxRates", taxRateRepository.findAll());
         model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
         model.addAttribute("companySettings", companySettingsService.getSettings());
         model.addAttribute("coupons", couponService.findAll());
+        
+        // Mark as optimized view
+        model.addAttribute("isOptimizedView", true);
 
         return "admin/admin";
     }
