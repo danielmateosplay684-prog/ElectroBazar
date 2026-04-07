@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <th:block th:replace="~{fragments/theme :: themeScript}" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/shared/inventory-filter.js(v='1.1')}" defer></script>
     <script th:src="@{/js/admin/admin-main.js(v='1.5')}" defer></script>
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
@@ -236,6 +237,9 @@
             <button class="nav-link sidebar-menu-btn" onclick="switchView('couponsView', this)">
                 <i class="bi bi-ticket-perforated"></i> <span th:text="#{admin.menu.coupons}">Cupones</span>
             </button>
+            <button class="nav-link sidebar-menu-btn" onclick="switchView('promotionsView', this)">
+                <i class="bi bi-megaphone"></i> <span th:text="#{admin.sidebar.promotions}">Promociones NxM</span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -445,8 +449,14 @@
                     onclick="switchView('activityView', document.querySelector('[onclick*=\'activityView\']'))">
                     <i class="bi bi-clock-history"></i>
                     <h3 th:text="#{admin.dashboard.activity.title}">Actividad</h3>
-                    <p th:text="#{admin.dashboard.activity.desc}">Revisa las últimas acciones realizadas en el sistema.
-                    </p>
+                    <p th:text="#{admin.dashboard.activity.desc}">Revisa las últimas acciones realizadas en el sistema.</p>
+                </div>
+
+                <div class="dashboard-card"
+                    onclick="switchView('promotionsView', document.querySelector('[onclick*=\'promotionsView\']'))">
+                    <i class="bi bi-megaphone"></i>
+                    <h3 th:text="#{admin.dashboard.promotions.title}">Promociones</h3>
+                    <p th:text="#{admin.dashboard.promotions.desc}">Configura motores de descuento automático NxM (3x2, 2x1) por productos o categorías.</p>
                 </div>
 
 
@@ -1014,6 +1024,72 @@
             </div>
         </div>
 
+        <!-- PROMOTIONS VIEW -->
+        <div id="promotionsView" style="display: none;">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        th:title="#{admin.common.backtopanel}">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="panel-title"><i class="bi bi-megaphone me-2"></i><span
+                            th:text="#{admin.promotions.title}">Promociones Automáticas NxM</span></span>
+                </div>
+                <button class="btn-nuevo" onclick="openPromotionModal()">
+                    <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.promotions.new}">Nueva Promoción</span>
+                </button>
+            </div>
+
+            <div class="admin-table-wrap mt-3">
+                <table class="admin-table" id="promotionsTable">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.name}">Nombre</th>
+                            <th th:text="#{admin.promotions.rule}">Regla NxM</th>
+                            <th th:text="#{admin.coupons.status}">Estado</th>
+                            <th th:text="#{admin.coupons.validFrom}">Válido Desde</th>
+                            <th th:text="#{admin.coupons.validUntil}">Válido Hasta</th>
+                            <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="promo : ${promotions}">
+                            <td><strong class="text-accent" th:text="${promo.name}">PROMO</strong></td>
+                            <td><span class="badge bg-primary" th:text="${promo.nValue} + 'x' + ${promo.mValue}">3x2</span></td>
+                            <td>
+                                <span class="badge-active" th:classappend="${promo.active} ? 'yes' : 'no'">
+                                    <span th:if="${promo.active}" th:text="#{common.yes}">Sí</span>
+                                    <span th:unless="${promo.active}" th:text="#{common.no}">No</span>
+                                </span>
+                            </td>
+                            <td th:text="${promo.validFrom != null ? promo.validFrom : '—'}">—</td>
+                            <td th:text="${promo.validUntil != null ? promo.validUntil : '—'}">—</td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                    <button class="btn-icon" th:title="#{common.edit}" th:data-id="${promo.id}"
+                                        th:data-name="${promo.name}" th:data-nvalue="${promo.nValue}"
+                                        th:data-mvalue="${promo.mValue}" th:data-active="${promo.active}"
+                                        th:data-from="${promo.validFrom ?: ''}"
+                                        th:data-until="${promo.validUntil ?: ''}"
+                                        onclick="openPromotionModal(this)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn-icon danger" th:title="#{common.delete}"
+                                        th:onclick="'deletePromotion(' + ${promo.id} + ')'">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(promotions)}">
+                            <td colspan="6" class="text-center text-muted py-4" th:text="#{admin.promotions.empty}">No hay promociones configuradas.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Modal: Crear Tarifa -->
         <div class="modal fade" id="createTariffModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -1378,6 +1454,96 @@
                             th:text="#{common.cancel}">Cancelar</button>
                         <button type="button" class="btn btn-accent px-4 fw-bold text-primary" onclick="saveCoupon()"
                             th:text="#{common.save}">Guardar Cupón</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Promoción NxM -->
+        <div class="modal fade" id="promotionModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="promotionModalLabel">
+            <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold" id="promotionModalLabel">
+                            <i class="bi bi-megaphone me-2"></i><span th:text="#{admin.promotions.modal.title}">Promoción NxM</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="promoId">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold"><span th:text="#{common.name}">Nombre</span> <span class="text-danger">*</span></label>
+                            <input type="text" id="promoName" class="form-control" th:placeholder="#{admin.promotions.modal.name_placeholder}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.promotions.n_value}">Valor N (Llevas)</label>
+                                <input type="number" id="promoNValue" class="form-control" min="1" value="3">
+                                <small class="text-muted" th:text="#{admin.promotions.n_desc}">Cantidad total de artículos de la promoción.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.promotions.m_value}">Valor M (Pagas)</label>
+                                <input type="number" id="promoMValue" class="form-control" min="1" value="2">
+                                <small class="text-muted" th:text="#{admin.promotions.m_desc}">Cantidad de artículos que se cobran efectivamente.</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.coupons.validFrom}">Inicio</label>
+                                <input type="datetime-local" id="promoFrom" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.coupons.validUntil}">Fin</label>
+                                <input type="datetime-local" id="promoUntil" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.coupons.status}">Estado</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="promoActive" checked>
+                                    <label class="form-check-label text-muted small" for="promoActive" th:text="#{common.active}">Activo</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Restriction Section -->
+                        <div class="mt-2 pt-3" style="border-top: 1px dashed var(--border);">
+                            <label class="form-label small fw-bold"><i class="bi bi-box-seam me-1"></i> <span th:text="#{admin.promotions.restrict_products}">Restringir a productos (Opcional)</span></label>
+                            <div class="position-relative">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text bg-primary border-border text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="promoProductSearch" class="form-control border-border" 
+                                        th:placeholder="#{admin.common.searchproduct.placeholder}" autocomplete="off"
+                                        onfocus="searchPromoProducts(this.value, true)"
+                                        oninput="searchPromoProducts(this.value)">
+                                </div>
+                                <div id="promoProductSearchResults" class="list-group position-absolute w-100 shadow" 
+                                    style="z-index: 2100; display: none; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); background: var(--surface);">
+                                </div>
+                            </div>
+                            <div id="selectedPromoProducts" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+
+                        <!-- Category Restriction Section -->
+                        <div class="mt-4">
+                            <label class="form-label small fw-bold"><i class="bi bi-tags me-1"></i> <span th:text="#{admin.promotions.restrict_categories}">Restringir a categorías (Opcional)</span></label>
+                            <div class="position-relative">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text bg-primary border-border text-muted"><i class="bi bi-tag"></i></span>
+                                    <input type="text" id="promoCategorySearch" class="form-control border-border" 
+                                        th:placeholder="#{admin.inventory.categories.empty}" autocomplete="off"
+                                        onfocus="searchPromoCategories(this.value, true)"
+                                        oninput="searchPromoCategories(this.value)">
+                                </div>
+                                <div id="promoCategorySearchResults" class="list-group position-absolute w-100 shadow" 
+                                    style="z-index: 2100; display: none; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); background: var(--surface);">
+                                </div>
+                            </div>
+                            <div id="selectedPromoCategories" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
+                        <button type="button" class="btn btn-accent px-4 fw-bold text-primary" onclick="savePromotion()" th:text="#{common.save}">Guardar Promoción</button>
                     </div>
                 </div>
             </div>

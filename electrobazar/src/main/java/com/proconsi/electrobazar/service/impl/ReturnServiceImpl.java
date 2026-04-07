@@ -187,7 +187,7 @@ public class ReturnServiceImpl implements ReturnService {
         sequence.setLastNumber(next);
         invoiceSequenceRepository.save(sequence);
 
-        return (serie.equals("FR")) ? String.format("%s-%d-%04d", serie, currentYear, next) : String.format("%s-%d-%04d", serie, currentYear, next);
+        return String.format("%s-%d-%d", serie, currentYear, next);
     }
 
     @Override

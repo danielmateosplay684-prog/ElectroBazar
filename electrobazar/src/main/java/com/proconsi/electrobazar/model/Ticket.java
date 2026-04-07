@@ -25,7 +25,7 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Formatted ticket number, e.g. T-2026-0001. Unique and non-nullable. */
+    /** Formatted ticket number, e.g. T-2026-1. Unique and non-nullable. */
     @Column(name = "ticket_number", nullable = false, unique = true, length = 20)
     private String ticketNumber;
 

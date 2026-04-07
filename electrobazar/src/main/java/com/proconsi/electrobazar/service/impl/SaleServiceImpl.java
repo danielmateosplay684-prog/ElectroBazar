@@ -14,6 +14,7 @@ import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.CashRegisterService;
 import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.ProductService;
+import com.proconsi.electrobazar.service.PromotionService;
 import com.proconsi.electrobazar.service.SaleService;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import lombok.RequiredArgsConstructor;
@@ -137,12 +138,18 @@ public class SaleServiceImpl implements SaleService {
         return createSaleWithTariff(lines, paymentMethod, notes, receivedAmount, cashAmount, cardAmount, customer, worker, null);
     }
 
+    private final PromotionService promotionService;
+
+    // 2. Initial logic
     @Override
     public Sale createSaleWithCoupon(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
             BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
             Worker worker, Tariff tariffOverride, String couponCode) {
         
-        // 1. Resolve and Validate Coupon
+        // 1. Automatic NxM Promotions (Apply before calculating totals)
+        lines = promotionService.applyNxMPromotions(lines);
+
+        // 2. Resolve and Validate Coupon
         Coupon coupon = null;
         BigDecimal couponDiscount = BigDecimal.ZERO;
         if (couponCode != null && !couponCode.isBlank()) {

@@ -54,6 +54,7 @@ public class AdminController {
     private final CouponService couponService;
     private final ActivityLogService activityLogService;
     private final BackupService backupService;
+    private final PromotionService promotionService;
 
     /**
      * Endpoint to execute a manual backup on demand.
@@ -134,6 +135,7 @@ public class AdminController {
         model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
         model.addAttribute("companySettings", companySettingsService.getSettings());
         model.addAttribute("coupons", couponService.findAll());
+        model.addAttribute("promotions", promotionService.findAll());
         
         // Mark as optimized view
         model.addAttribute("isOptimizedView", true);

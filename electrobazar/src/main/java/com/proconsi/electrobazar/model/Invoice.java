@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Represents a legal invoice or simplified ticket linked to a Sale.
  * Each sale with a customer generates exactly one Invoice with a correlative
  * number
- * in the format F-YYYY-NNNN (e.g. F-2026-0001).
+ * in the format F-YYYY-N (e.g. F-2026-1).
  */
 @Entity
 @Table(name = "invoices", indexes = {
@@ -29,7 +29,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Formatted invoice number, e.g. F-2026-0001. Unique and non-nullable. */
+    /** Formatted invoice number, e.g. F-2026-1. Unique and non-nullable. */
     @Column(name = "invoice_number", nullable = false, unique = true, length = 20)
     private String invoiceNumber;
 

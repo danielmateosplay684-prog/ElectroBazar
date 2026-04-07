@@ -5,7 +5,7 @@ function switchView(viewId, btnElement) {
         'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
         'returnsHistoryView', 'settingsView', 'workersView', 'rolesView', 'analyticsView',
         'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView', 'tarifasView',
-        'tiposIvaView', 'couponsView'
+        'tiposIvaView', 'couponsView', 'promotionsView'
     ];
     views.forEach(v => {
         const el = document.getElementById(v);
@@ -51,7 +51,7 @@ function switchView(viewId, btnElement) {
 }
 
 // Global Modal Variables
-var productModal, categoryModal, workerModal, customerModal, roleModal, ipcUpdateModal, couponModal;
+var productModal, categoryModal, workerModal, customerModal, roleModal, ipcUpdateModal, couponModal, promotionModal;
 var schedulePriceModal; // Also used in the script
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ipcUpdateModal = initModal('ipcUpdateModal');
     schedulePriceModal = initModal('schedulePriceModal');
     couponModal = initModal('couponModal');
+    promotionModal = initModal('promotionModal');
 
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('customerTaxId');
@@ -2856,5 +2857,261 @@ window.openApplyPricesModal = openApplyPricesModal;
 window.openPriceChangesHistoryModal = openPriceChangesHistoryModal;
 window.submitBulkPriceUpdate = submitBulkPriceUpdate;
 window.deletePendingPrice = deletePendingPrice;
+
+// -- Promotion Management -----------------------------------------------------
+var _selectedPromoProducts = [];
+var _selectedPromoCategories = [];
+var _promoProductsCache = null;   // Local cache for products
+var _promoCategoriesCache = null; // Local cache for categories
+
+function searchPromoProducts(query, initial = false) {
+    const resultsDiv = document.getElementById('promoProductSearchResults');
+    if (!resultsDiv) return;
+
+    if (!_promoProductsCache) {
+        fetch('/api/products/selection-list').then(r => r.json()).then(data => {
+            _promoProductsCache = data;
+            searchPromoProducts(query, initial);
+        });
+        return;
+    }
+
+    let filtered = _promoProductsCache;
+    if (query && query.length >= 1) {
+        const q = query.toLowerCase();
+        filtered = _promoProductsCache.filter(p => 
+            p.name.toLowerCase().includes(q) || 
+            (p.categoryName && p.categoryName.toLowerCase().includes(q))
+        );
+    }
+
+    if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    resultsDiv.innerHTML = filtered.slice(0, 50).map(p => `
+        <button type="button" class="list-group-item list-group-item-action py-2" 
+            style="background: transparent; color: var(--text-main); border: none;"
+            onclick="addPromoProduct(${p.id}, '${escHtml(p.name)}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <span style="color:var(--text-main); font-size: 0.82rem; font-weight: 500;">${escHtml(p.name)}</span>
+                <small class="text-muted" style="font-size: 0.65rem;">${escHtml(p.categoryName || '')} • ${(p.currentPrice || 0).toFixed(2)}€</small>
+            </div>
+        </button>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function searchPromoCategories(query, initial = false) {
+    const resultsDiv = document.getElementById('promoCategorySearchResults');
+    if (!resultsDiv) return;
+
+    if (!_promoCategoriesCache) {
+        fetch('/api/categories').then(r => r.json()).then(data => {
+            _promoCategoriesCache = data;
+            searchPromoCategories(query, initial);
+        });
+        return;
+    }
+
+    let filtered = _promoCategoriesCache;
+    if (query && query.length >= 1) {
+        const q = query.toLowerCase();
+        filtered = _promoCategoriesCache.filter(c => c.name.toLowerCase().includes(q));
+    }
+
+    if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    resultsDiv.innerHTML = filtered.map(c => `
+        <button type="button" class="list-group-item list-group-item-action py-2" 
+            style="background: transparent; color: var(--text-main); border: none;"
+            onclick="addPromoCategory(${c.id}, '${escHtml(c.name)}')">
+            <div class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-tag me-2 text-accent"></i><span style="color:var(--text-main); font-size: 0.85rem;">${escHtml(c.name)}</span></span>
+                <small class="text-muted" style="font-size: 0.7rem;">ID: ${c.id}</small>
+            </div>
+        </button>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function addPromoProduct(id, name) {
+    if (_selectedPromoProducts.some(p => p.id === id)) {
+        document.getElementById('promoProductSearchResults').style.display = 'none';
+        document.getElementById('promoProductSearch').value = '';
+        return;
+    }
+    _selectedPromoProducts.push({ id, name });
+    renderSelectedPromoProducts();
+    document.getElementById('promoProductSearchResults').style.display = 'none';
+    document.getElementById('promoProductSearch').value = '';
+}
+
+function addPromoCategory(id, name) {
+    if (_selectedPromoCategories.some(c => c.id === id)) {
+        document.getElementById('promoCategorySearchResults').style.display = 'none';
+        document.getElementById('promoCategorySearch').value = '';
+        return;
+    }
+    _selectedPromoCategories.push({ id, name });
+    renderSelectedPromoCategories();
+    document.getElementById('promoCategorySearchResults').style.display = 'none';
+    document.getElementById('promoCategorySearch').value = '';
+}
+
+function removePromoProduct(id) {
+    _selectedPromoProducts = _selectedPromoProducts.filter(p => p.id !== id);
+    renderSelectedPromoProducts();
+}
+
+function removePromoCategory(id) {
+    _selectedPromoCategories = _selectedPromoCategories.filter(c => c.id !== id);
+    renderSelectedPromoCategories();
+}
+
+function renderSelectedPromoProducts() {
+    const container = document.getElementById('selectedPromoProducts');
+    if (!container) return;
+    container.innerHTML = _selectedPromoProducts.map(p => `
+        <div class="badge d-flex align-items-center gap-2 p-2" 
+            style="background: rgba(var(--accent-rgb), 0.1); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-weight: 500;">
+            <span>${escHtml(p.name)}</span>
+            <i class="bi bi-x-lg cursor-pointer" onclick="removePromoProduct(${p.id})" style="font-size: 0.7rem; opacity: 0.8;"></i>
+        </div>
+    `).join('');
+}
+
+function renderSelectedPromoCategories() {
+    const container = document.getElementById('selectedPromoCategories');
+    if (!container) return;
+    container.innerHTML = _selectedPromoCategories.map(c => `
+        <div class="badge d-flex align-items-center gap-2 p-2" 
+            style="background: rgba(var(--primary-rgb), 0.1); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-weight: 500;">
+            <i class="bi bi-tag-fill me-1" style="color: var(--accent);"></i>
+            <span>${escHtml(c.name)}</span>
+            <i class="bi bi-x-lg cursor-pointer" onclick="removePromoCategory(${c.id})" style="font-size: 0.7rem; opacity: 0.8;"></i>
+        </div>
+    `).join('');
+}
+
+function openPromotionModal(btn) {
+    const promoIdField = document.getElementById('promoId');
+    if (!promoIdField) return;
+
+    promoIdField.value = '';
+    document.getElementById('promoName').value = '';
+    document.getElementById('promoNValue').value = '3';
+    document.getElementById('promoMValue').value = '2';
+    document.getElementById('promoActive').checked = true;
+    document.getElementById('promoFrom').value = '';
+    document.getElementById('promoUntil').value = '';
+    
+    _selectedPromoProducts = [];
+    _selectedPromoCategories = [];
+    renderSelectedPromoProducts();
+    renderSelectedPromoCategories();
+    if (document.getElementById('promoProductSearchResults')) document.getElementById('promoProductSearchResults').style.display = 'none';
+    if (document.getElementById('promoCategorySearchResults')) document.getElementById('promoCategorySearchResults').style.display = 'none';
+
+    if (btn) {
+        const id = btn.dataset.id;
+        promoIdField.value = id;
+        document.getElementById('promoName').value = btn.dataset.name;
+        document.getElementById('promoNValue').value = btn.dataset.nvalue;
+        document.getElementById('promoMValue').value = btn.dataset.mvalue;
+        document.getElementById('promoActive').checked = btn.dataset.active === 'true';
+        if (btn.dataset.from) document.getElementById('promoFrom').value = btn.dataset.from.substring(0, 16);
+        if (btn.dataset.until) document.getElementById('promoUntil').value = btn.dataset.until.substring(0, 16);
+        
+        fetch('/api/promotions/' + id)
+            .then(r => r.json())
+            .then(promo => {
+                if (promo.restrictedProducts) {
+                    _selectedPromoProducts = promo.restrictedProducts.map(p => ({ id: p.id, name: p.nameEs || p.name }));
+                    renderSelectedPromoProducts();
+                }
+                if (promo.restrictedCategories) {
+                    _selectedPromoCategories = promo.restrictedCategories.map(c => ({ id: c.id, name: c.name }));
+                    renderSelectedPromoCategories();
+                }
+            }).catch(e => console.error("Error loading promo details", e));
+    }
+    
+    if (promotionModal) promotionModal.show();
+}
+
+function savePromotion() {
+    const id = document.getElementById('promoId').value;
+    const name = document.getElementById('promoName').value.trim();
+    if (!name) { showToast('El nombre es obligatorio', 'error'); return; }
+
+    const body = {
+        id: id ? parseInt(id) : null,
+        name: name,
+        nValue: parseInt(document.getElementById('promoNValue').value),
+        mValue: parseInt(document.getElementById('promoMValue').value),
+        active: document.getElementById('promoActive').checked,
+        validFrom: document.getElementById('promoFrom').value || null,
+        validUntil: document.getElementById('promoUntil').value || null,
+        restrictedProducts: _selectedPromoProducts.map(p => ({ id: p.id })),
+        restrictedCategories: _selectedPromoCategories.map(c => ({ id: c.id }))
+    };
+
+    fetch('/api/promotions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).then(async r => {
+        if (r.ok) {
+            if (promotionModal) promotionModal.hide();
+            showToast(id ? (window.adminI18n.promoSaved || 'Promoción actualizada') : (window.adminI18n.promoSaved || 'Promoción creada'));
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            const data = await r.json().catch(() => ({}));
+            showToast(data.error || 'Error al guardar', 'error');
+        }
+    }).catch(() => showToast('Error de red', 'error'));
+}
+
+function deletePromotion(id) {
+    if (!confirm('¿Seguro que quieres eliminar esta promoción?')) return;
+    fetch('/api/promotions/' + id, { method: 'DELETE' }).then(r => {
+        if (r.ok) {
+            showToast('Promoción eliminada');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error al eliminar', 'error');
+        }
+    }).catch(() => showToast('Error de red', 'error'));
+}
+
+window.searchPromoProducts = searchPromoProducts;
+window.searchPromoCategories = searchPromoCategories;
+window.addPromoProduct = addPromoProduct;
+window.addPromoCategory = addPromoCategory;
+window.removePromoProduct = removePromoProduct;
+window.removePromoCategory = removePromoCategory;
+window.openPromotionModal = openPromotionModal;
+window.savePromotion = savePromotion;
+window.deletePromotion = deletePromotion;
+
+// Dismiss search results when clicking outside
+document.addEventListener('click', function(e) {
+    const prodSearch = document.getElementById('promoProductSearch');
+    const prodResults = document.getElementById('promoProductSearchResults');
+    if (prodResults && prodSearch && !prodResults.contains(e.target) && e.target !== prodSearch) {
+        prodResults.style.display = 'none';
+    }
+    
+    const catSearch = document.getElementById('promoCategorySearch');
+    const catResults = document.getElementById('promoCategorySearchResults');
+    if (catResults && catSearch && !catResults.contains(e.target) && e.target !== catSearch) {
+        catResults.style.display = 'none';
+    }
+});
 
 

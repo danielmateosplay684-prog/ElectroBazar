@@ -33,6 +33,19 @@ public interface ProductPriceRepository extends JpaRepository<ProductPrice, Long
             @Param("now") LocalDateTime now);
 
     /**
+     * Bulk fetch active prices for a list of products.
+     */
+    @Query("""
+            SELECT p FROM ProductPrice p
+            WHERE p.product.id IN :productIds
+              AND :now >= p.startDate
+              AND (:now <= p.endDate OR p.endDate IS NULL)
+            """)
+    List<ProductPrice> findActivePricesForProducts(
+            @Param("productIds") List<Long> productIds,
+            @Param("now") LocalDateTime now);
+
+    /**
      * Retrieves all historical and scheduled price entries for a product.
      */
     @Query("SELECT p FROM ProductPrice p WHERE p.product.id = :productId ORDER BY p.startDate DESC")

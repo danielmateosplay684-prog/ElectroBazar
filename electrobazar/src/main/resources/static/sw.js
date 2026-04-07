@@ -31,32 +31,30 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-    // Only cache GET requests
+    // 1. BYPASS REST API: Ignorar cualquier petición que contenga /api/ para que el SW no interfiera
+    const url = new URL(event.request.url);
+    if (url.pathname.includes('/api/')) {
+        return; // Deja que la petición vaya directamente a la red sin capturarla
+    }
+
+    // 2. Only intercept GET requests for static content or navigation
     if (event.request.method !== 'GET') return;
 
-    const url = new URL(event.request.url);
-
     // Strategy: Network First for the main navigation (/tpv)
-    if (url.pathname === '/tpv' || (url.pathname.startsWith('/admin') && !url.pathname.includes('/api/')) || url.pathname.startsWith('/tpv/receipt') || url.pathname.startsWith('/tpv/return-receipt') || event.request.mode === 'navigate') {
-        // Exclude /api/ and /admin/api/ from SW to avoid session/token issues with fetch(event.request)
-        if (url.pathname.includes('/api/')) return;
-
+    if (url.pathname === '/tpv' || url.pathname.startsWith('/admin') || url.pathname.startsWith('/tpv/receipt') || url.pathname.startsWith('/tpv/return-receipt') || event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request)
                 .then(response => {
-                    // Only cache successful GET responses that are not ADMIN pages (admin pages change too much)
-                    if (response.ok && response.status === 200 && event.request.method === 'GET' && !url.pathname.startsWith('/admin')) {
+                    // Only cache successful GET responses that are not ADMIN pages
+                    if (response.ok && response.status === 200 && !url.pathname.startsWith('/admin')) {
                         const copy = response.clone();
                         caches.open(CACHE_NAME).then(cache => {
-                            cache.put(event.request, copy).catch(err => {
-                                console.warn('SW: Cache put failed (possibly incomplete):', err.message);
-                            });
+                            cache.put(event.request, copy).catch(() => {});
                         });
                     }
                     return response;
                 })
                 .catch(err => {
-                    // Fallback to cache if offline
                     return caches.match(event.request).then(r => {
                         if (r) return r;
                         throw err;
@@ -73,14 +71,11 @@ self.addEventListener('fetch', event => {
                 if (networkResponse.ok && (url.origin === location.origin)) {
                     const copy = networkResponse.clone();
                     caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, copy).catch(err => {
-                            console.warn('SW: Cache put (static) failed:', err.message);
-                        });
+                        cache.put(event.request, copy).catch(() => {});
                     });
                 }
                 return networkResponse;
             }).catch(err => {
-                // If everything fails, throw so the browser shows its error page
                 throw err;
             });
         })

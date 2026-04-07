@@ -57,8 +57,14 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Transactional(readOnly = true)
     @Cacheable(value = CACHE_NAME, key = "#productId", unless = "#result == null")
     public ProductPrice getCurrentPrice(Long productId, LocalDateTime at) {
-        log.debug("Cache miss for current price of product ID: {}", productId);
         return productPriceRepository.findActivePriceAt(productId, at).orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductPrice> getActivePrices(List<Long> productIds, LocalDateTime at) {
+        if (productIds == null || productIds.isEmpty()) return new ArrayList<>();
+        return productPriceRepository.findActivePricesForProducts(productIds, at);
     }
 
     @Override

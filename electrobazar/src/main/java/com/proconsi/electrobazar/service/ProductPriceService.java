@@ -15,15 +15,15 @@ import java.util.List;
  */
 public interface ProductPriceService {
 
-    /**
-     * Returns the currently active price for a product at the given timestamp.
-     * Results are cached to optimize performance.
-     *
-     * @param productId The ID of the product.
-     * @param at        The timestamp to evaluate.
-     * @return The active ProductPrice, or null if none is configured.
-     */
     ProductPrice getCurrentPrice(Long productId, LocalDateTime at);
+
+    /**
+     * Bulk fetch active prices for multiple products to avoid N+1 problems.
+     * @param productIds List of product IDs.
+     * @param at Timestamp to evaluate.
+     * @return List of active ProductPrice entities.
+     */
+    List<ProductPrice> getActivePrices(List<Long> productIds, LocalDateTime at);
 
     /**
      * Schedules a new price for a product starting at a specific date.

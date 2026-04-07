@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -191,19 +192,24 @@ public class ProductApiRestController {
         List<Product> products = productService.findAllActiveWithCategory();
         LocalDateTime now = LocalDateTime.now();
 
+        // 1. Bulk fetch active prices to avoid N+1 queries 
+        List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+        List<ProductPrice> activePrices = productPriceService.getActivePrices(productIds, now);
+        
+        // 2. Map prices for efficient lookup
+        Map<Long, ProductPrice> priceMap = activePrices.stream()
+                .collect(Collectors.toMap(p -> p.getProduct().getId(), p -> p, (a, b) -> a));
+
         List<ProductSelectionItem> selectionItems = products.stream()
                 .map(product -> {
-                    BigDecimal currentPrice;
-                    BigDecimal currentVat;
+                    BigDecimal currentPrice = product.getPrice();
+                    BigDecimal currentVat = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null 
+                        ? product.getTaxRate().getVatRate() : new BigDecimal("0.21");
 
-                    ProductPrice priceEntity = productPriceService.getCurrentPrice(product.getId(), now);
+                    ProductPrice priceEntity = priceMap.get(product.getId());
                     if (priceEntity != null) {
                         currentPrice = priceEntity.getPrice();
                         currentVat = priceEntity.getVatRate();
-                    } else {
-                        currentPrice = product.getPrice();
-                        currentVat = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null 
-                            ? product.getTaxRate().getVatRate() : new BigDecimal("0.21");
                     }
 
                     return new ProductSelectionItem(

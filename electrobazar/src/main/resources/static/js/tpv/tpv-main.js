@@ -44,6 +44,8 @@ var currentTariffLabel = 'MINORISTA';
 var currentHasRE = false;
 var currentCoupon = null; // { code, discountType, discountValue }
 var cartTariffId = null;  // Override manual del carrito (toma prioridad sobre el cliente)
+var autoPromoDiscount = 0; // NxM discount calculated by backend
+var appliedPromoNames = [];
 
 /**
  * Returns the effective tariff ID to apply for a given product line.
@@ -173,6 +175,7 @@ function addToTicket(card) {
                 ticket[id].price = parseFloat(priceData.price);
                 ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
             }
+            syncPromotions();
             renderTicket();
         })
         .catch(function (err) {
@@ -197,12 +200,14 @@ function changeQty(id, delta) {
 
     ticket[id].quantity = newQty;
     if (ticket[id].quantity <= 0) delete ticket[id];
+    syncPromotions();
     renderTicket();
 }
 
 function removeLine(id) {
     if (window.tpv_is_register_open !== true) return;
     delete ticket[id];
+    syncPromotions();
     renderTicket();
 }
 
@@ -229,6 +234,7 @@ function editQty(el, id) {
             }
             ticket[id].quantity = val;
         }
+        syncPromotions();
         renderTicket();
     }
 
@@ -243,6 +249,8 @@ function clearTicket() {
     Object.keys(ticket).forEach(function (k) { delete ticket[k]; });
     var saleNotesTextarea = document.getElementById('saleNotes');
     if (saleNotesTextarea) saleNotesTextarea.value = '';
+    autoPromoDiscount = 0;
+    appliedPromoNames = [];
     renderTicket();
 }
 
@@ -427,14 +435,68 @@ function renderTicket() {
         }
     }
 
-    var finalTotal = totalAmount + totalRE - (couponDiscountAmount || 0);
-    totalEl.textContent = finalTotal.toFixed(2) + '\u20AC';
+    // Final Calculation: Basis + RE - Coupon - AutoPromo
+    var finalTotal = totalAmount + totalRE - (couponDiscountAmount || 0) - (autoPromoDiscount || 0);
+    if (finalTotal < 0) finalTotal = 0;
+    totalEl.textContent = formatPrice(finalTotal) + '€';
+
+    // AutoPromo UI
+    var autoPromoRow = document.getElementById('autoPromoRow');
+    if (autoPromoRow) {
+        if (autoPromoDiscount > 0) {
+            autoPromoRow.style.display = 'flex';
+            document.getElementById('autoPromoAmountDisplay').textContent = '-' + formatPrice(autoPromoDiscount) + '€';
+            document.getElementById('autoPromoLabel').textContent = appliedPromoNames.join(', ') || 'PROMO NX';
+        } else {
+            autoPromoRow.style.display = 'none';
+        }
+    }
 
     cobrarBtn.disabled = false;
     if (suspenderBtn) { suspenderBtn.disabled = false; suspenderBtn.style.opacity = '1'; }
 
     // Sync bubbles
     updateStockBubbles();
+}
+
+/**
+ * Fetches automatic NxM promotion discounts from the backend.
+ * Uses a small debounce to avoid excessive requests.
+ */
+var promoSyncTimeout = null;
+function syncPromotions() {
+    if (promoSyncTimeout) clearTimeout(promoSyncTimeout);
+    
+    var ids = Object.keys(ticket).filter(id => !String(id).startsWith('manual-'));
+    if (ids.length === 0) {
+        autoPromoDiscount = 0;
+        appliedPromoNames = [];
+        return;
+    }
+
+    promoSyncTimeout = setTimeout(function() {
+        var payload = {
+            lines: ids.map(id => ({
+                productId: parseInt(id),
+                quantity: ticket[id].quantity
+            }))
+        };
+
+        fetch('/api/promotions/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            autoPromoDiscount = parseFloat(data.totalDiscount) || 0;
+            appliedPromoNames = data.appliedPromotions || [];
+            renderTicket();
+        })
+        .catch(err => {
+            console.error('[Promotions] Error syncing', err);
+        });
+    }, 150);
 }
 
 function selectPayment(method) {
