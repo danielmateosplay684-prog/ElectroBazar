@@ -68,11 +68,11 @@ public class ReturnServiceImpl implements ReturnService {
         Sale originalSale = saleService.findById(originalSaleId);
         List<ReturnLine> returnLines = new ArrayList<>();
         BigDecimal totalRefunded = BigDecimal.ZERO;
-        int totalOriginalUnits = 0;
-        int totalReturnedUnits = 0;
+        BigDecimal totalOriginalUnits = BigDecimal.ZERO;
+        BigDecimal totalReturnedUnits = BigDecimal.ZERO;
 
         for (ReturnLineRequest req : lineRequests) {
-            if (req.getQuantity() <= 0) continue;
+            if (req.getQuantity() == null || req.getQuantity().compareTo(BigDecimal.ZERO) <= 0) continue;
 
             SaleLine saleLine = saleLineRepository.findById(req.getSaleLineId())
                     .orElseThrow(() -> new IllegalArgumentException("Sale line " + req.getSaleLineId() + " not found."));
@@ -81,16 +81,17 @@ public class ReturnServiceImpl implements ReturnService {
                 throw new IllegalArgumentException("Cross-sale return violation detected.");
             }
 
-            int alreadyReturned = returnLineRepository.sumReturnedQuantityBySaleLineId(saleLine.getId());
-            int availableToReturn = saleLine.getQuantity() - alreadyReturned;
+            BigDecimal alreadyReturned = returnLineRepository.sumReturnedQuantityBySaleLineId(saleLine.getId());
+            if (alreadyReturned == null) alreadyReturned = BigDecimal.ZERO;
+            
+            BigDecimal availableToReturn = saleLine.getQuantity().subtract(alreadyReturned);
 
-            if (req.getQuantity() > availableToReturn) {
-                throw new IllegalArgumentException(String.format("Over-return error: %d units available, %d requested.", 
-                        availableToReturn, req.getQuantity()));
+            if (req.getQuantity().compareTo(availableToReturn) > 0) {
+                throw new IllegalArgumentException("Cantidad a devolver supera la cantidad disponible");
             }
 
             BigDecimal vatRate = (saleLine.getVatRate() != null) ? saleLine.getVatRate() : new BigDecimal("0.21");
-            BigDecimal lineSubtotal = saleLine.getUnitPrice().multiply(BigDecimal.valueOf(req.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lineSubtotal = saleLine.getUnitPrice().multiply(req.getQuantity()).setScale(2, RoundingMode.HALF_UP);
 
             ReturnLine returnLine = ReturnLine.builder()
                     .saleLine(saleLine).quantity(req.getQuantity()).unitPrice(saleLine.getUnitPrice())
@@ -98,8 +99,8 @@ public class ReturnServiceImpl implements ReturnService {
 
             returnLines.add(returnLine);
             totalRefunded = totalRefunded.add(lineSubtotal);
-            totalOriginalUnits += saleLine.getQuantity();
-            totalReturnedUnits += (alreadyReturned + req.getQuantity());
+            totalOriginalUnits = totalOriginalUnits.add(saleLine.getQuantity());
+            totalReturnedUnits = totalReturnedUnits.add(alreadyReturned.add(req.getQuantity()));
 
             // 1. Inventory Restoration
             productService.increaseStock(saleLine.getProduct().getId(), req.getQuantity());
@@ -118,7 +119,7 @@ public class ReturnServiceImpl implements ReturnService {
             }
         }
 
-        SaleReturn.ReturnType returnType = (totalOriginalUnits == totalReturnedUnits) ? SaleReturn.ReturnType.TOTAL : SaleReturn.ReturnType.PARTIAL;
+        SaleReturn.ReturnType returnType = (totalOriginalUnits.compareTo(totalReturnedUnits) == 0) ? SaleReturn.ReturnType.TOTAL : SaleReturn.ReturnType.PARTIAL;
         String returnNumber = generateNumber(RETURN_SERIE);
 
         SaleReturn saleReturn = SaleReturn.builder()

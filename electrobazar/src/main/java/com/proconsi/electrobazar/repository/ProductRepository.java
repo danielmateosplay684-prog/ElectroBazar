@@ -86,19 +86,19 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
      */
     @Modifying
     @Query("UPDATE Product p SET p.stock = p.stock - :quantity WHERE p.id = :id AND p.stock >= :quantity")
-    int decreaseStockAtomic(@Param("id") Long id, @Param("quantity") Integer quantity);
+    int decreaseStockAtomic(@Param("id") Long id, @Param("quantity") java.math.BigDecimal quantity);
 
     /**
      * Atomic stock restoration for cancellations.
      */
     @Modifying
     @Query("UPDATE Product p SET p.stock = p.stock + :quantity WHERE p.id = :id")
-    void increaseStockAtomic(@Param("id") Long id, @Param("quantity") Integer quantity);
+    void increaseStockAtomic(@Param("id") Long id, @Param("quantity") java.math.BigDecimal quantity);
 
     /**
      * Counts products whose stock level is below a given threshold.
      */
-    long countByStockLessThan(Integer threshold);
+    long countByStockLessThan(java.math.BigDecimal threshold);
 
     /**
      * Efficiently counts products assigned to a specific category.

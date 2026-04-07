@@ -38,8 +38,8 @@ public class SuspendedSaleLine {
     private String productName;
 
     /** Quantity of units in the cart. */
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(nullable = false, precision = 12, scale = 3)
+    private BigDecimal quantity;
 
     /** Unit price (gross with VAT included) at suspension time. */
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)

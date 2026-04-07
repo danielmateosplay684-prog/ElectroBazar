@@ -122,21 +122,21 @@ public interface ProductService {
      * @param productId The ID of the product.
      * @param quantity  Amount to subtract.
      */
-    void decreaseStock(Long productId, Integer quantity);
+    void decreaseStock(Long productId, BigDecimal quantity);
 
     /**
      * Increases the stock quantity for a product.
      * @param productId The ID of the product.
      * @param quantity  Amount to add.
      */
-    void increaseStock(Long productId, Integer quantity);
+    void increaseStock(Long productId, BigDecimal quantity);
 
     /**
      * Sets the stock to a specific absolute value.
      * @param productId The ID of the product.
      * @param quantity  The new stock level.
      */
-    void adjustStock(Long productId, Integer quantity);
+    void adjustStock(Long productId, BigDecimal quantity);
 
     /**
      * Retrieves the most sold or most relevant products up to a limit.

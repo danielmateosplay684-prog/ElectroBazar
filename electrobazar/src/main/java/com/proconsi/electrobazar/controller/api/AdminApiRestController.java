@@ -236,7 +236,8 @@ public class AdminApiRestController {
             template = "tpv/rectificative-invoice";
             List<TaxBreakdown> negativeBreakdowns = standardBreakdowns.stream().map(bd -> TaxBreakdown.builder()
                     .productId(bd.getProductId()).productName(bd.getProductName()).unitPrice(bd.getUnitPrice())
-                    .quantity(bd.getQuantity() * -1).baseAmount(bd.getBaseAmount().negate()).vatRate(bd.getVatRate())
+                    .quantity(bd.getQuantity() != null ? bd.getQuantity().negate() : BigDecimal.ZERO)
+                    .baseAmount(bd.getBaseAmount().negate()).vatRate(bd.getVatRate())
                     .vatAmount(bd.getVatAmount().negate()).recargoRate(bd.getRecargoRate())
                     .recargoAmount(bd.getRecargoAmount().negate())
                     .totalAmount(bd.getTotalAmount().negate()).recargoApplied(applyRecargo).build())
@@ -254,7 +255,7 @@ public class AdminApiRestController {
                 Map<String, Object> map = new HashMap<>();
                 map.put("name", line.getSaleLine().getProduct().getName());
                 map.put("unitPrice", line.getUnitPrice());
-                map.put("quantity", line.getQuantity() * -1);
+                map.put("quantity", line.getQuantity().negate());
                 map.put("subtotal", line.getSubtotal().negate());
                 map.put("vatRate", line.getVatRate());
                 map.put("recargoRate", line.getSaleLine().getRecargoRate());

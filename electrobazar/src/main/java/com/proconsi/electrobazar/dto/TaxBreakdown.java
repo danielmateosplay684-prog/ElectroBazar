@@ -39,7 +39,7 @@ public class TaxBreakdown {
     private String productName;
 
     /** Quantity of units. */
-    private Integer quantity;
+    private java.math.BigDecimal quantity;
 
     /** Unit price (base price before taxes). */
     private BigDecimal unitPrice;

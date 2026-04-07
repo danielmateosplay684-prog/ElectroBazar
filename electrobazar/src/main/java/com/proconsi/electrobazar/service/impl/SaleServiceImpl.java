@@ -84,7 +84,7 @@ public class SaleServiceImpl implements SaleService {
                 .cancelledSales(summary.getTotalCancelledCount())
                 .cancelledRevenue(summary.getTotalCancelledAmount())
                 .topProductName(topProduct != null ? topProduct : "—")
-                .lowStockCount(productService.findAll().stream().filter(p -> p.getStock() < 5).count())
+                .lowStockCount(productService.findAll().stream().filter(p -> p.getStock().compareTo(new BigDecimal("5")) < 0).count())
                 .revenueTrend(trend)
                 .categoryDistribution(categories)
                 .build();
@@ -180,7 +180,7 @@ public class SaleServiceImpl implements SaleService {
         boolean applyRE = (customer != null && Boolean.TRUE.equals(customer.getHasRecargoEquivalencia()));
 
         for (SaleLine line : lines) {
-            BigDecimal lineTotal = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, ROUNDING);
+            BigDecimal lineTotal = line.getUnitPrice().multiply(line.getQuantity()).setScale(SCALE, ROUNDING);
             subtotalBeforeCoupon = subtotalBeforeCoupon.add(lineTotal);
             
             if (coupon != null) {
@@ -223,7 +223,7 @@ public class SaleServiceImpl implements SaleService {
             }
 
             BigDecimal lineGrossBeforeCoupon = line.getUnitPrice();
-            BigDecimal lineTotalBeforeCoupon = lineGrossBeforeCoupon.multiply(BigDecimal.valueOf(line.getQuantity()));
+            BigDecimal lineTotalBeforeCoupon = lineGrossBeforeCoupon.multiply(line.getQuantity());
             
             BigDecimal lineCouponDiscount = BigDecimal.ZERO;
             if (coupon != null && eligibleSubtotal.compareTo(BigDecimal.ZERO) > 0) {
@@ -244,7 +244,8 @@ public class SaleServiceImpl implements SaleService {
             BigDecimal finalLineTotal = lineTotalBeforeCoupon.subtract(lineCouponDiscount);
             if (finalLineTotal.compareTo(BigDecimal.ZERO) < 0) finalLineTotal = BigDecimal.ZERO;
             
-            BigDecimal effectiveUnitPrice = finalLineTotal.divide(BigDecimal.valueOf(line.getQuantity()), 10, ROUNDING);
+            BigDecimal finalQuantity = line.getQuantity();
+            BigDecimal effectiveUnitPrice = finalQuantity.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : finalLineTotal.divide(finalQuantity, 10, ROUNDING);
             
             BigDecimal vatRate = (line.getVatRate() != null) ? line.getVatRate() : 
                                  (line.getProduct() != null && line.getProduct().getTaxRate() != null ? line.getProduct().getTaxRate().getVatRate() : new BigDecimal("0.21"));
@@ -258,11 +259,12 @@ public class SaleServiceImpl implements SaleService {
             line.setOriginalUnitPrice(lineGrossBeforeCoupon.setScale(SCALE, ROUNDING));
             line.setUnitPrice(effectiveUnitPrice.setScale(SCALE, ROUNDING));
             line.setBasePriceNet(breakdown.getUnitPrice());
-            line.setBaseAmount(breakdown.getBaseAmount());
-            line.setVatAmount(breakdown.getVatAmount());
+            line.setBaseAmount(breakdown.getBaseAmount()); // Rounded to 2 in calculator
+            line.setVatAmount(breakdown.getVatAmount());   // Rounded to 2 in calculator
             line.setRecargoRate(breakdown.getRecargoRate());
-            line.setRecargoAmount(breakdown.getRecargoAmount());
-            line.setSubtotal(finalLineTotal.add(line.getRecargoAmount()).setScale(SCALE, ROUNDING));
+            line.setRecargoAmount(breakdown.getRecargoAmount()); // Rounded to 2 in calculator
+            // Subtotal must be the sum of rounded components to avoid 1-cent mismatch
+            line.setSubtotal(breakdown.getTotalAmount()); 
 
             total = total.add(line.getSubtotal());
             totalBase = totalBase.add(line.getBaseAmount());

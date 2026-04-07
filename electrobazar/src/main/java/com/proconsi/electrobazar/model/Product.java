@@ -146,9 +146,9 @@ public class Product {
     }
 
     /** Available items in stock. */
-    @Column(nullable = false, columnDefinition = "int default 0")
+    @Column(nullable = false, precision = 12, scale = 3)
     @Builder.Default
-    private Integer stock = 0;
+    private java.math.BigDecimal stock = java.math.BigDecimal.ZERO;
 
     /** Whether the product is available for sale. */
     @Column(nullable = false)
@@ -168,4 +168,9 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tax_rate_id", nullable = false)
     private TaxRate taxRate;
+
+    /** Measurement unit for this product (Liter, Kg, Unit). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "measurement_unit_id")
+    private MeasurementUnit measurementUnit;
 }

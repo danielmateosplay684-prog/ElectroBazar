@@ -358,14 +358,21 @@
                 </div>
                 <div th:each="product : ${products}" class="product-card"
                     th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''"
-                    th:attr="data-id=${product.id}, data-name=${product.name}, data-price=${product.price}, data-category=${product.category != null ? product.category.name : ''}, data-category-id=${product.category != null ? product.category.id : ''}, data-stock=${product.stock}">
+                    th:attr="data-id=${product.id}, 
+                             data-name=${product.name}, 
+                             data-price=${product.price}, 
+                             data-category=${product.category != null ? product.category.name : ''}, 
+                             data-category-id=${product.category != null ? product.category.id : ''}, 
+                             data-stock=${product.stock},
+                             data-prompt-on-add=${product.measurementUnit != null ? product.measurementUnit.promptOnAdd : false},
+                             data-unit-symbol=${product.measurementUnit != null ? product.measurementUnit.symbol : 'uds.'}">
                     <div class="product-image-container">
                         <img th:if="${product.imageUrl}" th:src="${product.imageUrl}" alt="Imagen producto"
                             class="product-image">
                         <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
                         <span class="stock-badge"
                             th:classappend="${product.stock == 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
-                            th:text="${product.stock}">0</span>
+                            th:text="${product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, product.measurementUnit.decimalPlaces) : #numbers.formatDecimal(product.stock, 1, 0)}">0</span>
                     </div>
                     <div class="product-info">
                         <div class="product-name" th:text="${product.name}">Nombre producto</div>

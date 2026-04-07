@@ -20,8 +20,8 @@ public interface ReturnLineRepository extends JpaRepository<ReturnLine, Long> {
      * @param saleLineId ID of the original sale line.
      * @return Cumulative quantity returned (defaults to 0).
      */
-    @Query("SELECT COALESCE(SUM(rl.quantity), 0) FROM ReturnLine rl WHERE rl.saleLine.id = :saleLineId")
-    int sumReturnedQuantityBySaleLineId(@Param("saleLineId") Long saleLineId);
+    @Query("SELECT SUM(rl.quantity) FROM ReturnLine rl WHERE rl.saleLine.id = :saleLineId")
+    java.math.BigDecimal sumReturnedQuantityBySaleLineId(@Param("saleLineId") Long saleLineId);
 }
 
 

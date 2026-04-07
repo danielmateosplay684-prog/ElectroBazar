@@ -232,7 +232,10 @@
                 <i class="bi bi-tags"></i> <span th:text="#{admin.menu.tariffs}">Tarifas</span>
             </button>
             <button class="nav-link sidebar-menu-btn" onclick="switchView('tiposIvaView', this)">
-                <i class="bi bi-calculator"></i> <span th:text="#{admin.menu.taxrates}">Tipos de IVA</span>
+                <i class="bi bi-percent me-3"></i><span th:text="#{admin.menu.taxrates}">Tipos de IVA</span>
+            </button>
+            <button class="nav-link sidebar-menu-btn" onclick="switchView('measurementUnitsView', this)">
+                <i class="bi bi-rulers me-3"></i><span>Unidades de Medida</span>
             </button>
             <button class="nav-link sidebar-menu-btn" onclick="switchView('couponsView', this)">
                 <i class="bi bi-ticket-perforated"></i> <span th:text="#{admin.menu.coupons}">Cupones</span>
@@ -490,6 +493,13 @@
                     <h3 th:text="#{admin.dashboard.taxrates.title}">Tipos de IVA</h3>
                     <p th:text="#{admin.dashboard.taxrates.desc}">Administra los tipos impositivos de IVA y Recargo de
                         Equivalencia.</p>
+                </div>
+
+                <div class="dashboard-card"
+                    onclick="switchView('measurementUnitsView', document.querySelector('[onclick*=\'measurementUnitsView\']'))">
+                    <i class="bi bi-rulers"></i>
+                    <h3>Unidades de Medida</h3>
+                    <p>Gestiona las magnitudes y precisiones decimales para el pesado o medido de productos.</p>
                 </div>
 
                 <div class="dashboard-card"
@@ -939,6 +949,41 @@
                             th:text="#{admin.taxrates.selective.apply}">PROCESAR CAMBIOS AHORA</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- MEASUREMENT UNITS VIEW -->
+        <div id="measurementUnitsView" style="display: none;">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        th:title="#{admin.common.backtopanel}">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="panel-title"><i class="bi bi-rulers me-2"></i>Unidades de Medida</span>
+                </div>
+                <button class="btn-nuevo" onclick="openMeasurementUnitModal()">
+                    <i class="bi bi-plus-lg me-1"></i> <span>Nueva Unidad</span>
+                </button>
+            </div>
+
+            <div class="admin-table-wrap mt-3">
+                <table class="admin-table" id="measurementUnitsTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Símbolo</th>
+                            <th>Decimales</th>
+                            <th>Prompt al Añadir</th>
+                            <th>Activa</th>
+                            <th style="text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="measurementUnitsTableBody">
+                        <!-- Cargado via JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -3395,10 +3440,7 @@
                                 <div class="col-md-4">
                                     <label class="form-label" for="productIvaRate" th:text="#{common.iva}">IVA</label>
                                     <select class="form-select" id="productIvaRate">
-                                        <option value="0.21">21%</option>
-                                        <option value="0.10">10%</option>
-                                        <option value="0.04">4%</option>
-                                        <option value="0.02">2%</option>
+                                        <option value="" th:text="#{common.loading}">Cargando...</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -3412,6 +3454,12 @@
                                         <option value="" th:text="#{admin.common.nocategory}">— Sin categoría —</option>
                                         <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">
                                         </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="productMeasurementUnit">Unidad de Medida</label>
+                                    <select class="form-select" id="productMeasurementUnit">
+                                        <option value="">— Sin unidades —</option>
                                     </select>
                                 </div>
                                 <div class="col-12">
@@ -3445,6 +3493,53 @@
         <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MODAL — CATEGORÃA
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- MODAL — UNIDAD DE MEDIDA -->
+        <div class="modal fade" id="measurementUnitModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="measurementUnitModalLabel">Unidad de Medida</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="measurementUnitForm">
+                            <input type="hidden" id="measurementUnitId">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label" for="muName">Nombre *</label>
+                                    <input type="text" class="form-control" id="muName" required placeholder="Ej: Kilogramo">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="muSymbol">Símbolo *</label>
+                                    <input type="text" class="form-control" id="muSymbol" required placeholder="Ej: kg">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="muDecimals">Decimales (0-6) *</label>
+                                    <input type="number" class="form-control" id="muDecimals" min="0" max="6" value="0" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="muPrompt">
+                                        <label class="form-check-label" for="muPrompt">Pedir cantidad al añadir al ticket</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="muActive" checked>
+                                        <label class="form-check-label" for="muActive">Activa</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn-save" onclick="saveMeasurementUnit()">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel"
             aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

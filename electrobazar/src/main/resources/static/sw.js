@@ -33,7 +33,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     // 1. BYPASS REST API: Ignorar cualquier petición que contenga /api/ para que el SW no interfiera
     const url = new URL(event.request.url);
-    if (url.pathname.includes('/api/')) {
+    if (url.pathname.includes('/api/') || url.pathname.startsWith('/admin')) {
         return; // Deja que la petición vaya directamente a la red sin capturarla
     }
 
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
     // Strategy: Network First for the main navigation (/tpv)
-    if (url.pathname === '/tpv' || url.pathname.startsWith('/admin') || url.pathname.startsWith('/tpv/receipt') || url.pathname.startsWith('/tpv/return-receipt') || event.request.mode === 'navigate') {
+    if (url.pathname === '/tpv' || url.pathname.startsWith('/tpv/receipt') || url.pathname.startsWith('/tpv/return-receipt') || event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request)
                 .then(response => {

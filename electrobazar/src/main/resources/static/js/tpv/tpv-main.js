@@ -18,13 +18,30 @@ var ticket = {}; // { productId: { name, price, quantity, stock } }
  * Formats a price with dynamic decimal precision.
  * Shows 2 decimals by default, but up to 4 if the price has extra digits.
  */
+/**
+ * Helper to parse prices in '2.345,67€' format reliably
+ */
+function parsePrice(text) {
+    if (!text) return 0;
+    // Remove Euro symbol, non-breaking spaces (\xA0), and then normalize decimal separator
+    let clean = text.replace('€', '').replace('\u20AC', '').replace(/\s+/g, '').replace('\u00A0', '');
+    // If there's a dot and a comma, the dot is likely thousands separator
+    if (clean.includes('.') && clean.includes(',')) {
+        clean = clean.replace(/\./g, '').replace(',', '.');
+    } else {
+        // Just normalize comma to dot
+        clean = clean.replace(',', '.');
+    }
+    let val = parseFloat(clean);
+    return isNaN(val) ? 0 : val;
+}
+
 function formatPrice(price) {
     if (price === null || price === undefined) return '0,00';
     let s = price.toString();
     if (s.includes('.')) {
         let decimals = s.split('.')[1].length;
         if (decimals > 2) {
-            // Localize with target scale, keeping up to 4
             return price.toLocaleString('es-ES', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 4
@@ -145,19 +162,41 @@ function addToTicket(card) {
     var id = card.dataset.id;
     var name = card.dataset.name;
     var price = parseFloat(card.dataset.price);
-    var stock = parseInt(card.dataset.stock) || 0;
+    var stock = parseFloat(card.dataset.stock) || 0;
+    var promptOnAdd = card.dataset.promptOnAdd === 'true';
+    var unitSymbol = card.dataset.unitSymbol || 'uds.';
     var categoryId = card.dataset.categoryId;
 
     var currentQty = ticket[id] ? ticket[id].quantity : 0;
-    if (currentQty + 1 > stock) {
-        showToast("Stock insuficiente para este producto", 'warning');
-        return;
-    }
 
-    if (ticket[id]) {
-        ticket[id].quantity++;
+    if (promptOnAdd) {
+        var msg = `Introduce cantidad en ${unitSymbol}:`;
+        var val = prompt(msg, "1.000");
+        if (val === null) return;
+        val = parseFloat(val.replace(',', '.'));
+        if (isNaN(val) || val <= 0) {
+            showToast("Cantidad no válida", 'warning');
+            return;
+        }
+        if (currentQty + val > stock) {
+            showToast("Stock insuficiente para este producto", 'warning');
+            return;
+        }
+        if (ticket[id]) {
+            ticket[id].quantity += val;
+        } else {
+            ticket[id] = { name: name, price: price, quantity: val, stock: stock, categoryId: categoryId };
+        }
     } else {
-        ticket[id] = { name: name, price: price, quantity: 1, stock: stock, categoryId: categoryId };
+        if (currentQty + 1 > stock) {
+            showToast("Stock insuficiente para este producto", 'warning');
+            return;
+        }
+        if (ticket[id]) {
+            ticket[id].quantity++;
+        } else {
+            ticket[id] = { name: name, price: price, quantity: 1, stock: stock, categoryId: categoryId };
+        }
     }
 
     // ALWAYS fetch the price from the API to respect the "only tariffs" rule.
@@ -191,6 +230,9 @@ function addToTicket(card) {
 function changeQty(id, delta) {
     if (window.tpv_is_register_open !== true) return;
     if (!ticket[id]) return;
+    
+    // For products sold by weight, -1 button might not make sense if current is 0.5
+    // But we'll keep it simple: -1 or +1.
     var newQty = ticket[id].quantity + delta;
 
     if (delta > 0 && newQty > ticket[id].stock) {
@@ -198,7 +240,7 @@ function changeQty(id, delta) {
         return;
     }
 
-    ticket[id].quantity = newQty;
+    ticket[id].quantity = Math.max(0, parseFloat(newQty.toFixed(3)));
     if (ticket[id].quantity <= 0) delete ticket[id];
     syncPromotions();
     renderTicket();
@@ -218,21 +260,22 @@ function editQty(el, id) {
     input.type = 'number';
     input.className = 'qty-input';
     input.value = current;
-    input.min = 1;
-    input.setAttribute('inputmode', 'numeric');
+    input.min = 0.001;
+    input.step = 0.001;
+    input.setAttribute('inputmode', 'decimal');
     el.replaceWith(input);
     input.focus();
     input.select();
 
     function confirmQty() {
-        var val = parseInt(input.value);
+        var val = parseFloat(input.value.replace(',', '.'));
         if (val && val > 0) {
             if (val > ticket[id].stock) {
                 showToast("Stock insuficiente para este producto", 'warning');
                 renderTicket();
                 return;
             }
-            ticket[id].quantity = val;
+            ticket[id].quantity = parseFloat(val.toFixed(3));
         }
         syncPromotions();
         renderTicket();
@@ -260,16 +303,17 @@ function clearTicket() {
  */
 function updateStockBubbles() {
     document.querySelectorAll('.product-card').forEach(function (card) {
-        if (card.dataset.id === 'wildcard' || card.classList.contains('wildcard-card')) return; // Skip wildcard card
+        if (card.dataset.id === 'wildcard' || card.classList.contains('wildcard-card')) return;
         var id = card.dataset.id;
-        var initialStock = parseInt(card.dataset.stock) || 0;
+        var initialStock = parseFloat(card.dataset.stock) || 0;
         var inTicket = ticket[id] ? ticket[id].quantity : 0;
-        var available = initialStock - inTicket;
+        var available = parseFloat((initialStock - inTicket).toFixed(3));
 
         var badge = card.querySelector('.stock-badge');
         if (badge) {
-            var oldVal = parseInt(badge.textContent) || 0;
-            badge.textContent = available;
+            var oldVal = parseFloat(badge.textContent.replace(',', '.')) || 0;
+            // Format available to show decimals if present
+            badge.textContent = available.toLocaleString('es-ES', { maximumFractionDigits: 3 });
 
             // Update color states
             badge.classList.remove('stock-danger', 'stock-warning', 'stock-neutral');
@@ -281,8 +325,7 @@ function updateStockBubbles() {
                 badge.classList.add('stock-neutral');
             }
 
-            // Add a little pop animation when stock value actually changes
-            if (oldVal !== available) {
+            if (Math.abs(oldVal - available) > 0.0001) {
                 badge.style.transform = 'scale(1.3)';
                 setTimeout(function () { badge.style.transform = 'scale(1)'; }, 150);
             }
@@ -323,7 +366,7 @@ function renderTicket() {
     var formHTML = ''; ids.forEach(function (id) {
         var item = ticket[id];
         var unitPrice = item.price;
-        var subtotal = unitPrice * item.quantity;
+        var subtotal = Math.round((unitPrice * item.quantity + Number.EPSILON) * 100) / 100;
         totalItems += item.quantity;
         totalAmount += subtotal;
 
@@ -331,25 +374,33 @@ function renderTicket() {
             var vat = item.vatRate || 0.21;
             var reRate = getReRate(vat);
             var net = unitPrice / (1 + vat);
-            var reLine = net * reRate * item.quantity;
+            var reLine = Math.round((net * reRate * item.quantity + Number.EPSILON) * 100) / 100;
             totalRE += reLine;
         }
 
         linesHTML += `
-            <div class="ticket-line">
-                <div class="line-info">
-                    <span class="line-name">${escapeHtml(item.name)}</span>
-                    <span class="line-price">${formatPrice(unitPrice)}€ x ${item.quantity}</span>
-                </div>
-                <div class="line-actions">
-                    <span class="line-subtotal">${formatPrice(subtotal)}€</span>
-                    <div class="d-flex align-items-center gap-1 ms-2">
-                        <button class="btn btn-sm p-0" title="Editar precio / tarifa" onclick="openEditPriceModal('${id}', '${escapeHtml(item.name)}', ${unitPrice})" style="color:#f59e0b; opacity:0.8; font-size:0.78rem;"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm p-0" onclick="changeQty('${id}',-1)" style="color:var(--text-muted);"><i class="bi bi-dash-circle"></i></button>
-                        <span class="fw-bold" style="min-width:20px; text-align:center; cursor:pointer;" onclick="editQty(this, '${id}')">${item.quantity}</span>
-                        <button class="btn btn-sm p-0" onclick="changeQty('${id}',1)" style="color:var(--text-muted);"><i class="bi bi-plus-circle"></i></button>
-                        <button class="btn btn-sm p-0 ms-2" onclick="removeLine('${id}')" style="color:#ef4444;"><i class="bi bi-x-lg"></i></button>
+            <div class="ticket-line-item">
+                <div class="ticket-line-main">
+                    <div class="ticket-line-info">
+                        <div class="ticket-line-name">${escapeHtml(item.name)}</div>
+                        <div class="ticket-line-detail">
+                            ${formatPrice(unitPrice)}€ × ${item.quantity.toLocaleString('es-ES', { maximumFractionDigits: 3 })}
+                        </div>
                     </div>
+                    <div class="ticket-line-total">${formatPrice(subtotal)}€</div>
+                </div>
+                <div class="ticket-line-actions">
+                    <button class="btn-ticket-action" title="Editar precio / tarifa" onclick="openEditPriceModal('${id}', '${escapeHtml(item.name)}', ${unitPrice})">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <div class="ticket-qty-stepper">
+                        <button class="btn-qty-step" onclick="changeQty('${id}',-1)"><i class="bi bi-dash"></i></button>
+                        <span class="qty-display" onclick="editQty(this, '${id}')">${item.quantity.toLocaleString('es-ES', { maximumFractionDigits: 3 })}</span>
+                        <button class="btn-qty-step" onclick="changeQty('${id}',1)"><i class="bi bi-plus"></i></button>
+                    </div>
+                    <button class="btn-ticket-action danger ms-auto" title="Eliminar" onclick="removeLine('${id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
             </div>`;
 
@@ -385,11 +436,12 @@ function renderTicket() {
         }
 
         if (eligibleAmount > 0) {
-            if (currentCoupon.discountType === 'PERCENTAGE') {
+            if (coupon.discountType === 'PERCENTAGE') {
                 couponDiscountAmount = eligibleAmount * (currentCoupon.discountValue / 100);
             } else {
                 couponDiscountAmount = currentCoupon.discountValue;
             }
+            couponDiscountAmount = Math.round((couponDiscountAmount + Number.EPSILON) * 100) / 100;
             if (couponDiscountAmount > eligibleAmount) couponDiscountAmount = eligibleAmount;
         }
     }
@@ -437,6 +489,7 @@ function renderTicket() {
 
     // Final Calculation: Basis + RE - Coupon - AutoPromo
     var finalTotal = totalAmount + totalRE - (couponDiscountAmount || 0) - (autoPromoDiscount || 0);
+    finalTotal = Math.round((finalTotal + Number.EPSILON) * 100) / 100;
     if (finalTotal < 0) finalTotal = 0;
     totalEl.textContent = formatPrice(finalTotal) + '€';
 
@@ -614,20 +667,20 @@ function calculateChange() {
     var val = parseFloat(input.value);
     var totalElement = document.getElementById('ticketTotal');
     if (!totalElement) return;
-    var total = parseFloat(totalElement.textContent.replace('\u20AC', '').trim());
+    var total = parsePrice(totalElement.textContent);
     var changeEl = document.getElementById('changeAmount');
     if (!changeEl) return;
 
     if (isNaN(val)) {
-        changeEl.textContent = '0.00\u20AC';
+        changeEl.textContent = '0,00€';
         changeEl.style.color = 'var(--text-muted)';
     } else {
         var diff = val - total;
         if (diff < 0) {
-            changeEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2) + '\u20AC';
+            changeEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2).replace('.', ',') + '€';
             changeEl.style.color = 'var(--danger)';
         } else {
-            changeEl.textContent = diff.toFixed(2) + '\u20AC';
+            changeEl.textContent = diff.toFixed(2).replace('.', ',') + '€';
             changeEl.style.color = 'var(--success)';
         }
     }
@@ -635,7 +688,7 @@ function calculateChange() {
 
 function setExactAmount() {
     var totalText = document.getElementById('ticketTotal').textContent;
-    var totalVal = parseFloat(totalText.replace('\u20AC', '').trim());
+    var totalVal = parsePrice(totalText);
     var input = document.getElementById('receivedAmount');
     input.value = totalVal.toFixed(2);
     // Explicitly update change calculation
@@ -645,24 +698,24 @@ function setExactAmount() {
 function calculateMixedChange() {
     var cardVal = parseFloat(document.getElementById('mixedCardAmount').value) || 0;
     var cashVal = parseFloat(document.getElementById('mixedCashAmount').value) || 0;
-    var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
+    var total = parsePrice(document.getElementById('ticketTotal').textContent);
     var remainingEl = document.getElementById('mixedRemainingAmount');
 
     var diff = (cardVal + cashVal) - total;
     if (diff < 0) {
-        remainingEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2) + '\u20AC';
+        remainingEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2).replace('.', ',') + '€';
         remainingEl.className = 'fw-bold fs-5 text-danger';
     } else if (diff === 0) {
-        remainingEl.textContent = '0.00\u20AC (Exacto)';
+        remainingEl.textContent = '0,00€ (Exacto)';
         remainingEl.className = 'fw-bold fs-5 text-success';
     } else {
-        remainingEl.textContent = 'Cambio: ' + diff.toFixed(2) + '\u20AC';
+        remainingEl.textContent = 'Cambio: ' + diff.toFixed(2).replace('.', ',') + '€';
         remainingEl.className = 'fw-bold fs-5 text-success';
     }
 }
 
 function fillMixedMissing(type) {
-    var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
+    var total = parsePrice(document.getElementById('ticketTotal').textContent);
     var cardInput = document.getElementById('mixedCardAmount');
     var cashInput = document.getElementById('mixedCashAmount');
 

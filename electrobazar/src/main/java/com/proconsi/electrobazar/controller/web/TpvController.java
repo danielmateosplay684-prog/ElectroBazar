@@ -117,7 +117,7 @@ public class TpvController {
             @RequestParam(required = false) String customerName,
             @RequestParam(required = false) String customerType,
             @RequestParam List<Long> productIds,
-            @RequestParam List<Integer> quantities,
+            @RequestParam List<BigDecimal> quantities,
             @RequestParam(required = false) List<String> unitPrices,
             @RequestParam PaymentMethod paymentMethod,
             @RequestParam(required = false) String notes,
@@ -177,7 +177,7 @@ public class TpvController {
         for (int i = 0; i < productIds.size(); i++) {
             Long pid = productIds.get(i);
             Product product = (pid != null && pid > 0) ? productMap.get(pid) : null;
-            int qty = quantities.get(i);
+            BigDecimal qty = quantities.get(i);
 
             BigDecimal unitPrice = BigDecimal.ZERO;
             BigDecimal vatRate = new BigDecimal("0.21");
@@ -617,15 +617,15 @@ public class TpvController {
         model.addAttribute("sale", sale);
         model.addAttribute("paymentMethods", PaymentMethod.values());
 
-        Map<Long, Integer> alreadyReturned = new HashMap<>();
+        Map<Long, BigDecimal> alreadyReturned = new HashMap<>();
         List<SaleReturn> existingReturns = returnService.findByOriginalSaleId(saleId);
 
         for (SaleLine line : sale.getLines()) {
-            int returned = existingReturns.stream()
+            BigDecimal returned = existingReturns.stream()
                     .flatMap(r -> r.getLines().stream())
                     .filter(rl -> rl.getSaleLine().getId().equals(line.getId()))
-                    .mapToInt(ReturnLine::getQuantity)
-                    .sum();
+                    .map(ReturnLine::getQuantity)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             alreadyReturned.put(line.getId(), returned);
         }
         model.addAttribute("alreadyReturned", alreadyReturned);
@@ -636,7 +636,7 @@ public class TpvController {
     public String processReturn(
             @RequestParam Long saleId,
             @RequestParam List<Long> saleLineIds,
-            @RequestParam List<Integer> quantities,
+            @RequestParam List<BigDecimal> quantities,
             @RequestParam(required = false) String reason,
             @RequestParam PaymentMethod paymentMethod,
             HttpSession session,
@@ -712,7 +712,7 @@ public class TpvController {
                         .productId(bd.getProductId())
                         .productName(bd.getProductName())
                         .unitPrice(bd.getUnitPrice())
-                        .quantity(bd.getQuantity() * -1)
+                        .quantity(bd.getQuantity().negate())
                         .baseAmount(bd.getBaseAmount().negate())
                         .vatRate(bd.getVatRate())
                         .vatAmount(bd.getVatAmount().negate())
@@ -737,7 +737,7 @@ public class TpvController {
                 Map<String, Object> map = new HashMap<>();
                 map.put("name", line.getSaleLine().getProduct().getName());
                 map.put("unitPrice", line.getUnitPrice());
-                map.put("quantity", line.getQuantity() * -1);
+                map.put("quantity", line.getQuantity().negate());
                 map.put("subtotal", line.getSubtotal().negate());
                 map.put("vatRate", line.getVatRate());
                 map.put("recargoRate", line.getSaleLine().getRecargoRate());

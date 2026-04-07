@@ -121,14 +121,13 @@ public class CsvImportService {
                     }
 
                     BigDecimal priceVal = new BigDecimal(priceStr);
-                    Integer stockVal = Integer.parseInt(stockStr);
 
                     // SEARCH FOR EXISTING PRODUCT BY NAME (EXACT MATCH IGNORE CASE)
                     Product existing = productService.findByName(productName);
                     
                     if (existing != null) {
                         // UPDATE EXISTING
-                        existing.setStock(stockVal);
+                        existing.setStock(new BigDecimal(stockStr));
                         existing.setImageUrl(imageUrl.isEmpty() ? existing.getImageUrl() : imageUrl);
                         existing.setCategory(category != null ? category : existing.getCategory());
                         // IMPORTANT: We update the gross price which recalculates the base price net.
@@ -148,7 +147,7 @@ public class CsvImportService {
                         // CREATE NEW
                         Product product = Product.builder()
                                 .nameEs(productName)
-                                .stock(stockVal)
+                                .stock(new BigDecimal(stockStr))
                                 .imageUrl(imageUrl.isEmpty() ? null : imageUrl)
                                 .category(category)
                                 .active(true)

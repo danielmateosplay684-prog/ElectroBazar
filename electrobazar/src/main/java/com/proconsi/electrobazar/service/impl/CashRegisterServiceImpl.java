@@ -275,7 +275,7 @@ public class CashRegisterServiceImpl implements CashRegisterService {
         BigDecimal revenue = saleRepository.sumTotalBetween(from, to);
         long salesCount = saleRepository.countByCreatedAtBetween(from, to);
         String topProduct = saleRepository.findTopProductNameBetween(from, to);
-        long lowStockCount = productRepository.countByStockLessThan(5);
+        long lowStockCount = productRepository.countByStockLessThan(new BigDecimal("5"));
 
         return DashboardStatsDTO.builder()
                 .shiftActive(shiftActive)

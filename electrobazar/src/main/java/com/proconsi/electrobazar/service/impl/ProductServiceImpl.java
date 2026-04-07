@@ -48,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
     private final TranslationService translationService;
     private final SaleLineRepository saleLineRepository;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
+    private final com.proconsi.electrobazar.repository.MeasurementUnitRepository measurementUnitRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -171,7 +172,11 @@ public class ProductServiceImpl implements ProductService {
             existing.setCategory(categoryRepository.findById(request.getCategoryId()).orElse(null));
         }
 
-        if (request.getStock() != null && request.getStock() >= 0) {
+        if (request.getMeasurementUnitId() != null) {
+            existing.setMeasurementUnit(measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
+        }
+
+        if (request.getStock() != null && request.getStock().compareTo(BigDecimal.ZERO) >= 0) {
             existing.setStock(request.getStock());
         }
 
@@ -247,8 +252,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void decreaseStock(Long productId, Integer quantity) {
-        if (quantity == null || quantity <= 0) return;
+    public void decreaseStock(Long productId, BigDecimal quantity) {
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) return;
         
         int updated = productRepository.decreaseStockAtomic(productId, quantity);
         if (updated == 0) {
@@ -263,16 +268,16 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void increaseStock(Long productId, Integer quantity) {
-        if (quantity == null || quantity <= 0) return;
+    public void increaseStock(Long productId, BigDecimal quantity) {
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) return;
         productRepository.increaseStockAtomic(productId, quantity);
     }
 
     @Override
-    public void adjustStock(Long productId, Integer quantity) {
+    public void adjustStock(Long productId, BigDecimal quantity) {
         Product product = findById(productId);
-        int newStock = product.getStock() + quantity;
-        if (newStock < 0) {
+        BigDecimal newStock = product.getStock().add(quantity);
+        if (newStock.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Target stock cannot be negative.");
         }
         product.setStock(newStock);

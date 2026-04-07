@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,14 +54,14 @@ public class PromotionServiceImpl implements PromotionService {
         }
 
         BigDecimal totalOriginal = tempLines.stream()
-                .map(l -> l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())))
+                .map(l -> l.getUnitPrice().multiply(l.getQuantity()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Apply engine logic
         List<SaleLine> withPromos = applyNxMPromotions(tempLines);
 
         BigDecimal totalAfterPromos = withPromos.stream()
-                .map(l -> l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())))
+                .map(l -> l.getUnitPrice().multiply(l.getQuantity()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalDiscount = totalOriginal.subtract(totalAfterPromos);
@@ -100,41 +99,38 @@ public class PromotionServiceImpl implements PromotionService {
                     .collect(Collectors.toList());
 
             // 2. Count total units
-            int totalUnits = promoLines.stream().mapToInt(SaleLine::getQuantity).sum();
+            BigDecimal totalUnits = promoLines.stream().map(SaleLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
             
             if (promo.getNValue() <= 0) continue;
 
             // 3. Calculate how many items are "free"
             // For 3x2: floor(units / 3) * (3 - 2)
-            int timesApplicable = totalUnits / promo.getNValue();
-            int freeUnitsNeeded = timesApplicable * (promo.getNValue() - promo.getMValue());
+            BigDecimal nVal = BigDecimal.valueOf(promo.getNValue());
+            BigDecimal mVal = BigDecimal.valueOf(promo.getMValue());
+            BigDecimal timesApplicable = totalUnits.divideToIntegralValue(nVal);
+            BigDecimal freeUnitsNeededB = timesApplicable.multiply(nVal.subtract(mVal));
 
-            if (freeUnitsNeeded <= 0) continue;
+            if (freeUnitsNeededB.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             log.info("Applying Promotion '{}': Found {} free units out of {} qualifying items.", 
-                     promo.getName(), freeUnitsNeeded, totalUnits);
+                     promo.getName(), freeUnitsNeededB, totalUnits);
 
-            // 4. Sort qualifying units by price (cheapest first)
-            // Note: We need to handle lines with quantity > 1 by splitting or tracking individual units.
-            // A more robust way is to SORT the lines but account for quantities.
-            promoLines.sort(Comparator.comparing(SaleLine::getUnitPrice));
-
-            int unitsStillToDiscount = freeUnitsNeeded;
+            int unitsStillToDiscount = freeUnitsNeededB.intValue(); // Assumption: promoters values are ints
             
             for (SaleLine line : promoLines) {
                 if (unitsStillToDiscount <= 0) break;
 
-                int qtyInLine = line.getQuantity();
+                BigDecimal qtyInLine = line.getQuantity();
                 
-                if (qtyInLine <= unitsStillToDiscount) {
+                if (qtyInLine.compareTo(BigDecimal.valueOf(unitsStillToDiscount)) <= 0) {
                     // Entire line becomes free (100% discount)
                     line.setUnitPrice(BigDecimal.ZERO);
                     line.setDiscountPercentage(new BigDecimal("100.00"));
-                    unitsStillToDiscount -= qtyInLine;
+                    unitsStillToDiscount -= qtyInLine.intValue();
                 } else {
                     // Split the line: part of it is free, part stays full price
                     int freeInThisLine = unitsStillToDiscount;
-                    int paidInThisLine = qtyInLine - freeInThisLine;
+                    BigDecimal paidInThisLine = qtyInLine.subtract(BigDecimal.valueOf(freeInThisLine));
 
                     // Update existing line for the PAID items
                     line.setQuantity(paidInThisLine);
@@ -143,7 +139,7 @@ public class PromotionServiceImpl implements PromotionService {
                     SaleLine freeLine = SaleLine.builder()
                             .product(line.getProduct())
                             .productName(line.getProductName())
-                            .quantity(freeInThisLine)
+                            .quantity(BigDecimal.valueOf(freeInThisLine))
                             .unitPrice(BigDecimal.ZERO)
                             .originalUnitPrice(line.getOriginalUnitPrice())
                             .discountPercentage(new BigDecimal("100.00"))

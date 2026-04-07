@@ -58,7 +58,7 @@ public class SaleWithTaxRequest {
         private Long productId;
 
         /** The number of units to sell. */
-        private Integer quantity;
+        private BigDecimal quantity;
 
         /**
          * Optional: override the default price for this specific line.

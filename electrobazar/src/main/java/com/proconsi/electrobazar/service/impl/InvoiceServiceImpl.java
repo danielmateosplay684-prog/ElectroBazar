@@ -140,14 +140,17 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .totalBase(originalSale.getTotalBase().negate())
                 .totalVat(originalSale.getTotalVat().negate())
                 .totalRecargo(originalSale.getTotalRecargo().negate())
+                .totalDiscount(originalSale.getTotalDiscount().negate())
+                .appliedDiscountPercentage(originalSale.getAppliedDiscountPercentage())
                 .notes("RECTIFICATIVA de " + originalInvoice.getInvoiceNumber() + ". Motivo: " + reason)
                 .status(Sale.SaleStatus.CANCELLED)
                 .build();
 
         List<SaleLine> negLines = originalSale.getLines().stream().map(l -> SaleLine.builder()
-                .product(l.getProduct()).quantity(-l.getQuantity()).unitPrice(l.getUnitPrice())
+                .product(l.getProduct()).quantity(l.getQuantity().negate()).unitPrice(l.getUnitPrice())
                 .basePriceNet(l.getBasePriceNet().negate()).baseAmount(l.getBaseAmount().negate())
-                .vatAmount(l.getVatAmount().negate()).recargoAmount(l.getRecargoAmount().negate())
+                .vatRate(l.getVatRate()).vatAmount(l.getVatAmount().negate())
+                .recargoRate(l.getRecargoRate()).recargoAmount(l.getRecargoAmount().negate())
                 .subtotal(l.getSubtotal().negate()).sale(negativeSale)
                 .build()).collect(Collectors.toList());
         negativeSale.setLines(negLines);

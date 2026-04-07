@@ -40,9 +40,9 @@ public class SaleLine {
     @Column(length = 255)
     private String productName;
 
-    /** Number of units sold. */
-    @Column(nullable = false)
-    private Integer quantity;
+    /** Number of decimals for quantity. */
+    @Column(nullable = false, precision = 12, scale = 3)
+    private BigDecimal quantity;
 
     /**
      * Gross unit price AFTER applying the tariff discount.

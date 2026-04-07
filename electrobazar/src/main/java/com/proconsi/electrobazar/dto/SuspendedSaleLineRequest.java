@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class SuspendedSaleLineRequest {
     private Long productId;
     private String productName;
-    private int quantity;
+    private BigDecimal quantity;
     private BigDecimal unitPrice;
     private BigDecimal vatRate;
 }

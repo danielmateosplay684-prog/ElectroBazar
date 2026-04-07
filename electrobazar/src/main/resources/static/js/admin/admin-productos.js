@@ -24,13 +24,28 @@ function openProductModal(id) {
     document.getElementById('productPrice').value = '';
     document.getElementById('productStock').value = '0';
     document.getElementById('productCategory').value = '';
+    document.getElementById('productMeasurementUnit').value = '';
     document.getElementById('productImageUrl').value = '';
     document.getElementById('productActive').checked = true;
     const ivaEl = document.getElementById('productIvaRate');
     document.getElementById('productModalLabel').textContent = id ? 'Editar Producto' : 'Nuevo Producto';
     previewImage(null);
+    const unitEl = document.getElementById('productMeasurementUnit');
 
     // Fetch active tax rates every time the modal opens
+    fetch('/api/measurement-units')
+        .then(function (res) { return res.json(); })
+        .then(function (units) {
+            if (unitEl) {
+                unitEl.innerHTML = '<option value="">— Sin unidades —</option>';
+                units.forEach(function (u) {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name + ' (' + u.symbol + ')';
+                    unitEl.appendChild(opt);
+                });
+            }
+        });
     fetch('/admin/api/tax-rates/active')
         .then(function (res) { return res.json(); })
         .then(function (rates) {
@@ -65,6 +80,7 @@ function openProductModal(id) {
                         document.getElementById('productPrice').value = p.price || '';
                         document.getElementById('productStock').value = (p.stock !== undefined && p.stock !== null) ? p.stock : 0;
                         document.getElementById('productCategory').value = p.category ? p.category.id : '';
+                        document.getElementById('productMeasurementUnit').value = p.measurementUnit ? p.measurementUnit.id : '';
                         document.getElementById('productImageUrl').value = p.imageUrl || '';
                         document.getElementById('productActive').checked = p.active !== false;
                         // Use taxRate.vatRate for display and taxRate.id for selection
@@ -96,7 +112,8 @@ function saveProduct() {
         active: document.getElementById('productActive').checked,
         imageUrl: document.getElementById('productImageUrl').value.trim() || null,
         taxRateId: taxRateId,
-        categoryId: document.getElementById('productCategory').value ? parseInt(document.getElementById('productCategory').value) : null
+        categoryId: document.getElementById('productCategory').value ? parseInt(document.getElementById('productCategory').value) : null,
+        measurementUnitId: document.getElementById('productMeasurementUnit').value ? parseInt(document.getElementById('productMeasurementUnit').value) : null
     };
 
     const btn = document.querySelector('#productModal .btn-primary');

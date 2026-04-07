@@ -34,8 +34,8 @@ public class ReturnLine {
     private SaleLine saleLine;
 
     /** Number of units returned. */
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(nullable = false, precision = 12, scale = 3)
+    private BigDecimal quantity;
 
     /** Unit price at the time of original sale. */
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)

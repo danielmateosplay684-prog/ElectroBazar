@@ -8,6 +8,7 @@ import com.proconsi.electrobazar.service.CategoryService;
 import com.proconsi.electrobazar.service.ProductPriceService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.repository.TaxRateRepository;
+import com.proconsi.electrobazar.repository.MeasurementUnitRepository;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ProductApiRestController {
     private final CategoryService categoryService;
     private final ProductPriceService productPriceService;
     private final TaxRateRepository taxRateRepository;
+    private final MeasurementUnitRepository measurementUnitRepository;
 
     /**
      * Retrieves all active products including their category details.
@@ -123,8 +125,12 @@ public class ProductApiRestController {
             product.setPrice(request.getPrice());
         }
 
-        product.setStock(request.getStock() != null ? request.getStock() : 0);
+        product.setStock(request.getStock() != null ? request.getStock() : BigDecimal.ZERO);
         product.setImageUrl(request.getImageUrl());
+
+        if (request.getMeasurementUnitId() != null) {
+            product.setMeasurementUnit(measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
+        }
 
         if (request.getCategoryId() != null) {
             product.setCategory(categoryService.findById(request.getCategoryId()));
@@ -176,7 +182,7 @@ public class ProductApiRestController {
      * @return 200 OK.
      */
     @PostMapping("/{id}/adjust-stock")
-    public ResponseEntity<Void> adjustStock(@PathVariable Long id, @RequestParam Integer quantity) {
+    public ResponseEntity<Void> adjustStock(@PathVariable Long id, @RequestParam BigDecimal quantity) {
         productService.adjustStock(id, quantity);
         return ResponseEntity.ok().build();
     }

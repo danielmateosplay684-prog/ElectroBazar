@@ -3,6 +3,7 @@ package com.proconsi.electrobazar.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 /**
  * DTO for a single line in a return request, submitted from the return form.
@@ -19,5 +20,5 @@ public class ReturnLineRequest {
      * Number of units to return. 
      * Must be greater than 0 and less than or equal to the original quantity minus any units already returned.
      */
-    private int quantity;
+    private BigDecimal quantity;
 }

@@ -204,12 +204,12 @@
                                 </td>
                                 <td class="muted-text" th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' €'">
                                     0.00 €</td>
-                                <td th:text="${line.quantity} + ' ud.'">1 ud.</td>
-                                <td th:text="${returned} + ' ud.'">0 ud.</td>
-                                <td><strong th:text="${available} + ' ud.'">1 ud.</strong></td>
+                                <td th:text="${#numbers.formatDecimal(line.quantity, 1, line.product.measurementUnit != null ? line.product.measurementUnit.decimalPlaces : 2)} + ' ' + ${line.product.measurementUnit != null ? line.product.measurementUnit.symbol : 'uds.'}">1 ud.</td>
+                                <td th:text="${#numbers.formatDecimal(returned, 1, line.product.measurementUnit != null ? line.product.measurementUnit.decimalPlaces : 2)} + ' ' + ${line.product.measurementUnit != null ? line.product.measurementUnit.symbol : 'uds.'}">0 ud.</td>
+                                <td><strong th:text="${#numbers.formatDecimal(available, 1, line.product.measurementUnit != null ? line.product.measurementUnit.decimalPlaces : 2)} + ' ' + ${line.product.measurementUnit != null ? line.product.measurementUnit.symbol : 'uds.'}">1 ud.</strong></td>
                                 <td>
                                     <input type="number" name="quantities" class="qty-input" th:id="'qty-' + ${line.id}"
-                                        th:value="0" min="0" th:max="${available}" disabled
+                                        th:value="0" min="0" th:max="${available}" step="0.001" disabled
                                         th:attr="data-max=${available}" oninput="validateQty(this)">
                                     <div class="qty-error-msg">Máx. <span th:text="${available}">0</span> superado</div>
                                 </td>
@@ -272,7 +272,7 @@
         function toggleRow(checkbox) {
             const row = checkbox.closest('tr');
             const qtyInput = row.querySelector('.qty-input');
-            const max = parseInt(qtyInput.getAttribute('data-max'));
+            const max = parseFloat(qtyInput.getAttribute('data-max'));
 
             if (checkbox.checked) {
                 row.classList.add('row-selected');
@@ -288,8 +288,8 @@
         }
 
         function validateQty(input) {
-            const max = parseInt(input.getAttribute('data-max'));
-            const val = parseInt(input.value || 0);
+            const max = parseFloat(input.getAttribute('data-max'));
+            const val = parseFloat(input.value || 0);
             const row = input.closest('tr');
 
             if (val > max || val < 0) {
@@ -330,7 +330,7 @@
                 // FIX BUG 1: Use index 2 for Price/ud column (index 3 was 'Vendido')
                 const priceText = row.children[2].innerText;
                 const price = parseFloat(priceText.replace(' €', '').replace(',', '.'));
-                const qty = parseInt(qtyInput.value || 0);
+                const qty = parseFloat(qtyInput.value || 0);
                 const subtotal = price * qty;
 
                 total += subtotal;

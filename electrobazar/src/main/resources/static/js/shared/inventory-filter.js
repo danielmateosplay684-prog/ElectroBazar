@@ -1,6 +1,6 @@
 /* inventory-filter.js */
 
-let debounceTimer;
+var debounceTimer;
 
 // Función Anti-rebote para no spamear el servidor mientras el usuario teclea
 function debounceSharedFilter() {

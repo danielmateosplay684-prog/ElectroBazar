@@ -22,6 +22,6 @@ public class PromotionCalcRequest {
     @AllArgsConstructor
     public static class Line {
         private Long productId;
-        private int quantity;
+        private java.math.BigDecimal quantity;
     }
 }

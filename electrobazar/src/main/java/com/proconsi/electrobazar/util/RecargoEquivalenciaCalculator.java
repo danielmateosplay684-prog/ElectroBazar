@@ -73,7 +73,7 @@ public class RecargoEquivalenciaCalculator {
             Long productId,
             String productName,
             BigDecimal grossPrice,
-            Integer quantity,
+            BigDecimal quantity,
             BigDecimal vatRate,
             boolean applyRecargo) {
 
@@ -83,7 +83,7 @@ public class RecargoEquivalenciaCalculator {
 
         // Base amount = Net Unit Price * quantity
         BigDecimal baseAmount = netPrice
-                .multiply(BigDecimal.valueOf(quantity))
+                .multiply(quantity)
                 .setScale(MONETARY_SCALE, ROUNDING_MODE);
 
         // VAT amount = base * VAT rate

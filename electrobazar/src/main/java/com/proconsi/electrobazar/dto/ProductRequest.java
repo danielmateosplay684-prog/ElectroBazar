@@ -34,7 +34,10 @@ public class ProductRequest {
     private Long taxRateId;
 
     /** Current stock level. */
-    private Integer stock;
+    private BigDecimal stock;
+
+    /** The ID of the measurement unit for this product. */
+    private Long measurementUnitId;
 
     /** The ID of the category this product belongs to. */
     private Long categoryId;

@@ -5,7 +5,7 @@ function switchView(viewId, btnElement) {
         'dashboardView', 'productsView', 'invoicesView', 'cashCloseView',
         'returnsHistoryView', 'settingsView', 'workersView', 'rolesView', 'analyticsView',
         'crmView', 'preciosTempView', 'preciosMasivosView', 'activityView', 'tarifasView',
-        'tiposIvaView', 'couponsView', 'promotionsView'
+        'tiposIvaView', 'couponsView', 'promotionsView', 'measurementUnitsView'
     ];
     views.forEach(v => {
         const el = document.getElementById(v);
@@ -47,11 +47,13 @@ function switchView(viewId, btnElement) {
         loadMailSettings();
     } else if (viewId === 'invoicesView') {
         fetchSalesPage(0);
+    } else if (viewId === 'measurementUnitsView') {
+        loadMeasurementUnits();
     }
 }
 
 // Global Modal Variables
-var productModal, categoryModal, workerModal, customerModal, roleModal, ipcUpdateModal, couponModal, promotionModal;
+var productModal, categoryModal, workerModal, customerModal, roleModal, ipcUpdateModal, couponModal, promotionModal, measurementUnitModal;
 var schedulePriceModal; // Also used in the script
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -70,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
     schedulePriceModal = initModal('schedulePriceModal');
     couponModal = initModal('couponModal');
     promotionModal = initModal('promotionModal');
+    measurementUnitModal = initModal('measurementUnitModal');
 
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('customerTaxId');
@@ -136,11 +139,28 @@ function openProductModal(id) {
     document.getElementById('productPrice').value = '';
     document.getElementById('productStock').value = '0';
     document.getElementById('productCategory').value = '';
+    document.getElementById('productMeasurementUnit').value = '';
     document.getElementById('productImageUrl').value = '';
     document.getElementById('productActive').checked = true;
     document.getElementById('productModalLabel').textContent = id ? 'Editar Producto' : 'Nuevo Producto';
 
     previewImage(null); // Set placeholder by default
+    const unitEl = document.getElementById('productMeasurementUnit');
+
+    // Fetch measurement units
+    fetch('/api/measurement-units')
+        .then(function (res) { return res.json(); })
+        .then(function (units) {
+            if (unitEl) {
+                unitEl.innerHTML = '<option value="">— Sin unidades —</option>';
+                units.forEach(function (u) {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name + ' (' + u.symbol + ')';
+                    unitEl.appendChild(opt);
+                });
+            }
+        });
 
     // Fetch active tax rates and populate dropdown
     const ivaEl = document.getElementById('productIvaRate');
@@ -178,6 +198,7 @@ function openProductModal(id) {
                         document.getElementById('productPrice').value = p.price || '';
                         document.getElementById('productStock').value = (p.stock !== undefined && p.stock !== null) ? p.stock : 0;
                         document.getElementById('productCategory').value = p.category ? p.category.id : '';
+                        document.getElementById('productMeasurementUnit').value = p.measurementUnit ? p.measurementUnit.id : '';
                         document.getElementById('productImageUrl').value = p.imageUrl || '';
                         document.getElementById('productActive').checked = p.active !== false;
                         // Use taxRate.vatRate for display and taxRate.id for selection
@@ -212,7 +233,8 @@ function saveProduct() {
         stock: parseInt(document.getElementById('productStock').value) || 0,
         active: document.getElementById('productActive').checked,
         imageUrl: document.getElementById('productImageUrl').value.trim() || null,
-        categoryId: catId ? parseInt(catId) : null
+        categoryId: catId ? parseInt(catId) : null,
+        measurementUnitId: document.getElementById('productMeasurementUnit').value ? parseInt(document.getElementById('productMeasurementUnit').value) : null
     };
 
     var method = id ? 'PUT' : 'POST';
@@ -3113,5 +3135,119 @@ document.addEventListener('click', function(e) {
         catResults.style.display = 'none';
     }
 });
+
+
+// -- Measurement Unit CRUD ------------------------------------------------
+function loadMeasurementUnits() {
+    const tbody = document.getElementById('measurementUnitsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm text-accent"></div></td></tr>';
+
+    fetch('/api/measurement-units')
+        .then(r => r.json())
+        .then(units => {
+            tbody.innerHTML = '';
+            units.sort((a,b) => a.name.localeCompare(b.name)).forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${escHtml(u.name)}</strong></td>
+                    <td><span class="badge bg-secondary text-main">${escHtml(u.symbol)}</span></td>
+                    <td class="text-center">${u.decimalPlaces}</td>
+                    <td class="text-center">
+                        <span class="badge-active ${u.promptOnAdd ? 'yes' : 'no'}">${u.promptOnAdd ? 'Sí' : 'No'}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge-active ${u.active ? 'yes' : 'no'}">${u.active ? 'Sí' : 'No'}</span>
+                    </td>
+                    <td style="text-align:right">
+                        <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                            <button class="btn-icon" title="Editar" onclick="openMeasurementUnitModal(${u.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" title="Eliminar" onclick="deleteMeasurementUnit(${u.id}, '${escHtml(u.name)}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(() => {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar unidades</td></tr>';
+        });
+}
+
+function openMeasurementUnitModal(id) {
+    const form = document.getElementById('measurementUnitForm');
+    form.reset();
+    document.getElementById('measurementUnitId').value = id || '';
+    document.getElementById('muActive').checked = true;
+    document.getElementById('measurementUnitModalLabel').textContent = id ? 'Editar Unidad de Medida' : 'Nueva Unidad de Medida';
+
+    if (id) {
+        fetch('/api/measurement-units/' + id)
+            .then(r => r.json())
+            .then(u => {
+                document.getElementById('muName').value = u.name;
+                document.getElementById('muSymbol').value = u.symbol;
+                document.getElementById('muDecimals').value = u.decimalPlaces;
+                document.getElementById('muPrompt').checked = u.promptOnAdd;
+                document.getElementById('muActive').checked = u.active;
+            });
+    }
+    measurementUnitModal.show();
+}
+
+function saveMeasurementUnit() {
+    const id = document.getElementById('measurementUnitId').value;
+    const unit = {
+        name: document.getElementById('muName').value.trim(),
+        symbol: document.getElementById('muSymbol').value.trim(),
+        decimalPlaces: parseInt(document.getElementById('muDecimals').value) || 0,
+        promptOnAdd: document.getElementById('muPrompt').checked,
+        active: document.getElementById('muActive').checked
+    };
+
+    if (!unit.name || !unit.symbol) {
+        showToast('Nombre y símbolo son obligatorios', 'error');
+        return;
+    }
+
+    const url = '/api/measurement-units' + (id ? '/' + id : '');
+    const method = id ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(unit)
+    })
+    .then(r => {
+        if (!r.ok) throw new Error();
+        measurementUnitModal.hide();
+        showToast(id ? 'Unidad actualizada' : 'Unidad creada');
+        loadMeasurementUnits();
+    })
+    .catch(() => showToast('Error al guardar unidad', 'error'));
+}
+
+function deleteMeasurementUnit(id, name) {
+    if (!confirm(`¿Seguro que quieres eliminar definitivamente la unidad "${name}"?`)) return;
+    fetch(`/api/measurement-units/${id}`, { method: 'DELETE' })
+        .then(r => {
+            if (r.ok) {
+                showToast('Unidad eliminada');
+                loadMeasurementUnits();
+            } else {
+                showToast('Error al eliminar (probablemente en uso)', 'error');
+            }
+        })
+        .catch(() => showToast('Error de red', 'error'));
+}
+
+window.openMeasurementUnitModal = openMeasurementUnitModal;
+window.saveMeasurementUnit = saveMeasurementUnit;
+window.deleteMeasurementUnit = deleteMeasurementUnit;
+window.loadMeasurementUnits = loadMeasurementUnits;
 
 
