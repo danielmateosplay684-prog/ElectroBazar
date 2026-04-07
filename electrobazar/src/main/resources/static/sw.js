@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpv-v3';
+const CACHE_NAME = 'tpv-v4';
 const ASSETS = [
     '/tpv',
     '/css/tpv/tpv-main.css',
@@ -64,7 +64,30 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Strategy: Cache First for other static assets (CSS, JS, Fonts, etc.)
+    // Strategy: Network First for dynamically evolving JS and CSS assets to prevent stuck cache across reloads
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    if (response.ok && response.status === 200 && url.origin === location.origin) {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, copy).catch(() => {});
+                        });
+                    }
+                    return response;
+                })
+                .catch(err => {
+                    return caches.match(event.request).then(r => {
+                        if (r) return r;
+                        throw err;
+                    });
+                })
+        );
+        return;
+    }
+
+    // Strategy: Cache First for other static assets (Fonts, icons, external libraries)
     event.respondWith(
         caches.match(event.request).then(response => {
             return response || fetch(event.request).then(networkResponse => {

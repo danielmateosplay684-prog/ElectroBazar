@@ -28,9 +28,10 @@ public interface SuspendedSaleService {
      *
      * @param id     Target ID.
      * @param worker The worker resuming the sale.
+     * @param warnings List to populate with non-blocking warnings (e.g., stock).
      * @return The updated SuspendedSale entity.
      */
-    SuspendedSale resume(Long id, Worker worker);
+    SuspendedSale resume(Long id, Worker worker, List<String> warnings);
 
     /**
      * Marks a suspended sale as CANCELLED, effectively discarding the cart.

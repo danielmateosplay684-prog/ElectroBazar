@@ -307,13 +307,18 @@ function updateStockBubbles() {
         var id = card.dataset.id;
         var initialStock = parseFloat(card.dataset.stock) || 0;
         var inTicket = ticket[id] ? ticket[id].quantity : 0;
-        var available = parseFloat((initialStock - inTicket).toFixed(3));
+        var available = parseFloat((initialStock - inTicket).toFixed(4));
+        var decimalPlaces = parseInt(card.dataset.decimalPlaces) || 0;
 
         var badge = card.querySelector('.stock-badge');
         if (badge) {
             var oldVal = parseFloat(badge.textContent.replace(',', '.')) || 0;
-            // Format available to show decimals if present
-            badge.textContent = available.toLocaleString('es-ES', { maximumFractionDigits: 3 });
+            // Format available to show decimals based on measurement unit (max 2 to fit the bubble)
+            var dispDecimals = Math.min(2, decimalPlaces);
+            badge.textContent = available.toLocaleString('es-ES', { 
+                minimumFractionDigits: dispDecimals,
+                maximumFractionDigits: dispDecimals 
+            });
 
             // Update color states
             badge.classList.remove('stock-danger', 'stock-warning', 'stock-neutral');
@@ -983,13 +988,17 @@ function renderProducts(products) {
             : '<i class="bi bi-box product-icon"></i>';
 
         var catName = product.category ? escapeHtml(product.category.name) : '';
-        var initialStock = parseInt(product.stock) || 0;
+        var initialStock = parseFloat(product.stock) || 0;
         var inTicket = ticket[product.id] ? ticket[product.id].quantity : 0;
-        var available = initialStock - inTicket;
+        var available = parseFloat((initialStock - inTicket).toFixed(4));
+        var decimalPlaces = (product.measurementUnit && product.measurementUnit.decimalPlaces != null) 
+                            ? product.measurementUnit.decimalPlaces : 0;
 
         var badgeClass = 'stock-neutral';
         if (available <= 0) badgeClass = 'stock-danger';
         else if (available < 5) badgeClass = 'stock-warning';
+
+        var dispDecimals = Math.min(2, decimalPlaces);
 
         var disabledClass = window.tpv_is_register_open ? '' : ' disabled-tpv';
 
@@ -998,10 +1007,13 @@ function renderProducts(products) {
             ' data-name="' + escapeHtml(product.name) + '"' +
             ' data-price="' + product.price + '"' +
             ' data-category="' + catName + '"' +
-            ' data-stock="' + (product.stock || 0) + '">' +
+            ' data-stock="' + (product.stock || 0) + '"' +
+            ' data-decimal-places="' + decimalPlaces + '">' +
             ' <div class="product-image-container">' +
             imgHtml +
-            ' <span class="stock-badge ' + badgeClass + '">' + available + '</span>' +
+            ' <span class="stock-badge ' + badgeClass + '">' + 
+                available.toLocaleString('es-ES', { minimumFractionDigits: dispDecimals, maximumFractionDigits: dispDecimals }) + 
+            '</span>' +
             ' </div>' +
             ' <div class="product-info">' +
             ' <div class="product-name">' + escapeHtml(product.name) + '</div>' +
@@ -1616,7 +1628,12 @@ function resumeSale(id) {
                 if (suspendedSalesModalInstance) suspendedSalesModalInstance.hide();
                 cleanupModalBackdrop();
                 loadSuspendedCount();
-                showToast('Venta reanudada', 'success');
+
+                if (sale.warnings && sale.warnings.length > 0) {
+                    sale.warnings.forEach(function(w) { showToast(w, 'warning'); });
+                } else {
+                    showToast('Venta reanudada', 'success');
+                }
             })
             .catch(function (err) {
                 showToast(err.message || 'Error', 'error');
@@ -1646,7 +1663,12 @@ function resumeSale(id) {
             if (suspendedSalesModalInstance) suspendedSalesModalInstance.hide();
             cleanupModalBackdrop();
             loadSuspendedCount();
-            showToast('Venta reanudada', 'success');
+
+            if (sale.warnings && sale.warnings.length > 0) {
+                sale.warnings.forEach(function(w) { showToast(w, 'warning'); });
+            } else {
+                showToast('Venta reanudada', 'success');
+            }
         })
         .catch(function (err) {
             showToast(err.message || 'Error al reanudar la venta', 'warning');

@@ -31,6 +31,9 @@ public class SuspendedSaleResponse {
     /** The individual cart lines included in the suspended sale. */
     private List<SuspendedSaleLineResponse> lines;
 
+    /** Optional warnings (e.g. stock level warnings at resume) */
+    private List<String> warnings;
+
     // ── Nested line DTO ──────────────────────────────────────────────────────
 
     @Data

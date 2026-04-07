@@ -364,6 +364,7 @@
                              data-category=${product.category != null ? product.category.name : ''}, 
                              data-category-id=${product.category != null ? product.category.id : ''}, 
                              data-stock=${product.stock},
+                             data-decimal-places=${product.measurementUnit != null ? product.measurementUnit.decimalPlaces : 0},
                              data-prompt-on-add=${product.measurementUnit != null ? product.measurementUnit.promptOnAdd : false},
                              data-unit-symbol=${product.measurementUnit != null ? product.measurementUnit.symbol : 'uds.'}">
                     <div class="product-image-container">
@@ -372,7 +373,7 @@
                         <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
                         <span class="stock-badge"
                             th:classappend="${product.stock == 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
-                            th:text="${product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, product.measurementUnit.decimalPlaces) : #numbers.formatDecimal(product.stock, 1, 0)}">0</span>
+                            th:text="${product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, T(java.lang.Math).min(2, product.measurementUnit.decimalPlaces)) : #numbers.formatDecimal(product.stock, 1, 0)}">0</span>
                     </div>
                     <div class="product-info">
                         <div class="product-name" th:text="${product.name}">Nombre producto</div>

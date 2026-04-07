@@ -219,6 +219,7 @@ public class SaleServiceImpl implements SaleService {
         for (int i = 0; i < lines.size(); i++) {
             SaleLine line = lines.get(i);
             if (line.getProduct() != null) {
+                validarStock(line.getProduct(), line.getQuantity());
                 productService.decreaseStock(line.getProduct().getId(), line.getQuantity());
             }
 
@@ -385,5 +386,12 @@ public class SaleServiceImpl implements SaleService {
 
         String username = (worker != null) ? worker.getUsername() : "System";
         activityLogService.logActivity("ANULAR_VENTA", String.format("Venta nº %d anulada por %s. Motivo: %s", id, username, reason), username, "SALE", id);
+    }
+
+    private void validarStock(Product product, BigDecimal cantidad) {
+        if (product != null && cantidad != null && cantidad.compareTo(product.getStock()) > 0) {
+            throw new IllegalStateException(String.format("Stock insuficiente para %s. Disponible: %s, Requerido: %s", 
+                product.getName(), product.getStock(), cantidad));
+        }
     }
 }

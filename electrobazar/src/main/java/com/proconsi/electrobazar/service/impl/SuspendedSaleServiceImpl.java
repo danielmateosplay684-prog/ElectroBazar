@@ -77,7 +77,7 @@ public class SuspendedSaleServiceImpl implements SuspendedSaleService {
 
     @Override
     @Transactional
-    public SuspendedSale resume(Long id, Worker worker) {
+    public SuspendedSale resume(Long id, Worker worker, List<String> warnings) {
         SuspendedSale sale = suspendedSaleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Suspended sale #" + id + " not found."));
         if (sale.getStatus() != SuspendedSale.SuspendedSaleStatus.SUSPENDED) {
@@ -86,6 +86,16 @@ public class SuspendedSaleServiceImpl implements SuspendedSaleService {
 
         sale.setStatus(SuspendedSale.SuspendedSaleStatus.RESUMED);
         SuspendedSale saved = suspendedSaleRepository.save(sale);
+
+        for (SuspendedSaleLine line : sale.getLines()) {
+            try {
+                validarStock(line.getProduct(), line.getQuantity());
+            } catch (IllegalStateException e) {
+                if (warnings != null) {
+                    warnings.add(e.getMessage());
+                }
+            }
+        }
 
         activityLogService.logActivity("RECUPERAR_VENTA", "Venta aparcada nº " + id + " recuperada.",
                 (worker != null ? worker.getUsername() : "Anonymous"), "SALE", id);
@@ -121,5 +131,12 @@ public class SuspendedSaleServiceImpl implements SuspendedSaleService {
     @Transactional(readOnly = true)
     public Optional<SuspendedSale> findById(Long id) {
         return suspendedSaleRepository.findById(id);
+    }
+
+    private void validarStock(Product product, BigDecimal cantidad) {
+        if (product != null && cantidad != null && cantidad.compareTo(product.getStock()) > 0) {
+            throw new IllegalStateException(String.format("Stock insuficiente para %s. Disponible: %s, Requerido: %s.", 
+                product.getName(), product.getStock(), cantidad));
+        }
     }
 }

@@ -88,8 +88,11 @@ public class SuspendedSaleApiRestController {
              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         try {
-            SuspendedSale resumed = suspendedSaleService.resume(id, worker);
-            return ResponseEntity.ok(toResponse(resumed));
+            java.util.List<String> warnings = new java.util.ArrayList<>();
+            SuspendedSale resumed = suspendedSaleService.resume(id, worker, warnings);
+            SuspendedSaleResponse response = toResponse(resumed);
+            response.setWarnings(warnings);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

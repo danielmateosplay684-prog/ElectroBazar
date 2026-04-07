@@ -93,9 +93,18 @@ public class PromotionServiceImpl implements PromotionService {
         List<SaleLine> result = new ArrayList<>(lines);
 
         for (Promotion promo : activePromos) {
-            // 1. Identify all lines that fall under this promotion
+            // 1. Identify all lines that fall under this promotion and are NOT fractional
             List<SaleLine> promoLines = result.stream()
-                    .filter(l -> promo.isApplicableTo(l.getProduct()))
+                    .filter(l -> {
+                        Product p = l.getProduct();
+                        if (!promo.isApplicableTo(p)) return false;
+                        
+                        if (p.getMeasurementUnit() != null && p.getMeasurementUnit().getDecimalPlaces() > 0) {
+                            log.info("Promoción NxM omitida: producto fraccionario '{}'", p.getName());
+                            return false;
+                        }
+                        return true;
+                    })
                     .collect(Collectors.toList());
 
             // 2. Count total units
@@ -103,8 +112,8 @@ public class PromotionServiceImpl implements PromotionService {
             
             if (promo.getNValue() <= 0) continue;
 
-            // 3. Calculate how many items are "free"
-            // For 3x2: floor(units / 3) * (3 - 2)
+            // 3. Calculate how many items are "free" using BigDecimal precision
+            // For 3x2: floorBy(units, 3) * (3 - 2)
             BigDecimal nVal = BigDecimal.valueOf(promo.getNValue());
             BigDecimal mVal = BigDecimal.valueOf(promo.getMValue());
             BigDecimal timesApplicable = totalUnits.divideToIntegralValue(nVal);
@@ -115,22 +124,22 @@ public class PromotionServiceImpl implements PromotionService {
             log.info("Applying Promotion '{}': Found {} free units out of {} qualifying items.", 
                      promo.getName(), freeUnitsNeededB, totalUnits);
 
-            int unitsStillToDiscount = freeUnitsNeededB.intValue(); // Assumption: promoters values are ints
+            BigDecimal remainingToDiscount = freeUnitsNeededB;
             
             for (SaleLine line : promoLines) {
-                if (unitsStillToDiscount <= 0) break;
+                if (remainingToDiscount.compareTo(BigDecimal.ZERO) <= 0) break;
 
                 BigDecimal qtyInLine = line.getQuantity();
                 
-                if (qtyInLine.compareTo(BigDecimal.valueOf(unitsStillToDiscount)) <= 0) {
+                if (qtyInLine.compareTo(remainingToDiscount) <= 0) {
                     // Entire line becomes free (100% discount)
                     line.setUnitPrice(BigDecimal.ZERO);
                     line.setDiscountPercentage(new BigDecimal("100.00"));
-                    unitsStillToDiscount -= qtyInLine.intValue();
+                    remainingToDiscount = remainingToDiscount.subtract(qtyInLine);
                 } else {
                     // Split the line: part of it is free, part stays full price
-                    int freeInThisLine = unitsStillToDiscount;
-                    BigDecimal paidInThisLine = qtyInLine.subtract(BigDecimal.valueOf(freeInThisLine));
+                    BigDecimal freeInThisLine = remainingToDiscount;
+                    BigDecimal paidInThisLine = qtyInLine.subtract(freeInThisLine);
 
                     // Update existing line for the PAID items
                     line.setQuantity(paidInThisLine);
@@ -139,7 +148,7 @@ public class PromotionServiceImpl implements PromotionService {
                     SaleLine freeLine = SaleLine.builder()
                             .product(line.getProduct())
                             .productName(line.getProductName())
-                            .quantity(BigDecimal.valueOf(freeInThisLine))
+                            .quantity(freeInThisLine)
                             .unitPrice(BigDecimal.ZERO)
                             .originalUnitPrice(line.getOriginalUnitPrice())
                             .discountPercentage(new BigDecimal("100.00"))
@@ -148,7 +157,7 @@ public class PromotionServiceImpl implements PromotionService {
                             .build();
                     
                     result.add(freeLine);
-                    unitsStillToDiscount = 0;
+                    remainingToDiscount = BigDecimal.ZERO;
                 }
             }
         }
