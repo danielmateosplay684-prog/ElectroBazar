@@ -52,16 +52,15 @@ public class PdfReportServiceImpl implements PdfReportService {
     }
 
     @Override
-    public byte[] generateCashCloseReport(CashRegister register) {
-        log.info("Generating cash close PDF report for Register ID {}", register.getId());
+    public byte[] generateCashCloseReport(CashRegister session) {
+        log.info("Generating cash close PDF report for Session ID {}", session.getId());
         try {
             Context context = new Context();
-            context.setVariable("register", register);
+            context.setVariable("session", session);
             context.setVariable("pdfMode", true);
 
-            LocalDateTime start = register.getOpeningTime() != null ? register.getOpeningTime()
-                    : register.getRegisterDate().atStartOfDay();
-            LocalDateTime end = register.getClosedAt() != null ? register.getClosedAt() : LocalDateTime.now();
+            LocalDateTime start = session.getOpeningTime();
+            LocalDateTime end = session.getClosedAt() != null ? session.getClosedAt() : LocalDateTime.now();
 
             List<SaleReturn> returns = saleReturnRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(start, end);
             context.setVariable("returns", returns);
@@ -78,7 +77,7 @@ public class PdfReportServiceImpl implements PdfReportService {
                 return os.toByteArray();
             }
         } catch (Exception e) {
-            log.error("PDF generation failed for Register ID {}: {}", register.getId(), e.getMessage());
+            log.error("PDF generation failed for Session ID {}: {}", session.getId(), e.getMessage());
             throw new RuntimeException("Could not generate cash close PDF.", e);
         }
     }

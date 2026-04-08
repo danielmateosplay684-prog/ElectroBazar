@@ -46,17 +46,21 @@
                 </div>
 
                 <!-- Grupo de Estado y Acciones (Mantienen su gap actual) -->
-                <div class="d-flex align-items-center gap-2">
-                    <!-- Connectivity LED Indicator -->
-                    <div id="connectivity-led" class="online" title="Conexión con el servidor OK">
-                        <span class="led-dot"></span>
-                        <span class="led-text">Online</span>
-                    </div>
-
-                    <!-- Botones de Acción (Admin & Gestión) -->
+                    <!-- Grupo de Estado y Acciones -->
                     <div class="d-flex align-items-center gap-2">
+                        <!-- Connectivity LED Indicator -->
+                        <div id="connectivity-led" class="online" title="Conexión con el servidor OK">
+                            <span class="led-dot"></span>
+                            <span class="led-text">Online</span>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <button class="btn-action-tpv p-0" id="tpvLockBtn" title="Bloquear Pantalla" onclick="lockTPV()" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); cursor: pointer; transition: all 0.2s ease;">
+                            <i class="bi bi-lock-fill"></i>
+                        </button>
+
                         <button th:if="${session.worker.getEffectivePermissions().contains('ADMIN_ACCESS') or session.worker.getEffectivePermissions().contains('ACCESO_TOTAL_ADMIN')}"
-                            class="btn-action-tpv p-0" id="adminLockBtn" title="Panel de Administración"
+                            class="btn-action-tpv p-0" id="adminLockBtn" title="Ir a Administración"
                             onclick="openAdminPinModal()">
                             <i class="bi bi-shield-lock"></i>
                         </button>
@@ -641,8 +645,8 @@
     </div>
 
 
-    <!-- ── PIN MODAL ── -->
-    <div class="pin-overlay" id="pinOverlay">
+    <!-- ── PIN MODAL (ADMIN ACCESS) ── -->
+    <div class="pin-overlay" id="adminPinOverlay">
         <div class="pin-panel">
             <h4><i class="bi bi-shield-lock" style="color:var(--accent);margin-right:0.4rem"></i>Administración</h4>
             <p>Introduce el PIN de acceso</p>
@@ -1059,6 +1063,76 @@
         /*]]>*/
     </script>
     <script th:src="@{/js/tpv/tpv-main.js(v=4.1)}"></script>
+    <!-- ── PIN OVERLAY (LOCK SYSTEM) ── -->
+    <div id="pinOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; flex-direction: column; align-items: center; justify-content: center;">
+        <div
+            style="background: var(--surface); padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); text-align: center; border: 1px solid var(--border); max-width: 380px; width: 90%;">
+            <div
+                style="width: 70px; height: 70px; background: var(--accent); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-weight: 700;">TPV BLOQUEADO</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Introduce tu PIN para continuar
+            </p>
+
+            <!-- PIN Circles -->
+            <div id="pinDots" class="d-flex justify-content-center gap-3 mb-4">
+                <div class="pin-dot"
+                    style="width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%;"></div>
+                <div class="pin-dot"
+                    style="width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%;"></div>
+                <div class="pin-dot"
+                    style="width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%;"></div>
+                <div class="pin-dot"
+                    style="width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%;"></div>
+            </div>
+
+            <div id="pinErrorMsg" class="text-danger mb-3" style="display: none; font-size: 0.85rem; font-weight: 600;">
+                PIN Incorrecto</div>
+
+            <!-- PIN Keyboard -->
+            <div class="numpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <button onclick="appendPinToSell('1')" class="btn-numpad">1</button>
+                <button onclick="appendPinToSell('2')" class="btn-numpad">2</button>
+                <button onclick="appendPinToSell('3')" class="btn-numpad">3</button>
+                <button onclick="appendPinToSell('4')" class="btn-numpad">4</button>
+                <button onclick="appendPinToSell('5')" class="btn-numpad">5</button>
+                <button onclick="appendPinToSell('6')" class="btn-numpad">6</button>
+                <button onclick="appendPinToSell('7')" class="btn-numpad">7</button>
+                <button onclick="appendPinToSell('8')" class="btn-numpad">8</button>
+                <button onclick="appendPinToSell('9')" class="btn-numpad">9</button>
+                <button onclick="clearPinToSell()" class="btn-numpad text-danger"><i class="bi bi-backspace"></i></button>
+                <button onclick="appendPinToSell('0')" class="btn-numpad">0</button>
+                <button id="btnPinSubmit" onclick="submitPinToSell()" class="btn-numpad text-success" disabled><i
+                        class="bi bi-check-lg"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn-numpad {
+            background: var(--primary);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 1.2rem;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            transition: all 0.15s ease;
+        }
+
+        .btn-numpad:active {
+            transform: scale(0.92);
+            background: var(--border);
+        }
+
+        .pin-dot.filled {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+    </style>
 </body>
 
 </html>

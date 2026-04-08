@@ -4,7 +4,7 @@ import com.proconsi.electrobazar.model.CashRegister;
 import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Worker;
-import com.proconsi.electrobazar.service.CashRegisterService;
+import com.proconsi.electrobazar.service.CashSessionService;
 import com.proconsi.electrobazar.service.PdfReportService;
 import com.proconsi.electrobazar.service.WorkerService;
 import com.proconsi.electrobazar.service.SaleService;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +35,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CashRegisterApiRestController {
 
-    private final CashRegisterService cashRegisterService;
+    private final CashSessionService cashSessionService;
     private final PdfReportService pdfReportService;
     private final WorkerService workerService;
     private final SaleService saleService;
@@ -50,7 +49,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<CashRegister> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(cashRegisterService.findById(id));
+        return ResponseEntity.ok(cashSessionService.findById(id));
     }
 
     /**
@@ -59,7 +58,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/closed")
     public ResponseEntity<List<CashRegister>> getAllClosed() {
-        return ResponseEntity.ok(cashRegisterService.findAllClosed());
+        return ResponseEntity.ok(cashSessionService.findAllClosed());
     }
 
     /**
@@ -68,7 +67,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/open")
     public ResponseEntity<CashRegister> getOpen() {
-        return cashRegisterService.getOpenRegister()
+        return cashSessionService.getActiveSession()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
@@ -81,18 +80,18 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/close-info")
     public ResponseEntity<CashCloseInfoDTO> getCloseInfo() {
-        Optional<CashRegister> openRegisterOpt = cashRegisterService.getOpenRegister();
-        if (openRegisterOpt.isEmpty()) {
+        Optional<CashRegister> activeSessionOpt = cashSessionService.getActiveSession();
+        if (activeSessionOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
 
-        CashRegister openRegister = openRegisterOpt.get();
+        CashRegister activeSession = activeSessionOpt.get();
         BigDecimal cashSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CASH);
         BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
         BigDecimal cardSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD);
         BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
 
-        List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(openRegister.getId());
+        List<CashWithdrawal> movements = cashWithdrawalService.findBySessionId(activeSession.getId());
         BigDecimal totalWithdrawals = movements.stream()
                 .filter(m -> m.getType() == null || m.getType() == CashWithdrawal.MovementType.WITHDRAWAL)
                 .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
@@ -103,20 +102,15 @@ public class CashRegisterApiRestController {
                 .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        LocalDateTime startOfShift = openRegister.getOpeningTime() != null
-                ? openRegister.getOpeningTime()
-                : LocalDate.now().atStartOfDay();
+        LocalDateTime startOfShift = activeSession.getOpeningTime();
 
-        BigDecimal expectedCashInDrawer = openRegister.getOpeningBalance()
-                .add(cashSalesToday)
-                .add(totalEntries)
-                .subtract(totalWithdrawals)
-                .subtract(cashRefundsToday);
+        // Compatibility logic for expected cash
+        BigDecimal expectedCashInDrawer = activeSession.getClosingBalance();
 
         SaleSummaryResponse summary = saleService.getSummaryToday();
 
         CashCloseInfoDTO info = CashCloseInfoDTO.builder()
-                .todayRegister(openRegister)
+                .activeSession(activeSession)
                 .totalToday(saleService.sumTotalToday())
                 .countToday(saleService.countToday())
                 .cashSalesToday(cashSalesToday)
@@ -129,7 +123,7 @@ public class CashRegisterApiRestController {
                 .cancelledCount(summary.getTotalCancelledCount())
                 .cancelledTotal(summary.getTotalCancelledAmount())
                 .returnsToday(returnService.findByCreatedAtBetween(startOfShift, LocalDateTime.now()))
-                .openingBalance(openRegister.getOpeningBalance())
+                .openingBalance(activeSession.getOpeningBalance())
                 .build();
 
         return ResponseEntity.ok(info);
@@ -141,11 +135,11 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/today")
     public ResponseEntity<CashRegister> getToday() {
-        return cashRegisterService.getOpenRegister()
+        return cashSessionService.getActiveSession()
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     try {
-                        return ResponseEntity.ok(cashRegisterService.findTodayIfClosed());
+                        return ResponseEntity.ok(cashSessionService.findTodayIfClosed());
                     } catch (Exception e) {
                         return ResponseEntity.noContent().build();
                     }
@@ -159,8 +153,8 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/{id}/ticket")
     public ResponseEntity<Resource> getTicket(@PathVariable Long id) {
-        CashRegister cr = cashRegisterService.findById(id);
-        byte[] pdfData = pdfReportService.generateCashCloseReport(cr);
+        CashRegister cs = cashSessionService.findById(id);
+        byte[] pdfData = pdfReportService.generateCashCloseReport(cs);
 
         String filename = "Cierre_Caja_" + id + ".pdf";
         Resource resource = new ByteArrayResource(pdfData);
@@ -186,8 +180,8 @@ public class CashRegisterApiRestController {
             worker = workerService.findById(workerId).orElse(null);
         }
         try {
-            CashRegister cr = cashRegisterService.openCashRegister(openingBalance, worker);
-            return ResponseEntity.status(HttpStatus.CREATED).body(cr);
+            CashRegister cs = cashSessionService.openSession(openingBalance, worker);
+            return ResponseEntity.status(HttpStatus.CREATED).body(cs);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } catch (Exception e) {
@@ -216,13 +210,18 @@ public class CashRegisterApiRestController {
         if (workerId != null) {
             worker = workerService.findById(workerId).orElse(null);
         }
-        CashRegister cr = cashRegisterService.closeCashRegister(closingBalance, notes, worker, retainedAmount);
+        CashRegister cs = cashSessionService.closeSession(closingBalance, worker);
+        
+        // Update notes and retained if provided
+        if (notes != null) cs.setNotes(notes);
+        if (retainedAmount != null) cs.setRetainedForNextShift(retainedAmount);
+        
         try {
-            pdfReportService.generateCashCloseReport(cr);
+            pdfReportService.generateCashCloseReport(cs);
         } catch (Exception e) {
             // Log error but don't fail the response, as core business logic succeeded
             System.err.println("Error generating PDF at close: " + e.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(cr);
+        return ResponseEntity.status(HttpStatus.CREATED).body(cs);
     }
 }

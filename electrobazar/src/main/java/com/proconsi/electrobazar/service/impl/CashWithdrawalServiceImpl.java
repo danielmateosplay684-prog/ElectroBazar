@@ -4,9 +4,9 @@ import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.CashRegister;
 import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.Worker;
-import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.CashWithdrawalRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
+import com.proconsi.electrobazar.service.CashSessionService;
 import com.proconsi.electrobazar.service.CashWithdrawalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,25 +25,26 @@ import java.util.List;
 public class CashWithdrawalServiceImpl implements CashWithdrawalService {
 
     private final CashWithdrawalRepository cashWithdrawalRepository;
-    private final CashRegisterRepository cashRegisterRepository;
+    private final CashSessionService cashSessionService;
     private final ActivityLogService activityLogService;
 
     @Override
-    public CashWithdrawal processMovement(Long cashRegisterId, BigDecimal amount, String reason,
+    public CashWithdrawal processMovement(Long sessionId, BigDecimal amount, String reason,
             CashWithdrawal.MovementType type, Worker worker) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero.");
         }
 
-        CashRegister register = cashRegisterRepository.findById(cashRegisterId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cash register not found with id: " + cashRegisterId));
+        CashRegister session = cashSessionService.getActiveSession()
+                .filter(s -> s.getId().equals(sessionId))
+                .orElseThrow(() -> new ResourceNotFoundException("Active cash session not found with id: " + sessionId));
 
-        if (register.getClosed()) {
-            throw new IllegalStateException("Cannot perform movements on a closed shift.");
+        if (Boolean.TRUE.equals(session.getClosed())) {
+            throw new IllegalStateException("Cannot perform movements on a closed session.");
         }
 
         CashWithdrawal movement = CashWithdrawal.builder()
-                .cashRegister(register)
+                .cashRegister(session)
                 .amount(amount)
                 .reason(reason)
                 .worker(worker)
@@ -66,9 +67,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CashWithdrawal> findByRegisterId(Long registerId) {
-        return cashWithdrawalRepository.findByCashRegisterId(registerId);
+    public List<CashWithdrawal> findBySessionId(Long sessionId) {
+        return cashWithdrawalRepository.findByCashRegisterId(sessionId);
     }
 }
-
-

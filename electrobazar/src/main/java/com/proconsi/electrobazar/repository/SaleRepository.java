@@ -1,7 +1,9 @@
 package com.proconsi.electrobazar.repository;
 
-import com.proconsi.electrobazar.dto.SaleSummaryResponse;
+import com.proconsi.electrobazar.dto.SaleSummaryProjection;
 import com.proconsi.electrobazar.dto.WorkerSaleStatsDTO;
+
+
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Sale;
 import org.springframework.data.domain.Page;
@@ -45,32 +47,59 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
     List<Sale> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 
     @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
-    @Query("SELECT s FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE ORDER BY s.createdAt DESC")
+    @Query(value = "SELECT * FROM sales WHERE created_at >= CURDATE() AND status = 'ACTIVE' ORDER BY created_at DESC", nativeQuery = true)
     List<Sale> findToday();
 
-    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE")
+
+    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM sales WHERE created_at BETWEEN :from AND :to AND status = 'ACTIVE'", nativeQuery = true)
     BigDecimal sumTotalBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.paymentMethod = :method AND s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE")
-    Optional<BigDecimal> sumTotalBetweenByPaymentMethod(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("method") PaymentMethod method);
+    @Query(value = "SELECT COALESCE(SUM(total_amount), 0) FROM sales WHERE created_at BETWEEN :from AND :to AND payment_method = :method AND status = 'ACTIVE'", nativeQuery = true)
+    BigDecimal sumTotalBetweenByPaymentMethodNative(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("method") String method);
 
-    @Query("SELECT COUNT(s) FROM Sale s WHERE DATE(s.createdAt) = CURRENT_DATE AND s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE")
+    // Keep compatibility with existing code using PaymentMethod enum
+    default Optional<BigDecimal> sumTotalBetweenByPaymentMethod(LocalDateTime from, LocalDateTime to, PaymentMethod method) {
+        return Optional.ofNullable(sumTotalBetweenByPaymentMethodNative(from, to, method.name()));
+    }
+
+    @Query(value = "SELECT COUNT(*) FROM sales WHERE created_at >= CURDATE() AND status = 'ACTIVE'", nativeQuery = true)
     long countToday();
 
-    @Query("SELECT COUNT(s) FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE")
+
+    @Query(value = "SELECT COUNT(*) FROM sales WHERE created_at BETWEEN :from AND :to AND status = 'ACTIVE'", nativeQuery = true)
     long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT new com.proconsi.electrobazar.dto.SaleSummaryResponse(" +
-            "COUNT(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE THEN 1 END), " +
-            "COALESCE(SUM(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE THEN s.totalAmount ELSE 0 END), 0), " +
-            "COALESCE(SUM(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE AND s.paymentMethod = com.proconsi.electrobazar.model.PaymentMethod.CASH THEN s.totalAmount ELSE 0 END), 0), " +
-            "COALESCE(SUM(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE AND s.paymentMethod = com.proconsi.electrobazar.model.PaymentMethod.CARD THEN s.totalAmount ELSE 0 END), 0), " +
-            "COUNT(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.CANCELLED THEN 1 END), " +
-            "COALESCE(SUM(CASE WHEN s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.CANCELLED THEN s.totalAmount ELSE 0 END), 0)) " +
-            "FROM Sale s WHERE s.createdAt BETWEEN :from AND :to")
-    SaleSummaryResponse getSummaryBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query(value = "SELECT p.name_es FROM sales s JOIN sale_lines sl ON s.id = sl.sale_id JOIN products p ON sl.product_id = p.id WHERE s.created_at BETWEEN :from AND :to AND s.status = 'ACTIVE' GROUP BY p.name_es ORDER BY SUM(sl.quantity) DESC LIMIT 1", nativeQuery = true)
+    /**
+     * Returns aggregated KPIs using a single native SQL pass over the sales table.
+     * Uses the composite index (created_at, status) for range filtering.
+     * MUCH faster than the JPQL CASE WHEN version which Hibernate can mis-optimize.
+     */
+    @Query(value = """
+            SELECT
+                COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END)                                  AS totalSalesCount,
+                COALESCE(SUM(CASE WHEN status = 'ACTIVE' THEN total_amount ELSE 0 END), 0)     AS totalSalesAmount,
+                COALESCE(SUM(CASE WHEN status = 'ACTIVE' AND payment_method = 'CASH'  THEN total_amount ELSE 0 END), 0) AS totalCashAmount,
+                COALESCE(SUM(CASE WHEN status = 'ACTIVE' AND payment_method = 'CARD'  THEN total_amount ELSE 0 END), 0) AS totalCardAmount,
+                COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END)                               AS totalCancelledCount,
+                COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN total_amount ELSE 0 END), 0)  AS totalCancelledAmount
+            FROM sales
+            WHERE created_at BETWEEN :from AND :to
+            """, nativeQuery = true)
+    SaleSummaryProjection getSummaryBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+
+    @Query(value = """
+            SELECT p.name_es
+            FROM sales s
+            JOIN sale_lines sl ON sl.sale_id = s.id
+            JOIN products p   ON p.id = sl.product_id
+            WHERE s.created_at BETWEEN :from AND :to
+              AND s.status = 'ACTIVE'
+            GROUP BY p.id, p.name_es
+            ORDER BY SUM(sl.quantity) DESC
+            LIMIT 1
+            """, nativeQuery = true)
     String findTopProductNameBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @EntityGraph(attributePaths = { "lines", "lines.product", "worker" })
@@ -87,19 +116,65 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
     List<WorkerSaleStatsDTO> getWorkerStatsBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /**
-     * Aggregates daily revenue for charting.
+     * Aggregates daily revenue for charting — native SQL with composite index on (created_at, status).
      */
-    @Query(value = "SELECT DATE(created_at) as date, SUM(total_amount) as total " +
-           "FROM sales WHERE created_at BETWEEN :from AND :to AND status = 'ACTIVE' " +
-           "GROUP BY DATE(created_at) ORDER BY date ASC", nativeQuery = true)
+    @Query(value = """
+            SELECT DATE(created_at) AS date, SUM(total_amount) AS total
+            FROM   sales
+            WHERE  created_at BETWEEN :from AND :to
+              AND  status = 'ACTIVE'
+            GROUP  BY DATE(created_at)
+            ORDER  BY date ASC
+            """, nativeQuery = true)
     List<Object[]> getDailyRevenue(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    /**
-     * Aggregates revenue by product category for the given range.
-     */
-    @Query("SELECT COALESCE(c.nameEs, 'Sin Categoría'), SUM(sl.subtotal) " +
-           "FROM Sale s JOIN s.lines sl LEFT JOIN sl.product p LEFT JOIN p.category c " +
-           "WHERE s.createdAt BETWEEN :from AND :to AND s.status = com.proconsi.electrobazar.model.Sale.SaleStatus.ACTIVE " +
-           "GROUP BY c.nameEs")
+    @Query(value = """
+            SELECT COALESCE(c.name_es, 'Sin Categoría') AS category, SUM(sl.subtotal) AS total
+            FROM   sales s
+            JOIN   sale_lines sl ON sl.sale_id = s.id
+            JOIN   products   p  ON p.id = sl.product_id
+            LEFT   JOIN categories c ON c.id = p.category_id
+            WHERE  s.created_at BETWEEN :from AND :to
+              AND  s.status = 'ACTIVE'
+            GROUP  BY c.id, c.name_es
+            ORDER  BY total DESC
+            """, nativeQuery = true)
     List<Object[]> getCategoryDistribution(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * Aggregates revenue by hour of day (0-23).
+     */
+    @Query(value = """
+            SELECT HOUR(created_at) AS hour, SUM(total_amount) AS total
+            FROM   sales
+            WHERE  created_at BETWEEN :from AND :to
+              AND  status = 'ACTIVE'
+            GROUP  BY HOUR(created_at)
+            ORDER  BY hour ASC
+            """, nativeQuery = true)
+    List<Object[]> getHourlyTrend(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * Gets top 10 products by revenue.
+     */
+    @Query(value = """
+            SELECT p.name_es AS product, SUM(sl.subtotal) AS revenue
+            FROM   sales s
+            JOIN   sale_lines sl ON sl.sale_id = s.id
+            JOIN   products   p  ON p.id = sl.product_id
+            WHERE  s.created_at BETWEEN :from AND :to
+              AND  s.status = 'ACTIVE'
+            GROUP  BY p.id, p.name_es
+            ORDER  BY revenue DESC
+            LIMIT  10
+            """, nativeQuery = true)
+    List<Object[]> getTopProductsDetailed(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @Query("SELECT s FROM Sale s WHERE s.createdAt BETWEEN :from AND :to ORDER BY s.createdAt DESC")
+    Page<Sale> findByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @Query("SELECT s FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.worker.id = :workerId ORDER BY s.createdAt DESC")
+    Page<Sale> findByCreatedAtBetweenAndWorkerId(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("workerId") Long workerId, Pageable pageable);
 }

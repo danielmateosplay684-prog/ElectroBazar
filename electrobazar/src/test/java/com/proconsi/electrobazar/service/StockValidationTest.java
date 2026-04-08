@@ -1,6 +1,5 @@
 package com.proconsi.electrobazar.service;
 
-import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.*;
 import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.CouponRepository;
@@ -28,16 +27,26 @@ import static org.mockito.Mockito.lenient;
 @ExtendWith(MockitoExtension.class)
 class StockValidationTest {
 
-    @Mock private SaleRepository saleRepository;
-    @Mock private ProductService productService;
-    @Mock private CashRegisterRepository cashRegisterRepository;
-    @Mock private ActivityLogService activityLogService;
-    @Mock private RecargoEquivalenciaCalculator recargoCalculator;
-    @Mock private TariffRepository tariffRepository;
-    @Mock private InvoiceService invoiceService;
-    @Mock private CouponRepository couponRepository;
-    @Mock private CashRegisterService cashRegisterService;
-    @Mock private PromotionService promotionService;
+    @Mock
+    private SaleRepository saleRepository;
+    @Mock
+    private ProductService productService;
+    @Mock
+    private CashRegisterRepository cashRegisterRepository;
+    @Mock
+    private ActivityLogService activityLogService;
+    @Mock
+    private RecargoEquivalenciaCalculator recargoCalculator;
+    @Mock
+    private TariffRepository tariffRepository;
+    @Mock
+    private InvoiceService invoiceService;
+    @Mock
+    private CouponRepository couponRepository;
+    @Mock
+    private CashRegisterService cashRegisterService;
+    @Mock
+    private PromotionService promotionService;
 
     @InjectMocks
     private SaleServiceImpl saleService;
@@ -48,14 +57,17 @@ class StockValidationTest {
 
     @BeforeEach
     void setUp() {
-        unitProduct = Product.builder().id(1L).nameEs("Unitario").price(BigDecimal.TEN).stock(new BigDecimal("5")).build();
-        weightProduct = Product.builder().id(2L).nameEs("Peso").price(BigDecimal.TEN).stock(new BigDecimal("2.500")).build();
+        unitProduct = Product.builder().id(1L).nameEs("Unitario").price(BigDecimal.TEN).stock(new BigDecimal("5"))
+                .build();
+        weightProduct = Product.builder().id(2L).nameEs("Peso").price(BigDecimal.TEN).stock(new BigDecimal("2.500"))
+                .build();
         worker = Worker.builder().username("tester").build();
 
         // Mocks common to all tests to reach the validation part
         lenient().when(promotionService.applyNxMPromotions(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        lenient().when(tariffRepository.findByName(any())).thenReturn(Optional.of(Tariff.builder().name(Tariff.MINORISTA).build()));
-        
+        lenient().when(tariffRepository.findByName(any()))
+                .thenReturn(Optional.of(Tariff.builder().name(Tariff.MINORISTA).build()));
+
         // Mock to bypass or handle Tax breakdown (RecargoEquivalenciaCalculator)
         lenient().when(recargoCalculator.calculateLineBreakdown(any(), any(), any(), any(), any(), any(Boolean.class)))
                 .thenReturn(com.proconsi.electrobazar.dto.TaxBreakdown.builder()
@@ -72,11 +84,12 @@ class StockValidationTest {
     @DisplayName("Sufficient stock: Should pass")
     void testEnoughStock() {
         unitProduct.setStock(new BigDecimal("10"));
-        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("5")).unitPrice(BigDecimal.TEN).build();
+        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("5")).unitPrice(BigDecimal.TEN)
+                .build();
 
         assertDoesNotThrow(() -> {
-            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "", 
-                BigDecimal.TEN, null, null, null, worker, null, null);
+            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "",
+                    BigDecimal.TEN, null, null, null, worker, null, null);
         });
     }
 
@@ -84,11 +97,12 @@ class StockValidationTest {
     @DisplayName("Exact stock: Should pass")
     void testExactStock() {
         unitProduct.setStock(new BigDecimal("5"));
-        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("5")).unitPrice(BigDecimal.TEN).build();
+        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("5")).unitPrice(BigDecimal.TEN)
+                .build();
 
         assertDoesNotThrow(() -> {
-            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "", 
-                BigDecimal.TEN, null, null, null, worker, null, null);
+            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "",
+                    BigDecimal.TEN, null, null, null, worker, null, null);
         });
     }
 
@@ -96,11 +110,12 @@ class StockValidationTest {
     @DisplayName("Insufficient stock: Should throw IllegalStateException")
     void testInsufficientStock() {
         unitProduct.setStock(new BigDecimal("5"));
-        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("6")).unitPrice(BigDecimal.TEN).build();
+        SaleLine line = SaleLine.builder().product(unitProduct).quantity(new BigDecimal("6")).unitPrice(BigDecimal.TEN)
+                .build();
 
         assertThrows(IllegalStateException.class, () -> {
-            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "", 
-                BigDecimal.TEN, null, null, null, worker, null, null);
+            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "",
+                    BigDecimal.TEN, null, null, null, worker, null, null);
         });
     }
 
@@ -108,11 +123,12 @@ class StockValidationTest {
     @DisplayName("Fractional insufficient stock: 2.500 vs 2.501 should throw exception")
     void testFractionalInsufficientStock() {
         weightProduct.setStock(new BigDecimal("2.500"));
-        SaleLine line = SaleLine.builder().product(weightProduct).quantity(new BigDecimal("2.501")).unitPrice(BigDecimal.TEN).build();
+        SaleLine line = SaleLine.builder().product(weightProduct).quantity(new BigDecimal("2.501"))
+                .unitPrice(BigDecimal.TEN).build();
 
         assertThrows(IllegalStateException.class, () -> {
-            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "", 
-                BigDecimal.TEN, null, null, null, worker, null, null);
+            saleService.createSaleWithCoupon(Collections.singletonList(line), PaymentMethod.CASH, "",
+                    BigDecimal.TEN, null, null, null, worker, null, null);
         });
     }
 }

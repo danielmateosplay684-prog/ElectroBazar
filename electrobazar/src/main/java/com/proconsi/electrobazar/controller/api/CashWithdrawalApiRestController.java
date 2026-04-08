@@ -1,10 +1,9 @@
 package com.proconsi.electrobazar.controller.api;
 
-import com.proconsi.electrobazar.model.CashRegister;
 import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.security.JwtService;
-import com.proconsi.electrobazar.service.CashRegisterService;
+import com.proconsi.electrobazar.service.CashSessionService;
 import com.proconsi.electrobazar.service.CashWithdrawalService;
 import com.proconsi.electrobazar.service.WorkerService;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,7 @@ import java.util.Set;
 public class CashWithdrawalApiRestController {
 
     private final CashWithdrawalService cashWithdrawalService;
-    private final CashRegisterService cashRegisterService;
+    private final CashSessionService cashSessionService;
     private final WorkerService workerService;
     private final JwtService jwtService;
 
@@ -80,8 +79,8 @@ public class CashWithdrawalApiRestController {
         Worker worker = workerService.findById(workerId)
                 .orElseThrow(() -> new com.proconsi.electrobazar.exception.ResourceNotFoundException("Trabajador no encontrado"));
 
-        CashRegister openRegister = cashRegisterService.getOpenRegister()
-                .orElseThrow(() -> new IllegalStateException("No hay ninguna caja abierta."));
+        com.proconsi.electrobazar.model.CashRegister activeSession = cashSessionService.getActiveSession()
+                .orElseThrow(() -> new IllegalStateException("No hay ninguna sesión de caja abierta."));
 
         if (body == null || body.amount == null || body.amount.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "El importe es obligatorio."));
@@ -90,10 +89,10 @@ public class CashWithdrawalApiRestController {
         try {
             BigDecimal amountDecimal = new BigDecimal(body.amount.replace(",", "."));
             String typeValue = (body.type != null && !body.type.isBlank()) ? body.type : CashWithdrawal.MovementType.WITHDRAWAL.name();
-            CashWithdrawal.MovementType movementType = CashWithdrawal.MovementType.valueOf(typeValue);
+            CashWithdrawal.MovementType movementType = CashWithdrawal.MovementType.valueOf(typeValue.toUpperCase());
 
             CashWithdrawal movement = cashWithdrawalService.processMovement(
-                    openRegister.getId(), amountDecimal, body.reason, movementType, worker);
+                    activeSession.getId(), amountDecimal, body.reason, movementType, worker);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(movement);
         } catch (Exception e) {

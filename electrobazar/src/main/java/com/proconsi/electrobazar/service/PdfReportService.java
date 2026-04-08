@@ -12,12 +12,12 @@ import java.time.LocalDate;
 public interface PdfReportService {
 
     /**
-     * Generates a PDF report summarizing a closed cash register shift.
+     * Generates a PDF report summarizing a closed cash session.
      *
-     * @param register The closed CashRegister entity.
+     * @param session The closed CashRegister entity.
      * @return The PDF data as a byte array.
      */
-    byte[] generateCashCloseReport(CashRegister register);
+    byte[] generateCashCloseReport(CashRegister session);
 
     /**
      * Generates a PDF sheet displaying prices for a specific tariff at a given date.

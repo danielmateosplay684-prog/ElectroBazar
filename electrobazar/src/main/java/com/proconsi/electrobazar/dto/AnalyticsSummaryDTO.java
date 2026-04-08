@@ -25,6 +25,22 @@ public class AnalyticsSummaryDTO {
     private String topProductName;
     private long lowStockCount;
     
+    private BigDecimal averageTicket;
+    private double cancellationRate;
+    
+    // Period-over-period growth
+    private BigDecimal revenueGrowth; 
+    
+    /**
+     * Map of hour (0-23) to revenue or count.
+     */
+    private Map<Integer, BigDecimal> hourlyTrend;
+
+    /**
+     * Top 10 products with detailed stats.
+     */
+    private Map<String, BigDecimal> topProducts;
+    
     /**
      * Data points for charts.
      * Key: ISO date string or hour (e.g., "2026-03-26" or "14:00")

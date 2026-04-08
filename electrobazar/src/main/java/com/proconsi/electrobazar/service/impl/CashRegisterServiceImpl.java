@@ -281,19 +281,21 @@ public class CashRegisterServiceImpl implements CashRegisterService {
             };
         }
 
-        BigDecimal revenue = saleRepository.sumTotalBetween(from, to);
-        long salesCount = saleRepository.countByCreatedAtBetween(from, to);
+        // ONE DB pass for all sales KPIs — now using an Interface Projection to avoid Hibernate class instantiation issues
+        com.proconsi.electrobazar.dto.SaleSummaryProjection summary = saleRepository.getSummaryBetween(from, to);
         String topProduct = saleRepository.findTopProductNameBetween(from, to);
+        // O(1) in DB vs O(n) in Java
         long lowStockCount = productRepository.countByStockLessThan(new BigDecimal("5"));
 
         return DashboardStatsDTO.builder()
                 .shiftActive(shiftActive)
                 .shiftOpeningTime(shiftActive ? openRegister.get().getOpeningTime() : null)
-                .revenue(revenue != null ? revenue : BigDecimal.ZERO)
-                .salesCount((int) salesCount)
+                .revenue(summary.getTotalSalesAmount() != null ? summary.getTotalSalesAmount() : BigDecimal.ZERO)
+                .salesCount((int) (summary.getTotalSalesCount() != null ? summary.getTotalSalesCount() : 0))
                 .topProduct(topProduct != null ? topProduct : "—")
                 .lowStockCount((int) lowStockCount)
                 .openingBalance(openingBalance)
                 .build();
+
     }
 }

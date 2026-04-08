@@ -11,6 +11,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     setTimeout(updateStockBubbles, 50); // Small delay to ensure all elements are rendered
+
+    // -- Physical Keyboard Listener for PIN Overlay --
+    document.addEventListener('keydown', function (e) {
+        const overlay = document.getElementById('pinOverlay');
+        if (!overlay || overlay.style.display === 'none') return;
+
+        // Numbers 0-9
+        if (e.key >= '0' && e.key <= '9') {
+            appendPinToSell(e.key);
+        } else if (e.key === 'Backspace') {
+            clearPinToSell();
+        } else if (e.key === 'Enter') {
+            if (currentPin.length === 4) {
+                submitPinToSell();
+            }
+        }
+    });
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
@@ -588,7 +605,34 @@ function selectPayment(method) {
 
 function submitSale() {
     if (Object.keys(ticket).length === 0) return;
-    document.getElementById('saleForm').submit();
+    
+    const form = document.getElementById('saleForm');
+    const formData = new URLSearchParams(new FormData(form));
+
+    const btn = document.getElementById('btnSubmitCheckout');
+    if (btn) btn.disabled = true;
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+    })
+    .then(r => {
+        if (r.redirected) {
+            window.location.href = r.url; // Use same tab
+        } else if (r.ok) {
+            return r.json().then(data => {
+                if (data.redirectUrl) window.location.href = data.redirectUrl;
+                else location.reload();
+            });
+        } else {
+            return r.json().then(data => { throw new Error(data.error || 'Error al procesar venta'); });
+        }
+    })
+    .catch(err => {
+        showToast(err.message, 'error');
+        if (btn) btn.disabled = false;
+    });
 }
 
 var invoiceModalInstance;
@@ -677,8 +721,8 @@ function calculateChange() {
     if (!changeEl) return;
 
     if (isNaN(val)) {
-        changeEl.textContent = '0,00€';
-        changeEl.style.color = 'var(--text-muted)';
+        changeEl.textContent = 'Faltan ' + total.toFixed(2).replace('.', ',') + '€';
+        changeEl.style.color = 'var(--danger)';
     } else {
         var diff = val - total;
         if (diff < 0) {
@@ -1109,7 +1153,7 @@ document.querySelectorAll('.cat-btn[data-category-id]').forEach(function (btn) {
 
 // -- Admin PIN Login --
 (function () {
-    var overlay = document.getElementById('pinOverlay');
+    var overlay = document.getElementById('adminPinOverlay');
     var input = document.getElementById('pinInput');
     var error = document.getElementById('pinError');
     var btn = document.getElementById('adminLockBtn');
@@ -2442,5 +2486,65 @@ function addWildcardToTicket(name, price, vat) {
 
     renderTicket();
     showToast('Producto manual añadido: ' + name, 'success');
+}
+
+// ── TPV LOCK SYSTEM ──
+var currentPin = "";
+function lockTPV() {
+    currentPin = "";
+    updatePinDots();
+    document.getElementById('pinErrorMsg').style.display = 'none';
+    document.getElementById('pinOverlay').style.display = 'flex';
+}
+
+function appendPinToSell(val) {
+    if (currentPin.length < 4) {
+        currentPin += val;
+        updatePinDots();
+    }
+    if (currentPin.length === 4) {
+        document.getElementById('btnPinSubmit').disabled = false;
+    }
+}
+
+function clearPinToSell() {
+    if (currentPin.length > 0) {
+        currentPin = currentPin.slice(0, -1);
+        updatePinDots();
+        document.getElementById('btnPinSubmit').disabled = true;
+        document.getElementById('pinErrorMsg').style.display = 'none';
+    }
+}
+
+function updatePinDots() {
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach((dot, i) => {
+        if (i < currentPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+    });
+}
+
+function submitPinToSell() {
+    if (currentPin.length !== 4) return;
+    
+    const btn = document.getElementById('btnPinSubmit');
+    btn.disabled = true;
+    
+    fetch('/api/workers/verify-pin?pin=' + currentPin)
+        .then(r => {
+            if (r.ok) {
+                document.getElementById('pinOverlay').style.display = 'none';
+                currentPin = "";
+            } else {
+                document.getElementById('pinErrorMsg').style.display = 'block';
+                currentPin = "";
+                updatePinDots();
+                btn.disabled = true;
+            }
+        })
+        .catch(err => {
+            console.error('Error verifying PIN', err);
+            btn.disabled = false;
+        });
 }
 

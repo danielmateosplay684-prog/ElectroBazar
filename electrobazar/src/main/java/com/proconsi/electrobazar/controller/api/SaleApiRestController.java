@@ -91,6 +91,27 @@ public class SaleApiRestController {
     }
 
     /**
+     * Filters sales within a specific date and time range with pagination.
+     * @param from Start date-time (ISO format).
+     * @param to End date-time (ISO format).
+     * @param workerId Optional worker ID to filter by.
+     * @param pageable Pagination and sorting criteria.
+     * @return Paginated sales in the specified range.
+     */
+    @GetMapping("/range/paged")
+    public ResponseEntity<Page<Sale>> getRangePaged(
+            @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(value = "workerId", required = false) Long workerId,
+            @PageableDefault(size = 50, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        
+        if (workerId != null) {
+            return ResponseEntity.ok(saleService.findBetween(from, to, workerId, pageable));
+        }
+        return ResponseEntity.ok(saleService.findBetween(from, to, pageable));
+    }
+
+    /**
      * Retrieves aggregated analytics for the specified period.
      * @return {@link AnalyticsSummaryDTO} pre-calculated statistics.
      */

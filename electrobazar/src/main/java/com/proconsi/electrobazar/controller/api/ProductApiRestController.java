@@ -69,27 +69,35 @@ public class ProductApiRestController {
     }
 
     /**
-     * Performs a text-based search on product names.
+     * Performs a text-based search on product names with pagination.
      * @param name The search query.
-     * @return List of matching products.
+     * @param page Page number (0-indexed).
+     * @param size Number of items per page.
+     * @return Page of matching products.
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Product>> search(@RequestParam String name) {
-        return ResponseEntity.ok(productService.search(name));
+    public ResponseEntity<org.springframework.data.domain.Page<Product>> search(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return ResponseEntity.ok(productService.getFilteredProducts(name, null, null, true, pageable));
     }
 
     /**
-     * Advanced filtering for products based on name, category, stock levels, and active status.
-     * @return List of filtered products.
+     * Advanced filtering for products with pagination.
+     * @return Page of filtered products.
      */
     @GetMapping("/filter")
-    public ResponseEntity<List<Product>> filterProducts(
+    public ResponseEntity<org.springframework.data.domain.Page<Product>> filterProducts(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String stock,
-            @RequestParam(required = false) Boolean active) {
-
-        return ResponseEntity.ok(productService.getFilteredProducts(search, category, stock, active));
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return ResponseEntity.ok(productService.getFilteredProducts(search, category, stock, active, pageable));
     }
 
     /**

@@ -66,6 +66,25 @@ public interface SaleService {
     List<Sale> findBetween(LocalDateTime from, LocalDateTime to);
 
     /**
+     * Retrieves sales within a specific time range with pagination.
+     * @param from Start timestamp.
+     * @param to   End timestamp.
+     * @param pageable Pagination and sorting criteria.
+     * @return Page of sales in range.
+     */
+    Page<Sale> findBetween(LocalDateTime from, LocalDateTime to, Pageable pageable);
+
+    /**
+     * Retrieves sales within a specific time range for a specific worker with pagination.
+     * @param from Start timestamp.
+     * @param to   End timestamp.
+     * @param workerId Worker ID to filter by.
+     * @param pageable Pagination and sorting criteria.
+     * @return Page of sales in range for the worker.
+     */
+    Page<Sale> findBetween(LocalDateTime from, LocalDateTime to, Long workerId, Pageable pageable);
+
+    /**
      * Creates a standard sale for an anonymous customer.
      */
     Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, String notes, BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Worker worker);

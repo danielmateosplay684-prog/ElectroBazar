@@ -34,7 +34,7 @@ function getSharedInvLocale() {
     }
 }
 
-function runSharedBackendFilter() {
+function runSharedBackendFilter(page = 0) {
     // Tomamos el buscador del header del Admin o el buscador del Fragment (Productos-categorias)
     const globalSearch = document.getElementById('sharedFilterSearch');
     const fragSearch = document.getElementById('fragmentFilterSearch');
@@ -54,13 +54,17 @@ function runSharedBackendFilter() {
     if (active) queryParams.append('active', active);
     queryParams.append('sortBy', sortBy);
     queryParams.append('sortDir', sortDir);
+    queryParams.append('page', page);
+    queryParams.append('size', 50);
 
     fetch(`/api/admin/products?${queryParams.toString()}`)
         .then(res => res.json())
         .then(data => {
-            // Check if it's the new paginated API format
-            const items = data.content ? data.content : data;
+            const items = data.content || data;
             renderSharedProductsTable(items);
+            if (data.totalPages !== undefined) {
+                renderInventoryPagination('productsPagination', data, runSharedBackendFilter);
+            }
         })
         .catch(err => console.error("Error filtrando productos combinados:", err));
 }
@@ -175,7 +179,7 @@ function renderSharedProductsTable(products) {
     });
 }
 
-function runSharedBackendCategoryFilter() {
+function runSharedBackendCategoryFilter(page = 0) {
     const globalSearch = document.getElementById('sharedFilterSearch');
     const catSearch = document.getElementById('categoryFilterSearch');
     const search = (globalSearch ? globalSearch.value.trim() : '') || (catSearch ? catSearch.value.trim() : '');
@@ -187,14 +191,78 @@ function runSharedBackendCategoryFilter() {
     if (search) queryParams.append('search', search);
     queryParams.append('sortBy', sortBy);
     queryParams.append('sortDir', sortDir);
+    queryParams.append('page', page);
+    queryParams.append('size', 50);
 
     fetch(`/api/admin/categories?${queryParams.toString()}`)
         .then(res => res.json())
         .then(data => {
-            const items = data.content ? data.content : data;
+            const items = data.content || data;
             renderSharedCategoriesTable(items);
+            if (data.totalPages !== undefined) {
+                renderInventoryPagination('categoriesPagination', data, runSharedBackendCategoryFilter);
+            }
         })
         .catch(err => console.error("Error filtrando categorias combinadas:", err));
+}
+
+function renderInventoryPagination(containerId, pageData, callbackName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (pageData.totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const currentPage = pageData.currentPage || pageData.number || 0;
+    const totalPages = pageData.totalPages;
+    const totalElements = pageData.totalElements;
+
+    let html = `
+        <div class="d-flex justify-content-between align-items-center mt-3 p-2 bg-light rounded border">
+            <div class="small text-muted">
+                Mostrando <strong>${pageData.content.length}</strong> de <strong>${totalElements}</strong> elementos
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm m-0">
+                    <li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
+                        <button class="page-link" onclick="${callbackName.name}(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>
+                    </li>
+    `;
+
+    // Show a window of pages
+    const startPage = Math.max(0, currentPage - 2);
+    const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+    if (startPage > 0) {
+        html += `<li class="page-item"><button class="page-link" onclick="${callbackName.name}(0)">1</button></li>`;
+        if (startPage > 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <button class="page-link" onclick="${callbackName.name}(${i})">${i + 1}</button>
+            </li>
+        `;
+    }
+
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        html += `<li class="page-item"><button class="page-link" onclick="${callbackName.name}(${totalPages - 1})">${totalPages}</button></li>`;
+    }
+
+    html += `
+                    <li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
+                        <button class="page-link" onclick="${callbackName.name}(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    `;
+
+    container.innerHTML = html;
 }
 
 function renderSharedCategoriesTable(categories) {

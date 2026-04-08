@@ -13,8 +13,9 @@ import java.util.List;
  */
 @Entity
 @Table(name = "sales", indexes = {
-        @Index(name = "idx_sales_created_at", columnList = "created_at"),
-        @Index(name = "idx_sales_status", columnList = "status"),
+        // Covering index for all analytics queries: WHERE created_at BETWEEN ? AND ? AND status = 'ACTIVE'
+        // This replaces the two separate single-column indexes for much better range query performance.
+        @Index(name = "idx_sales_created_at_status", columnList = "created_at, status"),
         @Index(name = "idx_sales_payment_method", columnList = "payment_method")
 })
 @Getter
@@ -41,6 +42,11 @@ public class Sale {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id")
     private Worker worker;
+
+    /** Cash session this sale belongs to. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_session_id")
+    private CashRegister cashRegister;
 
     /** Selected payment method for the transaction. */
     @Enumerated(EnumType.STRING)

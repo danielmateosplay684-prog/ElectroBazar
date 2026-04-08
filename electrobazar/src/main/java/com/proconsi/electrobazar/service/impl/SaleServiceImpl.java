@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.service.impl;
 
 import com.proconsi.electrobazar.dto.AnalyticsSummaryDTO;
+import com.proconsi.electrobazar.dto.SaleSummaryProjection;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
 import com.proconsi.electrobazar.dto.TaxBreakdown;
 import com.proconsi.electrobazar.dto.WorkerSaleStatsDTO;
@@ -58,7 +59,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional(readOnly = true)
     public AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to) {
-        SaleSummaryResponse summary = saleRepository.getSummaryBetween(from, to);
+        SaleSummaryResponse summary = mapProjection(saleRepository.getSummaryBetween(from, to));
         String topProduct = saleRepository.findTopProductNameBetween(from, to);
         
         // 1. Daily Revenue (Database Aggregated)
@@ -126,6 +127,18 @@ public class SaleServiceImpl implements SaleService {
     @Transactional(readOnly = true)
     public List<Sale> findBetween(LocalDateTime from, LocalDateTime to) {
         return saleRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(from, to);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Sale> findBetween(LocalDateTime from, LocalDateTime to, Pageable pageable) {
+        return saleRepository.findByCreatedAtBetween(from, to, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Sale> findBetween(LocalDateTime from, LocalDateTime to, Long workerId, Pageable pageable) {
+        return saleRepository.findByCreatedAtBetweenAndWorkerId(from, to, workerId, pageable);
     }
 
     @Override
@@ -350,7 +363,19 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional(readOnly = true)
     public SaleSummaryResponse getSummaryToday() {
-        return saleRepository.getSummaryBetween(getShiftStart(), LocalDateTime.now());
+        return mapProjection(saleRepository.getSummaryBetween(getShiftStart(), LocalDateTime.now()));
+    }
+
+    private SaleSummaryResponse mapProjection(SaleSummaryProjection p) {
+        if (p == null) return new SaleSummaryResponse();
+        return SaleSummaryResponse.builder()
+                .totalSalesCount(p.getTotalSalesCount() != null ? p.getTotalSalesCount() : 0L)
+                .totalSalesAmount(p.getTotalSalesAmount() != null ? p.getTotalSalesAmount() : BigDecimal.ZERO)
+                .totalCashAmount(p.getTotalCashAmount() != null ? p.getTotalCashAmount() : BigDecimal.ZERO)
+                .totalCardAmount(p.getTotalCardAmount() != null ? p.getTotalCardAmount() : BigDecimal.ZERO)
+                .totalCancelledCount(p.getTotalCancelledCount() != null ? p.getTotalCancelledCount() : 0L)
+                .totalCancelledAmount(p.getTotalCancelledAmount() != null ? p.getTotalCancelledAmount() : BigDecimal.ZERO)
+                .build();
     }
 
     private LocalDateTime getShiftStart() {

@@ -114,10 +114,21 @@ public class CashRegister {
     @Builder.Default
     private java.util.List<CashWithdrawal> withdrawals = new java.util.ArrayList<>();
 
+    /** Actual amount counted in the drawer. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal actualCash;
+
     @PrePersist
     public void prePersist() {
         if (this.registerDate == null) {
             this.registerDate = LocalDate.now();
         }
     }
+
+    // Aliases for compatibility with CashSession model
+    public LocalDateTime getOpeningDate() { return openingTime; }
+    public LocalDateTime getClosingDate() { return closedAt; }
+    public BigDecimal getInitialCash() { return openingBalance; }
+    public BigDecimal getExpectedCash() { return closingBalance; }
+    public BigDecimal getActualCash() { return actualCash; }
 }

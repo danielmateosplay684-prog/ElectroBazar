@@ -14,7 +14,6 @@ import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.TariffService;
 import com.proconsi.electrobazar.repository.SaleLineRepository;
 import com.proconsi.electrobazar.repository.TariffPriceHistoryRepository;
-import com.proconsi.electrobazar.service.TranslationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,7 +30,8 @@ import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link ProductService}.
- * Core service for product catalog management, stock control, and fiscal rate adjustments.
+ * Core service for product catalog management, stock control, and fiscal rate
+ * adjustments.
  */
 @Slf4j
 @Service
@@ -45,7 +45,6 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ActivityLogService activityLogService;
     private final TariffService tariffService;
-    private final TranslationService translationService;
     private final SaleLineRepository saleLineRepository;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
     private final com.proconsi.electrobazar.repository.MeasurementUnitRepository measurementUnitRepository;
@@ -107,7 +106,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Product> getFilteredProducts(String search, String category, String stock, Boolean active, Pageable pageable) {
+    public Page<Product> getFilteredProducts(String search, String category, String stock, Boolean active,
+            Pageable pageable) {
         Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active);
         return productRepository.findAll(spec, pageable);
     }
@@ -122,7 +122,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<Product> findAllByIds(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return List.of();
+        if (ids == null || ids.isEmpty())
+            return List.of();
         return productRepository.findAllById(ids);
     }
 
@@ -130,12 +131,13 @@ public class ProductServiceImpl implements ProductService {
     public Product save(Product product) {
         // autoTranslateProduct(product);
         Product saved = productRepository.save(product);
-        
+
         // Ensure the product is immediately included in tariff price history/PDFs
         try {
             tariffService.regenerateTariffHistoryForProducts(java.util.List.of(saved));
         } catch (Exception e) {
-            log.error("Error generating initial tariff history for new product {}: {}", saved.getName(), e.getMessage());
+            log.error("Error generating initial tariff history for new product {}: {}", saved.getName(),
+                    e.getMessage());
         }
 
         activityLogService.logActivity(
@@ -152,14 +154,16 @@ public class ProductServiceImpl implements ProductService {
         Product existing = findById(id);
         existing.setNameEs(request.getName());
         existing.setDescriptionEs(request.getDescription());
-        
-        // Trigger auto-translation on update (Currently disabled by request: no API Key)
+
+        // Trigger auto-translation on update (Currently disabled by request: no API
+        // Key)
         // autoTranslateProduct(existing);
 
         // 1. Update Tax Rate
         if (request.getTaxRateId() != null) {
             TaxRate newRate = taxRateRepository.findById(request.getTaxRateId())
-                    .orElseThrow(() -> new ResourceNotFoundException("TaxRate " + request.getTaxRateId() + " not found."));
+                    .orElseThrow(
+                            () -> new ResourceNotFoundException("TaxRate " + request.getTaxRateId() + " not found."));
             existing.setTaxRate(newRate);
         }
 
@@ -180,7 +184,8 @@ public class ProductServiceImpl implements ProductService {
         }
 
         if (request.getMeasurementUnitId() != null) {
-            existing.setMeasurementUnit(measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
+            existing.setMeasurementUnit(
+                    measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
         }
 
         if (request.getStock() != null && request.getStock().compareTo(BigDecimal.ZERO) >= 0) {
@@ -188,7 +193,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Product saved = productRepository.save(existing);
-        
+
         // 3. Sync with active temporal price entry
         productPriceRepository.findActivePriceAt(saved.getId(), LocalDateTime.now()).ifPresent(active -> {
             active.setVatRate(saved.getTaxRate() != null ? saved.getTaxRate().getVatRate() : new BigDecimal("0.21"));
@@ -213,11 +218,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /*
-    private void autoTranslateProduct(Product product) {
-        if (product.getNameEs() == null || product.getNameEs().isBlank()) return;
-        ...
-    }
-    */
+     * private void autoTranslateProduct(Product product) {
+     * if (product.getNameEs() == null || product.getNameEs().isBlank()) return;
+     * ...
+     * }
+     */
 
     @Override
     public void delete(Long id) {
@@ -236,19 +241,20 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void hardDeleteProduct(Long id) {
         Product product = findById(id);
-        
+
         // 1. Check for real transaction references
         if (saleLineRepository.countByProductId(id) > 0) {
-            throw new IllegalStateException("Cannot delete item because it is referenced by other records (sales, invoices, etc.).");
+            throw new IllegalStateException(
+                    "Cannot delete item because it is referenced by other records (sales, invoices, etc.).");
         }
-        
+
         // 2. Clear metadata/history cascade manually if not mapped as cascade
         productPriceRepository.deleteByProductId(id);
         tariffPriceHistoryRepository.deleteByProductId(id);
-        
+
         // 3. Final Delete
         productRepository.deleteById(id);
-        
+
         activityLogService.logActivity(
                 "ELIMINAR_PRODUCTO_HARD",
                 "Producto eliminado permanentemente: " + product.getName(),
@@ -260,23 +266,26 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void decreaseStock(Long productId, BigDecimal quantity) {
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) return;
-        
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
+            return;
+
         int updated = productRepository.decreaseStockAtomic(productId, quantity);
         if (updated == 0) {
             Product p = findById(productId);
             throw new IllegalStateException("Insufficient stock for product: " + p.getName());
         }
-        
+
         // Audit log (only once per call)
-        activityLogService.logActivity("AJUSTE_STOCK", 
-                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Admin", "PRODUCT", productId);
+        activityLogService.logActivity("AJUSTE_STOCK",
+                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Admin", "PRODUCT",
+                productId);
     }
 
     @Override
     @Transactional
     public void increaseStock(Long productId, BigDecimal quantity) {
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) return;
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
+            return;
         productRepository.increaseStockAtomic(productId, quantity);
     }
 
@@ -289,8 +298,9 @@ public class ProductServiceImpl implements ProductService {
         }
         product.setStock(newStock);
         productRepository.save(product);
-        activityLogService.logActivity("AJUSTE_STOCK", 
-                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(), "Admin", "PRODUCT", product.getId());
+        activityLogService.logActivity("AJUSTE_STOCK",
+                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(), "Admin",
+                "PRODUCT", product.getId());
     }
 
     @Override
@@ -307,7 +317,8 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("TaxRate " + newTaxRateId + " not found."));
 
         List<TaxRate> oldRates = taxRateRepository.findByDescriptionAndIdNot(newRate.getDescription(), newTaxRateId);
-        if (oldRates.isEmpty()) return;
+        if (oldRates.isEmpty())
+            return;
 
         List<Long> oldIds = oldRates.stream().map(TaxRate::getId).collect(Collectors.toList());
         productRepository.updateTaxRateForIds(oldIds, newRate);
@@ -319,14 +330,17 @@ public class ProductServiceImpl implements ProductService {
             taxRateRepository.save(old);
         }
 
-        activityLogService.logActivity("APLICAR_IVA_MASIVO", 
-                "Actualización masiva de IVA: " + newRate.getDescription() + " (aplicado a todos los productos coincidentes)", "Admin", "TAX_RATE", newTaxRateId);
+        activityLogService.logActivity("APLICAR_IVA_MASIVO",
+                "Actualización masiva de IVA: " + newRate.getDescription()
+                        + " (aplicado a todos los productos coincidentes)",
+                "Admin", "TAX_RATE", newTaxRateId);
     }
 
     @Override
     @Transactional
     public void applyTaxRateToProducts(List<Long> productIds, TaxRate taxRate) {
-        if (productIds == null || productIds.isEmpty()) return;
+        if (productIds == null || productIds.isEmpty())
+            return;
         List<Product> products = productRepository.findAllById(productIds);
         products.forEach(p -> p.setTaxRate(taxRate));
         productRepository.saveAll(products);

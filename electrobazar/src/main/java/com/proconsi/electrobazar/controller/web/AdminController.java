@@ -41,7 +41,7 @@ public class AdminController {
     private final CategoryService categoryService;
     private final CsvImportService csvImportService;
     private final SaleService saleService;
-    private final CashRegisterService cashRegisterService;
+    private final CashSessionService cashSessionService;
     private final PdfReportService pdfReportService;
     private final WorkerService workerService;
     private final CustomerService customerService;
@@ -125,7 +125,7 @@ public class AdminController {
         model.addAttribute("returns", returnService.findAll(latest50).getContent());
         
         // Infrastructure and Management (Limited to recent 100 for performance)
-        model.addAttribute("cashRegisters", cashRegisterService.findAllClosed(PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "registerDate"))).getContent());
+        model.addAttribute("cashRegisters", cashSessionService.findAllClosed());
         model.addAttribute("workers", workerService.findAll());
         model.addAttribute("customers", customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
         model.addAttribute("roles", roleService.findAll());
@@ -279,14 +279,14 @@ public class AdminController {
         }
 
         try {
-            com.proconsi.electrobazar.model.CashRegister register = cashRegisterService.findById(id);
-            if (register == null)
+            com.proconsi.electrobazar.model.CashRegister cs = cashSessionService.findById(id);
+            if (cs == null)
                 return ResponseEntity.notFound().build();
 
             // Regenerate on demand
-            byte[] pdfData = pdfReportService.generateCashCloseReport(register);
-            String dateStr = register.getClosedAt() != null
-                    ? register.getClosedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+            byte[] pdfData = pdfReportService.generateCashCloseReport(cs);
+            String dateStr = cs.getClosingDate() != null
+                    ? cs.getClosingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                     : "UnknownDate";
             String filename = String.format("CashClose_%s_ID%d.pdf", dateStr, id);
 
@@ -436,14 +436,13 @@ public class AdminController {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/login";
         }
-        com.proconsi.electrobazar.model.CashRegister register = cashRegisterService.findById(id);
+        com.proconsi.electrobazar.model.CashRegister register = cashSessionService.findById(id);
         if (register == null) {
             return "redirect:/admin?view=cashCloseView";
         }
 
-        LocalDateTime startTime = register.getOpeningTime() != null ? register.getOpeningTime() : register.getRegisterDate().atStartOfDay();
-        // If closed, use the end of that day to match previous (buggy) totals aggregation if Shift 3 has missing sales
-        LocalDateTime endTime = register.getClosedAt() != null ? register.getClosedAt().with(java.time.LocalTime.MAX) : LocalDateTime.now();
+        LocalDateTime startTime = register.getOpeningDate();
+        LocalDateTime endTime = register.getClosingDate() != null ? register.getClosingDate() : LocalDateTime.now();
 
         model.addAttribute("register", register);
         model.addAttribute("sales", saleService.findBetween(startTime, endTime));

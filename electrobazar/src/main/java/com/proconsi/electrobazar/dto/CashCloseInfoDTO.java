@@ -56,7 +56,7 @@ public class CashCloseInfoDTO {
     private BigDecimal openingBalance;
     
     /** The actual CashRegister entity record. */
-    private CashRegister todayRegister;
+    private CashRegister activeSession;
     
     /** Per-worker breakdown of sales for the shift. */
     @Builder.Default

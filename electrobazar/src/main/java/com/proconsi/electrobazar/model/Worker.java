@@ -56,6 +56,10 @@ public class Worker {
     @Builder.Default
     private boolean active = true;
 
+    /** PIN code for TPV access. */
+    @Column(length = 255)
+    private String pinCode;
+
     /**
      * Resolves the effective set of permissions from the assigned role.
      * If the role name is 'ADMIN' or contains 'ACCESO_TOTAL_ADMIN', it acts as a 

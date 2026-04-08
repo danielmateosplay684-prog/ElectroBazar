@@ -26,6 +26,7 @@ public class WorkerApiRestController {
 
     private final WorkerService workerService;
     private final JwtService jwtService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     /**
      * Retrieves all workers.
@@ -111,5 +112,24 @@ public class WorkerApiRestController {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid username or password"));
         }
+    }
+
+    /**
+     * Verifies a worker's PIN for TPV access.
+     * @param pin The raw PIN sent as a request parameter.
+     * @return 200 OK if valid, 401 Unauthorized if invalid.
+     */
+    @GetMapping("/verify-pin")
+    public ResponseEntity<?> verifyPin(@RequestParam("pin") String pin) {
+        List<Worker> workers = workerService.findAll();
+        for (Worker worker : workers) {
+            if (worker.getPinCode() != null && passwordEncoder.matches(pin, worker.getPinCode())) {
+                return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "worker", worker
+                ));
+            }
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "PIN Incorrecto"));
     }
 }
