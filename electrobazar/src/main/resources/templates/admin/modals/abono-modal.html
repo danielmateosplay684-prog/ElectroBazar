@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+        <div class="modal fade" id="abonomodal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Generar Nuevo Abono</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="abonoForm">
+                            <div class="mb-3">
+                                <label class="form-label">Client ID *</label>
+                                <input type="number" id="abonoFormClienteId" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ID Venta Original (Opcional)</label>
+                                <input type="number" id="abonoFormVentaId" class="form-control"
+                                    placeholder="Opcional, obligatorio si es DEVOLUCIÓN">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Importe *</label>
+                                <input type="number" step="0.01" id="abonoFormImporte" class="form-control"
+                                    placeholder="Valor siempre en positivo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de Abono *</label>
+                                <select id="abonoFormTipo" class="form-select" required>
+                                    <option value="COMPENSACION">Compensación</option>
+                                    <option value="Devolución">Devolución</option>
+                                    <option value="ERROR_COBRO">Error de Cobro</option>
+                                    <option value="DESCUENTO_POSTERIOR">Descuento Posterior</option>
+                                    <option value="CREDITO_FAVOR">Crédito a Favor (Saldo)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Método de Pago *</label>
+                                <select id="abonoFormPago" class="form-select" required>
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TARJETA">Tarjeta</option>
+                                    <option value="CREDITO">Crédito Interno</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Motivo (Opcional)</label>
+                                <textarea id="abonoFormMotivo" class="form-control" rows="2"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="saveAbono()">Confirmar Abono</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

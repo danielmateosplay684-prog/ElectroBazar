@@ -23,6 +23,9 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+
+import com.proconsi.electrobazar.model.Category;
+import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.Sale;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -66,7 +69,8 @@ public class AdminController {
             return ResponseEntity.status(401).build();
         }
         Worker admin = (Worker) session.getAttribute("worker");
-        BackupService.BackupResult result = backupService.performBackup("MANUAL", admin != null ? admin.getUsername() : "Admin");
+        BackupService.BackupResult result = backupService.performBackup("MANUAL",
+                admin != null ? admin.getUsername() : "Admin");
         return ResponseEntity.ok(result);
     }
 
@@ -76,22 +80,42 @@ public class AdminController {
     @GetMapping("/productos-categorias")
     public String productsCategories(
             @RequestParam(required = false, defaultValue = "productsView") String returnView,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(defaultValue = "0") int categoriesPage,
+            @RequestParam(defaultValue = "25") int categoriesSize,
             Model model,
             HttpSession session) {
-        // Allow access if worker has specific permission or is full admin
+
         Worker worker = (Worker) session.getAttribute("worker");
-        if (worker == null)
+        if (worker == null) {
             return "redirect:/login";
+        }
 
-        boolean hasPermission = worker.getEffectivePermissions().contains("MANAGE_PRODUCTS_TPV") ||
-                worker.getEffectivePermissions().contains("ADMIN_ACCESS");
-
-        if (!hasPermission)
+        Boolean isAdmin = (Boolean) session.getAttribute("admin");
+        if (isAdmin == null || !isAdmin) {
             return "redirect:/tpv";
+        }
 
-        model.addAttribute("products", productService.findAllWithCategory());
-        model.addAttribute("categories", categoryService.findAll());
+        Page<Product> productsPaged = productService.findAllWithCategoryPaged(page, size);
+        Page<Category> catsPaged = categoryService.getFilteredCategories(null,
+                PageRequest.of(categoriesPage, categoriesSize, Sort.by("nameEs").ascending()));
+
+        model.addAttribute("products", productsPaged.getContent());
+        model.addAttribute("productsPage", productsPaged);
+
+        model.addAttribute("categories", catsPaged.getContent());
+        model.addAttribute("categoriesPage", catsPaged);
+        model.addAttribute("allCategories", categoryService.findAllActive());
+
         model.addAttribute("returnView", returnView);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
+        model.addAttribute("categoriesPageNumber", categoriesPage);
+        model.addAttribute("categoriesPageSize", categoriesSize);
+
+        model.addAttribute("companySettings", companySettingsService.getSettings());
+
         return "admin/productos-categorias";
     }
 
@@ -101,6 +125,10 @@ public class AdminController {
     @GetMapping("/admin")
     public String index(
             @RequestParam(required = false) String view,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "0") int categoriesPage,
+            @RequestParam(defaultValue = "50") int categoriesSize,
             Model model,
             HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
@@ -112,22 +140,35 @@ public class AdminController {
         // Load all data required by the various Admin views
         // Dashboard - Optimized with Limits (Load only recent 50 for heavy lists)
         PageRequest latest50 = PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
-        // Products and Categories
-        PageRequest products50 = PageRequest.of(0, 50, Sort.by(Sort.Direction.ASC, "nameEs"));
-        model.addAttribute("products", productService.findAll(products50).getContent());
-        model.addAttribute("categories", categoryService.findAll());
-        
+
+        // Products and Categories (Paged)
+        Page<Product> productsPaged = productService.findAllWithCategoryPaged(page, size);
+        Page<Category> catsPaged = categoryService.getFilteredCategories(null,
+                PageRequest.of(categoriesPage, categoriesSize, Sort.by("nameEs").ascending()));
+
+        model.addAttribute("products", productsPaged.getContent());
+        model.addAttribute("productsPage", productsPaged);
+        model.addAttribute("categories", catsPaged.getContent());
+        model.addAttribute("categoriesPage", catsPaged);
+        model.addAttribute("allCategories", categoryService.findAllActive()); // For modals/filters
+
+        // Metadata for pagination
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
+        model.addAttribute("categoriesPageNumber", categoriesPage);
+        model.addAttribute("categoriesPageSize", categoriesSize);
+
         // Sales and Returns (Most critical for 30k records)
         Page<Sale> salesPage = saleService.findAll(latest50);
         model.addAttribute("sales", salesPage.getContent());
         model.addAttribute("salesTotalPages", salesPage.getTotalPages());
         model.addAttribute("returns", returnService.findAll(latest50).getContent());
-        
+
         // Infrastructure and Management (Limited to recent 100 for performance)
         model.addAttribute("cashRegisters", cashSessionService.findAllClosed());
         model.addAttribute("workers", workerService.findAll());
-        model.addAttribute("customers", customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
+        model.addAttribute("customers",
+                customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
         model.addAttribute("roles", roleService.findAll());
         model.addAttribute("tariffs", tariffService.findAll());
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
@@ -136,7 +177,7 @@ public class AdminController {
         model.addAttribute("companySettings", companySettingsService.getSettings());
         model.addAttribute("coupons", couponService.findAll());
         model.addAttribute("promotions", promotionService.findAll());
-        
+
         // Mark as optimized view
         model.addAttribute("isOptimizedView", true);
 
@@ -205,7 +246,8 @@ public class AdminController {
 
         try {
             String result = csvImportService.importProductsCsv(file);
-            activityLogService.logActivity("IMPORT_CSV", "Importación de CSV exitosa: " + result, "Admin", "IMPORT", null);
+            activityLogService.logActivity("IMPORT_CSV", "Importación de CSV exitosa: " + result, "Admin", "IMPORT",
+                    null);
             return ResponseEntity.ok(Map.of("ok", true, "message", result));
         } catch (Exception e) {
             return ResponseEntity.status(500)
@@ -225,7 +267,8 @@ public class AdminController {
 
         try {
             String result = csvImportService.importCustomersCsv(file);
-            activityLogService.logActivity("IMPORT_CUSTOMERS_CSV", "CSV import clientes: " + result, "Admin", "IMPORT", null);
+            activityLogService.logActivity("IMPORT_CUSTOMERS_CSV", "CSV import clientes: " + result, "Admin", "IMPORT",
+                    null);
             return ResponseEntity.ok(Map.of("ok", true, "message", result));
         } catch (Exception e) {
             return ResponseEntity.status(500)
@@ -331,12 +374,13 @@ public class AdminController {
 
         LocalDate targetDate = date;
         List<LocalDate> availableDates = tariffPriceHistoryService.getDistinctValidFromDates(id);
-        
-        // Add TODAY to the list of relevant dates if it has active prices and is not already there
+
+        // Add TODAY to the list of relevant dates if it has active prices and is not
+        // already there
         LocalDate today = LocalDate.now();
         if (!availableDates.contains(today)) {
-             // We don't add it to the DB but to the list shown in the UI
-             availableDates.add(0, today); 
+            // We don't add it to the DB but to the list shown in the UI
+            availableDates.add(0, today);
         }
 
         // Default to most recent if no date provided
@@ -346,7 +390,8 @@ public class AdminController {
             targetDate = today;
         }
 
-        List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService.getPricesForTariffAtDate(id, targetDate);
+        List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService
+                .getPricesForTariffAtDate(id, targetDate);
         boolean dateExists = !history.isEmpty();
 
         LocalDate prevDate = null;
@@ -362,24 +407,28 @@ public class AdminController {
         }
 
         if (index != -1) {
-            if (index > 0) nextDate = availableDates.get(index - 1);
-            if (index < availableDates.size() - 1) prevDate = availableDates.get(index + 1);
-            
-            // Si el "día anterior real" no es la fecha de transición anterior, permitimos ir un día atrás
+            if (index > 0)
+                nextDate = availableDates.get(index - 1);
+            if (index < availableDates.size() - 1)
+                prevDate = availableDates.get(index + 1);
+
+            // Si el "día anterior real" no es la fecha de transición anterior, permitimos
+            // ir un día atrás
             if (prevDate == null || !prevDate.equals(targetDate.minusDays(1))) {
-                 LocalDate dayBefore = targetDate.minusDays(1);
-                 // Solo si el día antes tiene historia (está después o es igual a la primera transición)
-                 if (!availableDates.isEmpty() && !dayBefore.isBefore(availableDates.get(availableDates.size()-1))) {
-                     prevDate = dayBefore;
-                 }
+                LocalDate dayBefore = targetDate.minusDays(1);
+                // Solo si el día antes tiene historia (está después o es igual a la primera
+                // transición)
+                if (!availableDates.isEmpty() && !dayBefore.isBefore(availableDates.get(availableDates.size() - 1))) {
+                    prevDate = dayBefore;
+                }
             }
         } else {
             // Estamos navegando en un día "hueco" (sin cambios de precio)
             nextDate = targetDate.plusDays(1);
             prevDate = targetDate.minusDays(1);
-            
+
             // No podemos ir más allá del primer registro histórico
-            if (!availableDates.isEmpty() && prevDate.isBefore(availableDates.get(availableDates.size()-1))) {
+            if (!availableDates.isEmpty() && prevDate.isBefore(availableDates.get(availableDates.size() - 1))) {
                 prevDate = null;
             }
         }
@@ -390,7 +439,8 @@ public class AdminController {
         model.addAttribute("availableDates", availableDates);
         model.addAttribute("prevDate", prevDate);
         model.addAttribute("nextDate", nextDate);
-        model.addAttribute("firstDate", availableDates.isEmpty() ? null : availableDates.get(availableDates.size() - 1));
+        model.addAttribute("firstDate",
+                availableDates.isEmpty() ? null : availableDates.get(availableDates.size() - 1));
         model.addAttribute("lastDate", availableDates.isEmpty() ? null : availableDates.get(0));
         model.addAttribute("dateExists", dateExists);
         model.addAttribute("returnView", returnView);
@@ -494,7 +544,8 @@ public class AdminController {
         }
         companySettingsService.save(companySettings);
         Worker admin = (Worker) session.getAttribute("worker");
-        activityLogService.logFiscalEvent("CONFIG_CHANGE", "Modificación de la configuración fiscal de la empresa.", admin != null ? admin.getUsername() : "Admin");
+        activityLogService.logFiscalEvent("CONFIG_CHANGE", "Modificación de la configuración fiscal de la empresa.",
+                admin != null ? admin.getUsername() : "Admin");
         redirectAttributes.addFlashAttribute("successMessage", "Company settings updated successfully.");
         return "redirect:/admin?view=settingsView";
     }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
     
     <style>
         body {
-            background-color: var(--primary);
+            background-color: var(primary);
             color: var(--text-main);
             font-family: 'Barlow', sans-serif;
             padding: 2rem;
@@ -86,7 +86,7 @@
         }
         .btn-action {
             background: var(--accent);
-            color: var(--primary);
+            color: var(primary);
             border: none;
             padding: 0.6rem 1.4rem;
             border-radius: 10px;
@@ -100,7 +100,7 @@
             opacity: 0.9;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
-            color: var(--primary);
+            color: var(primary);
         }
         .lines-title {
             font-size: 1.4rem;
@@ -139,7 +139,7 @@
             font-size: 0.95rem;
         }
         .total-row.main {
-            border-top: 1px dashed var(--border);
+            border-top: 1px diashed var(--border);
             margin-top: 1rem;
             padding-top: 1rem;
             font-size: 1.5rem;
@@ -200,7 +200,7 @@
         </div>
         <div class="summary-item">
             <div class="summary-label" th:text="#{common.amount}">Importe Reembolsado</div>
-            <div class="summary-value text-danger" th:text="'- ' + ${#numbers.formatDecimal(return.totalRefunded, 1, 2)} + ' €'"></div>
+            <div class="summary-value text-danger" th:text="'- ' + ${#numbers.formatDecimal(return.totalRefunded, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item" th:if="${return.worker != null}">
             <div class="summary-label" th:text="#{admin.invoices.worker}">Procesado por</div>
@@ -218,7 +218,7 @@
         <div class="text-main fw-500" th:text="${return.reason ?: 'No especificado'}"></div>
     </div>
 
-    <!-- Líneas de Devolución -->
+    <!-- Lineas de Devolución -->
     <div class="sales-section">
         <h3 class="lines-title">
             <i class="bi bi-list-check text-accent"></i>
@@ -233,15 +233,15 @@
                         <th th:text="#{common.name}">Producto</th>
                         <th class="text-center" th:text="#{admin.common.stock}">Cant. Devuelta</th>
                         <th class="text-end" th:text="#{admin.common.price}">P. Unit.</th>
-                        <th class="text-end" th:text="#{common.total}">Reembolso Línea</th>
+                        <th class="text-end" th:text="#{common.total}">Reembolso Linea</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:each="line : ${return.lines}">
                         <td class="fw-bold text-main" th:text="${line.saleLine.product.name}"></td>
                         <td class="text-center" th:text="${line.quantity} + ' ud.'"></td>
-                        <td class="text-end" th:text="${#numbers.formatDecimal(line.saleLine.unitPrice, 1, 2)} + ' €'"></td>
-                        <td class="text-end fw-bold text-danger" th:text="'- ' + ${#numbers.formatDecimal(line.refundedAmount, 1, 2)} + ' €'"></td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(line.saleLine.unitPrice, 1, 2)} + ' '"></td>
+                        <td class="text-end fw-bold text-danger" th:text="'- ' + ${#numbers.formatDecimal(line.refundediamount, 1, 2)} + ' '"></td>
                     </tr>
                 </tbody>
             </table>
@@ -250,7 +250,7 @@
         <div class="totals-card">
             <div class="total-row main">
                 <span th:text="#{common.total}">TOTAL REEMBOLSADO</span>
-                <span th:text="${#numbers.formatDecimal(return.totalRefunded, 1, 2)} + ' €'"></span>
+                <span th:text="${#numbers.formatDecimal(return.totalRefunded, 1, 2)} + ' '"></span>
             </div>
         </div>
     </div>
@@ -259,3 +259,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+

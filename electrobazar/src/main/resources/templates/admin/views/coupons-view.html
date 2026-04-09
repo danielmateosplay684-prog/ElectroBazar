@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+            <div id="couponsView" style="display: none;">
+                <div class="panel-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn-icon"
+                            onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                            th:title="#{admin.common.backtopanel}">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <span class="panel-title"><i class="bi bi-ticket-perforated me-2"></i><span
+                                th:text="#{admin.coupons.title}">Gestión de Cupones</span></span>
+                    </div>
+                    <button class="btn-nuevo" onclick="openCouponModal()">
+                        <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.coupons.new}">Nuevo Cupón</span>
+                    </button>
+                </div>
+
+                <div class="admin-table-wrap mt-3">
+                    <table class="admin-table" id="couponsTable">
+                        <thead>
+                            <tr>
+                                <th th:text="#{admin.coupons.code}">Código</th>
+                                <th th:text="#{admin.coupons.description}">Descripción</th>
+                                <th th:text="#{admin.coupons.type}">Tipo</th>
+                                <th th:text="#{admin.coupons.value}">Valor</th>
+                                <th th:text="#{admin.coupons.status}">Estado</th>
+                                <th th:text="#{admin.coupons.limit}">Uso (Limite)</th>
+                                <th th:text="#{admin.coupons.validUntil}">Expira</th>
+                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="coupon : ${coupons}">
+                                <td><strong class="text-accent" th:text="${coupon.code}">SUMMER20</strong></td>
+                                <td th:text="${coupon.description ?: '—'}">—</td>
+                                <td>
+                                    <span class="badge"
+                                        th:classappend="${coupon.discountType.name() == 'PERCENTAGE'} ? 'bg-primary' : 'bg-info'"
+                                        th:text="${coupon.discountType.name() == 'PERCENTAGE'} ? #{admin.coupons.percentage} : #{admin.coupons.fixed}">%</span>
+                                </td>
+                                <td class="fw-bold"
+                                    th:text="${coupon.discountType.name() == 'PERCENTAGE'} ? (${#numbers.formatDecimal(coupon.discountValue, 1, 0)} + '%') : (${#numbers.formatDecimal(coupon.discountValue, 1, 2)} + ' ')">
+                                    20%</td>
+                                <td>
+                                    <span class="badge-active" th:classappend="${coupon.active} ? 'yes' : 'no'">
+                                        <span th:if="${coupon.active}" th:text="#{common.yes}">Si</span>
+                                        <span th:unless="${coupon.active}" th:text="#{common.no}">No</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:text="${coupon.timesUsed}">0</span> / <span
+                                        th:text="${coupon.usageLimit ?: ''}"></span>
+                                </td>
+                                <td th:text="${coupon.validUntil != null ? coupon.validUntil : '—'}">—</td>
+                                <td style="text-align:right">
+                                    <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                        <button class="btn-icon" th:title="#{common.edit}" th:data-id="${coupon.id}"
+                                            th:data-code="${coupon.code}" th:data-type="${coupon.discountType}"
+                                            th:data-value="${coupon.discountValue}"
+                                            th:data-desc="${coupon.description ?: ''}" th:data-active="${coupon.active}"
+                                            th:data-limit="${coupon.usageLimit ?: ''}"
+                                            th:data-from="${coupon.validFrom ?: ''}"
+                                            th:data-until="${coupon.validUntil ?: ''}"
+                                            th:data-generic="${coupon.generic}" onclick="openCouponModal(this)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn-icon danger" th:title="#{common.delete}"
+                                            th:onclick="'deleteCoupon(' + ${coupon.id} + ')'">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(coupons)}">
+                                <td colspan="8" class="text-center text-muted py-4" th:text="#{admin.coupons.empty}">No
+                                    hay
+                                    cupones creados.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

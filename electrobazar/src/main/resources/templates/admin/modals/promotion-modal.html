@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+            <div class="modal fade" id="promotionmodal" tabindex="-1" role="dialog" aria-modal="true"
+                aria-labelledby="promotionmodalLabel">
+                <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title fw-bold" id="promotionmodalLabel">
+                                <i class="bi bi-megaphone me-2"></i><span
+                                    th:text="#{admin.promotions.modal.title}">Promoción NxM</span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="promoId">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><span th:text="#{common.name}">Nombre</span>
+                                    <span class="text-danger">*</span></label>
+                                <input type="text" id="promoName" class="form-control"
+                                    th:placeholder="#{admin.promotions.modal.name_placeholder}">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold" th:text="#{admin.promotions.n_value}">Valor
+                                        N (Llevas)</label>
+                                    <input type="number" id="promoNValue" class="form-control" min="1" value="3">
+                                    <small class="text-muted" th:text="#{admin.promotions.n_desc}">Cantidiad total de
+                                        articulos de la promoción.</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold" th:text="#{admin.promotions.m_value}">Valor
+                                        M (Pagas)</label>
+                                    <input type="number" id="promoMValue" class="form-control" min="1" value="2">
+                                    <small class="text-muted" th:text="#{admin.promotions.m_desc}">Cantidiad de articulos
+                                        que se cobran efectivamente.</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.validFrom}">Inicio</label>
+                                    <input type="datetime-local" id="promoFrom" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.validUntil}">Fin</label>
+                                    <input type="datetime-local" id="promoUntil" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.status}">Estado</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="promoActive" checked>
+                                        <label class="form-check-label text-muted small" for="promoActive"
+                                            th:text="#{common.active}">Activo</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Product Restriction Section -->
+                            <div class="mt-2 pt-3" style="border-top: 1px diashed var(--border);">
+                                <label class="form-label small fw-bold"><i class="bi bi-box-seam me-1"></i> <span
+                                        th:text="#{admin.promotions.restrict_products}">Restringir a productos
+                                        (Opcional)</span></label>
+                                <div class="position-relative">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-primary border-border text-muted"><i
+                                                class="bi bi-search"></i></span>
+                                        <input type="text" id="promoProductSearch" class="form-control border-border"
+                                            th:placeholder="#{admin.common.searchproduct.placeholder}"
+                                            autocomplete="off" onfocus="searchPromoProducts(this.value, true)"
+                                            oninput="searchPromoProducts(this.value)">
+                                    </div>
+                                    <div id="promoProductSearchResults"
+                                        class="list-group position-absolute w-100 shadow"
+                                        style="z-index: 2100; display: none; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); background: var(--surface);">
+                                    </div>
+                                </div>
+                                <div id="selectedPromoProducts" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+
+                            <!-- Category Restriction Section -->
+                            <div class="mt-4">
+                                <label class="form-label small fw-bold"><i class="bi bi-tags me-1"></i> <span
+                                        th:text="#{admin.promotions.restrict_categories}">Restringir a categorias
+                                        (Opcional)</span></label>
+                                <div class="position-relative">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-primary border-border text-muted"><i
+                                                class="bi bi-tag"></i></span>
+                                        <input type="text" id="promoCategorySearch" class="form-control border-border"
+                                            th:placeholder="#{admin.inventory.categories.empty}" autocomplete="off"
+                                            onfocus="searchPromoCategories(this.value, true)"
+                                            oninput="searchPromoCategories(this.value)">
+                                    </div>
+                                    <div id="promoCategorySearchResults"
+                                        class="list-group position-absolute w-100 shadow"
+                                        style="z-index: 2100; display: none; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); background: var(--surface);">
+                                    </div>
+                                </div>
+                                <div id="selectedPromoCategories" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"
+                                th:text="#{common.cancel}">Cancelar</button>
+                            <button type="button" class="btn btn-accent px-4 fw-bold text-primary"
+                                onclick="savePromotion()" th:text="#{common.save}">Guardar Promoción</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

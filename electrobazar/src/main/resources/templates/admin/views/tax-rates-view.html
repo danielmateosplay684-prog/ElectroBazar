@@ -1,0 +1,259 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+        <div id="tiposIvaView" style="display: none;">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        th:title="#{admin.common.backtopanel}">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="panel-title"><i class="bi bi-percent me-2"></i><span
+                            th:text="#{admin.taxrates.title}">Gestión de Tipos de IVA</span></span>
+                </div>
+                <button class="btn-nuevo" onclick="openCreateTaxRateModal()">
+                    <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.taxrates.new}">Nuevo Tipo de IVA</span>
+                </button>
+            </div>
+
+            <div class="admin-table-wrap mt-3">
+                <table class="admin-table" id="taxRatesTable">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.description}">Descripción</th>
+                            <th th:text="#{admin.taxrates.iva}">IVA (%)</th>
+                            <th th:text="#{admin.taxrates.re}">RE (%)</th>
+                            <th th:text="#{admin.taxrates.active}">Activo</th>
+                            <th th:text="#{admin.taxrates.validFrom}">Válido Desde</th>
+                            <th th:text="#{admin.taxrates.validTo}">Válido Hasta</th>
+                            <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="tr : ${taxRates}">
+                            <td><strong th:text="${tr.description}">IVA General</strong></td>
+                            <td th:text="${#numbers.formatDecimal(tr.vatRate * 100, 1, 1)} + '%'">21.0%</td>
+                            <td th:text="${#numbers.formatDecimal(tr.reRate * 100, 1, 2)} + '%'">5.20%</td>
+                            <td>
+                                <span class="badge-active" th:classappend="${tr.active} ? 'yes' : 'no'">
+                                    <span th:if="${tr.active}" th:text="#{common.yes}">Si</span>
+                                    <span th:unless="${tr.active}" th:text="#{common.no}">No</span>
+                                </span>
+                            </td>
+                            <td th:text="${tr.validFrom}">2024-01-01</td>
+                            <td th:text="${tr.validTo ?: '—'}">—</td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                    <button class="btn-icon" title="Editar" th:data-id="${tr.id}"
+                                        th:data-description="${tr.description}" th:data-vatrate="${tr.vatRate}"
+                                        th:data-rerate="${tr.reRate}" th:data-active="${tr.active}"
+                                        th:data-validfrom="${tr.validFrom}" th:data-validto="${tr.validTo ?: ''}"
+                                        onclick="openEditTaxRateModal(this)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn-icon danger" title="Eliminar" th:data-id="${tr.id}"
+                                        th:data-description="${tr.description}"
+                                        onclick="deleteTaxRate(this.getAttribute('data-id'), this.getAttribute('data-description'))">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SELECTIVE VAT APPLICATION -->
+            <div class="card mt-5"
+                style="background:var(--secondary); border:1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <div class="card-header border-0 bg-transparent p-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="card-title fw-bold mb-1" style="color: var(--text-main);">
+                                <i class="bi bi-magic me-2 text-accent"></i><span
+                                    th:text="#{admin.taxrates.selective.title}">Aplicación de IVA Selectivo</span>
+                            </h5>
+                            <p class="small text-muted mb-0" th:text="#{admin.taxrates.selective.desc}">Actualiza el IVA
+                                de múltiples productos o categorias completas de una sola vez.</p>
+                        </div>
+                        <div class="badge bg-accent text-primary px-3 py-2 rounded-pill fw-bold"
+                            th:text="#{admin.taxrates.selective.badge}">HERRAMIENTA MASIVA
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-2">
+                    <div class="row g-4">
+                        <!-- Left side: Tax Rate Selector -->
+                        <div class="col-lg-4">
+                            <div class="p-4 rounded-4 h-100"
+                                style="background: var(--surface); border: 1px solid var(--border);">
+                                <label class="form-label fw-bold mb-3" style="color: var(--text-main);"
+                                    th:text="#{admin.taxrates.selective.step1}">1. SELECCIONA EL
+                                    NUEVO IVA</label>
+                                <div class="tax-selector-wrapper">
+                                    <select id="selectiveTaxRateId" class="form-select form-select-lg mb-3"
+                                        style="background: var(--secondary); border-color: var(--border); color: var(--text-main);">
+                                        <option value="" th:text="#{admin.taxrates.selective.choose}"> Elige un tipo
+                                            de IVA </option>
+                                        <option th:each="tr : ${taxRates}" th:if="${tr.active}" th:value="${tr.id}"
+                                            th:text="${tr.description} + ' (' + ${#numbers.formatDecimal(tr.vatRate * 100, 1, 1)} + '%)'">
+                                        </option>
+                                    </select>
+                                    <div class="alert alert-info py-2 px-3 small d-flex align-items-start gap-2"
+                                        style="background: rgba(var(accent-rgb), 0.1); border: 1px solid rgba(var(accent-rgb), 0.2); color: var(--text-main);">
+                                        <i class="bi bi-info-circle-fill text-accent mt-1"></i>
+                                        <span th:text="#{admin.taxrates.selective.info}">Este IVA se aplicará a todos
+                                            los elementos seleccionados a la derecha.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right side: Selection Tabs -->
+                        <div class="col-lg-8">
+                            <div class="p-4 rounded-4"
+                                style="background: var(--surface); border: 1px solid var(--border);">
+                                <label class="form-label fw-bold mb-3" style="color: var(--text-main);"
+                                    th:text="#{admin.taxrates.selective.step2}">2. SELECCIONA
+                                    PRODUCTOS O CATEGORiAS</label>
+
+                                <ul class="nav nav-pills mb-3 gap-2" id="selectiveIvatabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active px-4 py-2 rounded-pill fw-600"
+                                            id="sel-products-tab" data-bs-toggle="pill"
+                                            data-bs-target="#sel-products-pane" type="button" role="tab"
+                                            style="transition: all 0.3s ease;">
+                                            <i class="bi bi-box-seam me-2"></i><span
+                                                th:text="#{admin.taxrates.selective.byproduct}">Por Producto</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link px-4 py-2 rounded-pill fw-600" id="sel-categories-tab"
+                                            data-bs-toggle="pill" data-bs-target="#sel-categories-pane" type="button"
+                                            role="tab" style="transition: all 0.3s ease;">
+                                            <i class="bi bi-grid me-2"></i><span
+                                                th:text="#{admin.taxrates.selective.bycategory}">Por Categoria</span>
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content border-0 p-0" id="selectiveIvatabsContent">
+                                    <!-- Tab: Products -->
+                                    <div class="tab-pane fade show active" id="sel-products-pane" role="tabpanel">
+                                        <div class="search-bar-mini mb-3 d-flex gap-2">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-secondary border-border text-muted"><i
+                                                        class="bi bi-search"></i></span>
+                                                <input type="text" id="selProductSearch"
+                                                    class="form-control form-control-sm bg-secondary border-border text-main"
+                                                    th:placeholder="#{admin.common.search.placeholder}"
+                                                    oninput="filterSelProducts()">
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-secondary"
+                                                    onclick="toggleAllSelProducts(true)"
+                                                    th:text="#{common.all}">Todos</button>
+                                                <button class="btn btn-outline-secondary"
+                                                    onclick="toggleAllSelProducts(false)"
+                                                    th:text="#{common.none}">Ninguno</button>
+                                            </div>
+                                        </div>
+                                        <div id="selProductList" class="custom-scroll"
+                                            style="max-height: 280px; overflow-y: auto; padding-right: 5px;">
+                                            <div th:each="p : ${products}" class="sel-product-item-wrap mb-1"
+                                                th:data-name="${#strings.toLowerCase(p.name)}">
+                                                <div class="rounded hover-surface shadow-sm"
+                                                    style="background: var(--surface); border: 1px solid var(--border); transition: all 0.2s;">
+                                                    <label class="d-flex align-items-center p-2 m-0 w-100"
+                                                        style="cursor: pointer;" th:for="'selProd' + ${p.id}">
+                                                        <input
+                                                            class="form-check-input sel-product-cb me-3 mt-0 flex-shrink-0"
+                                                            type="checkbox" th:value="${p.id}"
+                                                            th:id="'selProd' + ${p.id}" style="margin-left: 5px;">
+                                                        <div
+                                                            class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
+                                                            <span class="fw-500" th:text="${p.name}"
+                                                                style="color: var(--text-main); font-size: 0.85rem;"></span>
+                                                            <span
+                                                                class="badge bg-secondary text-muted rounded-pill small px-2"
+                                                                th:text="'IVA: ' + (${p.taxRate != null ? #numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0) + '%' : '—'})"></span>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                        <!-- Tab: Categories -->
+                                        <div class="tab-pane fade" id="sel-categories-pane" role="tabpanel">
+                                            <div class="mb-3 d-flex justify-content-end gap-2">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleAllSelCategories(true)"
+                                                    th:text="#{common.selectall}">Seleccionar Todas</button>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleAllSelCategories(false)"
+                                                    th:text="#{common.deselectall}">Deseleccionar Todas</button>
+                                            </div>
+                                            <div id="selCategoryList" class="row g-2 custom-scroll"
+                                                style="max-height: 280px; overflow-y: auto;">
+                                                <div th:each="c : ${allCategories}" class="col-md-6 mb-2">
+                                                    <div class="rounded-3 hover-surface shadow-sm overflow-hidden"
+                                                        style="background: var(--secondary); border: 1px solid var(--border); transition: all 0.2s;">
+                                                        <label class="d-flex align-items-center p-3 m-0 w-100 h-100"
+                                                            style="cursor: pointer;" th:for="'selCat' + ${c.id}">
+                                                            <input
+                                                                class="form-check-input sel-category-cb me-3 mt-0 flex-shrink-0"
+                                                                type="checkbox" th:value="${c.id}"
+                                                                th:id="'selCat' + ${c.id}" style="margin-left: 2px;">
+                                                            <div class="flex-grow-1">
+                                                                <span class="fw-600 d-block"
+                                                                    style="color: var(--text-main); line-height: 1.2;"
+                                                                    th:text="${c.name}"></span>
+                                                                <div class="text-muted small fw-normal mt-1"
+                                                                    style="font-size: 0.7rem;"
+                                                                    th:text="#{admin.taxrates.selective.category.info}">
+                                                                    Incluye productos de esta categoria</div>
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="card-footer bg-secondary border-0 p-4 d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            <i class="bi bi-info-circle me-1"></i><span
+                                th:text="#{admin.taxrates.selective.footer.info}">Se
+                                recalcularán los precios de venta de Todas las tarifas.</span>
+                        </div>
+                        <button id="btnApplySelectiveTax" class="btn btn-accent px-5 py-2 fw-bold text-primary shadow"
+                            onclick="applySelectiveTaxRate()">
+                            <i class="bi bi-check-circle-fill me-2"></i><span
+                                th:text="#{admin.taxrates.selective.apply}">PROCESAR CAMBIOS AHORA</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

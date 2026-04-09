@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+            <div id="measurementUnitsView" style="display: none;">
+                <div class="panel-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn-icon"
+                            onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                            th:title="#{admin.common.backtopanel}">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <span class="panel-title"><i class="bi bi-rulers me-2"></i>unidades de Medida</span>
+                    </div>
+                    <button class="btn-nuevo" onclick="openMeasurementUnitmodal()">
+                        <i class="bi bi-plus-lg me-1"></i> <span>Nueva unidad</span>
+                    </button>
+                </div>
+
+                <div class="admin-table-wrap mt-3">
+                    <table class="admin-table" id="measurementUnitsTable">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Simbolo</th>
+                                <th>Decimales</th>
+                                <th>Prompt al Añadir</th>
+                                <th>Activa</th>
+                                <th style="text-align:right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="measurementUnitsTableBody">
+                            <!-- Cargado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

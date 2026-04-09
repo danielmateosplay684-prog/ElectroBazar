@@ -1,0 +1,262 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+            <!-- modal: Crear Tarifa -->
+            <div class="modal fade" id="createTariffmodal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-plus-circle me-2"></i><span th:text="#{admin.tariffs.new}">Nueva Tarifa
+                                    Personalizadia</span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><span th:text="#{common.name}">Nombre</span>
+                                    <span class="text-danger">*</span></label>
+                                <input type="text" id="newTariffName" class="form-control"
+                                    th:placeholder="#{admin.tariffs.name.placeholder}"
+                                    style="text-transform:uppercase;">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><span
+                                        th:text="#{admin.tariffs.discount}">Descuento
+                                        (%)</span> <span class="text-danger">*</span></label>
+                                <input type="number" id="newTariffDiscount" class="form-control" min="0" max="100"
+                                    step="0.5" th:placeholder="#{admin.tariffs.discount.placeholder}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"
+                                    th:text="#{common.description}">Descripción</label>
+                                <input type="text" id="newTariffDescription" class="form-control"
+                                    th:placeholder="#{common.description.placeholder}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.tariffs.color}">Color del
+                                    Distintivo</label>
+                                <div class="d-flex flex-wrap gap-2" id="newTariffColorGrid">
+                                    <div class="color-swatch-p" data-color="#94a3b8" style="background:#94a3b8"
+                                        title="Slate"></div>
+                                    <div class="color-swatch-p" data-color="#60a5fa" style="background:#60a5fa"
+                                        title="Blue"></div>
+                                    <div class="color-swatch-p" data-color="#34d399" style="background:#34d399"
+                                        title="Emerald"></div>
+                                    <div class="color-swatch-p" data-color="#facc15" style="background:#facc15"
+                                        title="Yellow"></div>
+                                    <div class="color-swatch-p" data-color="#f87171" style="background:#f87171"
+                                        title="Red">
+                                    </div>
+                                    <div class="color-swatch-p" data-color="#c084fc" style="background:#c084fc"
+                                        title="Purple"></div>
+                                    <div class="color-swatch-p" data-color="#fb923c" style="background:#fb923c"
+                                        title="Orange"></div>
+                                </div>
+                                <input type="hidden" id="newTariffColor" value="#94a3b8">
+                            </div>
+                            <div id="createTariffError" class="alert alert-danger" style="display:none;"></div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                                th:text="#{common.cancel}">Cancelar</button>
+                            <button type="button" class="btn btn-save" onclick="saveTariff()"
+                                th:text="#{common.save}">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- modal: Aplicar Precios (Matriz) -->
+            <div class="modal fade" id="applyPricesmodal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Confirmar Tarifario Nuevo
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info mb-4"
+                                style="background: rgba(var(accent-rgb), 0.1); border: 1px solid var(--accent); color: var(--text-main);">
+                                <i class="bi bi-info-circle me-2"></i> Se han detectado <strong
+                                    id="pendingChangesCount">0</strong> cambios en el tarifario.
+                                Revisa los cambios y selecciona cuándo quieres que entren en vigor.
+                            </div>
+
+                            <div class="mb-4"
+                                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+                                <table class="table table-diark table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Tarifa</th>
+                                            <th class="text-end">Precio Nuevo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingChangesList">
+                                        <!-- JS items -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Fecha de Aplicación</label>
+                                    <input type="date" id="applyPricesdate" class="form-control"
+                                        th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Hora (opcional)</label>
+                                    <input type="time" id="applyPricesTime" class="form-control" value="00:00">
+                                </div>
+                            </div>
+                            <div class="form-text mt-2 text-muted">Aviso: Si eliges el dia de hoy antes del cierre de
+                                caja,
+                                los precios se aplicarán al momento.</div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-accent" onclick="submitBulkPriceUpdate()"
+                                style="color: #000; font-weight: 700;">
+                                Programar y Finalizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- modal: Historial/Cambios de Precios -->
+            <div class="modal fade" id="priceChangesHistorymodal" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>Planificación de Precios y
+                                Tarifas</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <ul class="nav nav-tabs mb-3" id="priceHistoryTabs">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab"
+                                        data-bs-target="#tabPendingPrices">Cambios Pendientes</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab"
+                                        data-bs-target="#tabPastPrices">Historial
+                                        de Aplicaciones</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content border border-secondary p-3 rounded bg-diark">
+                                <div class="tab-pane fade show active" id="tabPendingPrices">
+                                    <div class="table-responsive">
+                                        <table class="table table-diark table-striped table-hover align-middle mb-0"
+                                            id="tablePendingPrices">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha Programadia</th>
+                                                    <th>Producto</th>
+                                                    <th>Tarifa</th>
+                                                    <th class="text-end">Precio</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- JS items -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="tabPastPrices">
+                                    <div class="table-responsive">
+                                        <table class="table table-diark table-striped table-hover align-middle mb-0"
+                                            id="tablePastPrices">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha Cambio</th>
+                                                    <th>Producto</th>
+                                                    <th>Tarifa</th>
+                                                    <th class="text-end">Precio Antiguo</th>
+                                                    <th class="text-end">Precio Nuevo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- JS items -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- modal: Editar Tarifa -->
+            <div class="modal fade" id="editTariffmodal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-pencil me-2"></i><span th:text="#{admin.tariffs.edit}">Editar
+                                    Tarifa</span>:
+                                <span id="editTariffNameLabel"></span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="editTariffId">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><span
+                                        th:text="#{admin.tariffs.discount}">Descuento
+                                        (%)</span> <span class="text-danger">*</span></label>
+                                <input type="number" id="editTariffDiscount" class="form-control" min="0" max="100"
+                                    step="0.5">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"
+                                    th:text="#{common.description}">Descripción</label>
+                                <input type="text" id="editTariffDescription" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.tariffs.color}">Color del
+                                    Distintivo</label>
+                                <div class="d-flex flex-wrap gap-2" id="editTariffColorGrid">
+                                    <div class="color-swatch-p" data-color="#94a3b8" style="background:#94a3b8"></div>
+                                    <div class="color-swatch-p" data-color="#60a5fa" style="background:#60a5fa"></div>
+                                    <div class="color-swatch-p" data-color="#34d399" style="background:#34d399"></div>
+                                    <div class="color-swatch-p" data-color="#facc15" style="background:#facc15"></div>
+                                    <div class="color-swatch-p" data-color="#f87171" style="background:#f87171"></div>
+                                    <div class="color-swatch-p" data-color="#c084fc" style="background:#c084fc"></div>
+                                    <div class="color-swatch-p" data-color="#fb923c" style="background:#fb923c"></div>
+                                </div>
+                                <input type="hidden" id="editTariffColor" value="">
+                            </div>
+                            <div id="editTariffError" class="alert alert-danger" style="display:none;"></div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                                th:text="#{common.cancel}">Cancelar</button>
+                            <button type="button" class="btn btn-save" onclick="updateTariff()"
+                                th:text="#{common.update}">Actualizar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

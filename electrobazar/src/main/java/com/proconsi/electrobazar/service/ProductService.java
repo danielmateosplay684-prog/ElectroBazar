@@ -9,18 +9,21 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Interface defining operations for product catalog management and stock control.
+ * Interface defining operations for product catalog management and stock
+ * control.
  */
 public interface ProductService {
 
     /**
      * Retrieves all products, including inactive ones.
+     * 
      * @return A list of all Product entities.
      */
     List<Product> findAll();
 
     /**
      * Retrieves a paginated list of all products.
+     * 
      * @param pageable Pagination and sorting criteria.
      * @return A page of products.
      */
@@ -28,24 +31,28 @@ public interface ProductService {
 
     /**
      * Retrieves only products marked as active.
+     * 
      * @return A list of active products.
      */
     List<Product> findAllActive();
 
     /**
      * Retrieves active products with their category information eagerly loaded.
+     * 
      * @return A list of active products with categories.
      */
     List<Product> findAllActiveWithCategory();
 
     /**
      * Retrieves all products with their category information eagerly loaded.
+     * 
      * @return A list of all products with categories.
      */
     List<Product> findAllWithCategory();
 
     /**
      * Retrieves products belonging to a specific category.
+     * 
      * @param categoryId The category ID.
      * @return A list of products in that category.
      */
@@ -53,6 +60,7 @@ public interface ProductService {
 
     /**
      * Searches for products by name.
+     * 
      * @param name The name fragment to search for.
      * @return A list of matching products.
      */
@@ -60,6 +68,7 @@ public interface ProductService {
 
     /**
      * Finds a specific product by its exact name.
+     * 
      * @param name Exact name.
      * @return The found product or null.
      */
@@ -83,6 +92,7 @@ public interface ProductService {
 
     /**
      * Finds a specific product by ID.
+     * 
      * @param id The primary key.
      * @return The found Product entity.
      */
@@ -90,6 +100,7 @@ public interface ProductService {
 
     /**
      * Efficiently fetches multiple products by their IDs.
+     * 
      * @param ids List of product IDs.
      * @return A list of products.
      */
@@ -97,6 +108,7 @@ public interface ProductService {
 
     /**
      * Persists a new product record.
+     * 
      * @param product The entity data.
      * @return The saved Product.
      */
@@ -104,6 +116,7 @@ public interface ProductService {
 
     /**
      * Updates an existing product using a DTO request.
+     * 
      * @param id      The product ID.
      * @param request The updated data in DTO format.
      * @return The updated Product entity.
@@ -112,18 +125,22 @@ public interface ProductService {
 
     /**
      * Performs a soft delete (active = false).
+     * 
      * @param id The product ID.
      */
     void delete(Long id);
 
     /**
-     * Physically removes the product from the database if no constraints prevent it.
+     * Physically removes the product from the database if no constraints prevent
+     * it.
+     * 
      * @param id The product ID.
      */
     void hardDeleteProduct(Long id);
 
     /**
      * Reduces the stock quantity for a product.
+     * 
      * @param productId The ID of the product.
      * @param quantity  Amount to subtract.
      */
@@ -131,6 +148,7 @@ public interface ProductService {
 
     /**
      * Increases the stock quantity for a product.
+     * 
      * @param productId The ID of the product.
      * @param quantity  Amount to add.
      */
@@ -138,6 +156,7 @@ public interface ProductService {
 
     /**
      * Sets the stock to a specific absolute value.
+     * 
      * @param productId The ID of the product.
      * @param quantity  The new stock level.
      */
@@ -145,6 +164,7 @@ public interface ProductService {
 
     /**
      * Retrieves the most sold or most relevant products up to a limit.
+     * 
      * @param limit Maximum number of products to return.
      * @return A list of top products.
      */
@@ -152,12 +172,14 @@ public interface ProductService {
 
     /**
      * Updates all products with a new tax rate.
+     * 
      * @param newTaxRateId The ID of the TaxRate to apply globally.
      */
     void applyNewTaxRate(Long newTaxRateId);
 
     /**
      * Applies a specific tax rate to a subset of products.
+     * 
      * @param productIds List of affected product IDs.
      * @param taxRate    The TaxRate entity to apply.
      */
@@ -165,8 +187,12 @@ public interface ProductService {
 
     /**
      * Recalculates the gross labels for all products associated with a tax rate.
-     * @param taxRateId The tax rate ID.
+     * 
+     * @param taxRateId  The tax rate ID.
      * @param newVatRate The new VAT value.
      */
     void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate);
+
+    Page<Product> findAllWithCategoryPaged(int page, int size);
+
 }

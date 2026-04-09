@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -14,7 +14,7 @@
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
         body {
-            background-color: var(--primary) !important;
+            background-color: var(primary) !important;
             color: var(--text-main) !important;
             font-family: 'Barlow', sans-serif;
         }
@@ -89,7 +89,7 @@
             height: 36px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(--primary);
+            background: var(primary);
             color: var(--text-muted);
             display: inline-flex;
             align-items: center;
@@ -113,7 +113,7 @@
         }
 
         .date-input-custom {
-            background-color: var(--primary) !important;
+            background-color: var(primary) !important;
             border: 1px solid var(--border);
             color: var(--text-main) !important;
             border-radius: 8px;
@@ -140,50 +140,50 @@
                 <p class="text-muted mb-0">Listado histórico de variaciones de precios para esta tarifa.</p>
             </div>
             <div>
-                <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate}}" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de este día
+                <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selecteddate}}" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de este dia
                 </a>
             </div>
         </div>
 
         <div class="history-panel">
-            <!-- Date Pagination & Filter -->
+            <!-- date Pagination & Filter -->
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-4">
                 <div class="d-flex align-items-center gap-1">
                     <div class="pagination-container d-flex align-items-center gap-2">
                         <!-- Primero (más antiguo) -->
-                        <a th:if="${firstDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstDate}}"
+                        <a th:if="${firstdate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstdate}}"
                            class="btn-nav-history" 
-                           th:classappend="${selectedDate.equals(firstDate)} ? 'disabled opacity-50' : ''" title="Primero (más antiguo)">
+                           th:classappend="${selecteddate.equals(firstdate)} ? 'disabled opacity-50' : ''" title="Primero (más antiguo)">
                             <i class="bi bi-chevron-double-left"></i>
                         </a>
 
                         <!-- Anterior -->
-                        <a th:if="${prevDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevDate}}" 
+                        <a th:if="${prevdate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevdate}}" 
                            class="btn-nav-history" title="Anterior">
                             <i class="bi bi-chevron-left"></i>
                         </a>
-                        <button th:if="${prevDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-left"></i></button>
+                        <button th:if="${prevdate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-left"></i></button>
                         
                         <div class="current-date-display mx-1">
                             <i class="bi bi-calendar-event me-2 text-accent"></i>
-                            <span th:text="${#temporals.format(selectedDate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12 Marzo 2026</span>
+                            <span th:text="${#temporals.format(selecteddate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12 Marzo 2026</span>
                         </div>
 
                         <!-- Siguiente -->
-                        <a th:if="${nextDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextDate}}" 
+                        <a th:if="${nextdate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextdate}}" 
                            class="btn-nav-history" title="Siguiente">
                             <i class="bi bi-chevron-right"></i>
                         </a>
-                        <button th:if="${nextDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-right"></i></button>
+                        <button th:if="${nextdate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-right"></i></button>
 
-                        <!-- Último / Hoy (más reciente) -->
+                        <!-- ÚÚltimo / Hoy (más reciente) -->
                         <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}"
                            class="btn btn-sm px-3 fw-bold ms-2" 
-                           th:classappend="${nextDate == null} ? 'btn-accent' : 'btn-outline-secondary'"
+                           th:classappend="${nextdate == null} ? 'btn-accent' : 'btn-outline-secondary'"
                            title="Volver al más reciente">
                             HOY
                         </a>
@@ -191,7 +191,7 @@
                     
                     <div class="ms-4 border-start border-secondary ps-4 d-flex align-items-center gap-2">
                         <label class="small text-muted mb-0"><i class="bi bi-search me-1"></i>Ir a:</label>
-                        <input type="date" id="dateFilter" class="date-input-custom" th:value="${selectedDate}" 
+                        <input type="date" id="dateFilter" class="date-input-custom" th:value="${selecteddate}" 
                                th:onchange="'window.location.href=\'/admin/tariffs/' + ${tariff.id} + '/history?date=\' + this.value'">
                     </div>
                 </div>
@@ -204,10 +204,10 @@
                 </div>
             </div>
 
-            <!-- Error Message if Date Doesn't Exist -->
+            <!-- Error Message if date Doesn't Exist -->
             <div th:if="${!dateExists}" class="alert alert-warning d-flex align-items-center mt-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <div>No hay tarifario registrado para esta fecha específica.</div>
+                <div>No hay tarifario registrado para esta fecha especifica.</div>
             </div>
 
             <div class="admin-table-wrap" th:if="${dateExists}">
@@ -232,26 +232,26 @@
                         <tr th:each="h : ${history}" class="history-row">
                             <td class="py-3">
                                 <div class="fw-bold" th:text="${h.productName}">Producto</div>
-                                <div class="category-pill" th:text="${h.categoryName}">Categoría</div>
+                                <div class="category-pill" th:text="${h.categoryName}">Categoria</div>
                             </td>
                             <td class="text-end text-muted" style="font-family:'Barlow Condensed',sans-serif;" 
-                                th:text="${#numbers.formatDecimal(h.basePrice, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.basePrice, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="text-end text-muted small" 
                                 th:text="${#numbers.formatDecimal(h.discountPercent, 1, 1, 'COMMA') + '%'}"></td>
                             <td class="fw-bold group-start text-end" 
-                                th:text="${#numbers.formatDecimal(h.netPrice, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.netPrice, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="group-start text-center text-muted small" 
                                 th:text="${#numbers.formatDecimal(h.vatRate * 100, 1, 0, 'COMMA') + '%'}"></td>
                             <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.vatAmount, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.vdatamount, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="price-tag text-end" 
-                                th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="group-start text-center text-muted small" 
                                 th:text="${#numbers.formatDecimal(h.reRate * 100, 1, 1, 'COMMA') + '%'}"></td>
                             <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.reAmount, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.reAmount, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="fw-bold text-end" style="color: #3b82f6;"
-                                th:text="${#numbers.formatDecimal(h.priceWithRe, 1, 2, 'COMMA') + ' €'}"></td>
+                                th:text="${#numbers.formatDecimal(h.priceWithRe, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="validity-period group-start">
                                 <div class="d-flex align-items-center mb-1"><i class="bi bi-play-circle me-2 text-success"></i><span th:text="${#temporals.format(h.validFrom, 'dd/MM/yyyy')}"></span></div>
                                 <div th:if="${h.validTo != null}" class="d-flex align-items-center text-muted"><i class="bi bi-stop-circle me-2 text-danger"></i><span th:text="${#temporals.format(h.validTo, 'dd/MM/yyyy')}"></span></div>
@@ -286,3 +286,14 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+

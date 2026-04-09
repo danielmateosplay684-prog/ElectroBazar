@@ -8,19 +8,23 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 /**
  * Repository for {@link Product} entities.
  * Handles the product catalog, stock tracking, and bulk fiscal adjustments.
- * Utilizes FETCH joins to optimize performance for listing and search operations.
+ * Utilizes FETCH joins to optimize performance for listing and search
+ * operations.
  */
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
     /**
-     * Finds active products for the TPV interface, ordered alphabetically (Spanish).
+     * Finds active products for the TPV interface, ordered alphabetically
+     * (Spanish).
      */
     List<Product> findByActiveTrueOrderByNameEsAsc();
 
@@ -53,6 +57,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate WHERE p.active = true ORDER BY p.nameEs ASC")
     List<Product> findAllActiveWithCategory(org.springframework.data.domain.Pageable pageable);
 
+    
+
     /**
      * Lists all products (including inactive ones) with their associations.
      */
@@ -68,7 +74,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     void updateTaxRateForIds(@Param("oldRateIds") List<Long> oldRateIds, @Param("newRate") TaxRate newRate);
 
     /**
-     * Recalculates the gross price (VAT included) for all products belonging to a specific tax rate.
+     * Recalculates the gross price (VAT included) for all products belonging to a
+     * specific tax rate.
      * Required when a VAT rate is modified globally (e.g. from 21% to 23%).
      */
     @Modifying
@@ -82,7 +89,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     /**
      * Atomic stock reduction with safety check to prevent negative inventory.
-     * Returns the number of affected rows (1 if successful, 0 if insufficient stock or not found).
+     * Returns the number of affected rows (1 if successful, 0 if insufficient stock
+     * or not found).
      */
     @Modifying
     @Query("UPDATE Product p SET p.stock = p.stock - :quantity WHERE p.id = :id AND p.stock >= :quantity")
@@ -105,4 +113,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
      * Used for safe deletion of categories without loading all product entities.
      */
     long countByCategoryId(Long categoryId);
+
+    @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate ORDER BY p.nameEs ASC", countQuery = "SELECT COUNT(p) FROM Product p")
+    Page<Product> findAllWithCategoryPaged(Pageable pageable);
 }

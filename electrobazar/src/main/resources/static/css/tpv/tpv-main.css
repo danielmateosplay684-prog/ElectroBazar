@@ -477,7 +477,7 @@
             height: calc(100vh - 56px);
         }
 
-        /* ── SIDEBAR CATEGORÃAS ── */
+        /* ── SIDEBAR CATEGORíAS ── */
         .tpv-sidebar {
             width: var(--sidebar-width);
             background: var(--secondary);

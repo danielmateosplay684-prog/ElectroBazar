@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+    <div class="modal fade" id="schedulePricemodal" tabindex="-1" aria-labelledby="schedulePricemodalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="schedulePricemodalLabel">
+                        <i class="bi bi-calendar-event me-2"></i><span
+                            th:text="#{admin.tempprices.modal.title}">Programar Precio Temporal</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="schedulePriceForm" novalidate>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="spProductSelect"><span
+                                        th:text="#{admin.common.product}">Producto</span> *</label>
+                                <select class="form-select" id="spProductSelect" required>
+                                    <option value="" th:text="#{admin.tempprices.select_product}">— Selecciona un
+                                        producto —</option>
+                                    <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="spPrice"
+                                    th:text="#{admin.common.newprice_required}">Nuevo Precio () *</label>
+                                <input type="number" class="form-control" id="spPrice" step="0.01" min="0.01" required
+                                    placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="spVatRate" th:text="#{admin.common.iva_required}">Tipo de
+                                    IVA *</label>
+                                <select class="form-select" id="spVatRate" required onchange="updateRecargoPreview()">
+                                    <option value="0.21">21%</option>
+                                    <option value="0.10">10%</option>
+                                    <option value="0.04">4%</option>
+                                    <option value="0.02">2%</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="spStartdate"
+                                    th:text="#{admin.common.start_date_required}">Fecha de Inicio *</label>
+                                <input type="datetime-local" class="form-control" id="spStartdate" required>
+                                <small class="text-muted" th:text="#{admin.tempprices.start_date_info}">El precio actual
+                                    se cerrará automáticamente un segundo antes
+                                    de esta fecha.</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="spLabel" th:text="#{admin.common.label}">Etiqueta
+                                    (opcional)</label>
+                                <input type="text" class="form-control" id="spLabel" placeholder="...">
+                            </div>
+                            <div class="col-12">
+                                <div class="p-2 rounded"
+                                    style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);font-size:0.8rem">
+                                    <strong><i class="bi bi-percent me-1 text-warning"></i><span
+                                            th:text="#{admin.crm.re.associated}">Recargo de Equivalencia
+                                            asociado:</span></strong>
+                                    <span id="spRecargoPreview" class="ms-2"
+                                        style="color: var(--text-muted);">...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal"
+                        th:text="#{common.cancel}">Cancelar</button>
+                    <button type="button" class="btn-save" onclick="saveScheduledPrice()">
+                        <i class="bi bi-calendar-check me-1"></i><span th:text="#{admin.tempprices.new}">Programar
+                            Precio</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

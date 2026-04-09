@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="abonosView" style="display:none;">
+        <div class="panel-header">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-cash-coin me-2"></i><span th:text="#{admin.abonos.title}">Gestión de Abonos</span>
+            </span>
+            <button class="btn-nuevo" onclick="openAbonomodal()">
+                <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.abonos.new}">Nuevo Abono</span>
+            </button>
+        </div>
+
+        <div class="filter-bar-custom">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small mb-1" style="color: var(--text-main);">
+                        <i class="bi bi-person-badge me-2"></i><span th:text="#{admin.abonos.search.client}">Buscar por ID de cliente</span>
+                    </label>
+                    <input type="number" id="abonoClienteSearch" class="form-control form-control-sm"
+                        th:placeholder="#{admin.abonos.search.placeholder}"
+                        onkeydown="if(event.key === 'Enter') filterAbonos()">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('abonoClienteSearch').value=''; filterAbonos();">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i><span th:text="#{common.reset}">Restablecer</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table" id="abonosTable">
+                <thead>
+                    <tr>
+                        <th th:text="#{common.id}">ID</th>
+                        <th th:text="#{common.date}">Fecha</th>
+                        <th th:text="#{admin.crm.client_id}">Cliente ID</th>
+                        <th th:text="#{admin.abonos.type}">T. Abono</th>
+                        <th th:text="#{admin.invoices.payment}">M. Pago</th>
+                        <th class="text-end" th:text="#{common.amount}">Importe</th>
+                        <th th:text="#{common.status}">Estado</th>
+                        <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="abonosTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4" th:text="#{admin.abonos.empty}">Introduce un ID de Cliente para buscar sus abonos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

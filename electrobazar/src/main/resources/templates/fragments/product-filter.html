@@ -13,7 +13,7 @@
             <label class="form-label small mb-1" style="color: var(--text-main);"><i class="bi bi-tags me-2"></i><span th:text="#{admin.common.category}">Categoría</span></label>
             <select id="sharedFilterCategory" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
                 <option value="" th:text="#{common.all}">Todas</option>
-                <option th:each="c : ${categories}" th:value="${c.name}" th:text="${c.name}"></option>
+                <option th:each="c : ${allCategories}" th:value="${c.name}" th:text="${c.name}"></option>
             </select>
         </div>
         <!-- Select IVA -->

@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+            <div class="modal fade" id="couponmodal" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-ticket-perforated me-2"></i><span th:text="#{admin.coupons.new}">Nuevo
+                                    Cupón</span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="couponId">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><span
+                                        th:text="#{admin.coupons.code}">Código</span>
+                                    <span class="text-danger">*</span></label>
+                                <input type="text" id="couponCode" class="form-control" placeholder="EJ: PROMO20"
+                                    style="text-transform:uppercase;">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"
+                                    th:text="#{admin.coupons.description}">Descripción</label>
+                                <input type="text" id="couponDesc" class="form-control"
+                                    th:placeholder="#{common.description.placeholder}">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold" th:text="#{admin.coupons.type}">Tipo</label>
+                                    <select id="couponType" class="form-select">
+                                        <option value="PERCENTAGE" th:text="#{admin.coupons.percentage}">Porcentaje (%)
+                                        </option>
+                                        <option value="FIXED_AMOUNT" th:text="#{admin.coupons.fixed}">Importe Fijo ()
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.value}">Valor</label>
+                                    <input type="number" id="couponValue" class="form-control" step="0.01" min="0"
+                                        value="0">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold" th:text="#{admin.coupons.limit}">Limite de
+                                        Uso</label>
+                                    <input type="number" id="couponLimit" class="form-control" min="0" placeholder="">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.status}">Estado</label>
+                                    <div class="d-flex align-items-center gap-4 mt-2">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="couponActive" checked>
+                                            <label class="form-check-label text-muted small" for="couponActive"
+                                                th:text="#{common.active}">Activo</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="couponGeneric" checked>
+                                            <label class="form-check-label text-muted small" for="couponGeneric"
+                                                th:text="#{admin.coupons.generic}">Genérico</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.validFrom}">Inicio</label>
+                                    <input type="datetime-local" id="couponFrom" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold"
+                                        th:text="#{admin.coupons.validUntil}">Fin</label>
+                                    <input type="datetime-local" id="couponUntil" class="form-control">
+                                </div>
+                            </div>
+
+                            <!-- Product Restriction Section -->
+                            <div class="mt-2 pt-3" style="border-top: 1px diashed var(--border);">
+                                <label class="form-label small fw-bold"><i class="bi bi-box-seam me-1"></i> Restringir a
+                                    productos (Opcional)</label>
+
+                                <div class="position-relative">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-primary border-border text-muted"><i
+                                                class="bi bi-search"></i></span>
+                                        <input type="text" id="couponProductSearch" class="form-control border-border"
+                                            placeholder="Busca productos para añadir..." autocomplete="off"
+                                            onfocus="searchCouponProducts(this.value, true)"
+                                            oninput="searchCouponProducts(this.value)">
+                                    </div>
+
+                                    <div id="couponProductSearchResults"
+                                        class="list-group position-absolute w-100 shadow"
+                                        style="z-index: 2000; display: none; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); background: var(--secondary);">
+                                    </div>
+                                </div>
+
+                                <div id="selectedCouponProducts" class="d-flex flex-wrap gap-2 mt-2">
+                                    <!-- Chips for selected products -->
+                                </div>
+                            </div>
+
+                            <!-- Category Restriction Section -->
+                            <div class="mt-4">
+                                <label class="form-label small fw-bold"><i class="bi bi-tags me-1"></i> Restringir a
+                                    categorias (Opcional)</label>
+
+                                <div class="position-relative">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-primary border-border text-muted"><i
+                                                class="bi bi-tag"></i></span>
+                                        <input type="text" id="couponCategorySearch" class="form-control border-border"
+                                            placeholder="Busca categorias para añadir..." autocomplete="off"
+                                            onfocus="searchCouponCategories(this.value, true)"
+                                            oninput="searchCouponCategories(this.value)">
+                                    </div>
+
+                                    <div id="couponCategorySearchResults"
+                                        class="list-group position-absolute w-100 shadow"
+                                        style="z-index: 2000; display: none; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); background: var(--secondary);">
+                                    </div>
+                                </div>
+
+                                <div id="selectedCouponCategories" class="d-flex flex-wrap gap-2 mt-2">
+                                    <!-- Chips for selected categories -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"
+                                th:text="#{common.cancel}">Cancelar</button>
+                            <button type="button" class="btn btn-accent px-4 fw-bold text-primary"
+                                onclick="saveCoupon()" th:text="#{common.save}">Guardar Cupón</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

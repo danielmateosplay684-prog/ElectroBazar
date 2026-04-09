@@ -1,0 +1,167 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="preciosMasivosView" style="display:none">
+        <div class="panel-header mb-4">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-percent me-2"></i><span th:text="#{admin.massiveprices.title}">Actualización Masiva
+                    de Precios</span>
+            </span>
+            <button class="btn btn-accent d-flex align-items-center gap-2" onclick="openIpcUpdateModal()"
+                style="background:var(--accent); color:var(primary); font-weight:600; border:none; padding:8px 16px; border-radius:8px;">
+                <i class="bi bi-graph-up"></i> <span th:text="#{admin.massiveprices.ipc}">Actualización por IPC
+                    (INE)</span>
+            </button>
+        </div>
+
+        <!-- Info box -->
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4"
+            style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--text-main)">
+            <i class="bi bi-info-circle-fill text-info mt-1"></i>
+            <div>
+                <strong th:text="#{admin.massiveprices.info.title}">Precios Masivos:</strong> <span
+                    th:text="#{admin.massiveprices.info.desc}">Selecciona varios productos y aplica un incremento o
+                    decremento
+                    porcentual a todos ellos. También puedes establecer una fecha futura para que los cambios entren
+                    en
+                    vigor automáticamente.</span>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="card" style="background:var(--secondary);border:1px solid var(--border);">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-600" style="color: var(--text-main);"
+                        th:text="#{admin.massiveprices.select_products}">Seleccionar
+                        Productos</label>
+                    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(true)"
+                            th:text="#{common.selectall}">Seleccionar Todos</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(false)"
+                            th:text="#{common.deselectall}">Deseleccionar Todos</button>
+
+                        <!-- Filter by category -->
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <select id="bulkCategoryFilter" class="form-select form-select-sm" style="max-width:180px"
+                                onchange="filterBulkProductList()">
+                                <option value="" th:text="#{admin.massiveprices.allcategories}">Todas las categorias
+                                </option>
+                                <option th:each="c : ${allCategories}" th:value="${c.name}" th:text="${c.name}">
+                                </option>
+                            </select>
+                            <button class="btn btn-sm btn-accent" onclick="selectBulkByCategory()"
+                                style="background:var(--accent); color:var(primary); font-weight:600; border:none; padding:4px 10px; border-radius:6px;"
+                                th:text="#{admin.massiveprices.mark_category}">
+                                Marcar Categoria
+                            </button>
+                        </div>
+
+                        <input type="text" id="bulkProductSearch" class="form-control form-control-sm"
+                            style="max-width:180px" th:placeholder="#{admin.common.searchproduct.placeholder}"
+                            oninput="filterBulkProductList()">
+                    </div>
+                    <div class="bulk-product-list" id="bulkProductList"
+                        style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:15px">
+                        <style>
+                            #bulkProductList .form-check-label {
+                                color: var(--text-main) !important;
+                            }
+                        </style>
+                        <div class="text-center py-3" style="color: var(--text-muted);"
+                            th:text="#{admin.massiveprices.loading}">Cargando productos...</div>
+                    </div>
+                    <small id="selectedCountLabel" style="color: var(--text-muted);">0 <span
+                            th:text="#{admin.massiveprices.selected_count}">productos
+                            seleccionados</span></small>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-600" style="color: var(--text-main);"
+                            th:text="#{admin.massiveprices.change_type}">Tipo de Cambio</label>
+                        <select class="form-select" id="bulkPriceType" onchange="toggleBulkPriceFields()">
+                            <option value="percentage" th:text="#{admin.common.percentage}">Porcentaje (%)</option>
+                            <option value="fixed" th:text="#{admin.common.fixed_amount}">Cantidiad Fija ()</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600" id="bulkPriceValueLabel" style="color: var(--text-main);"
+                            th:text="#{admin.common.percentage}">Porcentaje (%)</label>
+                        <input type="number" class="form-control" id="bulkPriceValue" step="0.01"
+                            th:placeholder="#{admin.massiveprices.placeholder.percentage}">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600" style="color: var(--text-main);"
+                        th:text="#{admin.massiveprices.effective_date}">Fecha de Vigencia
+                        (opcional)</label>
+                    <input type="datetime-local" class="form-control" id="bulkEffectivedate"
+                        style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
+                    <small style="color: var(--text-muted);" th:text="#{admin.massiveprices.effective_date.info}">Dejar
+                        vacio para aplicar
+                        inmedatamente</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600" style="color: var(--text-main);"
+                        th:text="#{admin.common.label}">Etiqueta (opcional)</label>
+                    <input type="text" class="form-control" id="bulkLabel"
+                        th:placeholder="#{admin.massiveprices.placeholder.label}"
+                        style="color: var(--text-main); background-color: var(--surface); border-color: var(--border);">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600" style="color: var(--text-main);"
+                        th:text="#{admin.massiveprices.select_tariffs}">Seleccione las tarifas a las
+                        que aplicar este incremento</label>
+                    <div class="p-3 rounded" style="background:var(--surface); border:1px solid var(--border);">
+                        <div class="form-check mb-2" th:each="t : ${tariffs}" th:if="${t.active}">
+                            <input class="form-check-input tariff-bulk-checkbox" type="checkbox" th:value="${t.id}"
+                                th:id="'bulkTariff_' + ${t.id}" checked>
+                            <label class="form-check-label" th:for="'bulkTariff_' + ${t.id}" th:text="${t.name}"
+                                style="color: var(--text-main);">Nombre Tarifa</label>
+                        </div>
+                        <div th:if="${tariffs == null or tariffs.isEmpty()}" class="text-muted small">No hay tarifas
+                            configuradias.</div>
+                    </div>
+                </div>
+
+                <button class="btn-nuevo" onclick="applyBulkPriceUpdate()">
+                    <i class="bi bi-check-lg"></i> <span th:text="#{admin.massiveprices.apply}">Aplicar
+                        Cambio</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="bulkResults" class="mt-4" style="display:none">
+            <div class="alert alert-success d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill"></i>
+                <span id="bulkResultsText"></span>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

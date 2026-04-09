@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="workersView" style="display:none">
+        <div class="panel-header">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-people me-2"></i><span th:text="#{admin.workers.title}">Gestion de
+                    Trabajadores</span>
+            </span>
+            <button class="btn-nuevo" onclick="openWorkerModal()">
+                <i class="bi bi-plus-lg"></i> <span th:text="#{admin.workers.new}">Nuevo Trabajador</span>
+            </button>
+        </div>
+
+        <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-search me-2"></i><span th:text="#{admin.workers.search}">Buscar
+                            trabajador</span></label>
+                    <input type="text" id="workerFilterName" class="form-control form-control-sm"
+                        th:placeholder="#{admin.workers.search.placeholder}" oninput="filterWorkers()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-shield-lock me-2"></i><span th:text="#{common.role}">Rol</span></label>
+                    <select id="workerFilterRole" class="form-select form-select-sm" onchange="filterWorkers()">
+                        <option value="" th:text="#{admin.workers.role.any}">Cualquier Rol</option>
+                        <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}"></option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-check-circle me-2"></i><span th:text="#{common.status}">Estado</span></label>
+                    <select id="workerFilterStatus" class="form-select form-select-sm" onchange="filterWorkers()">
+                        <option value="" th:text="#{common.all}">Todos</option>
+                        <option value="true" th:text="#{common.active}">Activos</option>
+                        <option value="false" th:text="#{common.inactive}">Inactivos</option>
+                    </select>
+                </div>
+                <!-- Ordenamiento -->
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-sort-down me-1"></i>Orden</label>
+                    <select id="workerFilterSortBy" class="form-select form-select-sm" onchange="filterWorkers()">
+                        <option value="username">Usuario</option>
+                        <option value="id">ID</option>
+                        <option value="active">Estado</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                    <select id="workerFilterSortDir" class="form-select form-select-sm" onchange="filterWorkers()">
+                        <option value="asc"> Asc</option>
+                        <option value="desc"> Desc</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetWorkerFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> <span th:text="#{common.reset}">Reset</span>
+                    </button>
+                </div>
+            </div>
+            <div id="workerCountLabel" class="small mt-2" style="color: var(--text-muted);"
+                th:text="#{admin.workers.count.all}">
+                Mostrando Todas las fichas de trabajadores.
+            </div>
+        </div>
+
+        <div class="admin-table-wrap mb-5">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th th:text="#{common.username}">Nombre de usuario</th>
+                        <th th:text="#{common.role}">Rol</th>
+                        <th th:text="#{common.status}">Estado</th>
+                        <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="w : ${workers}" class="worker-row" th:data-username="${w.username}"
+                        th:data-active="${w.active}" th:data-role-id="${w.role != null ? w.role.id : ''}">
+                        <td><strong th:text="${w.username}"></strong></td>
+                        <td>
+                            <span th:if="${w.role != null}" class="badge"
+                                style="font-size:0.75rem; background-color: rgba(6,182,212,0.18); color: #22d3ee; border: 1px solid rgba(6,182,212,0.3);"
+                                th:text="${w.role.name}"></span>
+                            <span th:unless="${w.role != null}" class="small" style="color: var(--text-muted);"
+                                th:text="#{admin.workers.norole}">Sin
+                                rol</span>
+                        </td>
+                        <td>
+                            <span th:if="${w.active}" class="badge bg-success" th:text="#{common.active}">Activo</span>
+                            <span th:unless="${w.active}" class="badge bg-danger"
+                                th:text="#{common.inactive}">Inactivo</span>
+                        </td>
+                        <!-- Permissions column removed -->
+                        <td style="text-align:right">
+                            <button class="btn-icon" th:data-id="${w.id}" th:data-username="${w.username}"
+                                th:data-active="${w.active}" th:data-role="${w.role != null ? w.role.id : ''}"
+                                th:title="#{common.edit}"
+                                onclick="openWorkerModal(this.getAttribute('data-id'), this.getAttribute('data-username'), this.getAttribute('data-active') === 'true', null, this.getAttribute('data-role'))">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" th:data-id="${w.id}" th:title="#{common.delete}"
+                                onclick="deleteWorker(this.getAttribute('data-id'))">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(workers)}">
+                        <td colspan="5" class="text-center py-4" style="color: var(--text-muted);">No hay
+                            trabajadores registrados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+    <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="rolemodalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rolemodalLabel" th:text="#{admin.role.modal.title}">Rol</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="roleForm" novalidate>
+                        <input type="hidden" id="roleId">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" th:text="#{admin.common.name_required}">Nombre del rol
+                                    *</label>
+                                <input type="text" class="form-control" id="roleName" required
+                                    th:placeholder="#{admin.role.placeholder.name}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" th:text="#{common.description}">Descripción</label>
+                                <input type="text" class="form-control" id="roleDescription" placeholder="...">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" th:text="#{admin.common.permissions}">Permisos</label>
+                                <div class="p-3 rounded border" id="rolePermissionsContainer">
+                                    <!-- Cargado dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" style="flex:1"
+                        th:text="#{common.cancel}">Cancelar</button>
+                    <button type="button" class="btn btn-save" onclick="saveRole()" style="flex:1"
+                        th:text="#{common.save}">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

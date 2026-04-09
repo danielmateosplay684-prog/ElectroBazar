@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+            <div id="promotionsView" style="display: none;">
+                <div class="panel-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn-icon"
+                            onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                            th:title="#{admin.common.backtopanel}">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <span class="panel-title"><i class="bi bi-megaphone me-2"></i><span
+                                th:text="#{admin.promotions.title}">Promociones Automáticas NxM</span></span>
+                    </div>
+                    <button class="btn-nuevo" onclick="openPromotionModal()">
+                        <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.promotions.new}">Nueva
+                            Promoción</span>
+                    </button>
+                </div>
+
+                <div class="admin-table-wrap mt-3">
+                    <table class="admin-table" id="promotionsTable">
+                        <thead>
+                            <tr>
+                                <th th:text="#{common.name}">Nombre</th>
+                                <th th:text="#{admin.promotions.rule}">Regla NxM</th>
+                                <th th:text="#{admin.coupons.status}">Estado</th>
+                                <th th:text="#{admin.coupons.validFrom}">Válido Desde</th>
+                                <th th:text="#{admin.coupons.validUntil}">Válido Hasta</th>
+                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="promo : ${promotions}">
+                                <td><strong class="text-accent" th:text="${promo.name}">PROMO</strong></td>
+                                <td><span class="badge bg-primary"
+                                        th:text="${promo.nValue} + 'x' + ${promo.mValue}">3x2</span></td>
+                                <td>
+                                    <span class="badge-active" th:classappend="${promo.active} ? 'yes' : 'no'">
+                                        <span th:if="${promo.active}" th:text="#{common.yes}">Si</span>
+                                        <span th:unless="${promo.active}" th:text="#{common.no}">No</span>
+                                    </span>
+                                </td>
+                                <td th:text="${promo.validFrom != null ? promo.validFrom : '—'}">—</td>
+                                <td th:text="${promo.validUntil != null ? promo.validUntil : '—'}">—</td>
+                                <td style="text-align:right">
+                                    <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                        <button class="btn-icon" th:title="#{common.edit}" th:data-id="${promo.id}"
+                                            th:data-name="${promo.name}" th:data-nvalue="${promo.nValue}"
+                                            th:data-mvalue="${promo.mValue}" th:data-active="${promo.active}"
+                                            th:data-from="${promo.validFrom ?: ''}"
+                                            th:data-until="${promo.validUntil ?: ''}"
+                                            onclick="openPromotionModal(this)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn-icon danger" th:title="#{common.delete}"
+                                            th:onclick="'deletePromotion(' + ${promo.id} + ')'">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(promotions)}">
+                                <td colspan="6" class="text-center text-muted py-4" th:text="#{admin.promotions.empty}">
+                                    No hay promociones configuradias.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

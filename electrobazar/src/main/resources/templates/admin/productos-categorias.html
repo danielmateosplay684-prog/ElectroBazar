@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -45,7 +45,7 @@
             <li class="nav-item">
                 <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories-pane"
                     type="button">
-                    <i class="bi bi-tags"></i> Categorías
+                    <i class="bi bi-tags"></i> Categorias
                 </button>
             </li>
         </ul>
@@ -87,7 +87,7 @@
                                 <th>IVA</th>
                                 <th style="text-align: right;">Precio</th>
                                 <th>Stock</th>
-                                <th>Categoría</th>
+                                <th>Categoria</th>
                                 <th>Estado</th>
                                 <th style="text-align:right">Acciones</th>
                             </tr>
@@ -115,7 +115,7 @@
                                         style="color:var(--text-muted)">—</span>
                                 </td>
                                 <td class="fw-bold" style="color: #000; text-align: right;"
-                                    th:text="${#numbers.formatDecimal(p.price, 1, (p.price.stripTrailingZeros().scale() < 2 ? 2 : p.price.stripTrailingZeros().scale()), 'COMMA')} + ' €'">
+                                    th:text="${#numbers.formatDecimal(p.price, 1, (p.price.stripTrailingZeros().scale() < 2 ? 2 : p.price.stripTrailingZeros().scale()), 'COMMA')} + ' '">
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column align-items-center" style="gap: 0.2rem;">
@@ -149,7 +149,41 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="productsPagination"></div>
+
+                <input type="hidden" id="totalPages" th:value="${productsPage.totalPages}">
+                <input type="hidden" id="currentPage" th:value="${productsPage.number}">
+                <input type="hidden" id="pageSize" th:value="${pageSize}">
+
+                <div class="pagination-wrap mt-3" th:if="${productsPage != null && productsPage.totalPages > 0}">
+                    <button class="pagination-btn" th:onclick="|goToPage(0)|" th:disabled="${productsPage.number == 0}"
+                        title="Primera página">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+
+                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.number - 1})|"
+                        th:disabled="${productsPage.number == 0}" title="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <div class="pagination-jump">
+                        <input type="number" id="pageInput" min="1" th:max="${productsPage.totalPages}"
+                            th:value="${productsPage.number + 1}"
+                            onkeydown="if(event.key === 'Enter') jumpToPage(this.value)" title="Ir a página">
+                        <span class="small text-muted">
+                            de <span th:text="${productsPage.totalPages}">1</span>
+                        </span>
+                    </div>
+
+                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.number + 1})|"
+                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" title="Página siguiente">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+
+                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.totalPages - 1})|"
+                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" title="ÚÚltima página">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- 2. CATEGORIAS -->
@@ -160,10 +194,10 @@
                             style="text-decoration:none;" title="Volver">
                             <i class="bi bi-arrow-left"></i>
                         </a>
-                        Gestión de Categorías
+                        Gestión de Categorias
                     </h5>
                     <button class="btn-nuevo" onclick="openCategoryModal()">
-                        <i class="bi bi-plus-lg"></i> Nueva Categoría
+                        <i class="bi bi-plus-lg"></i> Nueva Categoria
                     </button>
                 </div>
 
@@ -171,7 +205,7 @@
                     style="background: var(--surface); border: 1px solid var(--border);">
                     <div class="row g-2">
                         <div class="col-md-10">
-                            <label class="form-label small text-muted mb-1">Buscar categoría</label>
+                            <label class="form-label small text-muted mb-1">Buscar categoria</label>
                             <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
                                 placeholder="Nombre o descripción..." oninput="debounceSharedFilter()">
                         </div>
@@ -193,7 +227,7 @@
                                 <th style="text-align:right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="categoriesTableBody">
                             <tr th:each="c : ${categories}">
                                 <td class="fw-bold" th:text="${c.name}"></td>
                                 <td th:text="${c.description}"></td>
@@ -217,17 +251,53 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="categoriesPagination"></div>
+
+                <input type="hidden" id="categoriesTotalPages" th:value="${categoriesPage.totalPages}">
+                <input type="hidden" id="categoriesCurrentPage" th:value="${categoriesPage.number}">
+                <input type="hidden" id="categoriesPageSize" th:value="${categoriesPageSize}">
+
+                <div class="pagination-wrap mt-3" th:if="${categoriesPage != null && categoriesPage.totalPages > 0}">
+                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(0)|"
+                        th:disabled="${categoriesPage.number == 0}" title="Primera página">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+
+                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.number - 1})|"
+                        th:disabled="${categoriesPage.number == 0}" title="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <div class="pagination-jump">
+                        <input type="number" id="categoriesPageInput" min="1" th:max="${categoriesPage.totalPages}"
+                            th:value="${categoriesPage.number + 1}"
+                            onkeydown="if(event.key === 'Enter') jumpToCategoriesPage(this.value)" title="Ir a página">
+                        <span class="small text-muted">
+                            de <span th:text="${categoriesPage.totalPages}">1</span>
+                        </span>
+                    </div>
+
+                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.number + 1})|"
+                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}"
+                        title="Página siguiente">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+
+                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.totalPages - 1})|"
+                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}" title="ÚÚltima página">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
             </div>
+
         </div>
     </div>
 
-    <!-- ── MODAL PRODUCTO ── -->
+    <!-- modal PRODUCTO -->
     <div class="modal fade" id="productModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="productModalLabel">Producto</h5>
+                    <h5 class="modal-title" id="productmodalLabel">Producto</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -257,14 +327,14 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Categoría</label>
+                        <label class="form-label">Categoria</label>
                         <select id="productCategory" class="form-select">
                             <option value="">Selecciona...</option>
-                            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+                            <option th:each="c : ${allCategories}" th:value="${c.id}" th:text="${c.name}"></option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Unidad de Medida</label>
+                        <label class="form-label">unidad de Medida</label>
                         <select id="productMeasurementUnit" class="form-select">
                             <option value="">Selecciona...</option>
                         </select>
@@ -287,18 +357,18 @@
         </div>
     </div>
 
-    <!-- ── MODAL CATEGORÃA ── -->
+    <!-- modal CATEGORA -->
     <div class="modal fade" id="categoryModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="categoryModalLabel">Categoría</h5>
+                    <h5 class="modal-title" id="categorymodalLabel">Categoria</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="categoryId">
                     <div class="mb-3">
-                        <label class="form-label">Nombre de la Categoría</label>
+                        <label class="form-label">Nombre de la Categoria</label>
                         <input type="text" id="categoryName" class="form-control" autocomplete="off">
                     </div>
                     <div class="mb-3">
@@ -307,7 +377,7 @@
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="categoryActive">
-                        <label class="form-check-label" for="categoryActive">Categoría Activa</label>
+                        <label class="form-check-label" for="categoryActive">Categoria Activa</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -335,17 +405,17 @@
     <script th:src="@{/js/shared/inventory-filter.js}"></script>
     <script th:src="@{/js/admin/admin-productos.js}"></script>
     <script th:inline="javascript">
-        /*<![CDATA[*/
+        /*<!-- [Cdata[*/
         window.sharedInventoryI18n = {
             lowStock: /*[[#{admin.inventory.filter.stock.low}]]*/ 'Stock Bajo',
-            yes: /*[[#{common.yes}]]*/ 'Sí',
+            yes: /*[[#{common.yes}]]*/ 'Si',
             no: /*[[#{common.no}]]*/ 'No',
             noItems: /*[[#{admin.inventory.products.empty}]]*/ 'No hay productos registrados',
-            noCats: /*[[#{admin.inventory.categories.empty}]]*/ 'No hay categorías registradas',
+            noCats: /*[[#{admin.inventory.categories.empty}]]*/ 'No hay categorias registradias',
             actions_edit: /*[[#{common.edit}]]*/ 'Editar',
             actions_delete: /*[[#{common.delete}]]*/ 'Eliminar'
         };
-        /*]]>*/
+        /*]] -->*/
 
         function getSharedInvLocale() {
             try {
@@ -373,7 +443,7 @@
                 products.forEach(p => {
                     const name = isEn && p.nameEn ? p.nameEn : (p.nameEs || p.name);
                     const description = isEn && p.descriptionEn ? p.descriptionEn : (p.descriptionEs || p.description);
-                    const formattedPrice = (p.price || 0).toFixed(2) + ' €';
+                    const formattedPrice = (p.price || 0).toFixed(2) + ' ';
                     const stockStyle = p.stock < 5 ? 'fw-bold text-danger' : '';
                     const badgeLowStock = p.stock < 5 ? `<span class="badge-stock-low" style="font-size: 0.7rem;">${sharedInventoryI18n.lowStock}</span>` : '';
 
@@ -433,7 +503,82 @@
                 row.style.display = matchesIva ? '' : 'none';
             });
         }
+        function getTotalPages() {
+            const el = document.getElementById('totalPages');
+            return el ? parseInt(el.value, 10) || 1 : 1;
+        }
+
+        function getPageSize() {
+            const el = document.getElementById('pageSize');
+            return el ? parseInt(el.value, 10) || 25 : 25;
+        }
+
+        function goToPage(page) {
+            const totalPages = getTotalPages();
+
+            if (page < 0) page = 0;
+            if (page >= totalPages) page = totalPages - 1;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', page);
+            url.searchParams.set('size', getPageSize());
+            window.location.href = url.toString();
+        }
+
+        function jumpToPage(value) {
+            let page = parseInt(value, 10);
+            const totalPages = getTotalPages();
+
+            if (isNaN(page)) return;
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            goToPage(page - 1);
+        }
+        function getCategoriesTotalPages() {
+            const el = document.getElementById('categoriesTotalPages');
+            return el ? parseInt(el.value, 10) || 1 : 1;
+        }
+
+        function getCategoriesPageSize() {
+            const el = document.getElementById('categoriesPageSize');
+            return el ? parseInt(el.value, 10) || 25 : 25;
+        }
+
+        function goToCategoriesPage(page) {
+            const totalPages = getCategoriesTotalPages();
+
+            if (page < 0) page = 0;
+            if (page >= totalPages) page = totalPages - 1;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('categoriesPage', page);
+            url.searchParams.set('categoriesSize', getCategoriesPageSize());
+            window.location.href = url.toString();
+        }
+
+        function jumpToCategoriesPage(value) {
+            let page = parseInt(value, 10);
+            const totalPages = getCategoriesTotalPages();
+
+            if (isNaN(page)) return;
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            goToCategoriesPage(page - 1);
+        }
+
     </script>
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+

@@ -29,9 +29,11 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.springframework.data.domain.PageRequest;
 
 /**
  * Implementation of {@link SaleService}.
@@ -77,6 +79,19 @@ public class SaleServiceImpl implements SaleService {
             categories.put((String) row[0], (BigDecimal) row[1]);
         }
 
+        List<Object[]> hourlyData = saleRepository.getHourlyRevenue(from, to);
+        Map<Integer, BigDecimal> hourly = new TreeMap<>();
+        for (Object[] row : hourlyData) {
+            hourly.put(((Number) row[0]).intValue(), (BigDecimal) row[1]);
+        }
+
+        List<Object[]> topProdsData = saleRepository.getTopProducts(
+            from, to, PageRequest.of(0, 5));
+        Map<String, BigDecimal> topProds = new LinkedHashMap<>();
+        for (Object[] row : topProdsData) {
+            topProds.put((String) row[0], (BigDecimal) row[1]);
+        }
+
         return AnalyticsSummaryDTO.builder()
                 .totalSales(summary.getTotalSalesCount())
                 .totalRevenue(summary.getTotalSalesAmount())
@@ -88,6 +103,15 @@ public class SaleServiceImpl implements SaleService {
                 .lowStockCount(productService.findAll().stream().filter(p -> p.getStock().compareTo(new BigDecimal("5")) < 0).count())
                 .revenueTrend(trend)
                 .categoryDistribution(categories)
+                .averageTicket(summary.getTotalSalesCount() > 0
+                    ? summary.getTotalSalesAmount().divide(
+                        BigDecimal.valueOf(summary.getTotalSalesCount()), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO)
+                .cancellationRate(summary.getTotalSalesCount() > 0
+                    ? (double) summary.getTotalCancelledCount() / summary.getTotalSalesCount() * 100
+                    : 0.0)
+                .hourlyTrend(hourly)
+                .topProducts(topProds)
                 .build();
     }
 

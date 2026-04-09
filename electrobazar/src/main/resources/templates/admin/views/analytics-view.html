@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="analyticsView" style="display:none">
+        <div class="panel-header mb-4">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-graph-up me-2"></i><span th:text="#{admin.analytics.title}">Análisis de
+                    Negocio</span>
+            </span>
+            <div class="d-flex gap-2 align-items-center">
+                <select id="analyticsPeriod" class="form-select form-select-sm" style="width: 180px;"
+                    onchange="onAnalyticsPeriodChange()">
+                    <option value="todiay" th:text="#{common.todiay}">Hoy</option>
+                    <option value="7diays" selected th:text="#{admin.analytics.7diays}">ÚÚltimos 7 dias</option>
+                    <option value="1month" th:text="#{admin.analytics.1month}">ÚÚltimo mes</option>
+                    <option value="6months" th:text="#{admin.analytics.6months}">ÚÚltimos 6 meses</option>
+                    <option value="1year" th:text="#{admin.analytics.1year}">ÚÚltimo año</option>
+                    <option value="custom" th:text="#{admin.analytics.custom}">Dia Especifico</option>
+                    <option value="all" th:text="#{admin.analytics.all}">Desde siempre</option>
+                </select>
+                <input type="date" id="analyticsdate" class="form-control form-control-sm"
+                    style="width: 150px; display: none;" onchange="updateAnalytics()">
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-2">
+                <div class="stats-card">
+                    <div class="stats-icon"><i class="bi bi-currency-euro"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="statTodiayRevenue">0.00 </div>
+                        <div class="stats-label" id="statRevenueLabel" th:text="#{common.sales}">Ventas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card">
+                    <div class="stats-icon"><i class="bi bi-cart-check"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="statTodiaySales">0</div>
+                        <div class="stats-label" id="statSalesLabel" th:text="#{common.orders}">Pedidos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card">
+                    <div class="stats-icon"><i class="bi bi-box-seam"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="statTopProduct">—</div>
+                        <div class="stats-label" th:text="#{admin.analytics.topproduct}">Top Producto</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card"
+                    onclick="switchView('productsView', document.querySelector('[onclick*=\'productsView\']'))"
+                    style="cursor:pointer">
+                    <div class="stats-icon"><i class="bi bi-exclamation-triangle text-danger"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="statLowStock">0</div>
+                        <div class="stats-label" th:text="#{admin.inventory.filters.lowstock}">Stock Bajo</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card">
+                    <div class="stats-icon"><i class="bi bi-receipt"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="stdatavgTicket">0.00 </div>
+                        <div class="stats-label">Ticket Medio</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card">
+                    <div class="stats-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
+                    <div class="stats-data">
+                        <div class="stats-value" id="statCancellationRate">0.0%</div>
+                        <div class="stats-label">Tasa Devoluciónes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-8">
+                <div class="chart-container-p">
+                    <h6 class="mb-4 fw-bold" id="salesChartTitle"><i class="bi bi-graph-up me-2"></i><span
+                            th:text="#{admin.analytics.trend.7diays}">Tendencia de
+                            Ventas (ÚÚltimos 7 dias)</span>
+                    </h6>
+                    <canvas id="salesChart" height="120"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container-p">
+                    <h6 class="mb-4 fw-bold"><i class="bi bi-pie-chart me-2"></i><span
+                            th:text="#{admin.analytics.salesbycategory}">Ventas por Categoria</span></h6>
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4 mt-1 mb-4">
+            <div class="col-md-8">
+                <div class="chart-container-p">
+                    <h6 class="mb-4 fw-bold">Ventas por Hora del Dia</h6>
+                    <canvas id="hourlyChart" height="120"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container-p">
+                    <h6 class="mb-4 fw-bold">Top 5 Productos</h6>
+                    <canvas id="topProductsChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

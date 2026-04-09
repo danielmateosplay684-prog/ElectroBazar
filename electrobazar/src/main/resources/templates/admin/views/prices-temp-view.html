@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="preciosTempView" style="display:none">
+        <div class="panel-header mb-4">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-calendar-event me-2"></i><span th:text="#{admin.prices.title}">Gestión de Precios
+                    Temporales</span>
+            </span>
+            <button class="btn-nuevo" onclick="openSchedulePriceModal()">
+                <i class="bi bi-plus-lg"></i> <span th:text="#{admin.prices.schedule}">Programar Precio</span>
+            </button>
+        </div>
+
+        <!-- Info box -->
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4"
+            style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--text-main)">
+            <i class="bi bi-info-circle-fill text-info mt-1"></i>
+            <div>
+                <strong th:text="#{admin.prices.info.title}">Sistema de Precios Temporales:</strong> <span
+                    th:text="#{admin.prices.info.text}">Programa cambios de precio futuros para cualquier
+                    producto. Al programar un nuevo precio, el precio actual se cerrará automáticamente un segundo
+                    antes
+                    de que entre en vigor el nuevo. El sistema aplica caché para optimizar el rendimiento.</span>
+            </div>
+        </div>
+
+        <!-- Tabs: Precios Futuros / Buscar Historial -->
+        <ul class="nav nav-tabs mb-3" id="preciosTabs">
+            <li class="nav-item">
+                <button class="nav-link active" id="tabFuturos" onclick="showPreciosTab('futuros')">
+                    <i class="bi bi-clock me-1"></i><span th:text="#{admin.prices.scheduled.tab}">Precios
+                        Programados</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="tabHistorial" onclick="showPreciosTab('historial')">
+                    <i class="bi bi-search me-1"></i><span th:text="#{admin.prices.history.tab}">Historial por
+                        Producto</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab: Futuros -->
+        <div id="preciosTabFuturos">
+            <div class="filter-bar mb-3 p-4 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-search me-2"></i><span th:text="#{admin.prices.search.product}">Buscar
+                                por producto</span></label>
+                        <input type="text" id="futurePriceFilterSearch" class="form-control form-control-sm"
+                            th:placeholder="#{admin.inventory.search.placeholder}" oninput="filterFuturePrices()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-sort-down me-1"></i>Orden</label>
+                        <select id="futurePriceSortBy" class="form-select form-select-sm"
+                            onchange="filterFuturePrices()">
+                            <option value="startDate">Fecha Inicio</option>
+                            <option value="price">Precio Bruto</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                        <select id="futurePriceSortDir" class="form-select form-select-sm"
+                            onchange="filterFuturePrices()">
+                            <option value="asc"> Asc</option>
+                            <option value="desc"> Desc</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFuturePriceFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span
+                                th:text="#{common.reset}">Reset</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="tableFuturesPrices">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.product}">Producto</th>
+                            <th th:text="#{common.price.euro}">Precio ()</th>
+                            <th th:text="#{admin.inventory.tax}">IVA</th>
+                            <th th:text="#{common.start}">Inicio</th>
+                            <th th:text="#{common.end}">Fin</th>
+                            <th th:text="#{common.label}">Etiqueta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="futurePricesBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <span class="spinner-border spinner-border-sm me-2"></span><span
+                                    th:text="#{common.loading}">Cargando...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: Historial -->
+        <div id="preciosTabHistorial" style="display:none">
+            <div class="filter-bar mb-3 p-4 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-3">
+                    <div class="col-md-10">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-box-seam me-2"></i><span
+                                th:text="#{common.product}">Producto</span></label>
+                        <select class="form-select form-select-sm" id="historialProductSelect"
+                            onchange="loadPriceHistory()">
+                            <option value="" th:text="#{admin.prices.select.product}">— Selecciona un producto —
+                            </option>
+                            <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100"
+                            onclick="document.getElementById('historialProductSelect').value=''; loadPriceHistory();">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span
+                                th:text="#{common.reset}">Reset</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.price.euro}">Precio ()</th>
+                            <th th:text="#{admin.inventory.tax}">IVA</th>
+                            <th th:text="#{common.start}">Inicio</th>
+                            <th th:text="#{common.end}">Fin</th>
+                            <th th:text="#{common.label}">Etiqueta</th>
+                            <th th:text="#{admin.prices.variation}">Variación</th>
+                            <th th:text="#{common.status}">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="priceHistoryBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted"
+                                th:text="#{admin.prices.history.select.prompt}">Selecciona un producto para ver su
+                                historial de precios.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

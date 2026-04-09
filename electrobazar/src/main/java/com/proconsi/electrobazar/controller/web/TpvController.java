@@ -7,7 +7,6 @@ import com.proconsi.electrobazar.service.*;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import com.proconsi.electrobazar.exception.InsufficientCashException;
 import com.proconsi.electrobazar.dto.ReturnLineRequest;
-import com.proconsi.electrobazar.dto.CashRegisterOpenSuggestion;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -39,7 +37,6 @@ public class TpvController {
     private final CategoryService categoryService;
     private final SaleService saleService;
     private final CustomerService customerService;
-    private final CashRegisterService cashRegisterService;
     private final ProductPriceService productPriceService;
     private final RecargoEquivalenciaCalculator recargoCalculator;
     private final InvoiceService invoiceService;
@@ -530,9 +527,17 @@ public class TpvController {
 
         CashRegister sessionClosed = cashSessionService.closeSession(actualCash, worker);
 
+        BigDecimal actual = sessionClosed.getActualCash() != null
+                ? sessionClosed.getActualCash()
+                : BigDecimal.ZERO;
+
+        BigDecimal expected = sessionClosed.getExpectedCash() != null
+                ? sessionClosed.getExpectedCash()
+                : BigDecimal.ZERO;
+
         redirectAttributes.addFlashAttribute("successMessage",
                 "Sesión cerrada correctamente. Diferencia: "
-                        + sessionClosed.getActualCash().subtract(sessionClosed.getExpectedCash()) + " \u20ac");
+                        + actual.subtract(expected) + " €");
 
         return "redirect:/tpv";
     }

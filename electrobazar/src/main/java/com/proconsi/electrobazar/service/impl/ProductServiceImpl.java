@@ -17,10 +17,13 @@ import com.proconsi.electrobazar.repository.TariffPriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -350,5 +353,14 @@ public class ProductServiceImpl implements ProductService {
     @org.springframework.cache.annotation.CacheEvict(value = "productPrices", allEntries = true)
     public void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate) {
         productRepository.updateGrossPricesByTaxRate(taxRateId, newVatRate);
+    }
+
+    @Override
+    public Page<Product> findAllWithCategoryPaged(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 25 : size;
+
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("nameEs").ascending());
+        return productRepository.findAllWithCategoryPaged(pageable);
     }
 }

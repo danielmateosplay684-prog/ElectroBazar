@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="modal">
+
+    <div class="modal fade" id="customerSalesmodal" tabindex="-1" aria-labelledby="customerSalesmodalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" style="background:var(--secondary);border:1px solid var(--border);">
+                <div class="modal-header border-0 pb-2">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="customerSalesmodalLabel">
+                            <i class="bi bi-receipt-cutoff me-2 text-accent"></i>
+                            <span id="customerSalesmodalName" th:text="#{admin.crm.customer}">Cliente</span>
+                        </h5>
+                        <p class="mb-0 small" style="color:var(--text-muted);" th:text="#{admin.crm.sales.history}">
+                            Historial completo de ventas</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <!-- Stats rápidias -->
+                    <div class="row g-3 mb-4" id="customerSalesStats" style="display:none!important">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded-3 text-center"
+                                style="background:var(--surface);border:1px solid var(--border);">
+                                <div class="fw-bold fs-5 text-accent" id="csSaleCount">—</div>
+                                <div class="small" style="color:var(--text-muted);"
+                                    th:text="#{admin.crm.sales.total.count}">Ventas totales</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded-3 text-center"
+                                style="background:var(--surface);border:1px solid var(--border);">
+                                <div class="fw-bold fs-5" style="color:#22c55e;" id="csTotalAmount">—</div>
+                                <div class="small" style="color:var(--text-muted);"
+                                    th:text="#{admin.crm.sales.total.amount}">Total facturado</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded-3 text-center"
+                                style="background:var(--surface);border:1px solid var(--border);">
+                                <div class="fw-bold fs-5" style="color:#3b82f6;" id="csAvgAmount">—</div>
+                                <div class="small" style="color:var(--text-muted);"
+                                    th:text="#{admin.crm.modal.sales.avg_amount}">Ticket medio</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded-3 text-center"
+                                style="background:var(--surface);border:1px solid var(--border);">
+                                <div class="fw-bold fs-5" style="color:#f59e0b;" id="csLastSale">—</div>
+                                <div class="small" style="color:var(--text-muted);"
+                                    th:text="#{admin.crm.modal.sales.last_sale}">ÚÚltima compra</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de ventas -->
+                    <div id="customerSalesBody">
+                        <div class="text-center py-5">
+                            <span class="spinner-border spinner-border-sm me-2"></span><span
+                                th:text="#{common.loading}">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        th:text="#{common.close}">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

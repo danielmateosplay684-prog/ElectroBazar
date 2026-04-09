@@ -746,6 +746,79 @@ function initCharts(analytics, period = '7days', chartLabel = (window.adminI18n 
             }
         });
     }
+
+    // KPIs nuevos
+    if (document.getElementById('statAvgTicket')) {
+        document.getElementById('statAvgTicket').textContent =
+            (analytics.averageTicket || 0).toLocaleString('es-ES', 
+            { minimumFractionDigits: 2 }) + ' €';
+    }
+    if (document.getElementById('statCancellationRate')) {
+        document.getElementById('statCancellationRate').textContent =
+            (analytics.cancellationRate || 0).toFixed(1) + '%';
+    }
+
+    // Gráfica franjas horarias
+    const hourlyData = analytics.hourlyTrend || {};
+    const hourlyLabels = Object.keys(hourlyData).map(h => h + ':00');
+    const hourlyValues = Object.values(hourlyData).map(v => parseFloat(v));
+    var ctxHourly = document.getElementById('hourlyChart');
+    if (ctxHourly) {
+        if (window.hourlyChartInstance) window.hourlyChartInstance.destroy();
+        window.hourlyChartInstance = new Chart(ctxHourly.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: hourlyLabels,
+                datasets: [{
+                    label: 'Ventas (€)',
+                    data: hourlyValues,
+                    backgroundColor: 'rgba(245, 166, 35, 0.6)',
+                    borderColor: '#f5a623',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8892a4' } },
+                    x: { grid: { display: false }, ticks: { color: '#8892a4' } }
+                }
+            }
+        });
+    }
+
+    // Gráfica top productos
+    const topProds = analytics.topProducts || {};
+    var ctxTop = document.getElementById('topProductsChart');
+    if (ctxTop) {
+        if (window.topProductsChartInstance) window.topProductsChartInstance.destroy();
+        window.topProductsChartInstance = new Chart(ctxTop.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(topProds),
+                datasets: [{
+                    label: 'Ventas (€)',
+                    data: Object.values(topProds).map(v => parseFloat(v)),
+                    backgroundColor: [
+                        'rgba(245,166,35,0.7)', 'rgba(59,130,246,0.7)',
+                        'rgba(34,197,94,0.7)', 'rgba(168,85,247,0.7)',
+                        'rgba(239,68,68,0.7)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8892a4' } },
+                    y: { grid: { display: false }, ticks: { color: '#8892a4' } }
+                }
+            }
+        });
+    }
 }
 
 // Theme application moved to <head>

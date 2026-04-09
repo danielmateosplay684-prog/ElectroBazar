@@ -57,12 +57,21 @@ public class CashSessionServiceImpl implements CashSessionService {
     public CashRegister closeSession(BigDecimal actualCash, Worker worker) {
         CashRegister session = getActiveSession()
                 .orElseThrow(() -> new IllegalStateException("No active session to close"));
-        
-        session.setDifference(actualCash.subtract(session.getClosingBalance()));
+
+        if (actualCash == null) {
+            actualCash = BigDecimal.ZERO;
+        }
+
+        BigDecimal expectedCash = session.getClosingBalance() != null
+                ? session.getClosingBalance()
+                : BigDecimal.ZERO;
+
+        session.setActualCash(actualCash);
+        session.setDifference(actualCash.subtract(expectedCash));
         session.setClosed(true);
         session.setClosedAt(LocalDateTime.now());
         session.setRetainedByWorker(worker);
-        
+
         return cashRegisterRepository.save(session);
     }
 

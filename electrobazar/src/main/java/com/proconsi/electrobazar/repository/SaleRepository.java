@@ -177,4 +177,23 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
     @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
     @Query("SELECT s FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.worker.id = :workerId ORDER BY s.createdAt DESC")
     Page<Sale> findByCreatedAtBetweenAndWorkerId(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("workerId") Long workerId, Pageable pageable);
+
+    @Query("SELECT HOUR(s.createdAt), SUM(sl.subtotal) " +
+           "FROM Sale s JOIN s.lines sl " +
+           "WHERE s.createdAt BETWEEN :from AND :to " +
+           "AND s.status = 'ACTIVE' " +
+           "GROUP BY HOUR(s.createdAt) ORDER BY HOUR(s.createdAt)")
+    List<Object[]> getHourlyRevenue(
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to);
+
+    @Query("SELECT p.nameEs, SUM(sl.subtotal) as total " +
+           "FROM Sale s JOIN s.lines sl JOIN sl.product p " +
+           "WHERE s.createdAt BETWEEN :from AND :to " +
+           "AND s.status = 'ACTIVE' " +
+           "GROUP BY p.id, p.nameEs ORDER BY total DESC")
+    List<Object[]> getTopProducts(
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to,
+        Pageable pageable);
 }

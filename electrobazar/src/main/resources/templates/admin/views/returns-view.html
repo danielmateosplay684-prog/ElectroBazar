@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="returnsHistoryView" style="display: none;">
+        <div class="panel-header">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-arrow-counterclockwise me-2"></i><span th:text="#{admin.returns.title}">Listado de
+                    Devoluciónes</span>
+            </span>
+        </div>
+
+        <div class="filter-bar-custom mb-3 p-4 rounded"
+            style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-search me-2"></i><span th:text="#{admin.returns.search}">Buscar por N /
+                            Motivo</span></label>
+                    <input type="text" id="returnFilterSearch" class="form-control form-control-sm"
+                        th:placeholder="#{admin.returns.search.placeholder}" oninput="filterReturns()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-credit-card-2-front me-2"></i><span
+                            th:text="#{admin.returns.filter.payment}">Pago</span></label>
+                    <select id="returnFilterMethod" class="form-select form-select-sm" onchange="filterReturns()">
+                        <option value="" th:text="#{admin.invoices.payment.any}">Cualquier método</option>
+                        <option value="Efectivo" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
+                        <option value="Tarjeta" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-calendar3 me-2"></i><span
+                            th:text="#{admin.returns.filter.date}">Fecha</span></label>
+                    <input type="date" id="returnFilterdate" class="form-control form-control-sm"
+                        onchange="filterReturns()">
+                </div>
+                <!-- Ordenamiento -->
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-sort-down me-1"></i>Orden</label>
+                    <select id="returnFilterSortBy" class="form-select form-select-sm" onchange="filterReturns()">
+                        <option value="createdAt">Fecha</option>
+                        <option value="returnNumber">N Devolución</option>
+                        <option value="totalRefunded">Importe</option>
+                        <option value="type">Tipo</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                    <select id="returnFilterSortDir" class="form-select form-select-sm" onchange="filterReturns()">
+                        <option value="desc"> Desc</option>
+                        <option value="asc"> Asc</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetReturnFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> <span th:text="#{common.reset}">Reset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table" id="returnsTable">
+                <thead>
+                    <tr>
+                        <th th:text="#{admin.returns.id}">ID Devol.</th>
+                        <th th:text="#{admin.returns.original}">Ticket Orig.</th>
+                        <th th:text="#{common.date}">Fecha</th>
+                        <th th:text="#{common.type}">Tipo</th>
+                        <th th:text="#{common.reason}">Motivo</th>
+                        <th th:text="#{admin.invoices.worker}">Atendido por</th>
+                        <th th:text="#{admin.invoices.payment.method}">Método Pago</th>
+                        <th style="text-align:right; width: 100px;" th:text="#{common.amount}">Importe</th>
+                        <th style="text-align:right" th:text="#{common.download}">Descargar</th>
+                    </tr>
+                </thead>
+                <tbody id="returnsTableBody">
+                    <tr th:each="ret : ${returns}" class="return-row" th:data-number="${ret.returnNumber}"
+                        th:data-reason="${ret.reason ?: ''}"
+                        th:data-method="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
+                        th:data-date="${#temporals.format(ret.createdAt, 'yyyy-MM-dd')}" style="cursor:pointer"
+                        th:onclick="'window.location.href = \'/admin/return/' + ${ret.id} + '\''">
+                        <td style="color:var(--text-muted);font-weight:600" th:text="${ret.returnNumber}"></td>
+                        <td
+                            th:text="${ret.originalSale.invoice != null ? ret.originalSale.invoice.invoiceNumber : (ret.originalSale.ticket != null ? ret.originalSale.ticket.ticketNumber : '#' + ret.originalSale.id)}">
+                        </td>
+                        <td th:text="${#temporals.format(ret.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <span class="badge-active"
+                                th:classappend="${ret.type != null && ret.type.name() == 'TOTAL'} ? 'yes' : 'no'"
+                                th:text="${ret.type != null && ret.type.name() == 'TOTAL'} ? #{common.total} : #{common.partial}"></span>
+                        </td>
+                        <td th:text="${#strings.abbreviate(ret.reason ?: '—', 40)}"></td>
+                        <td style="font-weight: 500;">
+                            <span th:if="${ret.worker != null}" th:text="${ret.worker.username}"></span>
+                            <span th:unless="${ret.worker != null}" th:text="#{admin.invoices.worker.system}"></span>
+                        </td>
+                        <td>
+                            <i th:class="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH' ? 'bi bi-cash' : 'bi bi-credit-card'}"
+                                style="margin-right:0.3rem"></i>
+                            <span
+                                th:text="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH'} ? #{admin.invoices.payment.cash} : #{admin.invoices.payment.card}"></span>
+                        </td>
+                        <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(danger);text-align:right"
+                            th:text="'-' + ${#numbers.formatDecimal(ret.totalRefunded,1,2)} + ' '"></td>
+                        <td style="text-align:right">
+                            <button type="button" class="btn-icon" th:title="#{admin.common.preview}"
+                                style="text-decoration: none;"
+                                th:onclick="'event.stopPropagation(); showDocPreview(\'/tpv/return-receipt/' + ${ret.id} + '\')'">
+                                <i class="bi bi-eye" style="color:#3498db;"></i>
+                            </button>
+                            <a th:href="@{/admin/download/return/{id}(id=${ret.id})}" target="_blank" class="btn-icon"
+                                th:title="#{admin.returns.print}" style="text-decoration: none;"
+                                onclick="event.stopPropagation();">
+                                <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(returns)}">
+                        <td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)"
+                            th:text="#{admin.returns.empty}">
+                            No hay Devoluciónes registradias en el periodo especificado.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

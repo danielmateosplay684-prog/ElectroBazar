@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
     
     <style>
         body {
-            background-color: var(--primary);
+            background-color: var(primary);
             color: var(--text-main);
             font-family: 'Barlow', sans-serif;
             padding: 2rem;
@@ -86,7 +86,7 @@
         }
         .btn-action {
             background: var(--accent);
-            color: var(--primary);
+            color: var(primary);
             border: none;
             padding: 0.6rem 1.4rem;
             border-radius: 10px;
@@ -100,7 +100,7 @@
             opacity: 0.9;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
-            color: var(--primary);
+            color: var(primary);
         }
         .lines-title {
             font-size: 1.4rem;
@@ -139,7 +139,7 @@
             font-size: 0.95rem;
         }
         .total-row.main {
-            border-top: 1px dashed var(--border);
+            border-top: 1px diashed var(--border);
             margin-top: 1rem;
             padding-top: 1rem;
             font-size: 1.5rem;
@@ -155,7 +155,7 @@
             align-items: center;
             justify-content: center;
             border-radius: 8px;
-            background: rgba(var(--accent-rgb), 0.1);
+            background: rgba(var(accent-rgb), 0.1);
             color: var(--accent);
         }
     </style>
@@ -208,33 +208,33 @@
         </div>
         <div class="summary-item">
             <div class="summary-label" th:text="#{common.amount}">Importe Total</div>
-            <div class="summary-value" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' €'"></div>
+            <div class="summary-value" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' '"></div>
         </div>
         
         <th:block th:if="${sale.paymentMethod.name() == 'MIXED'}">
             <div class="summary-item">
                 <div class="summary-label" th:text="#{admin.invoices.payment.cash}">Efectivo</div>
-                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' €'"></div>
+                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' '"></div>
             </div>
             <div class="summary-item">
                 <div class="summary-label" th:text="#{admin.invoices.payment.card}">Tarjeta</div>
-                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.cardAmount, 1, 2)} + ' €'"></div>
+                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.cardiamount, 1, 2)} + ' '"></div>
             </div>
         </th:block>
         
-        <th:block th:if="${sale.receivedAmount != null && sale.receivedAmount > 0}">
+        <th:block th:if="${sale.receivediamount != null && sale.receivediamount > 0}">
             <div class="summary-item">
                 <div class="summary-label">Entregado</div>
-                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' €'"></div>
+                <div class="summary-value" th:text="${#numbers.formatDecimal(sale.receivediamount, 1, 2)} + ' '"></div>
             </div>
             <div class="summary-item">
                 <div class="summary-label">Cambio</div>
-                <div class="summary-value text-accent" th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' €'"></div>
+                <div class="summary-value text-accent" th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' '"></div>
             </div>
         </th:block>
         
         <div class="summary-item">
-            <div class="summary-label" th:text="#{admin.menu.tariffs}">Tarifa Aplicada</div>
+            <div class="summary-label" th:text="#{admin.menu.tariffs}">Tarifa Aplicadia</div>
             <div class="summary-value" th:text="${sale.appliedTariff}"></div>
         </div>
     </div>
@@ -245,7 +245,7 @@
         <div class="text-main fw-500" th:text="${sale.notes}"></div>
     </div>
 
-    <!-- Líneas de Venta -->
+    <!-- Lineas de Venta -->
     <div class="sales-section">
         <h3 class="lines-title">
             <i class="bi bi-list-ul text-accent"></i>
@@ -275,11 +275,11 @@
                         </td>
                         <td class="text-center" th:text="${line.quantity} + ' ud.'"></td>
                         <td class="text-end">
-                            <span th:if="${line.discountPercentage > 0}" class="text-muted text-decoration-line-through small me-1" th:text="${#numbers.formatDecimal(line.originalUnitPrice, 1, 2)} + ' €'"></span>
-                            <span th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' €'"></span>
+                            <span th:if="${line.discountPercentage > 0}" class="text-muted text-decoration-line-through small me-1" th:text="${#numbers.formatDecimal(line.originalUnitPrice, 1, 2)} + ' '"></span>
+                            <span th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' '"></span>
                         </td>
                         <td class="text-center" th:text="${#numbers.formatDecimal(line.vatRate * 100, 1, 0)} + '%'"></td>
-                        <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)} + ' €'"></td>
+                        <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)} + ' '"></td>
                     </tr>
                 </tbody>
             </table>
@@ -288,19 +288,19 @@
         <div class="totals-card">
             <div class="total-row">
                 <span th:text="#{admin.taxrates.iva.full}">Base Imponible</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalBase, 1, 2)} + ' €'"></span>
+                <span th:text="${#numbers.formatDecimal(sale.totalBase, 1, 2)} + ' '"></span>
             </div>
             <div class="total-row">
                 <span th:text="#{admin.common.iva}">IVA Total</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalVat, 1, 2)} + ' €'"></span>
+                <span th:text="${#numbers.formatDecimal(sale.totalVat, 1, 2)} + ' '"></span>
             </div>
             <div th:if="${sale.totalRecargo > 0}" class="total-row">
                 <span th:text="#{admin.taxrates.re}">Recargo Equiv.</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalRecargo, 1, 2)} + ' €'"></span>
+                <span th:text="${#numbers.formatDecimal(sale.totalRecargo, 1, 2)} + ' '"></span>
             </div>
             <div class="total-row main">
                 <span th:text="#{common.total}">TOTAL</span>
-                <span th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' €'"></span>
+                <span th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' '"></span>
             </div>
         </div>
     </div>
@@ -309,3 +309,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+

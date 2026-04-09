@@ -346,7 +346,6 @@
         .admin-body {
             flex: 1;
             padding: 2rem;
-            max-width: 1400px;
             overflow-y: auto;
             position: relative;
             background: var(--primary);
@@ -916,3 +915,130 @@
             background-color: var(--accent);
             border-color: var(--accent);
         }
+
+#ipcUpdateModal .modal-content {
+    background-color: var(--secondary) !important;
+    opacity: 1 !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+}
+#ipcUpdateModal .modal-backdrop {
+    opacity: 0.85 !important;
+    background-color: #000 !important;
+}
+#ipcUpdateModal .alert-info {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    border: 1px solid rgba(0, 123, 255, 0.2) !important;
+    color: var(--text-main) !important;
+}
+.hover-surface:hover {
+    background: var(--surface) !important;
+    border-color: var(--accent) !important;
+}
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+.sel-product-item-wrap .form-check:has(input:checked),
+.sel-category-cb:checked+label {
+    background: rgba(245, 166, 35, 0.1) !important;
+    border-color: var(--accent) !important;
+}
+#selectiveIvaTabs .nav-link {
+    background: var(--secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+#selectiveIvaTabs .nav-link.active {
+    background: var(--accent) !important;
+    color: var(--primary) !important;
+    border-color: var(--accent) !important;
+}
+.section-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding-bottom: 2px;
+    opacity: 0.9;
+}
+.card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 16px !important;
+    overflow: hidden;
+}
+.card:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+}
+.pagination-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+.pagination-btn {
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.pagination-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(245, 166, 35, 0.05);
+}
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.pagination-info {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.pagination-jump input {
+    width: 60px;
+    height: 34px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--primary);
+    color: var(--text-main);
+    font-weight: 700;
+}
+.form-control:focus {
+    background-color: var(--secondary) !important;
+    border-color: var(--accent) !important;
+    color: var(--text-main) !important;
+    box-shadow: 0 0 0 0.25rem rgba(245, 166, 35, 0.15) !important;
+}
+.cash-row:hover,
+.invoice-row:hover {
+    background: rgba(245, 166, 35, 0.08) !important;
+    transition: background 0.2s ease;
+}

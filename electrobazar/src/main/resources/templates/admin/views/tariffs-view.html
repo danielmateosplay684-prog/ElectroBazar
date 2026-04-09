@@ -1,0 +1,212 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+        <div id="tarifasView" style="display: none;">
+            <div class="panel-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn-icon"
+                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        th:title="#{admin.common.backtopanel}">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="panel-title"><i class="bi bi-tags me-2"></i><span
+                            th:text="#{admin.tariffs.title}">Gestión de Tarifas</span></span>
+                </div>
+                <button class="btn-nuevo" onclick="openCreateTariffmodal()">
+                    <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.tariffs.new}">Nueva Tarifa</span>
+                </button>
+            </div>
+
+            <!-- COMPARATIVA DE PRECIOS POR TARIFA -->
+            <div class="card mb-4 mt-3"
+                style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <div class="card-header d-flex justify-content-between align-items-center py-3 px-4"
+                    style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);">
+                    <h6 class="mb-0 fw-bold" style="color: var(--text-main); font-size: 0.9rem;">
+                        <i class="bi bi-layout-three-columns me-2 text-accent"></i><span
+                            th:text="#{admin.tariffs.comparison.title}">LISTA DE PRECIOS VIGENTES POR TARIFA</span>
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-accent" id="btnToggleTariffEdit"
+                            onclick="toggleTariffEditMode()"
+                            style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid var(--accent); color: var(--accent); background: transparent;">
+                            <i class="bi bi-pencil-square me-1"></i> Modo Edición
+                        </button>
+                        <button class="btn btn-sm btn-accent" id="btnFinishTariffEdit" onclick="openApplyPricesmodal()"
+                            style="display: none; border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; background: var(--accent); color: var(primary); border: none;">
+                            <i class="bi bi-check-all me-1"></i> Finalizar Edición
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="openPriceChangesHistorymodal()"
+                            style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid #0dcaf0; color: #0dcaf0; background: transparent;">
+                            <i class="bi bi-clock-history me-1"></i> Ver Cambios
+                        </button>
+                        <div class="input-group input-group-sm" style="width: 280px;">
+                            <span
+                                class="input-group-text bg-diark border-secondary text-muted rounded-start-pill border-end-0"><i
+                                    class="bi bi-search"></i></span>
+                            <input type="text" id="tariffComparisonSearch"
+                                class="form-control bg-diark border-secondary text-white rounded-end-pill border-start-0"
+                                th:placeholder="#{admin.common.search.placeholder}" onkeyup="filterTariffComparison()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div style="max-height: 380px; overflow-y: auto; overflow-x: auto;" class="custom-scrollbar">
+                        <table class="admin-table mb-0" id="tariffComparisonTable">
+                            <thead
+                                style="position: sticky; top: 0; z-index: 100; background: var(--surface); box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+                                <tr>
+                                    <th style="min-width: 250px; background: var(--surface);"
+                                        th:text="#{admin.common.product}">Producto</th>
+                                    <th style="background: var(--surface);" class="text-end"
+                                        th:text="#{admin.common.pvpr}">PVPR (Base)</th>
+                                    <th th:each="t : ${tariffs}" th:if="${t.active}" class="text-end"
+                                        style="background: var(--surface); min-width: 120px;">
+                                        <div class="d-flex flex-column align-items-end">
+                                            <span class="badge"
+                                                th:style="'background:' + ${t.color ?: '#8892a4'} + '20; color:' + ${t.color ?: '#8892a4'} + '; border: 1px solid ' + ${t.color ?: '#8892a4'} + '30; font-size: 0.65rem; border-radius: 4px;'"
+                                                th:text="${t.name}"></span>
+                                            <small class="text-muted mt-1"
+                                                style="font-size: 0.6rem; font-weight: normal;">
+                                                <span th:if="${t.discountPercentage > 0}"
+                                                    th:text="'-' + ${#numbers.formatDecimal(t.discountPercentage, 1, 0)} + '%'"></span>
+                                                <span th:unless="${t.discountPercentage > 0}"
+                                                    th:text="#{admin.tariffs.nodiscount}">SIN DTO.</span>
+                                            </small>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="p : ${products}" class="comparison-row">
+                                    <td class="py-2">
+                                        <div class="fw-bold" style="color: var(--text-main); font-size: 0.85rem;"
+                                            th:text="${p.name}"></div>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            <span th:if="${p.category != null}" th:text="${p.category.name}"></span>
+                                            <span th:unless="${p.category != null}"
+                                                th:text="#{admin.common.nocategory}">Sin categoria</span>
+                                        </small>
+                                    </td>
+                                    <td class="text-end fw-bold py-2 price-cell price-base"
+                                        th:attr="data-product-id=${p.id}, data-tariff-id='base'"
+                                        style="font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; color: #8892a4;"
+                                        th:text="${#numbers.formatDecimal(p.price, 1, 2, 'COMMA') + ' '}"></td>
+                                    <td th:each="t : ${tariffs}" th:if="${t.active}" class="text-end py-2"
+                                        style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                                        <span th:if="${p.price != null and t.discountPercentage != null}"
+                                            class="price-value"
+                                            th:with="discountedPrice=${p.price.multiply(T(java.math.BigDecimal).ONE.subtract(t.discountPercentage.divide(new java.math.BigDecimal('100'), 4, T(java.math.RoundingMode).HALF_UP)))}"
+                                            th:attr="data-product-id=${p.id}, data-tariff-id=${t.id}, data-tariff-name=${t.name}"
+                                            th:text="${#numbers.formatDecimal(discountedPrice, 1, 2, 'COMMA') + ' '}"
+                                            th:style="${t.discountPercentage.compareTo(T(java.math.BigDecimal).ZERO) > 0} ? 'color: var(--accent); font-weight: 800;' : 'color: var(--text-main); font-weight: 700;'"></span>
+                                        <span th:unless="${p.price != null and t.discountPercentage != null}"
+                                            class="text-muted" th:text="#{admin.common.notAvailable}">N/D</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap mt-3">
+                <table class="admin-table" id="tarifasTable">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.name}">Nombre</th>
+                            <th th:text="#{admin.tariffs.discount ?: 'Descuento'}">Descuento</th>
+                            <th th:text="#{common.description}">Descripción</th>
+                            <th th:text="#{common.customers ?: 'Clientes'}">Clientes</th>
+                            <th th:text="#{admin.taxrates.active}">Activa</th>
+                            <th th:text="#{common.type}">Tipo</th>
+                            <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="tariff : ${tariffs}">
+                            <td>
+                                <span class="badge-tariff"
+                                    th:style="${tariff.color != null ? 'background-color:' + tariff.color + '15; color:' + tariff.color + '; border-color:' + tariff.color + '30' : ''}"
+                                    th:classappend="${tariff.color == null ? (#strings.contains(#strings.toLowerCase(tariff.name), 'minorista') ? 'badge-tariff-minorista' : (#strings.contains(#strings.toLowerCase(tariff.name), 'mayorista') ? 'badge-tariff-mayorista' : 'badge-tariff-custom')) : ''}"
+                                    th:text="${tariff.name}">MINORISTA</span>
+                            </td>
+                            <td>
+                                <span th:if="${tariff.discountPercentage > 0}" class="badge-discount"
+                                    th:style="${tariff.color != null ? 'background-color:' + tariff.color + '10; color:' + tariff.color + '; border: 1px solid ' + tariff.color + '25' : ''}"
+                                    th:text="'-' + ${#numbers.formatDecimal(tariff.discountPercentage, 1, 0)} + '%'">
+                                    -15%</span>
+                                <span th:unless="${tariff.discountPercentage > 0}" style="color:var(--text-muted);">0%
+                                    (sin dto.)</span>
+                            </td>
+                            <td th:text="${tariff.description ?: '—'}">—</td>
+                            <td>
+                                <span th:if="${tariffCustomerCounts.containsKey(tariff.id)}">
+                                    <span th:text="${tariffCustomerCounts.get(tariff.id)}">0</span>
+                                    <span th:text="#{admin.common.customers_count}">clientes</span>
+                                </span>
+                                <span th:unless="${tariffCustomerCounts.containsKey(tariff.id)}"
+                                    style="color:var(--text-muted);">
+                                    0 <span th:text="#{admin.common.customers_count}">clientes</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge-active" th:classappend="${tariff.active} ? 'yes' : 'no'">
+                                    <span th:if="${tariff.active}" th:text="#{common.yes}">Si</span>
+                                    <span th:unless="${tariff.active}" th:text="#{common.no}">No</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${tariff.systemTariff}" class="badge badge-tariff-minorista"
+                                    style="font-size:0.7rem" th:text="#{admin.tariffs.type.system}">SISTEMA</span>
+                                <span th:unless="${tariff.systemTariff}" class="badge badge-tariff-mayorista"
+                                    style="font-size:0.7rem" th:text="#{admin.tariffs.type.custom}">PERSONALIZAdia</span>
+                            </td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                    <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}" class="btn-icon"
+                                        th:title="#{admin.tariffs.action.viewhistory}">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                    <button class="btn-icon" th:title="#{admin.tariffs.action.edit}"
+                                        th:data-id="${tariff.id}" th:data-name="${tariff.name}"
+                                        th:data-discount="${tariff.discountPercentage}"
+                                        th:data-description="${tariff.description ?: ''}"
+                                        th:data-color="${tariff.color ?: ''}" onclick="openEditTariffmodal(this)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button th:if="${!tariff.systemTariff and tariff.active}" class="btn-icon danger"
+                                        th:title="#{admin.tariffs.action.deactivate}" th:data-id="${tariff.id}"
+                                        th:data-name="${tariff.name}"
+                                        onclick="deactivateTariff(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        <i class="bi bi-toggle-off"></i>
+                                    </button>
+                                    <button th:if="${!tariff.systemTariff and !tariff.active}" class="btn-icon"
+                                        th:title="#{admin.tariffs.action.activate}" th:data-id="${tariff.id}"
+                                        style="color:#27ae60;" onclick="activateTariff(this.getAttribute('data-id'))">
+                                        <i class="bi bi-toggle-on"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="rolesView" style="display:none">
+        <div class="panel-header">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-shield-lock me-2"></i><span th:text="#{admin.roles.title}">Gestión de Roles</span>
+            </span>
+            <div class="d-flex gap-2 align-items-center">
+                <button class="btn-nuevo" onclick="openRoleModal()">
+                    <i class="bi bi-plus-lg"></i> <span th:text="#{admin.roles.new}">Nuevo Rol</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-search me-2"></i><span th:text="#{admin.roles.search}">Buscar por
+                            nombre</span></label>
+                    <input type="text" id="roleFilterName" class="form-control form-control-sm"
+                        th:placeholder="#{admin.roles.search.placeholder}" oninput="filterRoles()">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-shield-lock me-2"></i><span
+                            th:text="#{admin.roles.permissions.required}">Permisos requeridos</span></label>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100" type="button"
+                            id="roleFilterPermBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            aria-expanded="false"
+                            style="text-align: left; color: var(--text-main); background-color: var(--surface); border-color: var(--border);"
+                            th:text="#{admin.roles.permissions.select}">
+                            Seleccionar Permisos
+                        </button>
+                        <div class="dropdown-menu p-3 shadow"
+                            style="min-width: 250px; bs-dropdown-bg: var(--surface); bs-dropdown-color: var(--text-main); bs-dropdown-border-color: var(--border); background-color: var(--surface); border-color: var(--border);">
+                            <div class="form-check mb-2" onclick="event.stopPropagation()">
+                                <input class="form-check-input role-filter-perm" type="checkbox"
+                                    value="ACCESO_TOTAL_ADMIN" id="rf_admin"
+                                    th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
+                                <label class="form-check-label small" for="rf_admin"
+                                    style="color: var(--text-main);">ACCESO_TOTAL_ADMIN</label>
+                            </div>
+                            <div class="form-check mb-2" onclick="event.stopPropagation()">
+                                <input class="form-check-input role-filter-perm" type="checkbox" value="CIERRE_CAJA"
+                                    id="rf_cash"
+                                    th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
+                                <label class="form-check-label small" for="rf_cash"
+                                    style="color: var(--text-main);">CIERRE_CAJA</label>
+                            </div>
+                            <div class="form-check mb-0" onclick="event.stopPropagation()">
+                                <input class="form-check-input role-filter-perm" type="checkbox"
+                                    value="GESTION_INVENTARIO" id="rf_stock"
+                                    th:onchange="|filterRoles(); updateFilterPermLabel('roleFilterPermBtn', '.role-filter-perm', '#{admin.roles.permissions.select}');|">
+                                <label class="form-check-label small" for="rf_stock"
+                                    style="color: var(--text-main);">GESTION_INVENTARIO</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Ordenamiento -->
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-sort-down me-1"></i>Orden</label>
+                    <select id="roleFilterSortBy" class="form-select form-select-sm" onchange="filterRoles()">
+                        <option value="name">Nombre</option>
+                        <option value="id">ID</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                    <select id="roleFilterSortDir" class="form-select form-select-sm" onchange="filterRoles()">
+                        <option value="asc"> Asc</option>
+                        <option value="desc"> Desc</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetRoleFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> <span th:text="#{common.reset}">Reset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th th:text="#{common.name}">Nombre</th>
+                        <th th:text="#{common.description}">Descripción</th>
+                        <th th:text="#{admin.workers.permissions}">Permisos</th>
+                        <th th:text="#{admin.workers.title}">Trabajadores</th>
+                        <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="rolesTableBody">
+                    <tr>
+                        <td colspan="5" class="text-center py-4" style="color: var(--text-muted);">
+                            <span class="spinner-border spinner-border-sm me-2"></span><span
+                                th:text="#{common.loading}">Cargando...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

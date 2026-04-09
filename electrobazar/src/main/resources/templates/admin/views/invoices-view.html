@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="view">
+
+    <div id="invoicesView" style="display: none;">
+        <div class="panel-header">
+            <span class="panel-title">
+                <button class="btn-icon me-2"
+                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    th:title="#{admin.common.backtopanel}">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <i class="bi bi-receipt me-2"></i><span th:text="#{admin.invoices.title}">Listado de Facturas y
+                    Ventas</span>
+            </span>
+        </div>
+
+        <div class="filter-bar-custom">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-search me-2"></i><span th:text="#{admin.invoices.search}">Buscar factura /
+                            cliente</span></label>
+                    <input type="text" id="invoiceFilterSearch" class="form-control form-control-sm"
+                        th:placeholder="#{admin.invoices.search.placeholder}" oninput="filterInvoices()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-filter-circle me-2"></i><span th:text="#{common.type}">Tipo</span></label>
+                    <select id="invoiceFilterType" class="form-select form-select-sm" onchange="filterInvoices()">
+                        <option value="" th:text="#{common.all}">Todos</option>
+                        <option value="factura" th:text="#{admin.invoices.type.invoice}">Factura</option>
+                        <option value="ticket" th:text="#{admin.invoices.type.ticket}">Ticket</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-credit-card-2-front me-2"></i><span
+                            th:text="#{admin.invoices.payment}">Pago</span></label>
+                    <select id="invoiceFilterMethod" class="form-select form-select-sm" onchange="filterInvoices()">
+                        <option value="" th:text="#{admin.invoices.payment.any}">Cualquier método</option>
+                        <option value="Efectivo" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
+                        <option value="Tarjeta" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-calendar3 me-2"></i><span th:text="#{common.date}">Fecha</span></label>
+                    <input type="date" id="invoiceFilterdate" class="form-control form-control-sm"
+                        onchange="filterInvoices()">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                            class="bi bi-sort-down me-1"></i>Orden</label>
+                    <select id="invoiceSortBy" class="form-select form-select-sm" onchange="filterInvoices()">
+                        <option value="createdAt">Fecha</option>
+                        <option value="totalAmount">Total</option>
+                        <option value="id">ID</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                    <select id="invoiceSortDir" class="form-select form-select-sm" onchange="filterInvoices()">
+                        <option value="desc"> Desc</option>
+                        <option value="asc"> Asc</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetInvoiceFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> <span th:text="#{common.reset}">Reset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table" id="invoicesTable">
+                <thead>
+                    <tr>
+                        <th th:text="#{admin.invoices.id}">ID Venta</th>
+                        <th th:text="#{common.date}">Fecha</th>
+                        <th th:text="#{common.type}">Tipo</th>
+                        <th th:text="#{admin.invoices.customer}">Cliente / NIF</th>
+                        <th th:text="#{admin.invoices.worker}">Atendido por</th>
+                        <th th:text="#{admin.invoices.payment.method}">Método Pago</th>
+                        <th style="text-align:right; width: 100px;" th:text="#{common.total}">Total</th>
+                        <th style="text-align:right" th:text="#{common.download}">Descargar</th>
+                    </tr>
+                </thead>
+                <tbody id="invoicesTableBody">
+                    <tr th:each="sale : ${sales}" class="invoice-row" th:data-id="${sale.id}"
+                        th:data-number="${sale.invoice != null ? sale.invoice.invoiceNumber : (sale.ticket != null ? sale.ticket.ticketNumber : '#' + sale.id)}"
+                        th:data-customer="${sale.customer != null ? sale.customer.name : ''}"
+                        th:data-taxid="${sale.customer != null ? sale.customer.taxId : ''}"
+                        th:data-type="${sale.invoice != null ? 'factura' : 'ticket'}"
+                        th:data-method="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
+                        th:data-date="${#temporals.format(sale.createdAt, 'yyyy-MM-dd')}" style="cursor:pointer"
+                        th:onclick="'window.location.href = \'/admin/sale/' + ${sale.id} + '\''">
+                        <td style="color:var(--text-muted);font-weight:600"
+                            th:text="${sale.invoice != null ? sale.invoice.invoiceNumber : (sale.ticket != null ? sale.ticket.ticketNumber : '#' + sale.id)}">
+                        </td>
+                        <td th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <span th:if="${sale.status != null && sale.status.name() == 'CANCELLED'}"
+                                class="badge mb-1 d-block"
+                                style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600;">
+                                <i class="bi bi-x-circle me-1"></i><span
+                                    th:text="#{admin.invoices.status.cancelled}">anulada</span>
+                            </span>
+                            <span class="badge-active" th:classappend="${sale.invoice != null} ? 'yes' : 'no'"
+                                th:text="${sale.invoice != null} ? #{admin.invoices.type.invoice} : #{admin.invoices.type.ticket}"></span>
+                        </td>
+                        <td>
+                            <div th:if="${sale.customer != null}">
+                                <strong th:text="${sale.customer.name}"></strong>
+                                <div style="font-size:0.75rem;color:var(--text-muted)" th:text="${sale.customer.taxId}">
+                                </div>
+                            </div>
+                            <span th:unless="${sale.customer != null}" style="color:var(--text-muted)"
+                                th:text="'— ' + #{admin.invoices.customer.final} + ' —'">—
+                                Consumidor Final —</span>
+                        </td>
+                        <td style="font-weight: 500;">
+                            <span th:with="workerName=${sale.worker != null ? sale.worker.username : null}"
+                                th:text="${workerName} ?: #{admin.invoices.worker.system}">
+                            </span>
+                        </td>
+                        <td>
+                            <i th:class="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH' ? 'bi bi-cash' : 'bi bi-credit-card'}"
+                                style="margin-right:0.3rem"></i>
+                            <span
+                                th:text="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH'} ? #{admin.invoices.payment.cash} : #{admin.invoices.payment.card}"></span>
+                        </td>
+                        <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main);text-align:right"
+                            th:text="${#numbers.formatDecimal(sale.totalAmount,1,2)} + ' '"></td>
+                        <td style="text-align:right">
+                            <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                                <button th:if="${sale.status != null && sale.status.name() == 'ACTIVE'}"
+                                    class="btn-icon danger" th:title="#{admin.invoices.cancel}" th:data-id="${sale.id}"
+                                    onclick="event.stopPropagation(); cancelSale(this.getAttribute('data-id'))">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                                <button type="button" class="btn-icon" th:title="#{admin.common.preview}"
+                                    style="text-decoration: none;"
+                                    th:onclick="'event.stopPropagation(); showDocPreview(\'/tpv/receipt/' + ${sale.id} + '\')'">
+                                    <i class="bi bi-eye" style="color:#3498db;"></i>
+                                </button>
+                                <a th:href="@{/tpv/receipt/{id}(id=${sale.id}, autoPrint=true)}" target="_blank"
+                                    class="btn-icon" th:title="#{admin.invoices.print}" style="text-decoration: none;"
+                                    onclick="event.stopPropagation();">
+                                    <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination for Sales -->
+            <div class="pagination-wrap">
+                <button class="pagination-btn" id="salesPagePrev" onclick="changeSalesPage(-1)" disabled>
+                    <i class="bi bi-chevron-left"></i> <span
+                        th:text="#{admin.pagination.prev} ?: 'Anterior'">Anterior</span>
+                </button>
+
+                <div class="pagination-info">
+                    <span th:text="#{admin.pagination.page} ?: 'Página'">Página</span>
+                    <span id="salesCurrentPage">1</span>
+                    <span th:text="#{admin.pagination.of} ?: 'de'">de</span>
+                    <span id="salesTotalPages" th:text="${salesTotalPages}">1</span>
+                </div>
+
+                <div class="pagination-jump">
+                    <input type="number" id="salesJumpInput" min="1" th:max="${salesTotalPages}" value="1"
+                        onchange="jumpToSalesPage(this.value)">
+                    <span class="small text-muted" th:text="#{admin.pagination.jump} ?: 'Saltar'">Saltar</span>
+                </div>
+
+                <button class="pagination-btn" id="salesPageNext" onclick="changeSalesPage(1)"
+                    th:disabled="${salesTotalPages <= 1}">
+                    <span th:text="#{admin.pagination.next} ?: 'Siguiente'">Siguiente</span> <i
+                        class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
