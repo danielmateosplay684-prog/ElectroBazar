@@ -4,24 +4,38 @@
  */
 
 function updateAdminPin() {
-    const pin = document.getElementById('adminPinInput').value;
-    if (!pin || pin.length < 4) {
-        showToast('El PIN debe tener al menos 4 dígitos', 'error');
+    const currentPin = document.getElementById('currentPin').value;
+    const newPin = document.getElementById('newPin').value;
+    const confirmPin = document.getElementById('confirmPin').value;
+
+    if (!currentPin || !newPin || !confirmPin) {
+        showToast('Todos los campos son obligatorios', 'error');
+        return;
+    }
+    if (newPin !== confirmPin) {
+        showToast('El nuevo PIN y la confirmación no coinciden', 'error');
+        return;
+    }
+    if (newPin.length < 4) {
+        showToast('El nuevo PIN debe tener al menos 4 caracteres', 'error');
         return;
     }
 
-    fetch('/api/admin/settings/pin', {
+    fetch('/admin/settings/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin })
-    }).then(res => {
-        if (res.ok) {
-            showToast('PIN de administrador actualizado');
-            document.getElementById('adminPinInput').value = '';
-        } else {
-            showToast('Error al actualizar el PIN', 'error');
-        }
-    });
+        body: JSON.stringify({ currentPin, newPin, confirmPin })
+    })
+        .then(async response => {
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message || 'PIN actualizado correctamente');
+                document.getElementById('changePinForm').reset();
+            } else {
+                showToast(data.message || 'Error al actualizar el PIN', 'error');
+            }
+        })
+        .catch(() => showToast('Error de conexión al servidor', 'error'));
 }
 
 function loadMailSettings() {

@@ -4,6 +4,8 @@ import com.proconsi.electrobazar.model.TariffPriceHistory;
 import com.proconsi.electrobazar.dto.TariffPriceEntryDTO;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Interface for querying historical pricing data tied to specific tariffs.
@@ -29,7 +31,7 @@ public interface TariffPriceHistoryService {
      * @param tariffId ID of the tariff.
      * @return List of active price DTOs.
      */
-    List<TariffPriceEntryDTO> getCurrentPricesForTariff(Long tariffId);
+    Page<TariffPriceEntryDTO> getCurrentPricesForTariff(Long tariffId, Pageable pageable);
 
     /**
      * Lists distinct dates when price changes were applied to a tariff.
@@ -44,5 +46,11 @@ public interface TariffPriceHistoryService {
      * @param date     Point-in-time calculation date.
      * @return List of prices for that date.
      */
-    List<TariffPriceEntryDTO> getPricesForTariffAtDate(Long tariffId, LocalDate date);
+    Page<TariffPriceEntryDTO> getPricesForTariffAtDate(Long tariffId, LocalDate date, Pageable pageable);
+
+    List<TariffPriceEntryDTO> getPricesForTariffAtDateList(Long tariffId, LocalDate date);
+
+    void generateInitialSnapshotIfEmpty(Long tariffId);
+
+    boolean isInitializationInProgress(Long tariffId);
 }

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Repository for {@link TariffPriceHistory} entities.
@@ -26,6 +28,8 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
      * Retrieves all price histories associated with a specific tariff.
      */
     List<TariffPriceHistory> findByTariffIdOrderByValidFromDesc(Long tariffId);
+    
+    boolean existsByTariffId(Long tariffId);
 
     @Query("SELECT t FROM TariffPriceHistory t WHERE t.product.id = :productId AND t.tariff.id = :tariffId AND t.validTo IS NULL")
     Optional<TariffPriceHistory> findCurrentByProductAndTariff(@Param("productId") Long productId, @Param("tariffId") Long tariffId);
@@ -47,7 +51,10 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
      * Finds price records that were active at a specific point in time for a given tariff.
      */
     @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :date AND (t.validTo >= :date OR t.validTo IS NULL)")
-    List<TariffPriceHistory> findByTariffIdAndDate(@Param("tariffId") Long tariffId, @Param("date") LocalDate date);
+    Page<TariffPriceHistory> findByTariffIdAndDate(@Param("tariffId") Long tariffId, @Param("date") LocalDate date, Pageable pageable);
+
+    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :date AND (t.validTo >= :date OR t.validTo IS NULL)")
+    List<TariffPriceHistory> findAllByTariffIdAndDate(@Param("tariffId") Long tariffId, @Param("date") LocalDate date);
 
     /**
      * Finds price records that started exactly on a specific date for a tariff.

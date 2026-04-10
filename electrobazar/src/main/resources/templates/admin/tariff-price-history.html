@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -11,6 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap"
         rel="stylesheet">
     <th:block th:replace="~{fragments/theme :: themeScript}" />
+    <meta th:if="${isInitializing}" http-equiv="refresh" content="5">
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
         body {
@@ -126,6 +127,20 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
         }
+        .btn-accent {
+            background-color: var(--accent);
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-accent:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            color: white;
+        }
     </style>
 </head>
 
@@ -140,8 +155,8 @@
                 <p class="text-muted mb-0">Listado histórico de variaciones de precios para esta tarifa.</p>
             </div>
             <div>
-                <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selecteddate}}" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de este dia
+                <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate}}" class="btn-accent">
+                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de este día
                 </a>
             </div>
         </div>
@@ -152,38 +167,38 @@
                 <div class="d-flex align-items-center gap-1">
                     <div class="pagination-container d-flex align-items-center gap-2">
                         <!-- Primero (más antiguo) -->
-                        <a th:if="${firstdate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstdate}}"
+                        <a th:if="${firstDate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstDate}}"
                            class="btn-nav-history" 
-                           th:classappend="${selecteddate.equals(firstdate)} ? 'disabled opacity-50' : ''" title="Primero (más antiguo)">
+                           th:classappend="${selectedDate.equals(firstDate)} ? 'disabled opacity-50' : ''" title="Primero (más antiguo)">
                             <i class="bi bi-chevron-double-left"></i>
                         </a>
 
                         <!-- Anterior -->
-                        <a th:if="${prevdate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevdate}}" 
+                        <a th:if="${prevDate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevDate}}" 
                            class="btn-nav-history" title="Anterior">
                             <i class="bi bi-chevron-left"></i>
                         </a>
-                        <button th:if="${prevdate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-left"></i></button>
+                        <button th:if="${prevDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-left"></i></button>
                         
                         <div class="current-date-display mx-1">
                             <i class="bi bi-calendar-event me-2 text-accent"></i>
-                            <span th:text="${#temporals.format(selecteddate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12 Marzo 2026</span>
+                            <span th:text="${#temporals.format(selectedDate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12 Marzo 2026</span>
                         </div>
 
                         <!-- Siguiente -->
-                        <a th:if="${nextdate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextdate}}" 
+                        <a th:if="${nextDate != null}" 
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextDate}}" 
                            class="btn-nav-history" title="Siguiente">
                             <i class="bi bi-chevron-right"></i>
                         </a>
-                        <button th:if="${nextdate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-right"></i></button>
+                        <button th:if="${nextDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-right"></i></button>
 
                         <!-- ÚÚltimo / Hoy (más reciente) -->
                         <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}"
                            class="btn btn-sm px-3 fw-bold ms-2" 
-                           th:classappend="${nextdate == null} ? 'btn-accent' : 'btn-outline-secondary'"
+                           th:classappend="${nextDate == null} ? 'btn-accent' : 'btn-outline-secondary'"
                            title="Volver al más reciente">
                             HOY
                         </a>
@@ -191,7 +206,7 @@
                     
                     <div class="ms-4 border-start border-secondary ps-4 d-flex align-items-center gap-2">
                         <label class="small text-muted mb-0"><i class="bi bi-search me-1"></i>Ir a:</label>
-                        <input type="date" id="dateFilter" class="date-input-custom" th:value="${selecteddate}" 
+                        <input type="date" id="dateFilter" class="date-input-custom" th:value="${selectedDate}" 
                                th:onchange="'window.location.href=\'/admin/tariffs/' + ${tariff.id} + '/history?date=\' + this.value'">
                     </div>
                 </div>
@@ -204,8 +219,20 @@
                 </div>
             </div>
 
-            <!-- Error Message if date Doesn't Exist -->
-            <div th:if="${!dateExists}" class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+            <!-- Loading / Error Message -->
+            <div th:if="${isInitializing}" class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <h4 class="fw-bold text-accent">Generando historial inicial...</h4>
+                <p class="text-muted">Estamos calculando los 30.000 precios para esta tarifa. Esto solo ocurre la primera vez y tardará unos segundos.</p>
+                <div class="progress mt-3 mx-auto" style="width: 300px; height: 10px; background: var(--surface);">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-accent" role="progressbar" style="width: 100%"></div>
+                </div>
+                <p class="small text-muted mt-3"><i class="bi bi-arrow-clockwise me-1"></i>La página se actualizará automáticamente.</p>
+            </div>
+
+            <div th:if="${!dateExists and !isInitializing}" class="alert alert-warning d-flex align-items-center mt-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <div>No hay tarifario registrado para esta fecha especifica.</div>
             </div>
@@ -229,7 +256,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="h : ${history}" class="history-row">
+                        <tr th:each="h : ${pricesPage.content}" class="history-row">
                             <td class="py-3">
                                 <div class="fw-bold" th:text="${h.productName}">Producto</div>
                                 <div class="category-pill" th:text="${h.categoryName}">Categoria</div>
@@ -243,7 +270,7 @@
                             <td class="group-start text-center text-muted small" 
                                 th:text="${#numbers.formatDecimal(h.vatRate * 100, 1, 0, 'COMMA') + '%'}"></td>
                             <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.vdatamount, 1, 2, 'COMMA') + ' '}"></td>
+                                th:text="${#numbers.formatDecimal(h.vatAmount, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="price-tag text-end" 
                                 th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' '}"></td>
                             <td class="group-start text-center text-muted small" 
@@ -264,6 +291,37 @@
                         </tr>
                     </tbody>
                 </table>
+                    <!-- Aesthetic Serverside Pagination -->
+            <div class="pagination-wrap mt-4 border-top border-secondary pt-4" th:if="${pricesPage.totalPages > 1}">
+                <button class="pagination-btn" th:onclick="'goToPage(0)'"
+                    th:disabled="${pricesPage.number == 0}" title="Primera página">
+                    <i class="bi bi-chevron-double-left"></i>
+                </button>
+
+                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number - 1}) + ')'"
+                    th:disabled="${pricesPage.number == 0}" title="Página anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+
+                <div class="pagination-jump">
+                    <input type="number" id="pageInput" min="1" th:max="${pricesPage.totalPages}"
+                        th:value="${pricesPage.number + 1}"
+                        onkeydown="if(event.key === 'Enter') jumpToPage(this.value)" title="Ir a página">
+                    <span class="small text-muted">
+                        de <span th:text="${pricesPage.totalPages}">1</span>
+                    </span>
+                </div>
+
+                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number + 1}) + ')'"
+                    th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}"
+                    title="Página siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+
+                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.totalPages - 1}) + ')'"
+                    th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}" title="Última página">
+                    <i class="bi bi-chevron-double-right"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -281,6 +339,19 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        function goToPage(page) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', page);
+            window.location.href = url.toString();
+        }
+
+        function jumpToPage(page) {
+            let p = parseInt(page);
+            if (!isNaN(p) && p > 0) {
+                goToPage(p - 1);
+            }
         }
     </script>
 </body>

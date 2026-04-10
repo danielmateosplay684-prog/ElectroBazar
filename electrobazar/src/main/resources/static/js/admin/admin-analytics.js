@@ -27,7 +27,11 @@ function updateAnalytics() {
     const now = new Date();
     let fromDate = new Date();
     let toDate = new Date();
-    let chartTitle = 'Tendencia de Ventas (' + periodText + ')';
+    const labels = {
+        trend: document.getElementById('analytics-js-translations').getAttribute('data-chart-trend'),
+        analysis: document.getElementById('analytics-js-translations').getAttribute('data-chart-analysis'),
+        error: document.getElementById('analytics-js-translations').getAttribute('data-error-loading')
+    };
 
     const toLocalISO = (d) => {
         const off = d.getTimezoneOffset() * 60000;
@@ -50,6 +54,12 @@ function updateAnalytics() {
     } else if (period === '1year') {
         fromDate.setFullYear(now.getFullYear() - 1);
         fromDate.setHours(0, 0, 0, 0);
+    } else if (period === 'all') {
+        fromDate = new Date(0);
+    }
+
+    if (period === 'today' || period === '7days' || period === '1month' || period === '6months' || period === '1year' || period === 'all') {
+        chartTitle = labels.trend + ' (' + periodText + ')';
     } else if (period === 'custom') {
         const dVal = document.getElementById('analyticsDate').value;
         if (dVal) {
@@ -57,10 +67,8 @@ function updateAnalytics() {
             fromDate.setHours(0, 0, 0, 0);
             toDate = new Date(dVal);
             toDate.setHours(23, 59, 59, 999);
-            chartTitle = 'Análisis del día ' + fromDate.toLocaleDateString();
+            chartTitle = labels.analysis + ' ' + fromDate.toLocaleDateString();
         }
-    } else if (period === 'all') {
-        fromDate = new Date(0);
     }
 
     // Update title in UI
@@ -80,7 +88,7 @@ function updateAnalytics() {
         })
         .catch(err => {
             console.error('Error updating analytics:', err);
-            showToast('Error al cargar datos de análisis', 'error');
+            showToast(labels.error, 'error');
         });
 }
 
@@ -131,7 +139,7 @@ function initCharts(analytics, period, chartLabel) {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Ventas (€)',
+                    label: document.getElementById('analytics-js-translations').getAttribute('data-label-sales'),
                     data: datasetsData,
                     borderColor: '#f5a623',
                     backgroundColor: 'rgba(245, 166, 35, 0.1)',

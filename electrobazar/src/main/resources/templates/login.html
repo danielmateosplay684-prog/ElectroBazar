@@ -29,50 +29,62 @@
 
         <form th:action="@{/login}" method="post" id="loginForm">
             <div class="mb-4">
-                <label for="username" class="form-label">Trabajador</label>
-                <input type="text" id="username" name="username" class="form-control" placeholder="Nombre de usuario"
+                <label for="username" class="form-label" th:text="#{common.worker}">Trabajador</label>
+                <input type="text" id="username" name="username" class="form-control" th:placeholder="#{common.username}"
                     required autofocus autocomplete="username">
             </div>
             <div class="mb-4">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••"
-                    required autocomplete="current-password">
+                <label for="password" class="form-label" th:text="#{common.password}">Contraseña</label>
+                <div class="input-group">
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••"
+                        required autocomplete="current-password">
+                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility('password', this)" 
+                        style="border-color: var(--border); background: var(--surface); color: var(--text-muted);">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn-login">
-                Acceder <i class="bi bi-arrow-right"></i>
+                <span th:text="#{login.access}">Acceder</span> <i class="bi bi-arrow-right"></i>
             </button>
-            <a href="#" class="forgot-password-link" onclick="showForgotFlow(event)">¿Has olvidado tu contraseña?</a>
+            <a href="#" class="forgot-password-link" onclick="showForgotFlow(event)" th:text="#{login.forgot_password}">¿Has olvidado tu contraseña?</a>
         </form>
 
         <!-- Forgot Password Flow -->
         <div id="forgotFlow" style="display: none;">
             <div id="forgotStep1">
-                <p class="text-center mb-4 small text-muted">Introduce tu email y te enviaremos un código de recuperación.</p>
+                <p class="text-center mb-4 small text-muted" th:text="#{login.forgot.step1.desc}">Introduce tu email y te enviaremos un código de recuperación.</p>
                 <div class="mb-4">
-                    <label for="resetEmail" class="form-label">Email</label>
-                    <input type="email" id="resetEmail" class="form-control" placeholder="ejemplo@correo.com">
+                    <label for="resetEmail" class="form-label" th:text="#{common.email}">Email</label>
+                    <input type="email" id="resetEmail" class="form-control" th:placeholder="#{login.forgot.email.placeholder}">
                 </div>
                 <button type="button" class="btn-login" onclick="sendResetPin()">
-                    Enviar Código <i class="bi bi-envelope"></i>
+                    <span th:text="#{login.forgot.send_code}">Enviar Código</span> <i class="bi bi-envelope"></i>
                 </button>
             </div>
 
             <div id="forgotStep2" style="display: none;">
-                <p class="text-center mb-4 small text-muted">Hemos enviado un código a tu email. Introdúcelo junto a tu nueva contraseña.</p>
+                <p class="text-center mb-4 small text-muted" th:text="#{login.forgot.step2.desc}">Hemos enviado un código a tu email. Introdúcelo junto a tu nueva contraseña.</p>
                 <div class="mb-3">
-                    <label for="resetPin" class="form-label">Código (PIN)</label>
+                    <label for="resetPin" class="form-label" th:text="#{login.forgot.pin}">Código (PIN)</label>
                     <input type="text" id="resetPin" class="form-control text-center" placeholder="000000" maxlength="6">
                 </div>
                 <div class="mb-4">
-                    <label for="newPassword" class="form-label">Nueva Contraseña</label>
-                    <input type="password" id="newPassword" class="form-control" placeholder="••••••••">
+                    <label for="newPassword" class="form-label" th:text="#{login.forgot.new_password}">Nueva Contraseña</label>
+                    <div class="input-group">
+                        <input type="password" id="newPassword" class="form-control" placeholder="••••••••">
+                        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility('newPassword', this)"
+                            style="border-color: var(--border); background: var(--surface); color: var(--text-muted);">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="button" class="btn-login" onclick="performReset()">
-                    Restablecer Contraseña <i class="bi bi-check2"></i>
+                    <span th:text="#{login.forgot.reset_password}">Restablecer Contraseña</span> <i class="bi bi-check2"></i>
                 </button>
             </div>
             
-            <a href="#" class="forgot-password-link mt-4" onclick="showLoginFlow(event)">Volver al inicio de sesión</a>
+            <a href="#" class="forgot-password-link mt-4" onclick="showLoginFlow(event)" th:text="#{login.forgot.back_to_login}">Volver al inicio de sesión</a>
         </div>
     </div>
 

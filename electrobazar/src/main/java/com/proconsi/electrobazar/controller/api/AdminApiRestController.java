@@ -667,7 +667,7 @@ public class AdminApiRestController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         Tariff tariff = tariffService.findById(id).orElseThrow(() -> new RuntimeException("Tarifa no encontrada"));
         LocalDate targetDate = date != null ? date : LocalDate.now();
-        List<TariffPriceEntryDTO> history = tariffPriceHistoryService.getPricesForTariffAtDate(id, targetDate);
+        List<TariffPriceEntryDTO> history = tariffPriceHistoryService.getPricesForTariffAtDateList(id, targetDate);
         byte[] pdfData = pdfReportService.generateTariffSheet(tariff, history, targetDate);
         String filename = String.format("Tarifa_%s_%s.pdf", tariff.getName(), targetDate);
         return createPdfResponse(pdfData, filename);

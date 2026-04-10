@@ -62,6 +62,10 @@ public class ElectrobazarApplication {
         } catch (IOException e) {
             // Silently fail if .env is missing or inaccessible
         }
+        // Asegurar que el contexto de seguridad se herede a hilos secundarios (@Async)
+        org.springframework.security.core.context.SecurityContextHolder.setStrategyName(
+            org.springframework.security.core.context.SecurityContextHolder.MODE_INHERITABLETHREADLOCAL
+        );
         SpringApplication.run(ElectrobazarApplication.class, args);
     }
 

@@ -18,32 +18,24 @@
     <th:block th:replace="~{fragments/theme :: themeScript}" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/shared/inventory-filter.js(v='1.1')}" defer></script>
-    
+
+
+
+    <!-- Hidden PIN Modal for Administration -->
     <!-- Modular Admin Scripts -->
-    <script th:src="@{/js/admin/admin-core.js}" defer></script>
-    <script th:src="@{/js/admin/admin-products.js}" defer></script>
-    <script th:src="@{/js/admin/admin-categories.js}" defer></script>
-    <script th:src="@{/js/admin/admin-workers.js}" defer></script>
-    <script th:src="@{/js/admin/admin-roles.js}" defer></script>
-    <script th:src="@{/js/admin/admin-customers.js}" defer></script>
-    <script th:src="@{/js/admin/admin-precios.js}" defer></script>
-    <script th:src="@{/js/admin/admin-invoices.js}" defer></script>
-    <script th:src="@{/js/admin/admin-returns.js}" defer></script>
-    <script th:src="@{/js/admin/admin-coupons.js}" defer></script>
-    <script th:src="@{/js/admin/admin-promotions.js}" defer></script>
-    <script th:src="@{/js/admin/admin-analytics.js}" defer></script>
-    <script th:src="@{/js/admin/admin-settings.js}" defer></script>
-    <script th:src="@{/js/admin/admin-unidades.js}" defer></script>
-    <script th:src="@{/js/admin/admin-abonos.js}" defer></script>
-    <script th:src="@{/js/admin/admin-tariffs.js}" defer></script>
-    <script th:src="@{/js/admin/admin-tax-rates.js}" defer></script>
-    <script th:src="@{/js/admin/admin-logs.js}" defer></script>
-    
+
+
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
 
 </head>
 
 <body>
+    <!-- JS Translations Container -->
+    <div id="analytics-js-translations" style="display:none" th:attr="data-chart-trend=#{admin.analytics.chart.trend},
+                 data-chart-analysis=#{admin.analytics.chart.analysis},
+                 data-error-loading=#{admin.analytics.error.loading},
+                 data-label-sales=#{admin.analytics.label.sales}">
+    </div>
 
     <!--  Sidebar  -->
     <aside class="admin-sidebar">
@@ -175,7 +167,8 @@
         <!-- 0. DASHBOARD LANDING VIEW -->
         <div id="dashboardView">
             <div class="panel-header mb-4">
-                <span class="panel-title"><i class="bi bi-house-door me-2"></i>Bienvenido al Administrador</span>
+                <span class="panel-title"><i class="bi bi-house-door me-2"></i><span
+                        th:text="#{admin.dashboard.welcome}">Bienvenido al Administrador</span></span>
             </div>
 
             <!-- QUICK ACTIONS SECTION -->
@@ -219,7 +212,8 @@
                     <button class="btn btn-outline-secondary btn-sm px-3 py-2"
                         style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
                         onclick="openAbonoModal()">
-                        <i class="bi bi-cash-coin me-1"></i> <span>Nuevo Abono</span>
+                        <i class="bi bi-cash-coin me-1"></i> <span th:text="#{admin.dashboard.action.newabono}">Nuevo
+                            Abono</span>
                     </button>
                     <button class="btn btn-outline-secondary btn-sm px-3 py-2"
                         style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
@@ -262,7 +256,8 @@
 
             <h5 class="mb-3"
                 style="font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">
-                <i class="bi bi-columns-gap me-2"></i>Secciones del Panel
+                <i class="bi bi-columns-gap me-2"></i><span th:text="#{admin.dashboard.sections}">Secciones del
+                    Panel</span>
             </h5>
             <div class="dashboard-grid">
                 <div class="dashboard-card"
@@ -299,8 +294,9 @@
                 <div class="dashboard-card"
                     onclick="switchView('abonosView', document.querySelector('[onclick*=\'abonosView\']'))">
                     <i class="bi bi-cash-coin"></i>
-                    <h3>Abonos y Saldo</h3>
-                    <p>Crea, anula y consulta los abonos, devoluciones y saldos a favor (crédito) de los clientes.</p>
+                    <h3 th:text="#{admin.dashboard.abonos.title}">Abonos y Saldo</h3>
+                    <p th:text="#{admin.dashboard.abonos.desc}">Crea, anula y consulta los abonos, devoluciones y saldos
+                        a favor (crédito) de los clientes.</p>
                 </div>
 
                 <div class="dashboard-card"
@@ -387,8 +383,9 @@
                 <div class="dashboard-card"
                     onclick="switchView('measurementUnitsView', document.querySelector('[onclick*=\'measurementUnitsView\']'))">
                     <i class="bi bi-rulers"></i>
-                    <h3>Unidades de Medida</h3>
-                    <p>Gestiona las magnitudes y precisiones decimales para el pesado o medido de productos.</p>
+                    <h3 th:text="#{admin.dashboard.measurements.title}">Unidades de Medida</h3>
+                    <p th:text="#{admin.dashboard.measurements.desc}">Gestiona las magnitudes y precisiones decimales
+                        para el pesado o medido de productos.</p>
                 </div>
 
                 <div class="dashboard-card"
@@ -776,38 +773,58 @@
         <!-- ACTIVITY LOG VIEW -->
         <th:block th:replace="~{admin/views/activity-view :: view}" />
 
-    <!-- Fragments for Modals -->
-    <th:block th:replace="~{admin/modals/product-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/category-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/worker-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/role-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/customer-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/measurement-unit-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/schedule-price-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/ipc-modal :: modal}" />
-    <th:block th:replace="~{admin/modals/document-preview-modal :: modal}" />
+        <!-- Fragments for Modals -->
+        <th:block th:replace="~{admin/modals/product-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/category-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/worker-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/role-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/customer-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/measurement-unit-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/schedule-price-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/ipc-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/document-preview-modal :: modal}" />
 
-    <script th:inline="javascript">
-        function showDocPreview(url) {
-            const iframe = document.getElementById('docPreviewIframe');
-            const loader = document.getElementById('previewLoader');
-            if (iframe) {
-                iframe.style.opacity = '0';
-                loader.style.display = 'block';
-                iframe.src = url;
-                const modalElement = document.getElementById('documentPreviewModal');
-                let modal = bootstrap.Modal.getInstance(modalElement);
-                if (!modal) modal = new bootstrap.Modal(modalElement);
-                modal.show();
+        <script th:src="@{/js/admin/admin-core.js}"></script>
+        <script th:src="@{/js/admin/admin-products.js}"></script>
+        <script th:src="@{/js/admin/admin-categories.js}"></script>
+        <script th:src="@{/js/admin/admin-workers.js}"></script>
+        <script th:src="@{/js/admin/admin-roles.js}"></script>
+        <script th:src="@{/js/admin/admin-customers.js}"></script>
+        <script th:src="@{/js/admin/admin-precios.js}"></script>
+        <script th:src="@{/js/admin/admin-invoices.js}"></script>
+        <script th:src="@{/js/admin/admin-returns.js}"></script>
+        <script th:src="@{/js/admin/admin-coupons.js}"></script>
+        <script th:src="@{/js/admin/admin-promotions.js}"></script>
+        <script th:src="@{/js/admin/admin-analytics.js}"></script>
+        <script th:src="@{/js/admin/admin-settings.js}"></script>
+        <script th:src="@{/js/admin/admin-unidades.js}"></script>
+        <script th:src="@{/js/admin/admin-abonos.js}"></script>
+        <script th:src="@{/js/admin/admin-tariffs.js}"></script>
+        <script th:src="@{/js/admin/admin-tax-rates.js}"></script>
+        <script th:src="@{/js/admin/admin-logs.js}"></script>
+
+        <script th:inline="javascript">
+            function showDocPreview(url) {
+                const iframe = document.getElementById('docPreviewIframe');
+                const loader = document.getElementById('previewLoader');
+                if (iframe) {
+                    iframe.style.opacity = '0';
+                    loader.style.display = 'block';
+                    iframe.src = url;
+                    const modalElement = document.getElementById('documentPreviewModal');
+                    let modal = bootstrap.Modal.getInstance(modalElement);
+                    if (!modal) modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
             }
-        }
-        function printPreviewIframe() {
-            const iframe = document.getElementById('docPreviewIframe');
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.print();
+            function printPreviewIframe() {
+                const iframe = document.getElementById('docPreviewIframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.print();
+                }
             }
-        }
-    </script>
+        </script>
+
 </body>
 
 </html>

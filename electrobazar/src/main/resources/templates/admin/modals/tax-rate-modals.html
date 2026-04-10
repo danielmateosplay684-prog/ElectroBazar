@@ -1,135 +1,125 @@
 ﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <body>
-<th:block th:fragment="modal">
+    <th:block th:fragment="modal">
 
-            <!-- modal: Crear Tipo IVA -->
-            <div class="modal fade" id="createTaxRatemodal" tabindex="-1">
+        <!-- modal: Crear Tipo IVA -->
+        <div class="modal fade" id="createTaxRateModal" tabindex="-1">
 
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
-                        <div class="modal-header border-0">
-                            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i><span
-                                    th:text="#{admin.taxrates.new}">Nuevo Tipo de IVA</span></h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i><span
+                                th:text="#{admin.taxrates.new}">Nuevo Tipo de IVA</span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold"><span
+                                    th:text="#{common.description}">Descripción</span> <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="newTaxRateDescription" class="form-control"
+                                th:placeholder="#{admin.taxrates.description.placeholder}">
                         </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold"><span th:text="#{admin.taxrates.iva.full}">IVA
+                                        (ej: 0.21)</span> <span class="text-danger">*</span></label>
+                                <input type="number" id="newTaxRateVat" class="form-control" step="0.0001"
+                                    placeholder="0.21">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold"><span th:text="#{admin.taxrates.re.full}">RE
+                                        (ej: 0.052)</span> <span class="text-danger">*</span></label>
+                                <input type="number" id="newTaxRateRe" class="form-control" step="0.0001"
+                                    placeholder="0.052">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
                                 <label class="form-label small fw-bold"><span
-                                        th:text="#{common.description}">Descripción</span> <span
+                                        th:text="#{admin.taxrates.validFrom}">Válido Desde</span> <span
                                         class="text-danger">*</span></label>
-                                <input type="text" id="newTaxRateDescription" class="form-control"
-                                    th:placeholder="#{admin.taxrates.description.placeholder}">
+                                <input type="date" id="newTaxRateValidFrom" class="form-control">
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold"><span
-                                            th:text="#{admin.taxrates.iva.full}">IVA
-                                            (ej: 0.21)</span> <span class="text-danger">*</span></label>
-                                    <input type="number" id="newTaxRateVat" class="form-control" step="0.0001"
-                                        placeholder="0.21">
-                                </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold"><span th:text="#{admin.taxrates.re.full}">RE
-                                            (ej: 0.052)</span> <span class="text-danger">*</span></label>
-                                    <input type="number" id="newTaxRateRe" class="form-control" step="0.0001"
-                                        placeholder="0.052">
-                                </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold" th:text="#{admin.taxrates.validTo}">Válido
+                                    Hasta</label>
+                                <input type="date" id="newTaxRateValidTo" class="form-control">
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold"><span
-                                            th:text="#{admin.taxrates.validFrom}">Válido Desde</span> <span
-                                            class="text-danger">*</span></label>
-                                    <input type="date" id="newTaxRateValidFrom" class="form-control">
-                                </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold" th:text="#{admin.taxrates.validTo}">Válido
-                                        Hasta</label>
-                                    <input type="date" id="newTaxRateValidTo" class="form-control">
-                                </div>
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" id="newTaxRateActive" class="form-check-input" checked>
-                                <label class="form-check-label small fw-bold"
-                                    th:text="#{admin.taxrates.active}">Activo</label>
-                            </div>
-                            <div id="createTaxRateError" class="alert alert-danger" style="display:none;"></div>
                         </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                                th:text="#{common.cancel}">Cancelar</button>
-                            <button type="button" class="btn btn-save" onclick="saveTaxRate()"
-                                th:text="#{common.save}">Guardar</button>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" id="newTaxRateActive" class="form-check-input" checked>
+                            <label class="form-check-label small fw-bold"
+                                th:text="#{admin.taxrates.active}">Activo</label>
                         </div>
+                        <div id="createTaxRateError" class="alert alert-danger" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            th:text="#{common.cancel}">Cancelar</button>
+                        <button type="button" class="btn btn-save" onclick="saveTaxRate()"
+                            th:text="#{common.save}">Guardar</button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- modal: Editar Tipo IVA -->
-            <div class="modal fade" id="editTaxRatemodal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
-                        <div class="modal-header border-0">
-                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i><span
-                                    th:text="#{admin.taxrates.edit}">Editar Tipo de IVA</span></h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <!-- modal: Editar Tipo IVA -->
+        <div class="modal fade" id="editTaxRatemodal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i><span
+                                th:text="#{admin.taxrates.edit}">Editar Tipo de IVA</span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editTaxRateId">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descripción <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="editTaxRateDescription" class="form-control">
                         </div>
-                        <div class="modal-body">
-                            <input type="hidden" id="editTaxRateId">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Descripción <span
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">IVA (ej: 0.21) <span
                                         class="text-danger">*</span></label>
-                                <input type="text" id="editTaxRateDescription" class="form-control">
+                                <input type="number" id="editTaxRateVat" class="form-control" step="0.0001">
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold">IVA (ej: 0.21) <span
-                                            class="text-danger">*</span></label>
-                                    <input type="number" id="editTaxRateVat" class="form-control" step="0.0001">
-                                </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold">RE (ej: 0.052) <span
-                                            class="text-danger">*</span></label>
-                                    <input type="number" id="editTaxRateRe" class="form-control" step="0.0001">
-                                </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">RE (ej: 0.052) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" id="editTaxRateRe" class="form-control" step="0.0001">
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold">Válido Desde <span
-                                            class="text-danger">*</span></label>
-                                    <input type="date" id="editTaxRateValidFrom" class="form-control">
-                                </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label small fw-bold">Válido Hasta</label>
-                                    <input type="date" id="editTaxRateValidTo" class="form-control">
-                                </div>
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" id="editTaxRateActive" class="form-check-input">
-                                <label class="form-check-label small fw-bold">Activo</label>
-                            </div>
-                            <div id="editTaxRateError" class="alert alert-danger" style="display:none;"></div>
                         </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="button" class="btn btn-save" onclick="updateTaxRate()">Actualizar</button>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Válido Desde <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" id="editTaxRateValidFrom" class="form-control">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Válido Hasta</label>
+                                <input type="date" id="editTaxRateValidTo" class="form-control">
+                            </div>
                         </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" id="editTaxRateActive" class="form-check-input">
+                            <label class="form-check-label small fw-bold">Activo</label>
+                        </div>
+                        <div id="editTaxRateError" class="alert alert-danger" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-save" onclick="updateTaxRate()">Actualizar</button>
                     </div>
                 </div>
             </div>
+        </div>
 
-</th:block>
+    </th:block>
 </body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-

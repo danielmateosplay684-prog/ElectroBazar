@@ -28,6 +28,7 @@ import com.proconsi.electrobazar.model.Category;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.Sale;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -364,8 +365,11 @@ public class AdminController {
             @PathVariable Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false, defaultValue = "tarifasView") String returnView,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
             Model model,
             HttpSession session) {
+        tariffPriceHistoryService.generateInitialSnapshotIfEmpty(id);
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/tpv";
         }
@@ -390,9 +394,16 @@ public class AdminController {
             targetDate = today;
         }
 
-        List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService
-                .getPricesForTariffAtDate(id, targetDate);
-        boolean dateExists = !history.isEmpty();
+        Pageable pageable = PageRequest.of(page, size);
+        Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> pricesPage = tariffPriceHistoryService
+                .getPricesForTariffAtDate(id, targetDate, pageable);
+        
+        boolean isInitializing = false;
+        if (pricesPage.isEmpty() && tariffPriceHistoryService.isInitializationInProgress(id)) {
+            isInitializing = true;
+        }
+        
+        boolean dateExists = !pricesPage.isEmpty();
 
         LocalDate prevDate = null;
         LocalDate nextDate = null;
@@ -434,7 +445,7 @@ public class AdminController {
         }
 
         model.addAttribute("tariff", tariff);
-        model.addAttribute("history", history);
+        model.addAttribute("pricesPage", pricesPage);
         model.addAttribute("selectedDate", targetDate);
         model.addAttribute("availableDates", availableDates);
         model.addAttribute("prevDate", prevDate);
@@ -443,6 +454,7 @@ public class AdminController {
                 availableDates.isEmpty() ? null : availableDates.get(availableDates.size() - 1));
         model.addAttribute("lastDate", availableDates.isEmpty() ? null : availableDates.get(0));
         model.addAttribute("dateExists", dateExists);
+        model.addAttribute("isInitializing", isInitializing);
         model.addAttribute("returnView", returnView);
 
         return "admin/tariff-price-history";
@@ -464,7 +476,7 @@ public class AdminController {
 
             LocalDate targetDate = date != null ? date : LocalDate.now();
             List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService
-                    .getPricesForTariffAtDate(id, targetDate);
+                    .getPricesForTariffAtDateList(id, targetDate);
 
             byte[] pdfData = pdfReportService.generateTariffSheet(tariff, history, targetDate);
             String filename = String.format("Tariff_%s_%s.pdf", tariff.getName(), targetDate);

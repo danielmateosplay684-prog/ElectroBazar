@@ -367,10 +367,12 @@ function renderTicket() {
 
     // Vacío
     if (ids.length === 0) {
+        const transTable = document.getElementById('tpv-js-translations');
+        const emptyMsg = transTable ? transTable.dataset.ticketEmpty : 'Pulsa un producto para añadirlo';
         linesEl.innerHTML = `
                 <div class="ticket-empty">
                     <i class="bi bi-cart"></i>
-                    <span>Pulsa un producto para añadirlo</span>
+                    <span>${emptyMsg}</span>
                 </div>`;
         countEl.textContent = '0';
         totalEl.textContent = '0.00\u20AC';
@@ -727,13 +729,16 @@ function calculateChange() {
 
     var diff = received - total;
 
+    const transTable = document.getElementById('tpv-js-translations');
+    const missingTr = transTable ? transTable.dataset.checkoutMissing : 'Faltan';
+
     if (received === 0 && inputVal === '') {
         // Campo vacío: mostrar neutro
         changeEl.textContent = '0,00€';
         changeEl.style.color = 'var(--text-muted)';
     } else if (diff < 0) {
         // Falta dinero
-        changeEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2).replace('.', ',') + '€';
+        changeEl.textContent = `${missingTr} ${Math.abs(diff).toFixed(2).replace('.', ',')}€`;
         changeEl.style.color = 'var(--danger)';
     } else {
         // Cambio o exacto
@@ -757,15 +762,20 @@ function calculateMixedChange() {
     var total = parsePrice(document.getElementById('ticketTotal').textContent);
     var remainingEl = document.getElementById('mixedRemainingAmount');
 
+    const transTable = document.getElementById('tpv-js-translations');
+    const missingTr = transTable ? transTable.dataset.checkoutMissing : 'Faltan';
+    const exactTr = transTable ? transTable.dataset.checkoutExact : 'Exacto';
+    const changeTr = transTable ? transTable.dataset.checkoutChangePrefix : 'Cambio';
+
     var diff = (cardVal + cashVal) - total;
     if (diff < 0) {
-        remainingEl.textContent = 'Faltan ' + Math.abs(diff).toFixed(2).replace('.', ',') + '€';
+        remainingEl.textContent = `${missingTr} ${Math.abs(diff).toFixed(2).replace('.', ',')}€`;
         remainingEl.className = 'fw-bold fs-5 text-danger';
     } else if (diff === 0) {
-        remainingEl.textContent = '0,00€ (Exacto)';
+        remainingEl.textContent = `0,00€ (${exactTr})`;
         remainingEl.className = 'fw-bold fs-5 text-success';
     } else {
-        remainingEl.textContent = 'Cambio: ' + diff.toFixed(2).replace('.', ',') + '€';
+        remainingEl.textContent = `${changeTr}: ${diff.toFixed(2).replace('.', ',')}€`;
         remainingEl.className = 'fw-bold fs-5 text-success';
     }
 }
@@ -1025,10 +1035,12 @@ function renderProducts(products) {
     if (!productGrid) return;
 
     if (!products || products.length === 0) {
+        const transTable = document.getElementById('tpv-js-translations');
+        const noProductsMsg = transTable ? transTable.dataset.noProducts : 'No hay productos disponibles';
         productGrid.innerHTML = `
                 <div class="no-products" style="grid-column: 1/-1; text-align: center;">
                     <i class="bi bi-box-seam"></i>
-                    <p>No hay productos disponibles</p>
+                    <p>${noProductsMsg}</p>
                 </div>`;
         return;
     }
@@ -1159,72 +1171,67 @@ document.querySelectorAll('.cat-btn[data-category-id]').forEach(function (btn) {
 })();
 
 // -- Admin PIN Login --
-(function () {
+function openAdminPinModal() {
     var overlay = document.getElementById('adminPinOverlay');
     var input = document.getElementById('pinInput');
     var error = document.getElementById('pinError');
-    var btn = document.getElementById('adminLockBtn');
+    if (!overlay || !input || !error) return;
+    
+    input.value = '';
+    error.textContent = '';
+    input.classList.remove('error');
+    overlay.classList.add('open');
+    setTimeout(function () { input.focus(); }, 100);
+}
 
-    // Expose globally so onclick in HTML works
-    window.openAdminPinModal = function () {
-        if (!overlay || !input || !error) return;
-        input.value = '';
-        error.textContent = '';
-        input.classList.remove('error');
-        overlay.classList.add('open');
-        setTimeout(function () { input.focus(); }, 100);
-    };
+function submitAdminPin() {
+    var input = document.getElementById('pinInput');
+    var error = document.getElementById('pinError');
+    if (!input || !error) return;
 
-    if (btn) {
-        btn.addEventListener('click', window.openAdminPinModal);
-    }
+    var pin = input.value.trim();
+    if (!pin) { input.focus(); return; }
 
-    if (document.getElementById('pinCancel')) {
-        document.getElementById('pinCancel').addEventListener('click', function () {
-            overlay.classList.remove('open');
+    fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pin })
+    }).then(function (r) {
+        if (r.ok) {
+            window.location.href = '/admin';
+        } else {
+            input.classList.remove('error');
+            void input.offsetWidth; // force reflow for re-trigger
+            input.classList.add('error');
+            error.textContent = 'PIN incorrecto';
+            input.value = '';
+            input.focus();
+        }
+    }).catch(function () {
+        error.textContent = 'Error de conexión';
+    });
+}
+
+function closeAdminPinModal() {
+    var overlay = document.getElementById('adminPinOverlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var pinSubmit = document.getElementById('pinSubmit');
+    if (pinSubmit) pinSubmit.addEventListener('click', submitAdminPin);
+    
+    var pinCancel = document.getElementById('pinCancel');
+    if (pinCancel) pinCancel.addEventListener('click', closeAdminPinModal);
+    
+    var adminPinInput = document.getElementById('pinInput');
+    if (adminPinInput) {
+        adminPinInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') submitAdminPin();
+            if (e.key === 'Escape') closeAdminPinModal();
         });
     }
-
-    if (overlay) {
-        overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) overlay.classList.remove('open');
-        });
-    }
-
-    function submitPin() {
-        var pin = input.value.trim();
-        if (!pin) { input.focus(); return; }
-
-        fetch('/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pin: pin })
-        }).then(function (r) {
-            if (r.ok) {
-                window.location.href = '/admin';
-            } else {
-                input.classList.remove('error');
-                void input.offsetWidth; // force reflow for re-trigger
-                input.classList.add('error');
-                error.textContent = 'PIN incorrecto';
-                input.value = '';
-                input.focus();
-            }
-        }).catch(function () {
-            error.textContent = 'Error de conexión';
-        });
-    }
-
-    if (document.getElementById('pinSubmit')) {
-        document.getElementById('pinSubmit').addEventListener('click', submitPin);
-    }
-    if (input) {
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') submitPin();
-            if (e.key === 'Escape') overlay.classList.remove('open');
-        });
-    }
-})();
+});
 
 // -- Buscador de Clientes en Cobro --
 var customerSearchTimeout = null;
@@ -1286,7 +1293,9 @@ function renderCustomerResults(customers) {
     container.innerHTML = '';
 
     if (customers.length === 0) {
-        container.innerHTML = '<div class="p-3" style="color: var(--text-main);">No se encontraron clientes</div>';
+        const transTable = document.getElementById('tpv-js-translations');
+        const notFoundMsg = transTable ? transTable.dataset.customerNotFound : 'No se encontraron clientes';
+        container.innerHTML = `<div class="p-3" style="color: var(--text-main);">${notFoundMsg}</div>`;
     } else {
         customers.forEach(function (c) {
             var div = document.createElement('div');
@@ -2553,5 +2562,17 @@ function submitPinToSell() {
             console.error('Error verifying PIN', err);
             btn.disabled = false;
         });
+}
+
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
 }
 

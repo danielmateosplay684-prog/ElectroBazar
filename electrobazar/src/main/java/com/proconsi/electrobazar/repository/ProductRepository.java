@@ -57,8 +57,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate WHERE p.active = true ORDER BY p.nameEs ASC")
     List<Product> findAllActiveWithCategory(org.springframework.data.domain.Pageable pageable);
 
-    
-
     /**
      * Lists all products (including inactive ones) with their associations.
      */
@@ -116,4 +114,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.taxRate ORDER BY p.nameEs ASC", countQuery = "SELECT COUNT(p) FROM Product p")
     Page<Product> findAllWithCategoryPaged(Pageable pageable);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.taxRate WHERE p.active = true AND p.price IS NOT NULL")
+    List<Product> findAllActiveForSnapshot();
 }
