@@ -2,6 +2,13 @@
  * admin-core.js
  * Core functions and initialization for the Admin Panel.
  */
+ 
+// Helper for i18n in Admin JS
+function getAdminI18n(key) {
+    const el = document.getElementById('admin-js-translations');
+    if (!el) return '';
+    return el.dataset[key] || '';
+}
 
 // Global Modal Instances
 window.productModal = null;

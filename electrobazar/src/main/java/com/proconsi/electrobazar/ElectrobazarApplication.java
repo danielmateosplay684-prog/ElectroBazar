@@ -21,14 +21,16 @@ import java.util.TimeZone;
 /**
  * Main entry point for the Electrobazar POS system.
  * 
- * This class initializes the Spring Boot context and configures core infrastructure:
+ * This class initializes the Spring Boot context and configures core
+ * infrastructure:
  * 1. Caching: Enabled for high-performance pricing and catalog lookups.
  * 2. Scheduling: Enabled for daily automated tax changes and log maintenance.
- * 3. Environment: Loads localized settings (.env) and sets the systemic timezone to Europe/Madrid.
+ * 3. Environment: Loads localized settings (.env) and sets the systemic
+ * timezone to Europe/Madrid.
  * 4. Security: Auto-provisions the root administrator account.
  */
-@SpringBootApplication(exclude = { 
-    org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration.class 
+@SpringBootApplication(exclude = {
+        org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration.class
 })
 @EnableCaching
 @EnableScheduling
@@ -46,32 +48,33 @@ public class ElectrobazarApplication {
 
     /**
      * Bootstraps the application.
-     * Manually loads .env variables into System properties for local development flexibility.
+     * Manually loads .env variables into System properties for local development
+     * flexibility.
      */
     public static void main(String[] args) {
         try {
             File envFile = new File(".env");
             if (envFile.exists()) {
                 Files.lines(envFile.toPath())
-                    .filter(line -> line.contains("=") && !line.trim().startsWith("#"))
-                    .forEach(line -> {
-                        String[] parts = line.split("=", 2);
-                        System.setProperty(parts[0].trim(), parts[1].trim());
-                    });
+                        .filter(line -> line.contains("=") && !line.trim().startsWith("#"))
+                        .forEach(line -> {
+                            String[] parts = line.split("=", 2);
+                            System.setProperty(parts[0].trim(), parts[1].trim());
+                        });
             }
         } catch (IOException e) {
             // Silently fail if .env is missing or inaccessible
         }
         // Asegurar que el contexto de seguridad se herede a hilos secundarios (@Async)
         org.springframework.security.core.context.SecurityContextHolder.setStrategyName(
-            org.springframework.security.core.context.SecurityContextHolder.MODE_INHERITABLETHREADLOCAL
-        );
+                org.springframework.security.core.context.SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
         SpringApplication.run(ElectrobazarApplication.class, args);
     }
 
     /**
      * Ensures the presence of a 'root' user and 'ADMIN' role on every startup.
-     * Use case: Automatic disaster recovery if the database is reset or compromised.
+     * Use case: Automatic disaster recovery if the database is reset or
+     * compromised.
      */
     @Bean
     public CommandLineRunner initData(WorkerService workerService, RoleRepository roleRepository) {
@@ -84,7 +87,7 @@ public class ElectrobazarApplication {
                 newRole.setDescription("Administrador con acceso total al sistema");
                 return newRole;
             });
-            
+
             // Clear permissions as they are hardcoded for "ADMIN" in Worker entity
             adminRole.setPermissions(new java.util.HashSet<>());
             final Role finalAdminRole = roleRepository.save(adminRole);
@@ -92,28 +95,30 @@ public class ElectrobazarApplication {
             // 2. Ensure root worker is active and has the ADMIN role
             java.util.List<Worker> allWorkers = workerService.findAll();
             System.out.println("[BOOTSTRAP] Verified ADMIN role ID: " + finalAdminRole.getId());
-            
+
             allWorkers.stream()
-                .filter(w -> "root".equalsIgnoreCase(w.getUsername()))
-                .findFirst()
-                .ifPresentOrElse(w -> {
-                    System.out.println("[BOOTSTRAP] Updating existing 'root' user (ID: " + w.getId() + ") with ADMIN role.");
-                    w.setRole(finalAdminRole);
-                    w.setActive(true);
-                    if (w.getEmail() == null || w.getEmail().isEmpty() || w.getEmail().equals("admin@electrobazar.com")) {
-                        w.setEmail("danielmateos684@gmail.com");
-                    }
-                    workerService.save(w);
-                }, () -> {
-                    System.out.println("[BOOTSTRAP] Creating new 'root' user with password 'r00t' and ADMIN role.");
-                    Worker defaultWorker = new Worker();
-                    defaultWorker.setUsername("root");
-                    defaultWorker.setPassword("r00t");
-                    defaultWorker.setEmail("danielmateos684@gmail.com");
-                    defaultWorker.setActive(true);
-                    defaultWorker.setRole(finalAdminRole);
-                    workerService.save(defaultWorker);
-                });
+                    .filter(w -> "root".equalsIgnoreCase(w.getUsername()))
+                    .findFirst()
+                    .ifPresentOrElse(w -> {
+                        System.out.println(
+                                "[BOOTSTRAP] Updating existing 'root' user (ID: " + w.getId() + ") with ADMIN role.");
+                        w.setRole(finalAdminRole);
+                        w.setActive(true);
+                        if (w.getEmail() == null || w.getEmail().isEmpty()
+                                || w.getEmail().equals("admin@electrobazar.com")) {
+                            w.setEmail("danielmateos684@gmail.com");
+                        }
+                        workerService.save(w);
+                    }, () -> {
+                        System.out.println("[BOOTSTRAP] Creating new 'root' user with password 'r00t' and ADMIN role.");
+                        Worker defaultWorker = new Worker();
+                        defaultWorker.setUsername("root");
+                        defaultWorker.setPassword("r00t");
+                        defaultWorker.setEmail("danielmateos684@gmail.com");
+                        defaultWorker.setActive(true);
+                        defaultWorker.setRole(finalAdminRole);
+                        workerService.save(defaultWorker);
+                    });
         };
     }
 }

@@ -36,36 +36,36 @@ function saveCategory() {
     }).then(function (res) {
         if (res.ok) {
             categoryModal.hide();
-            showToast('Categoría guardada con éxito');
+            showToast(getAdminI18n('successSave'));
             setTimeout(function () { location.reload(); }, 1000);
         } else {
             res.json().then(function (err) {
-                showToast('Error al guardar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                showToast(getAdminI18n('errorSave') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
             }).catch(function () {
-                showToast('Error al guardar categoría', 'error');
+                showToast(getAdminI18n('errorSave'), 'error');
             });
         }
     }).catch(function () {
-        showToast('Error de red', 'error');
+        showToast(getAdminI18n('errorNetwork'), 'error');
     });
 }
 
 function deleteCategory(id) {
-    if (!confirm('¿Seguro que quieres eliminar esta categoría?')) return;
+    if (!confirm(getAdminI18n('confirmDelete'))) return;
     fetch('/admin/categories/delete/' + id, { method: 'DELETE' })
         .then(function (res) {
             if (res.ok) {
-                showToast('Categoría eliminada');
+                showToast(getAdminI18n('successDelete'));
                 setTimeout(function () { location.reload(); }, 1000);
             } else {
                 res.json().then(function (err) {
-                    showToast('Error al eliminar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                    showToast(getAdminI18n('errorDelete') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
                 }).catch(function () {
-                    showToast('Error al eliminar categoría', 'error');
+                    showToast(getAdminI18n('errorDelete'), 'error');
                 });
             }
         }).catch(function () {
-            showToast('Error de red', 'error');
+            showToast(getAdminI18n('errorNetwork'), 'error');
         });
 }
 

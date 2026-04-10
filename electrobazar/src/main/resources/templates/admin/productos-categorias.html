@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -29,7 +29,7 @@
         </a>
         <a th:href="@{/tpv}" class="btn-cancel"
             style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="bi bi-arrow-left"></i> Volver al TPV
+            <i class="bi bi-arrow-left"></i> <span th:text="#{admin.inventory.back_to_tpv}">Volver al TPV</span>
         </a>
     </header>
 
@@ -39,13 +39,13 @@
             <li class="nav-item">
                 <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane"
                     type="button">
-                    <i class="bi bi-box-seam"></i> Productos
+                    <i class="bi bi-box-seam"></i> <span th:text="#{admin.inventory.tabs.products}">Productos</span>
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories-pane"
                     type="button">
-                    <i class="bi bi-tags"></i> Categorias
+                    <i class="bi bi-tags"></i> <span th:text="#{admin.inventory.tabs.categories}">Categorias</span>
                 </button>
             </li>
         </ul>
@@ -57,20 +57,20 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0 fw-bold">
                         <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2"
-                            style="text-decoration:none;" title="Volver">
+                            style="text-decoration:none;" th:title="#{common.back}">
                             <i class="bi bi-arrow-left"></i>
                         </a>
-                        Gestión de Productos
+                        <span th:text="#{admin.inventory.products.management}">Gestión de Productos</span>
                     </h5>
                     <div class="d-flex gap-2">
                         <input type="file" id="csvFileInput" accept=".csv" style="display: none;"
                             onchange="uploadCsvFile(this)">
                         <button class="btn-nuevo" onclick="document.getElementById('csvFileInput').click()"
                             style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border);">
-                            <i class="bi bi-file-earmark-spreadsheet"></i> Importar CSV
+                            <i class="bi bi-file-earmark-spreadsheet"></i> <span th:text="#{admin.inventory.import_csv}">Importar CSV</span>
                         </button>
                         <button class="btn-nuevo" onclick="openProductModal()">
-                            <i class="bi bi-plus-lg"></i> Nuevo Producto
+                            <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.new}">Nuevo Producto</span>
                         </button>
                     </div>
                 </div>
@@ -81,15 +81,15 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Imagen</th>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>IVA</th>
-                                <th style="text-align: right;">Precio</th>
-                                <th>Stock</th>
-                                <th>Categoria</th>
-                                <th>Estado</th>
-                                <th style="text-align:right">Acciones</th>
+                                <th th:text="#{admin.inventory.table.image}">Imagen</th>
+                                <th th:text="#{common.name}">Nombre</th>
+                                <th th:text="#{common.description}">Descripción</th>
+                                <th th:text="#{common.iva}">IVA</th>
+                                <th style="text-align: right;" th:text="#{common.price}">Precio</th>
+                                <th th:text="#{common.stock}">Stock</th>
+                                <th th:text="#{common.category}">Categoria</th>
+                                <th th:text="#{common.status}">Estado</th>
+                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
@@ -122,7 +122,7 @@
                                         <span th:text="${p.stock}"
                                             th:classappend="${p.stock < 5} ? 'fw-bold text-danger' : ''"></span>
                                         <span th:if="${p.stock < 5}" class="badge-stock-low"
-                                            style="font-size: 0.7rem;">Bajo</span>
+                                            style="font-size: 0.7rem;" th:text="#{admin.inventory.stock.low}">Bajo</span>
                                     </div>
                                 </td>
                                 <td>
@@ -131,7 +131,7 @@
                                 </td>
                                 <td>
                                     <span class="badge-active" th:classappend="${p.active} ? 'yes' : 'no'"
-                                        th:text="${p.active} ? 'Activo' : 'Baja'"></span>
+                                        th:text="${p.active} ? #{admin.inventory.status.active} : #{admin.inventory.status.inactive}"></span>
                                 </td>
                                 <td style="text-align:right">
                                     <div class="d-flex gap-1 justify-content-end">
@@ -180,7 +180,7 @@
                     </button>
 
                     <button class="pagination-btn" th:onclick="|goToPage(${productsPage.totalPages - 1})|"
-                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" title="ÚÚltima página">
+                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" th:title="#{admin.inventory.last_page}">
                         <i class="bi bi-chevron-double-right"></i>
                     </button>
                 </div>
@@ -191,13 +191,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0 fw-bold">
                         <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2"
-                            style="text-decoration:none;" title="Volver">
+                            style="text-decoration:none;" th:title="#{common.back}">
                             <i class="bi bi-arrow-left"></i>
                         </a>
-                        Gestión de Categorias
+                        <span th:text="#{admin.inventory.categories.management}">Gestión de Categorias</span>
                     </h5>
                     <button class="btn-nuevo" onclick="openCategoryModal()">
-                        <i class="bi bi-plus-lg"></i> Nueva Categoria
+                        <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.categories.new}">Nueva Categoria</span>
                     </button>
                 </div>
 
@@ -205,13 +205,13 @@
                     style="background: var(--surface); border: 1px solid var(--border);">
                     <div class="row g-2">
                         <div class="col-md-10">
-                            <label class="form-label small text-muted mb-1">Buscar categoria</label>
+                            <label class="form-label small text-muted mb-1" th:text="#{admin.inventory.categories.search}">Buscar categoria</label>
                             <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
-                                placeholder="Nombre o descripción..." oninput="debounceSharedFilter()">
+                                th:placeholder="#{admin.inventory.categories.search.placeholder}" oninput="debounceSharedFilter()">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCategoryFilters()">
-                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                <i class="bi bi-arrow-counterclockwise"></i> <span th:text="#{common.reset}">Reset</span>
                             </button>
                         </div>
                     </div>
@@ -221,10 +221,10 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>Estado</th>
-                                <th style="text-align:right">Acciones</th>
+                                <th th:text="#{common.name}">Nombre</th>
+                                <th th:text="#{common.description}">Descripción</th>
+                                <th th:text="#{common.status}">Estado</th>
+                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="categoriesTableBody">
@@ -233,7 +233,7 @@
                                 <td th:text="${c.description}"></td>
                                 <td>
                                     <span class="badge-active" th:classappend="${c.active} ? 'yes' : 'no'"
-                                        th:text="${c.active} ? 'Activa' : 'Baja'"></span>
+                                        th:text="${c.active} ? #{admin.inventory.status.active} : #{admin.inventory.status.inactive}"></span>
                                 </td>
                                 <td style="text-align:right">
                                     <div class="d-flex gap-1 justify-content-end">
@@ -297,61 +297,61 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="productmodalLabel">Producto</h5>
+                    <h5 class="modal-title" id="productmodalLabel" th:text="#{common.product}">Producto</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="productId">
                     <div class="mb-3">
-                        <label class="form-label">Nombre del Producto</label>
+                        <label class="form-label" th:text="#{admin.product.placeholder.name}">Nombre del Producto</label>
                         <input type="text" id="productName" class="form-control" autocomplete="off">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Descripción</label>
+                        <label class="form-label" th:text="#{common.description}">Descripción</label>
                         <textarea id="productDescription" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-6 mb-3">
-                            <label class="form-label">Precio (&euro;)</label>
+                            <label class="form-label" th:text="#{common.price.euro}">Precio (&euro;)</label>
                             <input type="number" id="productPrice" class="form-control" step="0.0001">
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Stock Actual</label>
+                            <label class="form-label" th:text="#{common.stock}">Stock Actual</label>
                             <input type="number" id="productStock" class="form-control">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Tipo de IVA</label>
+                        <label class="form-label" th:text="#{admin.inventory.filter.iva}">Tipo de IVA</label>
                         <select class="form-select" id="productIvaRate">
                             <!-- Populated dynamically via JS from /admin/api/tax-rates/active -->
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Categoria</label>
+                        <label class="form-label" th:text="#{common.category}">Categoria</label>
                         <select id="productCategory" class="form-select">
-                            <option value="">Selecciona...</option>
+                            <option value="" th:text="#{tpv.customer.search.placeholder}">Selecciona...</option>
                             <option th:each="c : ${allCategories}" th:value="${c.id}" th:text="${c.name}"></option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">unidad de Medida</label>
+                        <label class="form-label" th:text="#{admin.dashboard.measurements.title}">unidad de Medida</label>
                         <select id="productMeasurementUnit" class="form-select">
-                            <option value="">Selecciona...</option>
+                            <option value="" th:text="#{tpv.customer.search.placeholder}">Selecciona...</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">URL de Imagen</label>
+                        <label class="form-label" th:text="#{admin.product.imageUrl}">URL de Imagen</label>
                         <input type="text" id="productImageUrl" class="form-control" oninput="previewImage(this.value)">
                         <img id="imgPreview" src="" alt="Vista previa">
                     </div>
                     <div class="form-check form-switch mt-2">
                         <input class="form-check-input" type="checkbox" id="productActive">
-                        <label class="form-check-label" for="productActive">Producto Activo</label>
+                        <label class="form-check-label" for="productActive" th:text="#{admin.product.active}">Producto Activo</label>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-save" onclick="saveProduct()">Guardar</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
+                    <button type="button" class="btn btn-save" onclick="saveProduct()" th:text="#{common.save}">Guardar</button>
                 </div>
             </div>
         </div>
@@ -362,27 +362,27 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="categorymodalLabel">Categoria</h5>
+                    <h5 class="modal-title" id="categorymodalLabel" th:text="#{common.category}">Categoria</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="categoryId">
                     <div class="mb-3">
-                        <label class="form-label">Nombre de la Categoria</label>
+                        <label class="form-label" th:text="#{admin.category.placeholder.name}">Nombre de la Categoria</label>
                         <input type="text" id="categoryName" class="form-control" autocomplete="off">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Descripción</label>
+                        <label class="form-label" th:text="#{common.description}">Descripción</label>
                         <textarea id="categoryDescription" class="form-control" rows="3"></textarea>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="categoryActive">
-                        <label class="form-check-label" for="categoryActive">Categoria Activa</label>
+                        <label class="form-check-label" for="categoryActive" th:text="#{admin.category.active}">Categoria Activa</label>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-save" onclick="saveCategory()">Guardar</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
+                    <button type="button" class="btn btn-save" onclick="saveCategory()" th:text="#{common.save}">Guardar</button>
                 </div>
             </div>
         </div>
@@ -407,11 +407,11 @@
     <script th:inline="javascript">
         /*<!-- [Cdata[*/
         window.sharedInventoryI18n = {
-            lowStock: /*[[#{admin.inventory.filter.stock.low}]]*/ 'Stock Bajo',
-            yes: /*[[#{common.yes}]]*/ 'Si',
-            no: /*[[#{common.no}]]*/ 'No',
+            lowStock: /*[[#{admin.inventory.stock.low}]]*/ 'Bajo',
+            yes: /*[[#{admin.inventory.status.active}]]*/ 'Activo',
+            no: /*[[#{admin.inventory.status.inactive}]]*/ 'Baja',
             noItems: /*[[#{admin.inventory.products.empty}]]*/ 'No hay productos registrados',
-            noCats: /*[[#{admin.inventory.categories.empty}]]*/ 'No hay categorias registradias',
+            noCats: /*[[#{admin.inventory.categories.empty}]]*/ 'No hay categorias registradas',
             actions_edit: /*[[#{common.edit}]]*/ 'Editar',
             actions_delete: /*[[#{common.delete}]]*/ 'Eliminar'
         };

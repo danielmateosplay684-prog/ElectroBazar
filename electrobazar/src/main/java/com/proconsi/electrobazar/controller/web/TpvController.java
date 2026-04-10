@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -51,6 +53,7 @@ public class TpvController {
     private final ActivityLogService activityLogService;
     private final CashSessionService cashSessionService;
     private final CashRegisterService cashRegisterService;
+    private final MessageSource messageSource;
 
     @GetMapping
     public String index(
@@ -108,6 +111,7 @@ public class TpvController {
             }
         }
         model.addAttribute("formattedPrices", formattedPrices);
+        model.addAttribute("currentCash", cashRegisterService.getCurrentCashBalance());
 
         return "tpv/index";
     }
@@ -255,7 +259,8 @@ public class TpvController {
             sale = saleService.createSaleWithCoupon(lines, paymentMethod, notes, receivedAmountDecimal,
                     cashAmountDecimal, cardAmountDecimal, customer,
                     worker, tariffOverride, couponCode);
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (IllegalStateException | IllegalArgumentException
+                | com.proconsi.electrobazar.exception.InsufficientCashException e) {
             log.error("Error creating sale: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/tpv";
@@ -464,7 +469,9 @@ public class TpvController {
                     + " of " + amountDecimal.setScale(2, RoundingMode.HALF_UP) + " \u20ac performed successfully.";
             redirectAttributes.addFlashAttribute("successMessage", msg);
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing movement: " + e.getMessage());
+            String localizedMsg = messageSource.getMessage("tpv.error.movement", 
+                new Object[]{e.getMessage()}, LocaleContextHolder.getLocale());
+            redirectAttributes.addFlashAttribute("errorMessage", localizedMsg);
         }
 
         return "redirect:/tpv";
@@ -638,6 +645,14 @@ public class TpvController {
         Worker worker = (Worker) session.getAttribute("worker");
         if (worker == null) {
             return "redirect:/login";
+        }
+
+        if (saleLineIds == null || quantities == null || saleLineIds.size() != quantities.size()
+                || saleLineIds.isEmpty()) {
+            String localizedMsg = messageSource.getMessage("tpv.error.return_items", 
+                null, LocaleContextHolder.getLocale());
+            redirectAttributes.addFlashAttribute("errorMessage", localizedMsg);
+            return "redirect:/tpv/return/" + saleId;
         }
 
         List<ReturnLineRequest> lineRequests = new ArrayList<>();

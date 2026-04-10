@@ -6,27 +6,26 @@ import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.repository.CashWithdrawalRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
-import com.proconsi.electrobazar.service.CashSessionService;
+import com.proconsi.electrobazar.service.CashRegisterService;
 import com.proconsi.electrobazar.service.CashWithdrawalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Implementation of {@link CashWithdrawalService}.
- * Handles manual cash entries and withdrawals within an open shift.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class CashWithdrawalServiceImpl implements CashWithdrawalService {
 
     private final CashWithdrawalRepository cashWithdrawalRepository;
-    private final CashSessionService cashSessionService;
+    private final CashRegisterService cashRegisterService;
     private final ActivityLogService activityLogService;
+    private final MessageSource messageSource;
 
     @Override
     public CashWithdrawal processMovement(Long sessionId, BigDecimal amount, String reason,
@@ -35,16 +34,26 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
             throw new IllegalArgumentException("Amount must be greater than zero.");
         }
 
-        CashRegister session = cashSessionService.getActiveSession()
-                .filter(s -> s.getId().equals(sessionId))
-                .orElseThrow(() -> new ResourceNotFoundException("Active cash session not found with id: " + sessionId));
+        // Pillamos la sesión (que es un CashRegister)
+        CashRegister session = cashRegisterService.getOpenRegister()
+                .orElseThrow(() -> new ResourceNotFoundException("No hay ninguna sesión de caja abierta."));
+
+        if (type == CashWithdrawal.MovementType.WITHDRAWAL) {
+            BigDecimal currentBalance = cashRegisterService.getCurrentCashBalance();
+            if (amount.compareTo(currentBalance) > 0) {
+                String localizedMsg = messageSource.getMessage("error.insufficient_cash", 
+                    new Object[]{currentBalance}, LocaleContextHolder.getLocale());
+                throw new com.proconsi.electrobazar.exception.InsufficientCashException(localizedMsg);
+            }
+        }
 
         if (Boolean.TRUE.equals(session.getClosed())) {
             throw new IllegalStateException("Cannot perform movements on a closed session.");
         }
 
+        // Asignamos el objeto session entero
         CashWithdrawal movement = CashWithdrawal.builder()
-                .cashRegister(session)
+                .cashSession(session)
                 .amount(amount)
                 .reason(reason)
                 .worker(worker)
@@ -54,7 +63,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
         CashWithdrawal saved = cashWithdrawalRepository.save(movement);
 
         String typeLabel = type == CashWithdrawal.MovementType.ENTRY ? "ENTRADA" : "RETIRADA";
-        
+
         activityLogService.logActivity(
                 "MOVIMIENTO_CAJA",
                 String.format("%s de %.2f €. Motivo: %s", typeLabel, amount, (reason != null ? reason : "N/A")),
@@ -68,6 +77,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
     @Override
     @Transactional(readOnly = true)
     public List<CashWithdrawal> findBySessionId(Long sessionId) {
-        return cashWithdrawalRepository.findByCashRegisterId(sessionId);
+        // Usa el ID aquí
+        return cashWithdrawalRepository.findByCashSessionId(sessionId);
     }
 }

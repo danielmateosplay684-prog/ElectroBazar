@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,7 @@ public class ReturnServiceImpl implements ReturnService {
     private final CashRegisterService cashRegisterService;
     private final RectificativeInvoiceRepository rectificativeInvoiceRepository;
     private final ActivityLogService activityLogService;
+    private final MessageSource messageSource;
 
     private static final String INITIAL_HASH = "0000000000000000";
 
@@ -124,7 +127,9 @@ public class ReturnServiceImpl implements ReturnService {
             BigDecimal currentDrawerCash = cashRegisterService.getCurrentCashBalance();
             if (totalRefunded.compareTo(currentDrawerCash) > 0) {
                 log.warn("Blocked cash refund: -%.2f € requested, %.2f € available in drawer.", totalRefunded, currentDrawerCash);
-                throw new InsufficientCashException("Insufficient cash in drawer to process this refund.");
+                String localizedMsg = messageSource.getMessage("error.insufficient_cash_refund", 
+                    new Object[]{currentDrawerCash}, LocaleContextHolder.getLocale());
+                throw new InsufficientCashException(localizedMsg);
             }
         }
 

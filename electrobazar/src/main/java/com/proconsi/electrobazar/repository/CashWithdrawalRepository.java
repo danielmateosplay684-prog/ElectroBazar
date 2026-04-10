@@ -11,5 +11,5 @@ import java.util.List;
  */
 @Repository
 public interface CashWithdrawalRepository extends JpaRepository<CashWithdrawal, Long> {
-    List<CashWithdrawal> findByCashRegisterId(Long sessionId);
+    List<CashWithdrawal> findByCashSessionId(Long sessionId);
 }

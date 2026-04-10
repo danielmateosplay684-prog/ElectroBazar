@@ -14,206 +14,208 @@
     
     <style>
         body {
-            background-color: var(primary);
+            background-color: var(--primary);
             color: var(--text-main);
-            font-family: 'Barlow', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
             padding: 2rem;
             min-height: 100vh;
+            display: block !important;
         }
-        .detail-container {
-            max-width: 1050px;
+        .detail-wrapper {
+            max-width: 1100px;
             margin: 0 auto;
-            background: var(--secondary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2.5rem;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
         }
         .header-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2.5rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
         }
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 1.25rem;
             margin-bottom: 3rem;
         }
-        .summary-item {
-            background: var(--surface);
-            padding: 1.25rem;
-            border-radius: 12px;
+        .summary-card {
+            background: var(--secondary);
+            padding: 1.5rem;
+            border-radius: 16px;
             border: 1px solid var(--border);
-            transition: transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .summary-item:hover {
-            transform: translateY(-3px);
+        .summary-card:hover {
             border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .summary-label {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             color: var(--text-muted);
             font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.6rem;
+            letter-spacing: 0.8px;
         }
         .summary-value {
-            font-size: 1.35rem;
+            font-size: 1.6rem;
             font-weight: 700;
             font-family: 'Barlow Condensed', sans-serif;
-        }
-        .btn-close-win {
-            background: var(--surface);
             color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 0.6rem 1.2rem;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .btn-close-win:hover {
-            background: var(--border);
-            transform: translateY(-1px);
-        }
-        .btn-download {
-            background: var(--accent);
-            color: var(primary);
-            border: none;
-            padding: 0.6rem 1.4rem;
-            border-radius: 10px;
-            font-weight: 700;
-            transition: all 0.2s;
-        }
-        .btn-download:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
         }
         .sales-title {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
             color: var(--text-main);
+            border-left: 5px solid var(--accent);
+            padding-left: 1.25rem;
+        }
+        .notes-area {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+        .notes-area::after {
+            content: "\F471";
+            font-family: bootstrap-icons;
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            color: var(--text-muted);
+            opacity: 0.15;
+            font-size: 2rem;
         }
         .clickable-row {
             cursor: pointer;
             transition: all 0.2s;
         }
         .clickable-row:hover {
-            background: rgba(245, 166, 35, 0.05) !important;
-            transform: scale(1.002);
-        }
-        .text-accent {
-            color: var(--accent) !important;
+            background: rgba(245, 166, 35, 0.08) !important;
         }
         .badge-count {
-            background: var(--surface);
-            color: var(--accent);
-            border: 1px solid var(--border);
+            background: var(--accent);
+            color: #fff;
             font-size: 0.85rem;
-            padding: 0.2rem 0.7rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-weight: 700;
         }
-        .notes-area {
-            background: var(--surface);
-            border-left: 4px solid var(--accent);
-            padding: 1.25rem;
-            border-radius: 8px;
-            margin-bottom: 2.5rem;
+        .btn-accent {
+            background: var(--accent);
+            color: #fff !important;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 10px;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .btn-accent:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: #fff !important;
         }
     </style>
 </head>
 <body>
 
-<div class="detail-container">
+<div class="detail-wrapper">
     <div class="header-actions">
         <div>
             <h2 class="mb-0 fw-bold">
-                <i class="bi bi-cash-stack me-2 text-accent"></i>
+                <i class="bi bi-file-earmark-bar-graph me-2 text-accent"></i>
                 <span th:text="#{admin.cash.detail.title}">Detalle de Cierre</span> 
                 <span class="text-muted ms-2" th:text="'#' + ${register.id}"></span>
             </h2>
             <div class="small text-muted mt-1" th:text="#{common.date} + ': ' + ${#temporals.format(register.openingTime, 'dd/MM/yyyy')}"></div>
         </div>
-        <div class="d-flex gap-3">
-            <a th:href="@{/admin?view=cashCloseView}" class="btn-close-win text-decoration-none d-flex align-items-center">
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin?view=cashCloseView}" class="btn-back text-decoration-none">
                 <i class="bi bi-arrow-left me-1"></i> <span th:text="#{common.back}">Volver</span>
             </a>
-            <a th:href="@{/admin/download/cash-close/{id}(id=${register.id})}" class="btn-download text-decoration-none d-flex align-items-center">
-                <i class="bi bi-file-earmark-pdf me-1"></i> <span th:text="#{common.download.pdf}">Descargar PDF</span>
+            <a th:href="@{/admin/download/cash-close/{id}(id=${register.id})}" class="btn-accent">
+                <i class="bi bi-file-earmark-pdf me-2"></i> <span th:text="#{common.download.pdf}">Descargar PDF</span>
             </a>
         </div>
     </div>
 
     <!-- Resumen del Cierre -->
     <div class="summary-grid">
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.opening}">Apertura</div>
             <div class="summary-value" th:text="${register.openingTime != null ? #temporals.format(register.openingTime, 'HH:mm') : '—'}"></div>
             <div class="small text-muted" th:text="${register.openingTime != null ? #temporals.format(register.openingTime, 'dd/MM/yyyy') : ''}"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.closing}">Cierre</div>
             <div class="summary-value" th:text="${register.closedAt != null ? #temporals.format(register.closedAt, 'HH:mm') : '—'}"></div>
             <div class="small text-muted" th:text="${register.closedAt != null ? #temporals.format(register.closedAt, 'dd/MM/yyyy') : ''}"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.initial}">Saldo Inicial</div>
-            <div class="summary-value" th:text="${#numbers.formatDecimal(register.openingBalance, 1, 2)} + ' '"></div>
+            <div class="summary-value" th:text="${#numbers.formatDecimal(register.openingBalance, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.sales.cash}">Ventas Efectivo</div>
-            <div class="summary-value text-success" th:text="${#numbers.formatDecimal(register.cashSales, 1, 2)} + ' '"></div>
+            <div class="summary-value text-success" th:text="${#numbers.formatDecimal(register.cashSales, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.sales.card}">Ventas Tarjeta</div>
-            <div class="summary-value text-info" th:text="${#numbers.formatDecimal(register.cardSales, 1, 2)} + ' '"></div>
+            <div class="summary-value" style="color: #3b82f6;" th:text="${#numbers.formatDecimal(register.cardSales, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{common.total.sales}">Total Ventas</div>
-            <div class="summary-value fw-bold" th:text="${#numbers.formatDecimal(register.totalSales, 1, 2)} + ' '"></div>
+            <div class="summary-value fw-bold" th:text="${#numbers.formatDecimal(register.totalSales, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.refunds.cash}">Devoluciones Efectivo</div>
-            <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 2)} + ' '"></div>
+            <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.refunds.card}">Devoluciones Tarjeta</div>
-            <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 2)} + ' '"></div>
+            <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.withdrawals}">Retiradas de Caja</div>
-            <div class="summary-value text-warning" th:text="'-' + ${#numbers.formatDecimal(register.totalWithdrawals, 1, 2)} + ' '"></div>
+            <div class="summary-value text-warning" th:text="'-' + ${#numbers.formatDecimal(register.totalWithdrawals, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.entries}">Entradas de Caja</div>
-            <div class="summary-value text-success" th:text="'+' + ${#numbers.formatDecimal(register.totalEntries, 1, 2)} + ' '"></div>
+            <div class="summary-value text-success" th:text="'+' + ${#numbers.formatDecimal(register.totalEntries, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item" style="background: rgba(245, 166, 35, 0.05); border-color: var(--accent);">
+        <div class="summary-card" style="box-shadow: inset 0 0 10px rgba(245,166,35,0.05);">
             <div class="summary-label" th:text="#{admin.cash.expected}">Saldo Esperado</div>
-            <div class="summary-value" th:with="expected=${(register.openingBalance ?: 0) + (register.cashSales ?: 0) + (register.totalEntries ?: 0) - (register.totalWithdrawals ?: 0) - (register.cashRefunds ?: 0)}" 
-                 th:text="${#numbers.formatDecimal(expected, 1, 2)} + ' '"></div>
+            <div class="summary-value text-accent" th:with="expected=${(register.openingBalance ?: 0) + (register.cashSales ?: 0) + (register.totalEntries ?: 0) - (register.totalWithdrawals ?: 0) - (register.cashRefunds ?: 0)}" 
+                 th:text="${#numbers.formatDecimal(expected, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item" style="background: rgba(245, 166, 35, 0.1); border-color: var(--accent);">
+        <div class="summary-card" style="background: rgba(245, 166, 35, 0.08); border-color: var(--accent);">
             <div class="summary-label" th:text="#{admin.cash.real}">Saldo Real</div>
-            <div class="summary-value" th:text="${#numbers.formatDecimal(register.closingBalance, 1, 2)} + ' '"></div>
+            <div class="summary-value fw-800" th:text="${#numbers.formatDecimal(register.closingBalance, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{admin.cash.difference}">Diferencia</div>
             <div class="summary-value" 
                  th:classappend="${(register.difference ?: 0) >= 0} ? 'text-success' : 'text-danger'"
-                 th:text="${(register.difference ?: 0) >= 0 ? '+' : ''} + ${#numbers.formatDecimal(register.difference ?: 0, 1, 2)} + ' '"></div>
+                 th:text="${(register.difference ?: 0) >= 0 ? '+' : ''} + ${#numbers.formatDecimal(register.difference ?: 0, 1, 2)} + ' €'"></div>
         </div>
-        <div class="summary-item">
+        <div class="summary-card">
             <div class="summary-label" th:text="#{common.worker}">Trabajador</div>
-            <div class="summary-value text-accent" th:text="${register.worker != null ? register.worker.username : 'Sistema'}"></div>
+            <div class="summary-value" style="font-size: 1.1rem; color: var(--accent);" th:text="${register.worker != null ? register.worker.username : 'Sistema'}"></div>
         </div>
     </div>
 
@@ -227,17 +229,17 @@
     <div class="sales-section mb-5" th:if="${not #lists.isEmpty(workerStats)}">
         <h3 class="sales-title">
             <i class="bi bi-people text-accent"></i>
-            <span>Ventas por Trabajador</span>
+            <span th:text="#{admin.cash.stats.worker}">Ventas por Trabajador</span>
         </h3>
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Trabajador</th>
-                        <th class="text-center">Ventas</th>
-                        <th class="text-end">Efectivo</th>
-                        <th class="text-end">Tarjeta</th>
-                        <th class="text-end">Total</th>
+                        <th th:text="#{common.worker}">Trabajador</th>
+                        <th class="text-center" th:text="#{common.sales}">Ventas</th>
+                        <th class="text-end" th:text="#{admin.invoices.payment.cash}">Efectivo</th>
+                        <th class="text-end" th:text="#{admin.invoices.payment.card}">Tarjeta</th>
+                        <th class="text-end" th:text="#{common.total}">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -262,7 +264,7 @@
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border); border-radius: 16px;">
                 <div class="modal-header border-bottom border-border py-3">
-                    <h5 class="modal-title fw-bold" id="workermodalTitle">Ventas del Trabajador</h5>
+                    <h5 class="modal-title fw-bold" id="workermodalTitle" th:text="#{admin.cash.worker.sales}">Ventas del Trabajador</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -301,7 +303,7 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top border-border">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Cerrar</button>
                 </div>
             </div>
         </div>

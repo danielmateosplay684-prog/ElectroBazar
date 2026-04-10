@@ -59,18 +59,18 @@ function saveProduct() {
     }).then(res => {
         if (res.ok) {
             productModal.hide();
-            showToast('Producto guardado');
+            showToast(getAdminI18n('successSave'));
             location.reload(); // Simple reload for now to refresh table
         }
     });
 }
 
 function deleteProduct(id, name) {
-    if (!confirm(`¿Eliminar producto "${name}"?`)) return;
+    if (!confirm(getAdminI18n('confirmDelete'))) return;
     fetch('/api/products/' + id, { method: 'DELETE' })
         .then(res => {
             if (res.ok) {
-                showToast('Producto eliminado');
+                showToast(getAdminI18n('successDelete'));
                 location.reload();
             }
         });
@@ -81,16 +81,16 @@ function uploadCsvFile(input) {
     const formData = new FormData();
     formData.append('file', input.files[0]);
 
-    showToast('Importando CSV...', 'info');
+    showToast(getAdminI18n('loading'), 'info');
     fetch('/api/admin/products/import-csv', {
         method: 'POST',
         body: formData
     }).then(res => {
         if (res.ok) {
-            showToast('CSV importado con éxito');
+            showToast(getAdminI18n('successSave'));
             location.reload();
         } else {
-            showToast('Error al importar CSV', 'error');
+            showToast(getAdminI18n('errorSave'), 'error');
         }
     });
 }
@@ -138,7 +138,7 @@ if (typeof renderSharedProductsTable === 'function' || true) {
         tbody.innerHTML = '';
 
         if (!products || products.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-muted">${window.sharedInventoryI18n ? window.sharedInventoryI18n.noItems : 'No hay productos'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-muted">${window.sharedInventoryI18n ? window.sharedInventoryI18n.noItems : (isEn ? 'No products found' : 'No hay productos')}</td></tr>`;
             return;
         }
 

@@ -199,7 +199,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="hidden" name="saleLineIds" th:value="${line.id}">
+                                    <input type="hidden" name="saleLineIds" th:value="${line.id}" disabled class="line-id-input">
                                     <strong th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</strong>
                                 </td>
                                 <td class="muted-text" th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' €'">
@@ -272,16 +272,19 @@
         function toggleRow(checkbox) {
             const row = checkbox.closest('tr');
             const qtyInput = row.querySelector('.qty-input');
+            const idInput = row.querySelector('.line-id-input');
             const max = parseFloat(qtyInput.getAttribute('data-max'));
 
             if (checkbox.checked) {
                 row.classList.add('row-selected');
                 qtyInput.disabled = false;
+                idInput.disabled = false;
                 qtyInput.value = max;
                 qtyInput.focus();
             } else {
                 row.classList.remove('row-selected');
                 qtyInput.disabled = true;
+                idInput.disabled = true;
                 qtyInput.value = 0;
             }
             validateQty(qtyInput);

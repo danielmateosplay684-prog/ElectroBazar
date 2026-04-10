@@ -110,7 +110,7 @@ public class CashRegister {
     private Worker retainedByWorker;
 
     /** Detailed list of manual cash movements. */
-    @OneToMany(mappedBy = "cashRegister", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cashSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private java.util.List<CashWithdrawal> withdrawals = new java.util.ArrayList<>();
 

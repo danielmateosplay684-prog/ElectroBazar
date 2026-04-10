@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,6 +59,7 @@ public class SaleServiceImpl implements SaleService {
     private final InvoiceService invoiceService;
     private final CouponRepository couponRepository;
     private final CashRegisterService cashRegisterService;
+    private final MessageSource messageSource;
 
     @Override
     @Transactional(readOnly = true)
@@ -335,6 +338,16 @@ public class SaleServiceImpl implements SaleService {
             change = totalReceived.subtract(finalTotal);
             actualCardAmt = cardAmount != null ? cardAmount : BigDecimal.ZERO;
             actualCashAmt = (cashAmount != null ? cashAmount : BigDecimal.ZERO).subtract(change);
+        }
+
+        // --- NEW: Check if there's enough cash for change ---
+        if (change != null && change.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal currentCash = cashRegisterService.getCurrentCashBalance();
+            if (change.compareTo(currentCash) > 0) {
+                String localizedMsg = messageSource.getMessage("error.insufficient_cash_change", 
+                    new Object[]{change, currentCash}, LocaleContextHolder.getLocale());
+                throw new com.proconsi.electrobazar.exception.InsufficientCashException(localizedMsg);
+            }
         }
 
         Sale sale = Sale.builder()

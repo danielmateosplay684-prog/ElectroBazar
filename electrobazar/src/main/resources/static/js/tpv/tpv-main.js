@@ -31,6 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
+// Helper for i18n in JS
+function getTpvI18n(key) {
+    const el = document.getElementById('tpv-js-translations');
+    if (!el) return '';
+    return el.dataset[key] || '';
+}
+
 /**
  * Formats a price with dynamic decimal precision.
  * Shows 2 decimals by default, but up to 4 if the price has extra digits.
@@ -1780,33 +1787,33 @@ function openSuspendedModal() {
     suspendedSalesModalInstance.show();
 
     var container = document.getElementById('suspendedListContainer');
-    container.innerHTML = '<div style="padding:1.5rem; text-align:center; color:var(--text-muted);"><i class="bi bi-hourglass"></i> Cargando...</div>';
+    container.innerHTML = '<div style="padding:1.5rem; text-align:center; color:var(--text-muted);"><i class="bi bi-hourglass"></i> ' + getTpvI18n('onHoldLoading') + '</div>';
 
     fetch('/api/suspended-sales')
         .then(function (r) { return r.json(); })
         .then(function (sales) { renderSuspendedList(sales, container); })
         .catch(function () {
-            container.innerHTML = '<div style="padding:1.5rem; text-align:center; color:#ef4444;">Error al cargar las ventas en espera.</div>';
+            container.innerHTML = '<div style="padding:1.5rem; text-align:center; color:#ef4444;">' + getTpvI18n('onHoldError') + '</div>';
         });
 }
 
 function renderSuspendedList(sales, container) {
     if (!Array.isArray(sales) || sales.length === 0) {
-        container.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);"><i class="bi bi-check-circle" style="font-size:1.5rem;"></i><br>No hay ventas en espera.</div>';
+        container.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);"><i class="bi bi-check-circle" style="font-size:1.5rem;"></i><br>' + getTpvI18n('onHoldEmpty') + '</div>';
         return;
     }
 
     var html = '<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">';
     html += '<thead><tr style="border-bottom:1px solid var(--border); color:var(--text-muted); font-size:0.76rem; font-weight:700; text-transform:uppercase;">';
-    html += '<th style="padding:0.6rem 1rem;">Etiqueta</th>';
-    html += '<th style="padding:0.6rem 0.5rem;">Trabajador</th>';
-    html += '<th style="padding:0.6rem 0.5rem;">Fecha y Hora</th>';
-    html += '<th style="padding:0.6rem 0.5rem; text-align:center;">L\u00edneas</th>';
-    html += '<th style="padding:0.6rem 1rem; text-align:right;">Acciones</th>';
+    html += '<th style="padding:0.6rem 1rem;">' + getTpvI18n('onHoldLabel') + '</th>';
+    html += '<th style="padding:0.6rem 0.5rem;">' + getTpvI18n('onHoldWorker') + '</th>';
+    html += '<th style="padding:0.6rem 0.5rem;">' + getTpvI18n('onHoldDate') + '</th>';
+    html += '<th style="padding:0.6rem 0.5rem; text-align:center;">' + getTpvI18n('onHoldLines') + '</th>';
+    html += '<th style="padding:0.6rem 1rem; text-align:right;">' + getTpvI18n('onHoldActions') + '</th>';
     html += '</tr></thead><tbody>';
 
     sales.forEach(function (s) {
-        var label = escapeHtml(s.label || 'Sin etiqueta');
+        var label = escapeHtml(s.label || getTpvI18n('onHoldNoLabel'));
         var workerName = escapeHtml(s.workerUsername || 'Sistema');
         var createdAt = s.createdAt
             ? new Date(s.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -1818,7 +1825,7 @@ function renderSuspendedList(sales, container) {
         html += '<td style="padding:0.6rem 0.5rem; color:var(--text-muted);">' + createdAt + '</td>';
         html += '<td style="padding:0.6rem 0.5rem; text-align:center;">' + lineCount + '</td>';
         html += '<td style="padding:0.6rem 1rem; text-align:right;">';
-        html += '<button onclick="resumeSale(' + s.id + ')" style="margin-right:0.4rem; padding:0.3rem 0.8rem; border-radius:6px; background:var(--accent); color:var(--primary); border:none; font-size:0.82rem; font-weight:700; cursor:pointer;"><i class="bi bi-play-fill"></i> Reabrir</button>';
+        html += '<button onclick="resumeSale(' + s.id + ')" style="margin-right:0.4rem; padding:0.3rem 0.8rem; border-radius:6px; background:var(--accent); color:var(--primary); border:none; font-size:0.82rem; font-weight:700; cursor:pointer;"><i class="bi bi-play-fill"></i> ' + getTpvI18n('onHoldResume') + '</button>';
         html += '<button onclick="cancelSuspendedSale(' + s.id + ')" style="padding:0.3rem 0.6rem; border-radius:6px; background:var(--surface); color:var(--text-muted); border:1px solid var(--border); font-size:0.82rem; cursor:pointer;"><i class="bi bi-x-lg"></i></button>';
         html += '</td></tr>';
     });

@@ -48,36 +48,36 @@ function saveWorker() {
         body: JSON.stringify(worker)
     }).then(function (res) {
         if (res.ok) {
-            showToast('Trabajador guardado con éxito');
+            showToast(getAdminI18n('successSave'));
             setTimeout(function () { location.reload(); }, 1000);
         } else {
             res.json().then(function (err) {
-                showToast('Error al guardar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                showToast(getAdminI18n('errorSave') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
             }).catch(function () {
-                showToast('Error al guardar trabajador', 'error');
+                showToast(getAdminI18n('errorSave'), 'error');
             });
         }
     }).catch(function () {
-        showToast('Error de red', 'error');
+        showToast(getAdminI18n('errorNetwork'), 'error');
     });
 }
 
 function deleteWorker(id) {
-    if (!confirm('¿Seguro que quieres eliminar a este trabajador?')) return;
+    if (!confirm(getAdminI18n('confirmDelete'))) return;
     fetch('/admin/workers/delete/' + id, { method: 'DELETE' })
         .then(function (res) {
             if (res.ok) {
-                showToast('Trabajador eliminado');
+                showToast(getAdminI18n('successDelete'));
                 setTimeout(function () { location.reload(); }, 1000);
             } else {
                 res.json().then(function (err) {
-                    showToast('Error al eliminar: ' + (err.error || err.message || 'Desconocido'), 'error');
+                    showToast(getAdminI18n('errorDelete') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
                 }).catch(function () {
-                    showToast('Error al eliminar trabajador', 'error');
+                    showToast(getAdminI18n('errorDelete'), 'error');
                 });
             }
         }).catch(function () {
-            showToast('Error de red', 'error');
+            showToast(getAdminI18n('errorNetwork'), 'error');
         });
 }
 

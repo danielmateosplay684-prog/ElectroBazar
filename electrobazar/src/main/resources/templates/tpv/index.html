@@ -90,6 +90,8 @@
                     style="border-right: 1px solid var(--border); padding-right: 1rem;"
                     th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''">
                     <div><span th:text="#{tpv.stats.sales_today}">Ventas hoy</span> <br><strong th:text="${countToday}">0</strong></div>
+                    <div><span th:text="#{tpv.stats.current_cash}">Efectivo en caja</span> <br><strong
+                            th:text="${#numbers.formatDecimal(currentCash, 1, 2)} + '€'">0.00€</strong></div>
                     <div><span th:text="#{tpv.stats.total_today}">Total hoy</span> <br><strong
                             th:text="${#numbers.formatDecimal(totalToday, 1, 2)} + '€'">0.00€</strong></div>
                 </div>
@@ -709,23 +711,28 @@
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header" style="border-color: var(--border);">
-                    <h6 class="modal-title"><i class="bi bi-hourglass-split me-2"></i>Suspender venta</h6>
+                    <h6 class="modal-title">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        <span th:text="#{tpv.on_hold.suspend.title}">Suspender venta</span>
+                    </h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">Etiqueta
-                        (opcional)</label>
+                    <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);"
+                        th:text="#{tpv.on_hold.table.label} + ' (' + #{common.notes_optional} + ')'">Etiqueta (opcional)</label>
                     <input type="text" id="suspendLabelInput" class="form-control"
+                        th:placeholder="#{tpv.on_hold.suspend.placeholder}"
                         placeholder="Ej: Cliente esperando tarjeta" maxlength="100"
                         style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                    <small style="color: var(--text-muted); font-size:0.78rem;">Ayuda a identificar la venta en la lista
-                        de espera.</small>
+                    <small style="color: var(--text-muted); font-size:0.78rem;" th:text="#{tpv.on_hold.suspend.help}">Ayuda a identificar la venta en la lista de espera.</small>
                 </div>
                 <div class="modal-footer" style="border-color: var(--border);">
                     <button type="button" class="btn" data-bs-dismiss="modal"
+                        th:text="#{common.cancel}"
                         style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
                     <button type="button" class="btn" id="btnConfirmSuspend" onclick="confirmSuspend()"
+                        th:text="#{tpv.on_hold.suspend.confirm}"
                         style="background: var(--accent); color: var(--primary); font-weight: 600;">Suspender</button>
                 </div>
             </div>
@@ -738,7 +745,10 @@
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header" style="border-color: var(--border);">
-                    <h5 class="modal-title"><i class="bi bi-hourglass-split me-2"></i>Ventas en espera</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        <span th:text="#{tpv.on_hold.title}">Ventas en espera</span>
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
@@ -755,8 +765,10 @@
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header py-3" style="border-color: var(--border);">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-cash-stack me-3 text-accent fs-4"></i>Movimiento de
-                        Caja</h5>
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-cash-stack me-3 text-accent fs-4"></i>
+                        <span th:text="#{tpv.withdrawal.title}">Movimiento de Caja</span>
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
@@ -765,6 +777,7 @@
                         <!-- Selector de Tipo -->
                         <div class="mb-4">
                             <label class="form-label mb-3"
+                                th:text="#{tpv.withdrawal.type_label}"
                                 style="font-size:1rem; color: var(--text-muted); font-weight: 600;">Tipo de
                                 movimiento</label>
                             <div class="d-flex gap-3">
@@ -772,20 +785,22 @@
                                     checked autocomplete="off">
                                 <label class="btn btn-outline-danger btn-lg w-100 fw-bold py-3" for="typeWithdrawal"
                                     style="font-size: 1rem; border-width: 2px;">
-                                    <i class="bi bi-box-arrow-up me-2"></i>Retirar dinero
+                                    <i class="bi bi-box-arrow-up me-2"></i>
+                                    <span th:text="#{tpv.withdrawal.withdraw}">Retirar dinero</span>
                                 </label>
 
                                 <input type="radio" class="btn-check" name="type" id="typeEntry" value="ENTRY"
                                     autocomplete="off">
                                 <label class="btn btn-outline-success btn-lg w-100 fw-bold py-3" for="typeEntry"
                                     style="font-size: 1rem; border-width: 2px;">
-                                    <i class="bi bi-box-arrow-down me-2"></i>Añadir entrada
+                                    <i class="bi bi-box-arrow-down me-2"></i>
+                                    <span th:text="#{tpv.withdrawal.entry}">Añadir entrada</span>
                                 </label>
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold" style="font-size:1rem; color: var(--text-muted);">Importe
+                            <label class="form-label fw-bold" th:text="#{tpv.withdrawal.amount_label}" style="font-size:1rem; color: var(--text-muted);">Importe
                                 a mover</label>
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text px-4"
@@ -798,9 +813,11 @@
                         <div class="mb-1">
                             <div class="mb-2">
                                 <label class="form-label"
+                                    th:text="#{tpv.withdrawal.reason_label}"
                                     style="font-size:1rem; color: var(--text-muted); font-weight: 500;">Motivo del
                                     movimiento (opcional)</label>
                                 <input type="text" name="reason" class="form-control form-control-lg"
+                                    th:placeholder="#{tpv.withdrawal.reason_placeholder}"
                                     placeholder="Ej: Pago a proveedor, fondo extra..."
                                     style="background: var(--primary); color: var(--text-main); border-color: var(--border); font-size: 1.1rem; padding: 1rem;">
                             </div>
@@ -808,8 +825,10 @@
                     </div>
                     <div class="modal-footer" style="border-color: var(--border);">
                         <button type="button" class="btn" data-bs-dismiss="modal"
+                            th:text="#{common.cancel}"
                             style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
                         <button type="submit" class="btn"
+                            th:text="#{common.confirm}"
                             style="background: var(--accent); color: var(--primary); font-weight: 600;">Confirmar</button>
                     </div>
                 </form>
@@ -881,7 +900,10 @@
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
                 <div class="modal-header" style="border-color: var(--border);">
-                    <h6 class="modal-title"><i class="bi bi-search me-2"></i>Buscar Ticket</h6>
+                    <h6 class="modal-title">
+                        <i class="bi bi-search me-2"></i>
+                        <span th:text="#{tpv.return.search.title}">Buscar Ticket</span>
+                    </h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
@@ -890,20 +912,23 @@
                         style="display:none; font-size: 0.8rem;"></div>
 
                     <div class="mb-3">
-                        <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);">ID de Venta o
-                            Número de Ticket</label>
+                        <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);"
+                            th:text="#{tpv.return.search.label}">ID de Venta o Número de Ticket</label>
                         <input type="text" id="returnQueryInput" class="form-control"
+                            th:placeholder="#{tpv.return.search.placeholder}"
                             placeholder="Ej: 123 o T-2026-0001"
                             style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
                     </div>
-                    <small style="color: var(--text-muted); font-size:0.78rem;">
+                    <small style="color: var(--text-muted); font-size:0.78rem;" th:text="#{tpv.return.search.help}">
                         Introduce el número que aparece en la parte superior del ticket.
                     </small>
                 </div>
                 <div class="modal-footer" style="border-color: var(--border);">
                     <button type="button" class="btn" data-bs-dismiss="modal"
+                        th:text="#{common.cancel}"
                         style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
                     <button type="button" class="btn" id="btnSubmitReturnSearch" onclick="handleReturnSearch()"
+                        th:text="#{tpv.return.search.confirm}"
                         style="background: var(--accent); color: var(--primary); font-weight: 600;">Buscar</button>
                 </div>
             </div>
@@ -1113,7 +1138,19 @@
                   data-customer-not-found=#{tpv.customer.not_found},
                   data-checkout-missing=#{tpv.checkout.missing},
                   data-checkout-exact=#{tpv.checkout.exact},
-                  data-checkout-change-prefix=#{tpv.checkout.change}">
+                  data-checkout-change-prefix=#{tpv.checkout.change},
+                  data-on-hold-empty=#{tpv.on_hold.empty},
+                  data-on-hold-loading=#{tpv.on_hold.loading},
+                  data-on-hold-error=#{tpv.on_hold.error},
+                  data-on-hold-label=#{tpv.on_hold.table.label},
+                  data-on-hold-worker=#{tpv.on_hold.table.worker},
+                  data-on-hold-date=#{tpv.on_hold.table.date},
+                  data-on-hold-lines=#{tpv.on_hold.table.lines},
+                  data-on-hold-actions=#{tpv.on_hold.table.actions},
+                  data-on-hold-resume=#{tpv.on_hold.action.resume},
+                  data-on-hold-no-label=#{tpv.on_hold.no_label},
+                  data-error-connection=#{common.error.connection},
+                  data-error-network=#{common.error.network}">
     </div>
 
     <script th:src="@{/js/tpv/tpv-main.js(v=2.2)}"></script>
