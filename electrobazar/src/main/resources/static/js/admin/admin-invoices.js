@@ -43,7 +43,7 @@ function renderSalesTable(sales) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (sales.length === 0) {
+    if (!sales || sales.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">No se encontraron ventas con los filtros aplicados.</td></tr>';
         return;
     }
@@ -51,18 +51,64 @@ function renderSalesTable(sales) {
     sales.forEach(sale => {
         const isCancelled = sale.status === 'CANCELLED';
         const tr = document.createElement('tr');
+        tr.className = 'invoice-row';
+        tr.style.cursor = 'pointer';
         if (isCancelled) tr.style.opacity = '0.6';
+        
+        tr.onclick = () => window.location.href = `/admin/sale/${sale.id}`;
+
+        // Type Badge
+        const typeLabel = sale.type === 'factura' ? 'Factura' : 'Ticket';
+        const typeClass = sale.type === 'factura' ? 'yes' : 'no';
+        const cancelBadge = isCancelled ? `
+            <span class="badge mb-1 d-block" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600;">
+                <i class="bi bi-x-circle me-1"></i>anulada
+            </span>` : '';
+
+        // Customer Info
+        let customerHtml = `<span style="color:var(--text-muted)">— Consumidor Final —</span>`;
+        if (sale.customerName) {
+            customerHtml = `
+                <div>
+                    <strong>${escHtml(sale.customerName)}</strong>
+                    <div style="font-size:0.75rem;color:var(--text-muted)">${escHtml(sale.customerTaxId || '-')}</div>
+                </div>`;
+        }
+
+        // Payment Method Icon
+        const isCash = sale.paymentMethod === 'CASH';
+        const methodIcon = isCash ? 'bi-cash' : 'bi-credit-card';
+        const methodLabel = isCash ? 'Efectivo' : 'Tarjeta';
 
         tr.innerHTML = `
-            <td><strong>#${sale.id}</strong></td>
+            <td style="color:var(--text-muted);font-weight:600">${escHtml(sale.displayId || '-' )}</td>
             <td>${formatDateTime(sale.createdAt)}</td>
-            <td>${escHtml(sale.customerName || 'Cliente General')}</td>
-            <td>${escHtml(sale.paymentMethod)}</td>
-            <td class="fw-bold">${formatDecimal(sale.totalAmount)} €</td>
-            <td>${isCancelled ? '<span class="badge bg-danger">Anulada</span>' : '<span class="badge bg-success">Completada</span>'}</td>
-            <td class="text-end">
-                <button class="btn-icon" onclick="printInvoice(${sale.id})" title="Imprimir"><i class="bi bi-printer"></i></button>
-                ${!isCancelled ? `<button class="btn-icon danger" onclick="cancelSale(${sale.id})" title="Anular"><i class="bi bi-x-circle"></i></button>` : ''}
+            <td>
+                ${cancelBadge}
+                <span class="badge-active ${typeClass}">${typeLabel}</span>
+            </td>
+            <td>${customerHtml}</td>
+            <td style="font-weight: 500;">${escHtml(sale.workerUsername || 'Sistema')}</td>
+            <td>
+                <i class="bi ${methodIcon}" style="margin-right:0.3rem"></i>
+                <span>${methodLabel}</span>
+            </td>
+            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main);text-align:right">
+                ${formatDecimal(sale.totalAmount)} €
+            </td>
+            <td style="text-align:right">
+                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                    ${!isCancelled ? `
+                    <button class="btn-icon danger" title="Anular" onclick="event.stopPropagation(); cancelSale(${sale.id})">
+                        <i class="bi bi-x-circle"></i>
+                    </button>` : ''}
+                    <button type="button" class="btn-icon" title="Vista Previa" onclick="event.stopPropagation(); showDocPreview('/tpv/receipt/${sale.id}')">
+                        <i class="bi bi-eye" style="color:#3498db;"></i>
+                    </button>
+                    <a href="/tpv/receipt/${sale.id}?autoPrint=true" target="_blank" class="btn-icon" title="Imprimir" onclick="event.stopPropagation();">
+                        <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                    </a>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -94,12 +140,12 @@ function changeSalesPage(delta) {
     }
 }
 
-function jumpToSalesPage() {
+function jumpToSalesPage(val) {
     const input = document.getElementById('salesJumpInput');
-    if (!input) return;
-    const val = parseInt(input.value) - 1;
-    if (val >= 0 && val < salesTotalPages) {
-        fetchSalesPage(val);
+    const pageVal = val !== undefined ? parseInt(val) : (input ? parseInt(input.value) : 1);
+    const target = pageVal - 1;
+    if (target >= 0 && target < salesTotalPages) {
+        fetchSalesPage(target);
     } else {
         showToast('Página inválida', 'warning');
     }
@@ -134,8 +180,10 @@ function cancelSale(id) {
 function filterCashClosures() {
     const date = document.getElementById('cashFilterdate').value;
     const workerId = document.getElementById('cashFilterWorker').value;
+    const sortBy = document.getElementById('cashFilterSortBy')?.value || 'id';
+    const sortDir = document.getElementById('cashFilterSortDir')?.value || 'desc';
     
-    fetch(`/api/admin/cash-closings?date=${date}&workerId=${workerId}`)
+    fetch(`/api/admin/cash-closings?date=${date}&worker=${encodeURIComponent(workerId)}&sortBy=${sortBy}&sortDir=${sortDir}`)
         .then(res => res.json())
         .then(data => {
             renderCashClosuresTable(data.content || data);
@@ -147,21 +195,42 @@ function renderCashClosuresTable(items) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No se encontraron cierres de caja.</td></tr>';
+    const list = Array.isArray(items) ? items : (items.content || []);
+
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">No se encontraron cierres de caja.</td></tr>';
         return;
     }
 
-    items.forEach(item => {
+    list.forEach(item => {
         const tr = document.createElement('tr');
+        tr.className = 'cash-row';
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => window.location.href = `/admin/cash-register/${item.id}`;
+
+        // Difference Badge logic
+        const diff = item.difference || 0;
+        let diffBadge = '';
+        if (diff === 0) {
+            diffBadge = `<span class="badge-active yes">Cuadrado (0.00)</span>`;
+        } else if (diff > 0) {
+            diffBadge = `<span class="badge-active yes">+${formatDecimal(diff)}</span>`;
+        } else {
+            diffBadge = `<span class="badge-active no">${formatDecimal(diff)}</span>`;
+        }
+
         tr.innerHTML = `
+            <td style="color:var(--text-muted);font-weight:600">#${item.id}</td>
             <td>${formatDateTime(item.openingTime)}</td>
-            <td>${item.closedAt ? formatDateTime(item.closedAt) : '<span class="badge bg-warning text-dark">Abierta</span>'}</td>
-            <td>${escHtml(item.workerUsername)}</td>
-            <td class="fw-bold">${formatDecimal(item.totalCalculated)} €</td>
-            <td class="${item.difference < 0 ? 'text-danger' : 'text-success'}">${formatDecimal(item.difference)} €</td>
-            <td class="text-end">
-                <button class="btn-icon" onclick="openCashRegisterDetail(${item.id})"><i class="bi bi-eye"></i></button>
+            <td>${item.closedAt ? formatDateTime(item.closedAt) : '<span class="badge bg-warning text-dark" style="font-size:0.7rem">Abierta</span>'}</td>
+            <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right">${formatDecimal(item.totalCalculated)} €</td>
+            <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right">${formatDecimal(item.closingBalance)} €</td>
+            <td style="text-align:right">${diffBadge}</td>
+            <td style="font-weight: 500;">${escHtml(item.workerUsername || 'Sistema')}</td>
+            <td style="text-align:right">
+                <a href="/admin/download/cash-close/${item.id}" target="_blank" class="btn-icon" title="Descargar PDF" onclick="event.stopPropagation();" style="text-decoration: none;">
+                    <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
+                </a>
             </td>
         `;
         tbody.appendChild(tr);

@@ -111,7 +111,8 @@
 
                         <td style="text-align:right">
                             <a th:href="@{/admin/download/cash-close/{id}(id=${register.id})}" target="_blank"
-                                class="btn-icon" th:title="#{common.download.pdf}" style="text-decoration: none;">
+                                class="btn-icon" th:title="#{common.download.pdf}" style="text-decoration: none;"
+                                onclick="event.stopPropagation();">
                                 <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
                             </a>
                         </td>

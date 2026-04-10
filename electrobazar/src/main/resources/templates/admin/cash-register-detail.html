@@ -181,19 +181,19 @@
             <div class="summary-value fw-bold" th:text="${#numbers.formatDecimal(register.totalSales, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item">
-            <div class="summary-label" th:text="#{admin.cash.refunds.cash}">Devoluciónes Efectivo</div>
+            <div class="summary-label" th:text="#{admin.cash.refunds.cash}">Devoluciones Efectivo</div>
             <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cashRefunds, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item">
-            <div class="summary-label" th:text="#{admin.cash.refunds.card}">Devoluciónes Tarjeta</div>
+            <div class="summary-label" th:text="#{admin.cash.refunds.card}">Devoluciones Tarjeta</div>
             <div class="summary-value text-danger" th:text="'-' + ${#numbers.formatDecimal(register.cardRefunds, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item">
-            <div class="summary-label" th:text="#{admin.cash.withdrawals}">Retiradias de Caja</div>
+            <div class="summary-label" th:text="#{admin.cash.withdrawals}">Retiradas de Caja</div>
             <div class="summary-value text-warning" th:text="'-' + ${#numbers.formatDecimal(register.totalWithdrawals, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item">
-            <div class="summary-label" th:text="#{admin.cash.entries}">Entradias de Caja</div>
+            <div class="summary-label" th:text="#{admin.cash.entries}">Entradas de Caja</div>
             <div class="summary-value text-success" th:text="'+' + ${#numbers.formatDecimal(register.totalEntries, 1, 2)} + ' '"></div>
         </div>
         <div class="summary-item" style="background: rgba(245, 166, 35, 0.05); border-color: var(--accent);">
