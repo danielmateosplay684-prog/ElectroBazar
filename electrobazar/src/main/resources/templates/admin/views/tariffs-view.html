@@ -1,21 +1,26 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <body>
     <th:block th:fragment="view">
 
         <div id="tarifasView" style="display: none;">
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                window.activeTariffs = /*[[${tariffs.?[active]}]]*/ [];
+                /*]]>*/
+            </script>
             <div class="panel-header">
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn-icon"
-                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        onclick="backToPreviousView()"
                         th:title="#{admin.common.backtopanel}">
                         <i class="bi bi-arrow-left"></i>
                     </button>
                     <span class="panel-title"><i class="bi bi-tags me-2"></i><span
                             th:text="#{admin.tariffs.title}">Gestión de Tarifas</span></span>
                 </div>
-                <button class="btn-nuevo" onclick="openCreateTariffmodal()">
+                <button class="btn-nuevo" onclick="openCreateTariffModal()">
                     <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.tariffs.new}">Nueva Tarifa</span>
                 </button>
             </div>
@@ -35,11 +40,11 @@
                             style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid var(--accent); color: var(--accent); background: transparent;">
                             <i class="bi bi-pencil-square me-1"></i> Modo Edición
                         </button>
-                        <button class="btn btn-sm btn-accent" id="btnFinishTariffEdit" onclick="openApplyPricesmodal()"
+                        <button class="btn btn-sm btn-accent" id="btnFinishTariffEdit" onclick="openApplyPricesModal()"
                             style="display: none; border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; background: var(--accent); color: var(primary); border: none;">
                             <i class="bi bi-check-all me-1"></i> Finalizar Edición
                         </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="openPriceChangesHistorymodal()"
+                        <button class="btn btn-sm btn-outline-info" onclick="openPriceChangesHistoryModal()"
                             style="border-radius: 20px; font-weight: 600; padding: 0.35rem 1rem; border: 1px solid #0dcaf0; color: #0dcaf0; background: transparent;">
                             <i class="bi bi-clock-history me-1"></i> Ver Cambios
                         </button>

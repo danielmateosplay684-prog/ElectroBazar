@@ -224,23 +224,65 @@ function toggleTariffEditMode(enabled) {
 }
 
 function openApplyPricesModal() {
-    // Open modal for applying prices
+    if (window.applyPricesModal) {
+        loadPendingChangesList();
+        window.applyPricesModal.show();
+    }
 }
 
-function submitBulkPriceUpdate() {
-    // Submit bulk update
+function loadPendingChangesList() {
+    // This would ideally collect changes from the "Editable" matrix (cell status)
+    // For now, let's mock it or clear it if no logic is provided for the matrix yet
+    const tbody = document.getElementById('pendingChangesList');
+    const countEl = document.getElementById('pendingChangesCount');
+    if (!tbody || !countEl) return;
+    
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No se han detectado cambios manuales en la matriz.</td></tr>';
+    countEl.textContent = '0';
 }
 
 function openPriceChangesHistoryModal() {
-    // Open history modal
+    if (window.priceChangesHistoryModal) {
+        loadPendingPriceChanges();
+        loadPastPriceChanges();
+        window.priceChangesHistoryModal.show();
+    }
 }
 
 function loadPendingPriceChanges() {
-    // Load pending
+    fetch('/api/products/future-prices')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('tablePendingPrices')?.querySelector('tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay cambios pendientes</td></tr>';
+                return;
+            }
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(item.scheduledDate).toLocaleString()}</td>
+                    <td>${item.productName}</td>
+                    <td>${item.tariffName || 'BASE'}</td>
+                    <td class="text-end fw-bold">${parseFloat(item.newPrice).toFixed(2)} €</td>
+                    <td class="text-center">
+                        <button class="btn-icon danger" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
 }
 
 function loadPastPriceChanges() {
-    // Load past
+    // Past changes logic if backend supports it
+}
+
+function submitBulkPriceUpdate() {
+    // Implementation for submitting bulk updates from the matrix
+    showToast('Función de actualización masiva en desarrollo', 'info');
 }
 
 function deletePendingPrice(id) {

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="view">
@@ -7,7 +7,7 @@
         <div class="panel-header mb-4">
             <span class="panel-title">
                 <button class="btn-icon me-2"
-                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    onclick="backToPreviousView()"
                     th:title="#{admin.common.backtopanel}">
                     <i class="bi bi-arrow-left"></i>
                 </button>

@@ -14,13 +14,12 @@
     <meta th:if="${isInitializing}" http-equiv="refresh" content="5">
     <link rel="stylesheet" th:href="@{/css/admin/admin-main.css}">
     <style>
-        body {
-            background-color: var(primary) !important;
-            color: var(--text-main) !important;
-            font-family: 'Barlow', sans-serif;
+        .detail-wrapper-custom {
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .history-panel {
+        .history-panel-p {
             background: var(--secondary);
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -28,20 +27,20 @@
             margin-bottom: 2rem;
         }
 
-        .price-tag {
+        .price-tag-p {
             font-weight: 700;
             color: var(--accent);
             font-family: 'Barlow Condensed', sans-serif;
             font-size: 1.1rem;
         }
 
-        .validity-period {
+        .validity-period-p {
             font-size: 0.8rem;
             color: var(--text-muted);
             line-height: 1.4;
         }
 
-        .badge-status {
+        .badge-status-p {
             display: inline-block;
             padding: 0.25rem 0.6rem;
             border-radius: 6px;
@@ -52,30 +51,30 @@
             border: 1px solid transparent;
         }
 
-        .badge-status.active {
+        .badge-status-p.active {
             background: rgba(46, 204, 113, 0.15);
             color: #2ecc71;
             border-color: rgba(46, 204, 113, 0.3);
         }
 
-        .badge-status.expired {
+        .badge-status-p.expired {
             background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
             border-color: rgba(239, 68, 68, 0.3);
         }
-        
-        .badge-status.simulated {
+
+        .badge-status-p.simulated {
             background: rgba(100, 116, 139, 0.15);
             color: #64748b;
             border-color: rgba(100, 116, 139, 0.3);
         }
 
-        .group-start {
+        .group-start-p {
             border-left: 1px solid var(--border) !important;
         }
 
-        .current-date-display {
-            background: var(--surface);
+        .current-date-display-p {
+            background: var(--primary);
             border: 1px solid var(--border);
             color: var(--text-main);
             padding: 0.5rem 1.25rem;
@@ -85,12 +84,12 @@
             align-items: center;
         }
 
-        .btn-nav-history {
+        .btn-nav-history-p {
             width: 36px;
             height: 36px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(primary);
+            background: var(--primary);
             color: var(--text-muted);
             display: inline-flex;
             align-items: center;
@@ -98,23 +97,24 @@
             transition: all 0.15s;
             text-decoration: none;
         }
-        .btn-nav-history:hover:not(.disabled) {
+
+        .btn-nav-history-p:hover:not(.disabled) {
             border-color: var(--accent);
             color: var(--accent);
         }
 
-        .category-pill {
+        .category-pill-p {
             display: inline-block;
             padding: 2px 8px;
             border-radius: 4px;
-            background: var(--surface);
+            background: var(--primary);
             font-size: 0.7rem;
             color: var(--text-muted);
             margin-top: 4px;
         }
 
-        .date-input-custom {
-            background-color: var(primary) !important;
+        .date-input-custom-p {
+            background-color: var(--primary) !important;
             border: 1px solid var(--border);
             color: var(--text-main) !important;
             border-radius: 8px;
@@ -122,210 +122,310 @@
             font-size: 0.85rem;
             width: 150px;
         }
-        .date-input-custom:focus {
+
+        .date-input-custom-p:focus {
             border-color: var(--accent);
             outline: none;
             box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
         }
-        .btn-accent {
+
+        .btn-action-accent {
             background-color: var(--accent);
             border: none;
-            color: white;
+            color: var(--primary);
             font-weight: 700;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.6rem 1.25rem;
+            border-radius: 10px;
             transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
         }
-        .btn-accent:hover {
-            background-color: var(--accent-hover);
+
+        .btn-action-accent:hover {
+            opacity: 0.9;
             transform: translateY(-1px);
-            color: white;
+            box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
+            color: var(--primary);
         }
     </style>
 </head>
 
 <body>
-    <div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <a th:href="@{'/admin?view=' + ${returnView}}" class="btn btn-sm btn-outline-secondary mb-2">
-                    <i class="bi bi-arrow-left"></i> Volver al panel
-                </a>
-                <h2 class="h3 mb-0">Historial de Precios: <span th:text="${tariff.name}" class="text-accent">TARIFA</span></h2>
-                <p class="text-muted mb-0">Listado histórico de variaciones de precios para esta tarifa.</p>
-            </div>
-            <div>
-                <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate}}" class="btn-accent">
-                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de este día
-                </a>
-            </div>
+
+    <!-- Sidebar Replicada -->
+    <aside class="admin-sidebar">
+        <a href="/tpv" class="admin-logo">
+            <span th:text="${companySettings.appName}">ElectroBazar</span>
+            <small style="font-size:0.75rem;color:var(--text-muted);font-weight:400;display:block;">Admin</small>
+        </a>
+
+        <nav class="sidebar-nav">
+            <a href="/admin?view=dashboardView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-grid-1x2"></i> <span th:text="#{admin.menu.dashboard}">Panel de Control</span>
+            </a>
+            <a href="/admin?view=productsView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-box-seam"></i> <span th:text="#{admin.menu.inventory}">Gestión de Inventario</span>
+            </a>
+            <a href="/admin?view=invoicesView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-receipt"></i> <span th:text="#{admin.menu.invoices}">Facturación</span>
+            </a>
+            <a href="/admin?view=cashCloseView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-cash-stack"></i> <span th:text="#{admin.menu.cashcloses}">Cierres de caja</span>
+            </a>
+            <a href="/admin?view=returnsHistoryView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-arrow-counterclockwise"></i> <span th:text="#{admin.menu.returns}">Devoluciones</span>
+            </a>
+            <a href="/admin?view=abonosView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-cash-coin"></i> <span>Abonos</span>
+            </a>
+            <a href="/admin?view=workersView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-people"></i> <span th:text="#{admin.menu.workers}">Trabajadores</span>
+            </a>
+            <a href="/admin?view=rolesView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-shield-lock"></i> <span th:text="#{admin.menu.roles}">Roles</span>
+            </a>
+            <a href="/admin?view=analyticsView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-graph-up"></i> <span th:text="#{admin.menu.analytics}">Análisis</span>
+            </a>
+            <a href="/admin?view=crmView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-person-badge"></i> <span th:text="#{admin.menu.crm}">Clientes</span>
+            </a>
+            <a href="/admin?view=preciosTempView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-calendar-event"></i> <span th:text="#{admin.menu.tempprices}">Precios Temporales</span>
+            </a>
+            <a href="/admin?view=preciosMasivosView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-percent"></i> <span th:text="#{admin.menu.massiveprices}">Precios Masivos</span>
+            </a>
+            <a href="/admin?view=activityView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-clock-history"></i> <span th:text="#{admin.menu.activity}">Actividad</span>
+            </a>
+            <a href="/admin?view=settingsView" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-gear"></i> <span th:text="#{admin.menu.settings}">Configuración</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/tpv" class="btn-back">
+                <i class="bi bi-shop"></i> <span th:text="#{admin.menu.back}">TPV</span>
+            </a>
+            <form th:action="@{/logout}" method="post" style="display:inline;">
+                <button type="submit" class="btn-back"
+                    style="width:100%;color:var(--danger);border-color:rgba(239,68,68,0.2);">
+                    <i class="bi bi-box-arrow-left"></i> <span th:text="#{admin.menu.logout}">Salir</span>
+                </button>
+            </form>
         </div>
+    </aside>
 
-        <div class="history-panel">
-            <!-- date Pagination & Filter -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-4">
-                <div class="d-flex align-items-center gap-1">
-                    <div class="pagination-container d-flex align-items-center gap-2">
-                        <!-- Primero (más antiguo) -->
-                        <a th:if="${firstDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstDate}}"
-                           class="btn-nav-history" 
-                           th:classappend="${selectedDate.equals(firstDate)} ? 'disabled opacity-50' : ''" title="Primero (más antiguo)">
-                            <i class="bi bi-chevron-double-left"></i>
-                        </a>
+    <main class="admin-body">
+        <div class="detail-wrapper-custom">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-border">
+                <div>
+                    <a href="/admin#tarifas" 
+                       onclick="if(window.history.length > 1) { history.back(); return false; }"
+                       class="btn-back text-decoration-none mb-2">
+                        <i class="bi bi-arrow-left"></i> Volver al panel
+                    </a>
+                    <h2 class="h3 mb-0 fw-bold">Historial de Precios: <span th:text="${tariff.name}"
+                            class="text-accent">TARIFA</span></h2>
+                    <p class="text-muted mb-0 small uppercase letter-spacing-1">Registro histórico de variaciones de
+                        importes</p>
+                </div>
+                <div>
+                    <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate}}"
+                        class="btn-action-accent">
+                        <i class="bi bi-file-earmark-pdf me-2"></i> Descargar PDF del día
+                    </a>
+                </div>
+            </div>
 
-                        <!-- Anterior -->
-                        <a th:if="${prevDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevDate}}" 
-                           class="btn-nav-history" title="Anterior">
-                            <i class="bi bi-chevron-left"></i>
-                        </a>
-                        <button th:if="${prevDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-left"></i></button>
-                        
-                        <div class="current-date-display mx-1">
-                            <i class="bi bi-calendar-event me-2 text-accent"></i>
-                            <span th:text="${#temporals.format(selectedDate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12 Marzo 2026</span>
+            <div class="history-panel-p">
+                <!-- date Pagination & Filter -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-4">
+                    <div class="d-flex align-items-center gap-1">
+                        <div class="pagination-container d-flex align-items-center gap-2">
+                            <!-- Primero (más antiguo) -->
+                            <a th:if="${firstDate != null}"
+                                th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${firstDate}}"
+                                class="btn-nav-history-p"
+                                th:classappend="${selectedDate.equals(firstDate)} ? 'disabled opacity-50' : ''"
+                                title="Primero (más antiguo)">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+
+                            <!-- Anterior -->
+                            <a th:if="${prevDate != null}"
+                                th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${prevDate}}"
+                                class="btn-nav-history-p" title="Anterior">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                            <button th:if="${prevDate == null}" class="btn-nav-history-p disabled opacity-50"><i
+                                    class="bi bi-chevron-left"></i></button>
+
+                            <div class="current-date-display-p mx-1">
+                                <i class="bi bi-calendar-event me-2 text-accent"></i>
+                                <span
+                                    th:text="${#temporals.format(selectedDate, 'dd MMMM yyyy', new java.util.Locale('es', 'ES'))}">12
+                                    Marzo 2026</span>
+                            </div>
+
+                            <!-- Siguiente -->
+                            <a th:if="${nextDate != null}"
+                                th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextDate}}"
+                                class="btn-nav-history-p" title="Siguiente">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                            <button th:if="${nextDate == null}" class="btn-nav-history-p disabled opacity-50"><i
+                                    class="bi bi-chevron-right"></i></button>
+
+                            <!-- ÚÚltimo / Hoy (más reciente) -->
+                            <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}"
+                                class="btn btn-sm px-3 fw-bold ms-2"
+                                th:classappend="${nextDate == null} ? 'btn-accent' : 'btn-outline-secondary'"
+                                title="Volver al más reciente">
+                                HOY
+                            </a>
                         </div>
 
-                        <!-- Siguiente -->
-                        <a th:if="${nextDate != null}" 
-                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${nextDate}}" 
-                           class="btn-nav-history" title="Siguiente">
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
-                        <button th:if="${nextDate == null}" class="btn-nav-history disabled opacity-50"><i class="bi bi-chevron-right"></i></button>
-
-                        <!-- ÚÚltimo / Hoy (más reciente) -->
-                        <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}"
-                           class="btn btn-sm px-3 fw-bold ms-2" 
-                           th:classappend="${nextDate == null} ? 'btn-accent' : 'btn-outline-secondary'"
-                           title="Volver al más reciente">
-                            HOY
-                        </a>
+                        <div class="ms-4 border-start border-border ps-4 d-flex align-items-center gap-2">
+                            <label class="small text-muted mb-0"><i class="bi bi-search me-1"></i>Ir a:</label>
+                            <input type="date" id="dateFilter" class="date-input-custom-p" th:value="${selectedDate}"
+                                th:onchange="'window.location.href=\'/admin/tariffs/' + ${tariff.id} + '/history?date=\' + this.value'">
+                        </div>
                     </div>
-                    
-                    <div class="ms-4 border-start border-secondary ps-4 d-flex align-items-center gap-2">
-                        <label class="small text-muted mb-0"><i class="bi bi-search me-1"></i>Ir a:</label>
-                        <input type="date" id="dateFilter" class="date-input-custom" th:value="${selectedDate}" 
-                               th:onchange="'window.location.href=\'/admin/tariffs/' + ${tariff.id} + '/history?date=\' + this.value'">
+
+                    <div class="search-box">
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <span class="input-group-text bg-secondary border-border text-muted"><i
+                                    class="bi bi-funnel"></i></span>
+                            <input type="text" id="filterProduct"
+                                class="form-control bg-secondary text-main border-border"
+                                placeholder="Filtrar por nombre..." onkeyup="filterTable()">
+                        </div>
                     </div>
                 </div>
 
-                <div class="search-box">
-                    <div class="input-group input-group-sm" style="width: 250px;">
-                        <span class="input-group-text bg-surface border-border text-muted"><i class="bi bi-funnel"></i></span>
-                        <input type="text" id="filterProduct" class="form-control" placeholder="Filtrar por nombre..." onkeyup="filterTable()">
+                <!-- Loading / Error Message -->
+                <div th:if="${isInitializing}" class="text-center py-5">
+                    <div class="spinner-border text-accent mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Cargando...</span>
                     </div>
+                    <h4 class="fw-bold text-accent">Generando historial inicial...</h4>
+                    <p class="text-muted">Estamos calculando los precios para esta tarifa. Esto solo ocurre la primera
+                        vez.</p>
+                    <div class="progress mt-3 mx-auto"
+                        style="width: 300px; height: 10px; background: var(--secondary); border: 1px solid var(--border);">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-accent"
+                            role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <p class="small text-muted mt-3"><i class="bi bi-arrow-clockwise me-1"></i>La página se actualizará
+                        automáticamente.</p>
                 </div>
-            </div>
 
-            <!-- Loading / Error Message -->
-            <div th:if="${isInitializing}" class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Cargando...</span>
+                <div th:if="${!dateExists and !isInitializing}"
+                    class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>No hay tarifario registrado para esta fecha especifica.</div>
                 </div>
-                <h4 class="fw-bold text-accent">Generando historial inicial...</h4>
-                <p class="text-muted">Estamos calculando los 30.000 precios para esta tarifa. Esto solo ocurre la primera vez y tardará unos segundos.</p>
-                <div class="progress mt-3 mx-auto" style="width: 300px; height: 10px; background: var(--surface);">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-accent" role="progressbar" style="width: 100%"></div>
-                </div>
-                <p class="small text-muted mt-3"><i class="bi bi-arrow-clockwise me-1"></i>La página se actualizará automáticamente.</p>
-            </div>
 
-            <div th:if="${!dateExists and !isInitializing}" class="alert alert-warning d-flex align-items-center mt-3" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <div>No hay tarifario registrado para esta fecha especifica.</div>
-            </div>
-
-            <div class="admin-table-wrap" th:if="${dateExists}">
-                <table class="admin-table" id="historyTable" style="margin-bottom: 0;">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th class="text-end">Base</th>
-                            <th class="text-end">Dto.</th>
-                            <th class="group-start text-end">Neto</th>
-                            <th class="group-start text-center">IVA</th>
-                            <th class="text-end">Cuota IVA</th>
-                            <th class="text-end">P. IVA</th>
-                            <th class="group-start text-center">RE</th>
-                            <th class="text-end">Cuota RE</th>
-                            <th class="text-end">P. RE</th>
-                            <th class="group-start">Vigencia</th>
-                            <th class="text-center">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="h : ${pricesPage.content}" class="history-row">
-                            <td class="py-3">
-                                <div class="fw-bold" th:text="${h.productName}">Producto</div>
-                                <div class="category-pill" th:text="${h.categoryName}">Categoria</div>
-                            </td>
-                            <td class="text-end text-muted" style="font-family:'Barlow Condensed',sans-serif;" 
-                                th:text="${#numbers.formatDecimal(h.basePrice, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.discountPercent, 1, 1, 'COMMA') + '%'}"></td>
-                            <td class="fw-bold group-start text-end" 
-                                th:text="${#numbers.formatDecimal(h.netPrice, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="group-start text-center text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.vatRate * 100, 1, 0, 'COMMA') + '%'}"></td>
-                            <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.vatAmount, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="price-tag text-end" 
-                                th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="group-start text-center text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.reRate * 100, 1, 1, 'COMMA') + '%'}"></td>
-                            <td class="text-end text-muted small" 
-                                th:text="${#numbers.formatDecimal(h.reAmount, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="fw-bold text-end" style="color: #3b82f6;"
-                                th:text="${#numbers.formatDecimal(h.priceWithRe, 1, 2, 'COMMA') + ' '}"></td>
-                            <td class="validity-period group-start">
-                                <div class="d-flex align-items-center mb-1"><i class="bi bi-play-circle me-2 text-success"></i><span th:text="${#temporals.format(h.validFrom, 'dd/MM/yyyy')}"></span></div>
-                                <div th:if="${h.validTo != null}" class="d-flex align-items-center text-muted"><i class="bi bi-stop-circle me-2 text-danger"></i><span th:text="${#temporals.format(h.validTo, 'dd/MM/yyyy')}"></span></div>
-                            </td>
-                            <td class="text-center">
-                                <span th:if="${!h.isFromHistory}" class="badge-status simulated">SIMULADO</span>
-                                <span th:if="${h.isFromHistory and h.validTo == null}" class="badge-status active">VIGENTE</span>
-                                <span th:if="${h.isFromHistory and h.validTo != null}" class="badge-status expired">HISTÓRICO</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="admin-table-wrap" th:if="${dateExists}">
+                    <table class="admin-table" id="historyTable" style="margin-bottom: 0;">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-end">Base</th>
+                                <th class="text-end">Dto.</th>
+                                <th class="group-start-p text-end">Neto</th>
+                                <th class="group-start-p text-center">IVA</th>
+                                <th class="text-end">Cuota IVA</th>
+                                <th class="text-end">P. IVA</th>
+                                <th class="group-start-p text-center">RE</th>
+                                <th class="text-end">Cuota RE</th>
+                                <th class="text-end">P. RE</th>
+                                <th class="group-start-p">Vigencia</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="h : ${pricesPage.content}" class="history-row">
+                                <td class="py-3">
+                                    <div class="fw-bold text-main" th:text="${h.productName}">Producto</div>
+                                    <div class="category-pill-p" th:text="${h.categoryName}">Categoria</div>
+                                </td>
+                                <td class="text-end text-muted" style="font-family:'Barlow Condensed',sans-serif;"
+                                    th:text="${#numbers.formatDecimal(h.basePrice, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="text-end text-muted small"
+                                    th:text="${#numbers.formatDecimal(h.discountPercent, 1, 1, 'COMMA') + '%'}"></td>
+                                <td class="fw-bold group-start-p text-end text-main"
+                                    th:text="${#numbers.formatDecimal(h.netPrice, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="group-start-p text-center text-muted small"
+                                    th:text="${#numbers.formatDecimal(h.vatRate * 100, 1, 0, 'COMMA') + '%'}"></td>
+                                <td class="text-end text-muted small"
+                                    th:text="${#numbers.formatDecimal(h.vatAmount, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="price-tag-p text-end"
+                                    th:text="${#numbers.formatDecimal(h.priceWithVat, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="group-start-p text-center text-muted small"
+                                    th:text="${#numbers.formatDecimal(h.reRate * 100, 1, 1, 'COMMA') + '%'}"></td>
+                                <td class="text-end text-muted small"
+                                    th:text="${#numbers.formatDecimal(h.reAmount, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="fw-bold text-end" style="color: #3b82f6;"
+                                    th:text="${#numbers.formatDecimal(h.priceWithRe, 1, 2, 'COMMA') + ' €'}"></td>
+                                <td class="validity-period-p group-start-p">
+                                    <div class="d-flex align-items-center mb-1"><i
+                                            class="bi bi-play-circle me-2 text-success"></i><span
+                                            th:text="${#temporals.format(h.validFrom, 'dd/MM/yyyy')}"></span></div>
+                                    <div th:if="${h.validTo != null}" class="d-flex align-items-center text-muted"><i
+                                            class="bi bi-stop-circle me-2 text-danger"></i><span
+                                            th:text="${#temporals.format(h.validTo, 'dd/MM/yyyy')}"></span></div>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${!h.isFromHistory}" class="badge-status-p simulated">SIMULADO</span>
+                                    <span th:if="${h.isFromHistory and h.validTo == null}"
+                                        class="badge-status-p active">VIGENTE</span>
+                                    <span th:if="${h.isFromHistory and h.validTo != null}"
+                                        class="badge-status-p expired">HISTÓRICO</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                     <!-- Aesthetic Serverside Pagination -->
-            <div class="pagination-wrap mt-4 border-top border-secondary pt-4" th:if="${pricesPage.totalPages > 1}">
-                <button class="pagination-btn" th:onclick="'goToPage(0)'"
-                    th:disabled="${pricesPage.number == 0}" title="Primera página">
-                    <i class="bi bi-chevron-double-left"></i>
-                </button>
+                    <div class="pagination-wrap mt-4 border-top border-border pt-4"
+                        th:if="${pricesPage.totalPages > 1}">
+                        <button class="pagination-btn" th:onclick="'goToPage(0)'"
+                            th:disabled="${pricesPage.number == 0}" title="Primera página">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </button>
 
-                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number - 1}) + ')'"
-                    th:disabled="${pricesPage.number == 0}" title="Página anterior">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
+                        <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number - 1}) + ')'"
+                            th:disabled="${pricesPage.number == 0}" title="Página anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
 
-                <div class="pagination-jump">
-                    <input type="number" id="pageInput" min="1" th:max="${pricesPage.totalPages}"
-                        th:value="${pricesPage.number + 1}"
-                        onkeydown="if(event.key === 'Enter') jumpToPage(this.value)" title="Ir a página">
-                    <span class="small text-muted">
-                        de <span th:text="${pricesPage.totalPages}">1</span>
-                    </span>
+                        <div class="pagination-jump">
+                            <input type="number" id="pageInput" min="1" th:max="${pricesPage.totalPages}"
+                                th:value="${pricesPage.number + 1}"
+                                onkeydown="if(event.key === 'Enter') jumpToPage(this.value)" title="Ir a página">
+                            <span class="small text-muted">
+                                de <span th:text="${pricesPage.totalPages}">1</span>
+                            </span>
+                        </div>
+
+                        <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number + 1}) + ')'"
+                            th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}" title="Página siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+
+                        <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.totalPages - 1}) + ')'"
+                            th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}" title="Última página">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </button>
+                    </div>
                 </div>
-
-                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.number + 1}) + ')'"
-                    th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}"
-                    title="Página siguiente">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-
-                <button class="pagination-btn" th:onclick="'goToPage(' + (${pricesPage.totalPages - 1}) + ')'"
-                    th:disabled="${pricesPage.number + 1 >= pricesPage.totalPages}" title="Última página">
-                    <i class="bi bi-chevron-double-right"></i>
-                </button>
             </div>
-        </div>
-    </div>
+    </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function filterTable() {
             const productFilter = document.getElementById('filterProduct').value.toLowerCase();
@@ -357,14 +457,3 @@
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-
-

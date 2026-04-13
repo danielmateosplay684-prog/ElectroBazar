@@ -1,58 +1,64 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="modal">
 
-        <div class="modal fade" id="abonoModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Generar Nuevo Abono</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal fade" id="abonoModal" tabindex="-1" aria-labelledby="abonoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="abonoModalLabel">
+                            <i class="bi bi-cash-coin me-2 text-accent"></i>
+                            <span th:text="#{admin.abonos.modal.title}">Generar Nuevo Abono</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body p-4">
                         <form id="abonoForm">
                             <div class="mb-3">
-                                <label class="form-label">Client ID *</label>
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.client_id}">ID del Cliente *</label>
                                 <input type="number" id="abonoFormClienteId" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">ID Venta Original (Opcional)</label>
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.sale_id}">ID Venta Original (Opcional)</label>
                                 <input type="number" id="abonoFormVentaId" class="form-control"
-                                    placeholder="Opcional, obligatorio si es DEVOLUCIÓN">
+                                    th:placeholder="#{admin.abonos.modal.sale_id_hint}">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Importe *</label>
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.amount}">Importe *</label>
                                 <input type="number" step="0.01" id="abonoFormImporte" class="form-control"
-                                    placeholder="Valor siempre en positivo" required>
+                                    th:placeholder="#{admin.abonos.modal.amount_hint}" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Tipo de Abono *</label>
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.type}">Tipo de Abono *</label>
                                 <select id="abonoFormTipo" class="form-select" required>
-                                    <option value="COMPENSACION">Compensación</option>
-                                    <option value="Devolución">Devolución</option>
-                                    <option value="ERROR_COBRO">Error de Cobro</option>
-                                    <option value="DESCUENTO_POSTERIOR">Descuento Posterior</option>
-                                    <option value="CREDITO_FAVOR">Crédito a Favor (Saldo)</option>
+                                    <option value="COMPENSACION" th:text="#{admin.abonos.modal.type.compensacion}">Compensación</option>
+                                    <option value="Devolución" th:text="#{admin.abonos.modal.type.devolucion}">Devolución</option>
+                                    <option value="ERROR_COBRO" th:text="#{admin.abonos.modal.type.error}">Error de Cobro</option>
+                                    <option value="DESCUENTO_POSTERIOR" th:text="#{admin.abonos.modal.type.descuento}">Descuento Posterior</option>
+                                    <option value="CREDITO_FAVOR" th:text="#{admin.abonos.modal.type.credito}">Crédito a Favor (Saldo)</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Método de Pago *</label>
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.payment}">Método de Pago *</label>
                                 <select id="abonoFormPago" class="form-select" required>
-                                    <option value="EFECTIVO">Efectivo</option>
-                                    <option value="TARJETA">Tarjeta</option>
-                                    <option value="CREDITO">Crédito Interno</option>
+                                    <option value="EFECTIVO" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
+                                    <option value="TARJETA" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
+                                    <option value="CREDITO" th:text="#{admin.abonos.modal.payment.internal}">Crédito Interno</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Motivo (Opcional)</label>
-                                <textarea id="abonoFormMotivo" class="form-control" rows="2"></textarea>
+                            <div class="mb-1">
+                                <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.reason}">Motivo (Opcional)</label>
+                                <textarea id="abonoFormMotivo" class="form-control" rows="2" th:placeholder="#{common.description.placeholder}"></textarea>
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" onclick="saveAbono()">Confirmar Abono</button>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
+                        <button type="button" class="btn btn-save" onclick="saveAbono()">
+                            <i class="bi bi-check-lg me-1"></i>
+                            <span th:text="#{admin.abonos.modal.confirm}">Confirmar Abono</span>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -1,88 +1,144 @@
 /**
  * admin-abonos.js
- * Abonos (credits/refunds) management functions.
+ * Modern Abonos (credits/refunds) management.
  */
 
 function openAbonoModal() {
-    document.getElementById('abonoForm').reset();
-    abonoModal.show();
+    const form = document.getElementById('abonoForm');
+    if (form) form.reset();
+    if (window.abonoModal) window.abonoModal.show();
 }
 
+/**
+ * Saves a new credit/abono
+ */
 function saveAbono() {
-    const customerId = document.getElementById('abonoCustomerId').value;
-    const amount = document.getElementById('abonoAmount').value;
-    const reason = document.getElementById('abonoReason').value;
+    const clienteId = document.getElementById('abonoFormClienteId').value;
+    const ventaId = document.getElementById('abonoFormVentaId').value;
+    const importe = document.getElementById('abonoFormImporte').value;
+    const tipo = document.getElementById('abonoFormTipo').value;
+    const pago = document.getElementById('abonoFormPago').value;
+    const motivo = document.getElementById('abonoFormMotivo').value;
 
-    if (!customerId || !amount) {
-        showToast('Cliente e importe son obligatorios', 'error');
+    if (!clienteId || !importe || !tipo || !pago) {
+        if (typeof showToast === 'function') showToast(getAdminI18n('errorSave') || 'Campos obligatorios', 'error');
         return;
     }
 
+    const payload = {
+        customerId: parseInt(clienteId),
+        originalSaleId: ventaId ? parseInt(ventaId) : null,
+        amount: parseFloat(importe),
+        type: tipo,
+        paymentMethod: pago,
+        reason: motivo
+    };
+
     fetch('/api/admin/abonos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            customerId: parseInt(customerId),
-            amount: parseFloat(amount),
-            reason: reason
-        })
-    }).then(res => {
+        headers: { 
+            'Content-Type': 'application/json',
+            [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
         if (res.ok) {
-            abonoModal.hide();
-            showToast('Abono creado con éxito');
-            filterAbonos();
+            if (window.abonoModal) window.abonoModal.hide();
+            if (typeof showToast === 'function') showToast(getAdminI18n('successSave') || 'Éxito', 'success');
+            // Refresh search if we have a client ID
+            const searchVal = document.getElementById('abonoClienteSearch').value;
+            if (searchVal) filterAbonos();
         } else {
-            showToast('Error al crear abono', 'error');
+            const err = await res.text();
+            if (typeof showToast === 'function') showToast(err || 'Error', 'error');
         }
+    })
+    .catch(err => {
+        console.error(err);
+        if (typeof showToast === 'function') showToast(getAdminI18n('errorConnection') || 'Error de conexión', 'error');
     });
 }
 
+/**
+ * Filters the list by Client ID
+ */
 function filterAbonos() {
-    const customerId = document.getElementById('abonoFilterSearch').value;
-    if (!customerId) return;
+    const customerId = document.getElementById('abonoClienteSearch').value;
+    const tbody = document.getElementById('abonosTableBody');
+    if (!tbody) return;
 
-    fetch(`/api/admin/abonos?customerId=${customerId}`)
+    if (!customerId) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Introduce un ID de Cliente</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>';
+
+    fetch(`/api/admin/abonos/customer/${customerId}`)
         .then(res => res.json())
         .then(data => {
-            const tbody = document.getElementById('abonosTableBody');
-            if (!tbody) return;
             tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron abonos para este cliente</td></tr>';
+                return;
+            }
+
             data.forEach(a => {
                 const tr = document.createElement('tr');
+                const statusClass = a.status === 'ACTIVE' ? 'badge-status-p status-active-p' : 'badge-status-p status-cancelled-p';
+                const statusText = a.status === 'ACTIVE' ? 'ACTIVO' : 'ANULADO';
+
                 tr.innerHTML = `
-                    <td>${formatDateTime(a.createdAt)}</td>
-                    <td>${formatDecimal(a.amount)} €</td>
-                    <td>${escHtml(a.reason || '—')}</td>
-                    <td>${a.status === 'ACTIVE' ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Anulado</span>'}</td>
+                    <td><strong>#${a.id}</strong></td>
+                    <td>${new Date(a.createdAt).toLocaleString()}</td>
+                    <td>${a.customerId}</td>
+                    <td><span class="text-accent fw-bold">${a.type}</span></td>
+                    <td>${a.paymentMethod}</td>
+                    <td class="text-end fw-bold">${parseFloat(a.amount).toFixed(2)} €</td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
                     <td class="text-end">
-                        ${a.status === 'ACTIVE' ? `<button class="btn-icon danger" onclick="anularAbono(${a.id})"><i class="bi bi-x-circle"></i></button>` : ''}
+                        <div class="d-flex justify-content-end gap-2">
+                             ${a.status === 'ACTIVE' ? `
+                                <button class="btn-icon danger" onclick="anularAbono(${a.id})" title="Anular">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                             ` : ''}
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        })
+        .catch(err => {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Error al cargar datos: ${err.message}</td></tr>`;
         });
 }
 
+/**
+ * Cancels an abono
+ */
 function anularAbono(id) {
-    if (!confirm('¿Anular este abono?')) return;
-    fetch(`/api/admin/abonos/${id}/anular`, { method: 'POST' })
-        .then(res => {
-            if (res.ok) {
-                showToast('Abono anulado');
-                filterAbonos();
-            }
-        });
+    if (!confirm('¿Seguro que desea anular este abono?')) return;
+
+    fetch(`/api/admin/abonos/${id}/cancel`, {
+        method: 'POST',
+        headers: { 
+            [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
+        }
+    })
+    .then(res => {
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Abono anulado correctamente', 'success');
+            filterAbonos();
+        } else {
+            if (typeof showToast === 'function') showToast('No se pudo anular el abono', 'error');
+        }
+    });
 }
 
-function loadAbonos() {
-    // Initial load logic if needed, or just clear/prepare view
-    const tbody = document.getElementById('abonosTableBody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Seleccione un cliente para ver sus abonos</td></tr>';
-}
-
-// Global Exports
+// Global exports
 window.openAbonoModal = openAbonoModal;
 window.saveAbono = saveAbono;
 window.filterAbonos = filterAbonos;
 window.anularAbono = anularAbono;
-window.loadAbonos = loadAbonos;

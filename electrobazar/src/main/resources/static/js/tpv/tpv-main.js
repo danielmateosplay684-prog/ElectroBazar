@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof attachNifCifValidator === 'function') {
         attachNifCifValidator('newCustomerTaxId');
     }
-    
+
     // -- Lógica de Favoritos (Servidor) --
     fetch('/api/products/favorites')
         .then(r => r.json())
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             reorderGridWithFavorites();
         }).catch(err => console.error('Error loading favorites:', err));
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const btn = e.target.closest('.product-favorite-btn');
         if (btn) {
             e.preventDefault();
@@ -227,27 +227,27 @@ function addToTicket(card) {
         document.getElementById('quantity_productName').textContent = name;
         document.getElementById('quantity_unitSymbol').textContent = unitSymbol;
         document.getElementById('quantity_stockAvailable').textContent = stock.toLocaleString('es-ES', { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }) + ' ' + unitSymbol;
-        
+
         var modal = new bootstrap.Modal(document.getElementById('quantityModal'));
         modal.show();
-        
+
         // Focus input after modal is shown
-        document.getElementById('quantityModal').addEventListener('shown.bs.modal', function() {
-             var input = document.getElementById('quantityInput');
-             input.focus();
-             input.onkeydown = function(e) {
-                 if (e.key === 'Enter') {
-                     document.getElementById('confirmQuantityBtn').click();
-                 }
-             };
+        document.getElementById('quantityModal').addEventListener('shown.bs.modal', function () {
+            var input = document.getElementById('quantityInput');
+            input.focus();
+            input.onkeydown = function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('confirmQuantityBtn').click();
+                }
+            };
         }, { once: true });
 
         // Set up the confirm button (one-time handler)
         var confirmBtn = document.getElementById('confirmQuantityBtn');
-        confirmBtn.onclick = function() {
+        confirmBtn.onclick = function () {
             var valStr = document.getElementById('quantityInput').value;
             var val = parseFloat(valStr.replace(',', '.'));
-            
+
             if (isNaN(val) || val <= 0) {
                 showToast("Cantidad no válida", 'warning');
                 return;
@@ -256,9 +256,9 @@ function addToTicket(card) {
                 showToast("Stock insuficiente para este producto", 'warning');
                 return;
             }
-            
+
             bootstrap.Modal.getInstance(document.getElementById('quantityModal')).hide();
-            
+
             // Finish adding
             finishAddingToTicket(id, name, price, val, stock, categoryId, card);
         };
@@ -447,7 +447,7 @@ function renderTicket() {
                     <span>${emptyMsg}</span>
                 </div>`;
         countEl.textContent = '0';
-        totalEl.textContent = '0.00\u20AC';
+        totalEl.textContent = '0.00€';
         cobrarBtn.disabled = true;
         if (suspenderBtn) { suspenderBtn.disabled = true; suspenderBtn.style.opacity = '0.4'; }
         formLines.innerHTML = '';
@@ -577,7 +577,7 @@ function renderTicket() {
     if (reRow && reAmountEl) {
         if (window.currentHasRE && totalRE > 0) {
             reRow.style.display = 'flex';
-            reAmountEl.textContent = '+' + totalRE.toFixed(2) + '\u20AC';
+            reAmountEl.textContent = '+' + totalRE.toFixed(2) + '€';
         } else {
             reRow.style.display = 'none';
         }
@@ -728,7 +728,7 @@ function openCustomerModal() {
         if (mixedSection) mixedSection.style.display = 'none';
         receivedInput.value = '';
         calculateChange();
-        document.getElementById('changeAmount').textContent = '0.00\u20AC';
+        document.getElementById('changeAmount').textContent = '0.00€';
         receivedInputForm.value = '';
     } else if (isMixed) {
         if (cashSection) cashSection.style.display = 'none';
@@ -1182,7 +1182,7 @@ function renderProducts(data) {
 
         var isFav = (window.tpv_user_favorites || []).includes(String(product.id));
         var starClass = isFav ? 'bi-star-fill' : 'bi-star';
-        
+
         return `<div class="product-card${disabledClass}" 
                      style="position: relative; animation: fadeIn 0.3s ease;"
                      data-id="${product.id}" 
@@ -1222,13 +1222,13 @@ function renderProducts(data) {
 function toggleFavorite(btn) {
     const id = btn.dataset.productId;
     const isAdding = btn.classList.contains('bi-star');
-    
+
     btn.classList.add('favorite-pulse');
     setTimeout(() => btn.classList.remove('favorite-pulse'), 400);
 
     fetch(`/api/products/${id}/favorite`, { method: isAdding ? 'POST' : 'DELETE' })
         .then(r => {
-            if(r.ok) {
+            if (r.ok) {
                 if (isAdding) {
                     btn.classList.replace('bi-star', 'bi-star-fill');
                     if (!window.tpv_user_favorites.includes(id)) window.tpv_user_favorites.push(id);
@@ -1244,23 +1244,23 @@ function toggleFavorite(btn) {
 function reorderGridWithFavorites() {
     const grid = document.querySelector('.products-grid');
     if (!grid) return;
-    
+
     const cards = Array.from(grid.querySelectorAll('.product-card:not(.wildcard-card)'));
     const wildcard = grid.querySelector('.wildcard-card');
-    
+
     // Sort logic: Favorites first, then respect original ID sequence
     cards.sort((a, b) => {
         const aFav = a.querySelector('.product-favorite-btn.bi-star-fill') ? 1 : 0;
         const bFav = b.querySelector('.product-favorite-btn.bi-star-fill') ? 1 : 0;
-        
+
         if (aFav !== bFav) return bFav - aFav;
-        
+
         // If both are same status, respect original order
         const aIdx = window.originalCardOrder ? window.originalCardOrder.indexOf(String(a.dataset.id)) : 0;
         const bIdx = window.originalCardOrder ? window.originalCardOrder.indexOf(String(b.dataset.id)) : 0;
         return aIdx - bIdx;
     });
-    
+
     // Re-append to preserve DOM nodes (and their listeners if any, though we use delegation)
     if (wildcard) grid.appendChild(wildcard);
     cards.forEach(c => grid.appendChild(c));
@@ -1358,7 +1358,7 @@ function openAdminPinModal() {
     var input = document.getElementById('pinInput');
     var error = document.getElementById('pinError');
     if (!overlay || !input || !error) return;
-    
+
     input.value = '';
     error.textContent = '';
     input.classList.remove('error');
@@ -1399,13 +1399,13 @@ function closeAdminPinModal() {
     if (overlay) overlay.classList.remove('open');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var pinSubmit = document.getElementById('pinSubmit');
     if (pinSubmit) pinSubmit.addEventListener('click', submitAdminPin);
-    
+
     var pinCancel = document.getElementById('pinCancel');
     if (pinCancel) pinCancel.addEventListener('click', closeAdminPinModal);
-    
+
     var adminPinInput = document.getElementById('pinInput');
     if (adminPinInput) {
         adminPinInput.addEventListener('keydown', function (e) {

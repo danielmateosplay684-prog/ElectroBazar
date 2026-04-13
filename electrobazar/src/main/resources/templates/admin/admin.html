@@ -463,7 +463,7 @@
             <div class="panel-header mb-4">
                 <span class="panel-title">
                     <button class="btn-icon me-2"
-                        onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                        onclick="backToPreviousView()"
                         th:title="#{admin.common.backtopanel}">
                         <i class="bi bi-arrow-left"></i>
                     </button>
@@ -793,6 +793,7 @@
         <th:block th:replace="~{admin/modals/schedule-price-modal :: modal}" />
         <th:block th:replace="~{admin/modals/ipc-modal :: modal}" />
         <th:block th:replace="~{admin/modals/document-preview-modal :: modal}" />
+        <th:block th:replace="~{admin/modals/abono-modal :: modal}" />
 
         <script th:src="@{/js/admin/admin-core.js}"></script>
         <script th:src="@{/js/admin/admin-products.js}"></script>

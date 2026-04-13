@@ -466,11 +466,11 @@ public class TpvController {
                     worker);
 
             String msg = (movementType == CashWithdrawal.MovementType.ENTRY ? "Entry" : "Withdrawal")
-                    + " of " + amountDecimal.setScale(2, RoundingMode.HALF_UP) + " \u20ac performed successfully.";
+                    + " of " + amountDecimal.setScale(2, RoundingMode.HALF_UP) + " € performed successfully.";
             redirectAttributes.addFlashAttribute("successMessage", msg);
         } catch (Exception e) {
-            String localizedMsg = messageSource.getMessage("tpv.error.movement", 
-                new Object[]{e.getMessage()}, LocaleContextHolder.getLocale());
+            String localizedMsg = messageSource.getMessage("tpv.error.movement",
+                    new Object[] { e.getMessage() }, LocaleContextHolder.getLocale());
             redirectAttributes.addFlashAttribute("errorMessage", localizedMsg);
         }
 
@@ -649,8 +649,8 @@ public class TpvController {
 
         if (saleLineIds == null || quantities == null || saleLineIds.size() != quantities.size()
                 || saleLineIds.isEmpty()) {
-            String localizedMsg = messageSource.getMessage("tpv.error.return_items", 
-                null, LocaleContextHolder.getLocale());
+            String localizedMsg = messageSource.getMessage("tpv.error.return_items",
+                    null, LocaleContextHolder.getLocale());
             redirectAttributes.addFlashAttribute("errorMessage", localizedMsg);
             return "redirect:/tpv/return/" + saleId;
         }

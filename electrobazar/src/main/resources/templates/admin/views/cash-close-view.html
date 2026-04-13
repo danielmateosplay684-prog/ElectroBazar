@@ -7,7 +7,7 @@
         <div class="panel-header">
             <span class="panel-title">
                 <button class="btn-icon me-2"
-                    onclick="switchView('dashboardView', document.getElementById('btnDashboard'))"
+                    onclick="backToPreviousView()"
                     th:title="#{admin.common.backtopanel}">
                     <i class="bi bi-arrow-left"></i>
                 </button>
@@ -74,7 +74,7 @@
                 </thead>
                 <tbody id="cashClosuresTableBody">
                     <tr th:each="register : ${cashRegisters}" class="cash-row"
-                        th:data-worker="${register.worker != null ? register.worker.username : 'Sistema'}"
+                        th:data-worker="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : 'Sistema')}"
                         th:data-open-date="${register.openingTime != null ? #temporals.format(register.openingTime, 'yyyy-MM-dd') : ''}"
                         th:data-close-date="${register.closedAt != null ? #temporals.format(register.closedAt, 'yyyy-MM-dd') : ''}"
                         style="cursor:pointer"
@@ -104,9 +104,7 @@
                                 th:text="${#numbers.formatDecimal(register.difference, 1, 2)} + ' '"></span>
                         </td>
                         <td style="font-weight: 500;">
-                            <span th:if="${register.worker != null}" th:text="${register.worker.username}"></span>
-                            <span th:unless="${register.worker != null}"
-                                th:text="#{admin.invoices.worker.system}"></span>
+                            <span th:text="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : #messages.msg('admin.invoices.worker.system'))}"></span>
                         </td>
 
                         <td style="text-align:right">

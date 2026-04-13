@@ -119,6 +119,93 @@ function initColorPicker(gridId, inputId, activeColor) {
     });
 }
 
+let tariffSearchTimeout;
+
+function filterTariffComparison() {
+    clearTimeout(tariffSearchTimeout);
+    const input = document.getElementById('tariffComparisonSearch');
+    if (!input) return;
+    const filter = input.value.trim();
+
+    // If search is short, we could stick to client-side filtering of the current 50
+    // but the user specifically asked for "global search like inventory"
+    
+    tariffSearchTimeout = setTimeout(() => {
+        fetchTariffComparisonData(filter, 0);
+    }, 400);
+}
+
+function fetchTariffComparisonData(search, page) {
+    const tbody = document.getElementById('tariffComparisonTable')?.querySelector('tbody');
+    if (!tbody) return;
+
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-accent me-2" role="status"></div><span class="text-muted">Buscando en catálogo global...</span></td></tr>';
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('page', page);
+    params.append('size', 50);
+
+    fetch(`/api/admin/products?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+            renderTariffComparisonRows(data.content || []);
+            // Optional: Handle pagination if needed, but usually 50 is enough for a quick check
+        })
+        .catch(err => {
+            console.error("Error fetching tariff comparison:", err);
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger py-4">Error al conectar con el servidor.</td></tr>';
+        });
+}
+
+function renderTariffComparisonRows(products) {
+    const tbody = document.getElementById('tariffComparisonTable')?.querySelector('tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-5">No se encontraron productos que coincidan con la búsqueda.</td></tr>';
+        return;
+    }
+
+    const tariffs = window.activeTariffs || [];
+
+    products.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = 'comparison-row';
+        
+        let html = `
+            <td class="py-2">
+                <div class="fw-bold" style="color: var(--text-main); font-size: 0.85rem;">${p.name}</div>
+                <small class="text-muted" style="font-size: 0.7rem;">${p.categoryName || 'Sin categoría'}</small>
+            </td>
+            <td class="text-end fw-bold py-2 price-cell price-base" 
+                data-product-id="${p.id}" data-tariff-id="base"
+                style="font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; color: #8892a4;">
+                ${parseFloat(p.price || 0).toFixed(2).replace('.', ',')} €
+            </td>
+        `;
+
+        tariffs.forEach(t => {
+            const dto = t.discountPercentage || 0;
+            const basePrice = p.price || 0;
+            const finalPrice = basePrice * (1 - dto/100);
+            
+            html += `
+                <td class="text-end py-2" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                    <span class="price-cell" data-product-id="${p.id}" data-tariff-id="${t.id}">
+                        ${finalPrice.toFixed(2).replace('.', ',')} €
+                    </span>
+                </td>
+            `;
+        });
+
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+    });
+}
+
 // Global Exports
 window.openCreateTariffModal = openCreateTariffModal;
 window.saveTariff = saveTariff;
@@ -127,3 +214,4 @@ window.updateTariff = updateTariff;
 window.deactivateTariff = deactivateTariff;
 window.activateTariff = activateTariff;
 window.initColorPicker = initColorPicker;
+window.filterTariffComparison = filterTariffComparison;

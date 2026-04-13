@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', function () {
         'productModal', 'categoryModal', 'workerModal', 'roleModal',
         'customerModal', 'schedulePriceModal', 'ipcUpdateModal', 'couponModal',
         'promotionModal', 'measurementUnitModal', 'abonoModal',
-        'tariffModal', 'addTariffValueModal', 'deleteTariffModal'
+        'tariffModal', 'editTariffModal', 'applyPricesModal', 'priceChangesHistoryModal',
+        'addTariffValueModal', 'deleteTariffModal'
     ];
 
     modalIds.forEach(id => {
@@ -53,25 +54,59 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Hash-based navigation
-    const hash = window.location.hash.substring(1);
-    const viewNames = [
-        'dashboard', 'productos', 'categorias', 'trabajadores', 'roles',
-        'clientes', 'precios', 'cupones', 'promociones', 'ventas',
-        'cajas', 'tarifas', 'unidades', 'logs', 'config', 'abonos'
-    ];
-    if (viewNames.includes(hash)) {
-        switchView(hash + 'View');
+    function handleHashNavigation() {
+        const hash = window.location.hash.substring(1);
+        if (!hash || hash === 'dashboard') {
+            switchView('dashboardView', null, true);
+            return;
+        }
+
+        // Mapping hashes to View IDs
+        const mapping = {
+            'productos': 'productsView',
+            'invoices': 'invoicesView',
+            'cashClose': 'cashCloseView',
+            'returns': 'returnsHistoryView',
+            'categorias': 'categoriesView',
+            'trabajadores': 'workersView',
+            'roles': 'rolesView',
+            'clientes': 'crmView',
+            'precios': 'preciosView',
+            'cupones': 'couponsView',
+            'promociones': 'promotionsView',
+            'tarifas': 'tarifasView',
+            'unidades': 'measurementUnitsView',
+            'logs': 'activityView',
+            'config': 'settingsView',
+            'abonos': 'abonosView'
+        };
+
+        const viewId = mapping[hash] || (hash + 'View');
+        if (document.getElementById(viewId)) {
+            switchView(viewId, null, true);
+        }
     }
 
-    // Auto-load tasks based on view
-    if (document.getElementById('invoicesView') && document.getElementById('invoicesView').style.display !== 'none') {
-        if (typeof fetchSalesPage === 'function') fetchSalesPage(0);
-    }
+    window.addEventListener('hashchange', handleHashNavigation);
+    handleHashNavigation(); // Initial check
 });
 
-function switchView(viewId, btn) {
+// Navigation History
+let viewHistory = [];
+
+function switchView(viewId, btn, isBack = false) {
+    // 0. History tracking: don't track if navigating back or if it's the same view
+    const currentActiveView = Array.from(document.querySelectorAll('[id$="View"]'))
+                                  .find(v => v.style.display !== 'none');
+    
+    if (!isBack && currentActiveView && currentActiveView.id !== viewId) {
+        // Only push if not already at the top of history to avoid simple loops
+        if (viewHistory.length === 0 || viewHistory[viewHistory.length - 1] !== currentActiveView.id) {
+            viewHistory.push(currentActiveView.id);
+        }
+    }
+
     // 1. Hide all elements that end in "View"
-    // Using a more specific selector if possible, or just the suffix
     const allViews = document.querySelectorAll('[id$="View"]');
     allViews.forEach(v => v.style.display = 'none');
 
@@ -79,6 +114,16 @@ function switchView(viewId, btn) {
     const target = document.getElementById(viewId);
     if (target) {
         target.style.display = 'block';
+        // Update URL hash for better browser behavior
+        const viewShortName = viewId.replace('View', '');
+        if (viewShortName !== 'dashboard') {
+            window.location.hash = viewShortName;
+        } else {
+            // Clear hash on dashboard
+            if (window.location.hash) {
+                history.replaceState(null, null, ' ');
+            }
+        }
     } else {
         console.warn('View not found:', viewId);
     }
@@ -114,6 +159,19 @@ function switchView(viewId, btn) {
 
     // Scroll to top
     window.scrollTo(0, 0);
+}
+
+/**
+ * Returns to the previous view in history.
+ */
+function backToPreviousView() {
+    if (viewHistory.length > 0) {
+        const lastView = viewHistory.pop();
+        switchView(lastView, null, true);
+    } else {
+        // Fallback if history empty
+        switchView('dashboardView');
+    }
 }
 
 function showToast(message, type = 'success') {
@@ -208,6 +266,7 @@ function previewImage(event) {
 
 // Global Exports
 window.switchView = switchView;
+window.backToPreviousView = backToPreviousView;
 window.showToast = showToast;
 window.escHtml = escHtml;
 window.escapeHtml = escapeHtml;

@@ -5,10 +5,13 @@
 
     <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customermodalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="customermodalLabel" th:text="#{admin.crm.modal.title}">Cliente</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="customermodalLabel">
+                        <i class="bi bi-person-plus me-2 text-accent"></i>
+                        <span th:text="#{admin.crm.modal.title}">Ficha de Cliente</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="customerForm" novalidate>
@@ -31,95 +34,77 @@
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label" id="lblAdminCustomerName" for="customerName"><span
-                                        th:text="#{admin.crm.name_and_surname}">Nombre y
-                                        Apellidos</span> <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-muted" id="lblAdminCustomerName" for="customerName">
+                                    <span th:text="#{admin.crm.name_and_surname}">Nombre y Apellidos</span> <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="customerName" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" id="lblAdminCustomerTaxId" for="customerTaxId"><span
-                                        th:text="#{admin.crm.taxId}">NIF/NIE</span>
-                                    <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-muted" id="lblAdminCustomerTaxId" for="customerTaxId">
+                                    <span th:text="#{admin.crm.taxId}">NIF/NIE</span> <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="customerTaxId" required placeholder="Ej: 12345678X">
                             </div>
                             <div class="col-12">
-                                <label class="form-label" for="customerAddress"><span
-                                        th:text="#{admin.crm.address}">Dirección (Calle, Número...)</span> <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-muted" for="customerAddress">
+                                    <span th:text="#{admin.crm.address}">Dirección completa</span> <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="customerAddress" required>
                             </div>
                             <div class="col-md-8">
-                                <label class="form-label" for="customerCity"><span
-                                        th:text="#{admin.common.city}">Población / Ciudiad</span> <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-muted" for="customerCity">
+                                    <span th:text="#{admin.crm.city}">Población / Ciudad</span> <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="customerCity" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label" for="customerPostalCode"><span
-                                        th:text="#{admin.settings.company.postalCode}">Código Postal</span> <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-muted" for="customerPostalCode">
+                                    <span th:text="#{common.postalcode}">Código Postal</span> <span class="text-danger">*</span>
+                                </label>
                                 <input type="text" class="form-control" id="customerPostalCode" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="customerEmail"
-                                    th:text="#{admin.common.email_optional}">Email (Opcional)</label>
+                                <label class="form-label small fw-bold text-muted" for="customerEmail"
+                                    th:text="#{common.email_optional}">Email (Opcional)</label>
                                 <input type="email" class="form-control" id="customerEmail" placeholder="ejemplo@correo.com">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="customerPhone"
-                                    th:text="#{admin.common.phone_optional}">Teléfono (Opcional)</label>
+                                <label class="form-label small fw-bold text-muted" for="customerPhone"
+                                    th:text="#{common.phone_optional}">Teléfono (Opcional)</label>
                                 <input type="text" class="form-control" id="customerPhone" placeholder="+34 600 000 000">
                             </div>
                             <!-- Tariff selector -->
                             <div class="col-12">
-                                <label class="form-label" for="customerTariffId">
-                                    <i class="bi bi-tags me-1"></i><span th:text="#{admin.common.tariff}">Tarifa de
-                                        Precio</span>
+                                <label class="form-label small fw-bold text-muted" for="customerTariffId">
+                                    <i class="bi bi-tags me-1 text-accent"></i><span th:text="#{common.tariff}">Tarifa</span>
                                 </label>
                                 <select class="form-select" id="customerTariffId">
-                                    <option value="" th:text="#{admin.crm.no_tariff}"> Sin tarifa asignadia
-                                        (MINORISTA) </option>
+                                    <option value="" th:text="#{admin.crm.no_tariff}">-- Sin tarifa (MINORISTA) --</option>
                                     <th:block th:each="tariff : ${tariffs}">
                                         <option th:if="${tariff.active}" th:value="${tariff.id}"
                                             th:text="${tariff.getDisplayLabel()}">MINORISTA</option>
                                     </th:block>
                                 </select>
-                                <small style="color: var(--text-muted);" th:text="#{admin.crm.tariff_info}">La
-                                    tarifa define el descuento automático
-                                    cuando este cliente se añade a una venta.</small>
+                                <small class="text-muted d-block mt-1" th:text="#{admin.crm.tariff_info}">Descuento automático aplicado al añadir cliente.</small>
                             </div>
 
                             <div class="col-12" id="adminCustomerReSection" style="display: none;">
-                                <div class="p-3 rounded"
-                                    style="background:rgba(var(accent-rgb), 0.05); border:1px solid var(--border)">
+                                <div class="p-3 rounded" style="background: rgba(255,166,35,0.05); border: 1px solid var(--border)">
                                     <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input ms-0 me-2" type="checkbox"
-                                            id="customerRecargoEquivalencia">
+                                        <input class="form-check-input" type="checkbox" id="customerRecargoEquivalencia">
                                         <label class="form-check-label fw-bold" for="customerRecargoEquivalencia">
                                             <i class="bi bi-percent me-1 text-accent"></i>
-                                            <span th:text="#{admin.crm.re.label}">Sujeto a Recargo de Equivalencia
-                                                (R.E.)</span>
+                                            <span th:text="#{admin.crm.re.label}">Sujeto a R.E.</span>
                                         </label>
                                     </div>
-                                    <small class="d-block mt-2 ms-4" id="adminCustomerReInfoMsg"
-                                        style="font-size: 0.8rem; color: var(--text-muted);"
-                                        th:text="#{admin.crm.re.desc}">
-                                        Activa esta opción si el cliente es un minorista en régimen de RE. Se
-                                        aplicará
-                                        el recargo español según el IVA (21%5,2%, etc.).
-                                    </small>
-                                    <small id="adminCustomerReIncompatibleMsg" class="d-none mt-2 ms-4 fw-bold"
-                                        style="font-size: 0.8rem; color: #ef4444;"
-                                        th:text="#{admin.crm.re.incompatible}">
-                                        El recargo de equivalencia solo aplica a clientes con tarifa minorista
-                                    </small>
+                                    <small class="d-block mt-2 text-muted" id="adminCustomerReInfoMsg" style="font-size: 0.8rem;" th:text="#{admin.crm.re.desc}">Activa esta opción si el cliente es minorista en recargo.</small>
                                 </div>
                             </div>
 
                             <div class="col-12">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="customerActive" checked>
-                                    <label class="form-check-label" for="customerActive"
+                                    <label class="form-check-label fw-bold text-muted small" for="customerActive"
                                         th:text="#{admin.crm.active}">Cliente activo</label>
                                 </div>
                             </div>
@@ -127,7 +112,7 @@
                     </form>
 
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
                         th:text="#{common.cancel}">Cancelar</button>
                     <button type="button" class="btn btn-save" onclick="saveCustomer()">

@@ -25,7 +25,7 @@ public class AbonoTestRunner {
     @Test
     public void testAbonos() {
         System.out.println("\n\n=============== COMIENZO TEST DE ABONOS ===============");
-        
+
         try {
             Long clienteId;
             try {
@@ -34,7 +34,7 @@ public class AbonoTestRunner {
                 System.out.println("❌ Error: No se encontró la tabla de clientes (customers) o está vacía.");
                 return;
             }
-            
+
             System.out.println("ℹ️ Utilizando cliente existente en la DB (ID: " + clienteId + ")");
 
             // 1. Crear Abono
@@ -47,26 +47,28 @@ public class AbonoTestRunner {
 
             System.out.println("⏳ Peticionando la inserción del Abono...");
             Abono abonoCreado = abonoService.createAbono(request);
-            System.out.printf("✅ Abono creado. ID DADO: %d | Importe en DB: %s \u20ac | Estado: %s | Tipo: %s%n", 
-                abonoCreado.getId(), abonoCreado.getImporte(), abonoCreado.getEstado(), abonoCreado.getTipoAbono());
+            System.out.printf("✅ Abono creado. ID DADO: %d | Importe en DB: %s € | Estado: %s | Tipo: %s%n",
+                    abonoCreado.getId(), abonoCreado.getImporte(), abonoCreado.getEstado(), abonoCreado.getTipoAbono());
 
             // 2. Listar Abonos
             System.out.println("\n⏳ Listando abonos mediante el endpoint Service...");
             List<Abono> abonosCliente = abonoService.getAbonosByCliente(clienteId);
-            System.out.println("✅ El cliente ID: " + clienteId + " tiene actualmente " + abonosCliente.size() + " abonos en el sistema.");
+            System.out.println("✅ El cliente ID: " + clienteId + " tiene actualmente " + abonosCliente.size()
+                    + " abonos en el sistema.");
 
             // 3. Anular Abono
             System.out.println("\n⏳ Llamando al servicio de anulación...");
             abonoService.anularAbono(abonoCreado.getId());
-            
-            String nuevoEstado = jdbcTemplate.queryForObject("SELECT estado FROM abonos WHERE id = ?", String.class, abonoCreado.getId());
+
+            String nuevoEstado = jdbcTemplate.queryForObject("SELECT estado FROM abonos WHERE id = ?", String.class,
+                    abonoCreado.getId());
             System.out.println("✅ Estado validado directamente desde SQL BBDD tras la anulación: " + nuevoEstado);
 
         } catch (Exception e) {
             System.out.println("❌ ERROR SEVERO EN EJECUCIÓN:");
             e.printStackTrace();
         }
-        
+
         System.out.println("=============== FIN TEST DE ABONOS ===============\n\n");
     }
 }

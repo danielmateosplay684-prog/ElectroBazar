@@ -40,6 +40,12 @@ public interface CashRegisterRepository extends JpaRepository<CashRegister, Long
     Optional<CashRegister> findFirstByClosedFalseOrderByRegisterDateDesc();
 
     /**
+     * Finds a shift by ID, eagerly fetching worker relations.
+     */
+    @EntityGraph(attributePaths = { "worker", "retainedByWorker" })
+    Optional<CashRegister> findById(Long id);
+
+    /**
      * Finds the most recently closed shift for balance carry-over calculations.
      */
     @EntityGraph(attributePaths = { "worker", "retainedByWorker" })
