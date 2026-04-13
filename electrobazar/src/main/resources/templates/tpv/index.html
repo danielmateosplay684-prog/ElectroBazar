@@ -342,7 +342,7 @@
                     <input type="hidden" name="cardAmount" id="cardAmountInput">
                     <input type="hidden" name="notes" id="notesInput">
                     <div id="formLines"></div>
-                    <button type="button" class="btn-cobrar" id="btnCobrar" onclick="openCustomerModal()" disabled
+                    <button type="button" class="btn-cobrar" id="btnCobrar" onclick="openCheckoutModal()" disabled
                         th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''">
                         <i class="bi bi-lightning-fill me-1"></i> <span th:text="#{tpv.ticket.checkout}">Cobrar</span>
                     </button>
@@ -498,7 +498,7 @@
     </div>
 
     <!-- Modal de Finalizar Venta -->
-    <div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal fade" id="checkoutModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content"
                 style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
@@ -631,125 +631,8 @@
         </div>
     </div>
 
-    <!-- ── MODAL: Crear Cliente Completo ── -->
-    <div class="modal fade" id="fullCustomerModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content"
-                style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
-                <div class="modal-header" style="border-color: var(--border);">
-                    <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Nuevo Cliente</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        style="filter: var(--close-filter, invert(1));"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeIndividual"
-                                value="INDIVIDUAL" checked onchange="toggleCustomerType()">
-                            <label class="form-check-label" for="typeIndividual">Particular</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="newCustomerType" id="typeCompany"
-                                value="COMPANY" onchange="toggleCustomerType()">
-                            <label class="form-check-label" for="typeCompany">Empresa</label>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label" id="lblCustomerName">Nombre y Apellidos <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerName" class="form-control" required
-                                placeholder="Nombre completo o Razón Social"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" id="lblCustomerTaxId">NIF/NIE <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerTaxId" class="form-control" required
-                                placeholder="12345678X"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Dirección (Calle, Número...) <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerAddress" class="form-control" required
-                                placeholder="Calle, número, piso..."
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Población / Ciudad <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerCity" class="form-control" required placeholder="Madrid"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Código Postal <span class="text-danger">*</span></label>
-                            <input type="text" id="newCustomerPostalCode" class="form-control" required
-                                placeholder="28001"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email (Opcional)</label>
-                            <input type="email" id="newCustomerEmail" class="form-control"
-                                placeholder="ejemplo@correo.com"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Teléfono (Opcional)</label>
-                            <input type="text" id="newCustomerPhone" class="form-control" placeholder="600 000 000"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label" for="newCustomerTariffId">
-                                <i class="bi bi-tags me-1"></i>Tarifa de Precio
-                            </label>
-                            <select class="form-select" id="newCustomerTariffId"
-                                style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                                <option value="">-- Sin tarifa asignada (MINORISTA) --</option>
-                                <th:block th:each="tariff : ${tariffs}">
-                                    <option th:if="${tariff.active}" th:value="${tariff.id}"
-                                        th:text="${tariff.getDisplayLabel()}">MINORISTA</option>
-                                </th:block>
-                            </select>
-                            <small style="color: var(--text-muted);">La tarifa define el descuento automático cuando
-                                este cliente se añade a una venta.</small>
-                        </div>
-                        <div class="col-12 mt-3" id="newCustomerReSection" style="display: none;">
-                            <div class="p-3 rounded"
-                                style="border: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.05);">
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input ms-0 me-2" type="checkbox"
-                                        id="newCustomerHasRecargo">
-                                    <label class="form-check-label fw-bold" for="newCustomerHasRecargo">
-                                        <i class="bi bi-percent me-1 text-accent"></i> Sujeto a Recargo de Equivalencia
-                                        (RE)
-                                    </label>
-                                </div>
-                                <small id="newCustomerReIncompatibleMsg" class="d-none mt-2 ms-4 fw-bold"
-                                    style="font-size: 0.8rem; color: #ef4444;">
-                                    El recargo de equivalencia solo aplica a clientes con tarifa minorista
-                                </small>
-                            </div>
-                        </div>
-                        <div class="col-12 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="newCustomerActive" checked>
-                                <label class="form-check-label" for="newCustomerActive">Cliente activo</label>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Hidden field to store selected id after creation if needed, though we usually select it in JS -->
-                    <input type="hidden" id="existingCustomerId">
-                </div>
-                <div class="modal-footer" style="border-color: var(--border);">
-                    <button type="button" class="btn" data-bs-dismiss="modal"
-                        style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
-                    <button type="button" class="btn" id="btnCreateCustomerSidebar"
-                        style="background: var(--accent); color: var(--primary);"
-                        onclick="createNewCustomerAjax()">Crear y Seleccionar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ── MODAL: Crear Cliente Completo (Shared with Admin) ── -->
+    <div th:replace="~{admin/modals/customer-modal :: modal}"></div>
 
 
     <!-- ── PIN MODAL (ADMIN ACCESS) ── -->

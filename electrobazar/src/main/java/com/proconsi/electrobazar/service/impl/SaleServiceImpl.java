@@ -9,6 +9,8 @@ import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.*;
 import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.CouponRepository;
+import com.proconsi.electrobazar.repository.DailyCategorySummaryRepository;
+import com.proconsi.electrobazar.repository.DailySaleSummaryRepository;
 import com.proconsi.electrobazar.repository.SaleRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
@@ -21,8 +23,11 @@ import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -60,62 +65,212 @@ public class SaleServiceImpl implements SaleService {
     private final CouponRepository couponRepository;
     private final CashRegisterService cashRegisterService;
     private final MessageSource messageSource;
+    private final DailySaleSummaryRepository dailySaleSummaryRepository;
+    private final DailyCategorySummaryRepository dailyCategorySummaryRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Override
+     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+      value = "analyticsSummary",
+      key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString()"
+    )
     public AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to) {
-        SaleSummaryResponse summary = mapProjection(saleRepository.getSummaryBetween(from, to));
-        String topProduct = saleRepository.findTopProductNameBetween(from, to);
-        
-        // 1. Daily Revenue (Database Aggregated)
-        List<Object[]> dailyData = saleRepository.getDailyRevenue(from, to);
+        LocalDate startDate = from.toLocalDate();
+        LocalDate endDate = to.toLocalDate();
+
+        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        boolean useMonthly = days > 31;
+
+        BigDecimal totalRevenue;
+        long totalSalesCount;
+        long totalCancelledCount;
+        BigDecimal totalCancelledAmount;
+        BigDecimal cashTotal;
+        BigDecimal cardTotal;
+        BigDecimal mixedTotal;
+        BigDecimal totalUnitsSold;
         Map<String, BigDecimal> trend = new TreeMap<>();
-        for (Object[] row : dailyData) {
-            String dateStr = row[0].toString(); // Row[0] is java.sql.Date from DATE()
-            trend.put(dateStr, (BigDecimal) row[1]);
-        }
-        
-        // 2. Category Distribution (Database Aggregated)
-        List<Object[]> catData = saleRepository.getCategoryDistribution(from, to);
-        Map<String, BigDecimal> categories = new HashMap<>();
-        for (Object[] row : catData) {
-            categories.put((String) row[0], (BigDecimal) row[1]);
-        }
-
-        List<Object[]> hourlyData = saleRepository.getHourlyRevenue(from, to);
+        Map<String, BigDecimal> categories = new LinkedHashMap<>();
         Map<Integer, BigDecimal> hourly = new TreeMap<>();
-        for (Object[] row : hourlyData) {
-            hourly.put(((Number) row[0]).intValue(), (BigDecimal) row[1]);
+        Map<String, BigDecimal> topProds = new LinkedHashMap<>();
+        String topProduct;
+
+        if (useMonthly) {
+            // ── 1. Totales desde monthly_sales_stats ──────────────────────────
+            String summarySql = """
+                SELECT
+                    COALESCE(SUM(total_revenue),0), COALESCE(SUM(sales_count),0),
+                    COALESCE(SUM(cancelled_count),0), COALESCE(SUM(cancelled_total),0),
+                    COALESCE(SUM(cash_total),0), COALESCE(SUM(card_total),0),
+                    COALESCE(SUM(mixed_total),0), COALESCE(SUM(total_units_sold),0)
+                FROM monthly_sales_stats
+                WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                AND DATE_FORMAT(?, '%Y-%m-01')
+            """;
+            Object[] summaryData = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[]{
+                rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
+                rs.getBigDecimal(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8)
+            }, startDate, endDate);
+
+            totalRevenue        = (BigDecimal) summaryData[0];
+            totalSalesCount     = (long)       summaryData[1];
+            totalCancelledCount = (long)       summaryData[2];
+            totalCancelledAmount= (BigDecimal) summaryData[3];
+            cashTotal           = (BigDecimal) summaryData[4];
+            cardTotal           = (BigDecimal) summaryData[5];
+            mixedTotal          = (BigDecimal) summaryData[6];
+            totalUnitsSold      = (BigDecimal) summaryData[7];
+
+            // ── 2. Tendencia mensual ───────────────────────────────────────────
+            String trendSql = """
+                SELECT stat_month, total_revenue FROM monthly_sales_stats
+                WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                AND DATE_FORMAT(?, '%Y-%m-01')
+                ORDER BY stat_month ASC
+            """;
+            List<Object[]> trendRows = jdbcTemplate.query(trendSql, (rs, rowNum) -> new Object[]{
+                rs.getDate("stat_month").toString(), rs.getBigDecimal("total_revenue")
+            }, startDate, endDate);
+            for (Object[] row : trendRows) trend.put((String) row[0], (BigDecimal) row[1]);
+
+            // ── 3. Categorías ─────────────────────────────────────────────────
+            String catSql = """
+                SELECT category_name, SUM(total_amount) as total
+                FROM monthly_category_stats
+                WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                AND DATE_FORMAT(?, '%Y-%m-01')
+                GROUP BY category_name ORDER BY total DESC
+            """;
+            List<Object[]> catRowsShared = jdbcTemplate.query(catSql, (rs, rowNum) -> new Object[]{
+                rs.getString("category_name"), rs.getBigDecimal("total")
+            }, startDate, endDate);
+            for (Object[] row : catRowsShared) categories.put((String) row[0], (BigDecimal) row[1]);
+
+
+            // ── 5. Top productos ──────────────────────────────────────────────
+            String topProdsSql = """
+                SELECT product_name, SUM(revenue) as total
+                FROM monthly_product_stats
+                WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                AND DATE_FORMAT(?, '%Y-%m-01')
+                GROUP BY product_id, product_name
+                ORDER BY total DESC LIMIT 5
+            """;
+            List<Object[]> prodRows = jdbcTemplate.query(topProdsSql, (rs, rowNum) -> new Object[]{
+                rs.getString("product_name"), rs.getBigDecimal("total")
+            }, startDate, endDate);
+            for (Object[] row : prodRows) topProds.put((String) row[0], (BigDecimal) row[1]);
+
+            // ── 6. Top producto nombre ────────────────────────────────────────
+            String topNameSql = """
+                SELECT product_name FROM monthly_product_stats
+                WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                AND DATE_FORMAT(?, '%Y-%m-01')
+                GROUP BY product_id, product_name
+                ORDER BY SUM(units_sold) DESC LIMIT 1
+            """;
+            List<String> topNames = jdbcTemplate.queryForList(topNameSql, String.class, startDate, endDate);
+            topProduct = topNames.isEmpty() ? null : topNames.get(0);
+
+        } else {
+            // ── Tablas diarias (lógica original) ─────────────────────────────
+            String summarySql = """
+                SELECT
+                    COALESCE(SUM(total_revenue), 0), COALESCE(SUM(sales_count), 0),
+                    COALESCE(SUM(cancelled_count), 0), COALESCE(SUM(cancelled_total), 0),
+                    COALESCE(SUM(cash_total), 0), COALESCE(SUM(card_total), 0),
+                    COALESCE(SUM(mixed_total), 0), COALESCE(SUM(total_units_sold), 0)
+                FROM daily_sales_stats WHERE date BETWEEN ? AND ?
+            """;
+            Object[] summaryData = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[]{
+                rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
+                rs.getBigDecimal(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8)
+            }, startDate, endDate);
+
+            totalRevenue        = (BigDecimal) summaryData[0];
+            totalSalesCount     = (long)       summaryData[1];
+            totalCancelledCount = (long)       summaryData[2];
+            totalCancelledAmount= (BigDecimal) summaryData[3];
+            cashTotal           = (BigDecimal) summaryData[4];
+            cardTotal           = (BigDecimal) summaryData[5];
+            mixedTotal          = (BigDecimal) summaryData[6];
+            totalUnitsSold      = (BigDecimal) summaryData[7];
+
+            topProduct = findTopProductNameBetween(from, to);
+
+            String trendSql = "SELECT date, total_revenue FROM daily_sales_stats WHERE date BETWEEN ? AND ? ORDER BY date ASC";
+            List<Object[]> trendRowsDaily = jdbcTemplate.query(trendSql, (rs, rowNum) -> new Object[]{
+                rs.getDate("date").toString(), rs.getBigDecimal("total_revenue")
+            }, startDate, endDate);
+            for (Object[] row : trendRowsDaily) trend.put((String) row[0], (BigDecimal) row[1]);
+
+            String catSql = """
+                SELECT category_name, SUM(total_amount) as total, SUM(units_sold)
+                FROM daily_category_stats
+                WHERE date BETWEEN ? AND ?
+                GROUP BY category_name ORDER BY total DESC
+            """;
+            List<Object[]> catRowsSharedDaily = jdbcTemplate.query(catSql, (rs, rowNum) -> new Object[]{
+                rs.getString("category_name"), rs.getBigDecimal("total")
+            }, startDate, endDate);
+            for (Object[] row : catRowsSharedDaily) categories.put((String) row[0], (BigDecimal) row[1]);
+
+
+            List<Object[]> topProdsData = getTopProducts(from, to, 5);
+            for (Object[] row : topProdsData) {
+                topProds.put((String) row[0], (BigDecimal) row[1]);
+            }
         }
 
-        List<Object[]> topProdsData = saleRepository.getTopProducts(
-            from, to, PageRequest.of(0, 5));
-        Map<String, BigDecimal> topProds = new LinkedHashMap<>();
-        for (Object[] row : topProdsData) {
-            topProds.put((String) row[0], (BigDecimal) row[1]);
-        }
+        // ── Horario: siempre desde hourly_sales_stats ────────────────────────
+        List<Object[]> hourlyRows = jdbcTemplate.query(
+            "SELECT hour, SUM(total_revenue) FROM hourly_sales_stats WHERE date BETWEEN ? AND ? GROUP BY hour ORDER BY hour ASC",
+            (rs, rowNum) -> new Object[]{rs.getInt(1), rs.getBigDecimal(2)},
+            startDate, endDate);
+        for (Object[] row : hourlyRows) hourly.put((Integer) row[0], (BigDecimal) row[1]);
+
+        Long lowStockCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM products WHERE stock < 5 AND active = true", Long.class);
 
         return AnalyticsSummaryDTO.builder()
-                .totalSales(summary.getTotalSalesCount())
-                .totalRevenue(summary.getTotalSalesAmount())
-                .cashRevenue(summary.getTotalCashAmount())
-                .cardRevenue(summary.getTotalCardAmount())
-                .cancelledSales(summary.getTotalCancelledCount())
-                .cancelledRevenue(summary.getTotalCancelledAmount())
+                .totalSales(totalSalesCount)
+                .totalRevenue(totalRevenue)
+                .cashRevenue(cashTotal.add(mixedTotal))
+                .cardRevenue(cardTotal)
+                .cancelledSales(totalCancelledCount)
+                .cancelledRevenue(totalCancelledAmount)
                 .topProductName(topProduct != null ? topProduct : "—")
-                .lowStockCount(productService.findAll().stream().filter(p -> p.getStock().compareTo(new BigDecimal("5")) < 0).count())
+                .lowStockCount(lowStockCount != null ? lowStockCount : 0L)
                 .revenueTrend(trend)
                 .categoryDistribution(categories)
-                .averageTicket(summary.getTotalSalesCount() > 0
-                    ? summary.getTotalSalesAmount().divide(
-                        BigDecimal.valueOf(summary.getTotalSalesCount()), 2, RoundingMode.HALF_UP)
+                .averageTicket(totalSalesCount > 0
+                    ? totalRevenue.divide(BigDecimal.valueOf(totalSalesCount), 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO)
-                .cancellationRate(summary.getTotalSalesCount() > 0
-                    ? (double) summary.getTotalCancelledCount() / summary.getTotalSalesCount() * 100
+                .cancellationRate(totalSalesCount > 0
+                    ? (double) totalCancelledCount / totalSalesCount * 100
                     : 0.0)
                 .hourlyTrend(hourly)
                 .topProducts(topProds)
                 .build();
+    }
+
+    @org.springframework.cache.annotation.Cacheable(value = "topProductName", 
+        key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString()")
+    public String findTopProductNameBetween(LocalDateTime from, LocalDateTime to) {
+        return saleRepository.findTopProductNameBetween(from, to);
+    }
+
+    @org.springframework.cache.annotation.Cacheable(value = "hourlyRevenue", 
+        key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString()")
+    public List<Object[]> getHourlyRevenue(LocalDateTime from, LocalDateTime to) {
+        return saleRepository.getHourlyRevenue(from, to);
+    }
+
+    @org.springframework.cache.annotation.Cacheable(value = "topProducts",
+        key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString() + '-' + #limit")
+    public List<Object[]> getTopProducts(LocalDateTime from, LocalDateTime to, int limit) {
+        return saleRepository.getTopProducts(from, to, PageRequest.of(0, limit));
     }
 
     @Override
@@ -182,6 +337,8 @@ public class SaleServiceImpl implements SaleService {
 
     // 2. Initial logic
     @Override
+    @CacheEvict(value = "analyticsSummary", 
+      key = "T(java.time.LocalDate).now().toString() + '-' + T(java.time.LocalDate).now().toString()")
     public Sale createSaleWithCoupon(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
             BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
             Worker worker, Tariff tariffOverride, String couponCode) {

@@ -711,7 +711,7 @@ function submitSale() {
 
 var invoiceModalInstance;
 
-function openCustomerModal() {
+function openCheckoutModal() {
     if (Object.keys(ticket).length === 0) return;
 
     // Determine if payment is CASH or MIXED
@@ -778,7 +778,7 @@ function openCustomerModal() {
         }
     }
 
-    invoiceModalInstance = new bootstrap.Modal(document.getElementById('customerModal'));
+    invoiceModalInstance = new bootstrap.Modal(document.getElementById('checkoutModal'));
     invoiceModalInstance.show();
 
     if (isCash) {
@@ -1645,80 +1645,317 @@ function resetTicketPrices() {
     });
 }
 
-function openFullCustomerModal() {
-    // Reset form
-    document.getElementById('newCustomerName').value = '';
-    document.getElementById('newCustomerTaxId').value = '';
-    document.getElementById('newCustomerAddress').value = '';
-    document.getElementById('newCustomerCity').value = '';
-    document.getElementById('newCustomerPostalCode').value = '';
-    document.getElementById('newCustomerEmail').value = '';
-    document.getElementById('newCustomerPhone').value = '';
-    document.getElementById('newCustomerTariffId').value = '';
-    document.getElementById('newCustomerActive').checked = true;
-    document.getElementById('typeIndividual').checked = true;
-    toggleCustomerType();
-    checkNewCustomerReCompatibility();
+// ── SHARED CUSTOMER LOGIC (EXTRACTED FROM ADMIN) ────────────────────────────
+const DOC_TYPE_CONFIG = {
+    DNI: {
+        label:       'DNI',
+        placeholder: 'Ej: 12345678Z',
+        hint:        '🇪🇸 DNI – 8 dígitos + letra (ej: 12345678Z)',
+        validate:    validateDni,
+    },
+    NIE: {
+        label:       'NIE',
+        placeholder: 'Ej: X1234567L',
+        hint:        '🇪🇸 NIE – X, Y o Z + 7 dígitos + letra (ej: X1234567L)',
+        validate:    validateNie,
+    },
+    NIF: {
+        label:       'CIF / NIF',
+        placeholder: 'Ej: B12345678',
+        hint:        '🏢 NIF/CIF – letra de empresa + 7 dígitos + control (ej: B12345678)',
+        validate:    validateNif,
+    },
+    PASSPORT: {
+        label:       'N.º Pasaporte',
+        placeholder: 'Ej: AAB123456',
+        hint:        '🌍 Pasaporte – entre 5 y 9 caracteres alfanuméricos',
+        validate:    validatePassport,
+    },
+    FOREIGN_ID: {
+        label:       'Doc. identidad extranjero',
+        placeholder: 'Ej: 987654321',
+        hint:        '🌐 Documento extranjero – entre 4 y 25 caracteres',
+        validate:    validateForeignId,
+    },
+    INTRACOMMUNITY_VAT: {
+        label:       'NIF intracomunitario',
+        placeholder: 'Ej: DE123456789',
+        hint:        '🇪🇺 NIF UE – 2 letras de país + sufijo (ej: DE123456789, FR12345678901)',
+        validate:    validateIntracom,
+    },
+};
 
-    var modal = new bootstrap.Modal(document.getElementById('fullCustomerModal'));
-    modal.show();
+const DNI_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
+function validateDni(val) {
+    if (!/^\d{8}[A-Z]$/.test(val)) return '8 dígitos + letra (ej: 12345678Z)';
+    const n = parseInt(val.substring(0, 8), 10);
+    const expected = DNI_LETTERS[n % 23];
+    return expected === val[8] ? null : `Letra de control incorrecta (esperada: ${expected})`;
 }
 
-function createNewCustomerAjax() {
-    var type = document.querySelector('input[name="newCustomerType"]:checked').value;
-    var name = document.getElementById('newCustomerName').value.trim();
-    var taxId = document.getElementById('newCustomerTaxId').value.trim();
-    var address = document.getElementById('newCustomerAddress').value.trim();
-    var city = document.getElementById('newCustomerCity').value.trim();
-    var postalCode = document.getElementById('newCustomerPostalCode').value.trim();
-    var email = document.getElementById('newCustomerEmail').value.trim();
-    var phone = document.getElementById('newCustomerPhone').value.trim();
-    var tariffId = document.getElementById('newCustomerTariffId').value;
-    var isActive = document.getElementById('newCustomerActive').checked;
-    var hasRecargo = document.getElementById('newCustomerHasRecargo').checked;
+function validateNie(val) {
+    if (!/^[XYZ]\d{7}[A-Z]$/.test(val)) return 'Formato: X/Y/Z + 7 dígitos + letra (ej: X1234567L)';
+    const map = { X: '0', Y: '1', Z: '2' };
+    return validateDni(map[val[0]] + val.substring(1));
+}
 
+function validateNif(val) {
+    if (!/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-Z]$/.test(val))
+        return 'Formato CIF: letra de empresa + 7 dígitos + control (ej: B12345678)';
+    return validateCifAlgorithm(val) ? null : 'Dígito/letra de control CIF incorrecto';
+}
+
+function validateCifAlgorithm(cif) {
+    const digits  = cif.substring(1, 8);
+    const control = cif[8];
+    let even = 0, odd = 0;
+    for (let i = 0; i < digits.length; i++) {
+        const d = parseInt(digits[i], 10);
+        if (i % 2 === 0) { const dd = d * 2; odd += dd >= 10 ? dd - 9 : dd; }
+        else              { even += d; }
+    }
+    const ctrl = (10 - (even + odd) % 10) % 10;
+    const expectedLetter = 'JABCDEFGHI'[ctrl];
+    const expectedDigit  = String(ctrl);
+    return control === expectedDigit || control === expectedLetter;
+}
+
+function validatePassport(val) { return /^[A-Z0-9]{5,9}$/.test(val) ? null : '5–9 caracteres alfanuméricos'; }
+function validateForeignId(val) { return /^[A-Z0-9\-]{4,25}$/.test(val) ? null : 'Entre 4 y 25 caracteres alfanuméricos/guiones'; }
+function validateIntracom(val) { return /^[A-Z]{2}[A-Z0-9]{2,12}$/.test(val) ? null : '2 letras de país ISO + sufijo alfanumérico (ej: DE123456789)'; }
+
+function toggleAdminCustomerType() {
+    const isCompany = document.getElementById('adminTypeCompany').checked;
+    document.getElementById('customerType').value = isCompany ? 'COMPANY' : 'INDIVIDUAL';
+    const nameLabel = document.getElementById('lblAdminCustomerName');
+    if (nameLabel) nameLabel.innerHTML = isCompany ? 'Razón Social <span class="text-danger">*</span>' : 'Nombre y Apellidos <span class="text-danger">*</span>';
+    const taxSection = document.getElementById('customerTaxIdSection');
+    if (taxSection) taxSection.style.display = isCompany ? '' : 'none';
+    const nifTypeSection = document.getElementById('customerNifTypeSection');
+    if (nifTypeSection) nifTypeSection.style.display = isCompany ? '' : 'none';
+    const docTypeSection   = document.getElementById('customerDocTypeSection');
+    const docNumberSection = document.getElementById('customerDocNumberSection');
+    const docHintSection   = document.getElementById('customerDocHintSection');
+    if (docTypeSection)   docTypeSection.style.display   = isCompany ? 'none' : '';
+    if (docNumberSection) docNumberSection.style.display = isCompany ? 'none' : '';
+    if (docHintSection)   docHintSection.style.display   = isCompany ? 'none' : '';
+    const reSection = document.getElementById('adminCustomerReSection');
+    if (reSection) {
+        reSection.style.display = isCompany ? 'block' : 'none';
+        if (!isCompany) document.getElementById('customerRecargoEquivalencia').checked = false;
+        else checkCustomerReCompatibility();
+    }
+    clearDocValidation();
+    if (!isCompany) onDocTypeChange();
+}
+
+function onDocTypeChange() {
+    const sel  = document.getElementById('customerIdDocumentType');
+    const inp  = document.getElementById('customerIdDocumentNumber');
+    const hint = document.getElementById('customerDocHint');
+    const hintSection = document.getElementById('customerDocHintSection');
+    const lbl  = document.getElementById('lblDocNumber');
+    if (!sel) return;
+    const type   = sel.value;
+    const config = DOC_TYPE_CONFIG[type];
+    if (inp) inp.value = '';
+    clearDocValidation();
+    if (config && type) {
+        if (lbl)  lbl.textContent = config.label;
+        if (inp)  inp.placeholder = config.placeholder;
+        if (hint) hint.textContent = config.hint;
+        if (hintSection) hintSection.style.display = '';
+        const numSection = document.getElementById('customerDocNumberSection');
+        if (numSection) numSection.style.display = '';
+    } else {
+        if (hintSection) hintSection.style.display = 'none';
+        const numSection = document.getElementById('customerDocNumberSection');
+        if (numSection) numSection.style.display = 'none';
+    }
+}
+
+function onNifDocTypeChange() {
+    const sel = document.getElementById('customerNifDocType');
+    const inp = document.getElementById('customerTaxId');
+    if (!sel || !inp) return;
+    const type = sel.value;
+    inp.placeholder = (type === 'INTRACOMMUNITY_VAT') ? 'Ej: DE123456789' : 'Ej: B12345678';
+    validateTaxIdInline();
+}
+
+function validateDocNumberInline() {
+    const sel = document.getElementById('customerIdDocumentType');
+    const inp = document.getElementById('customerIdDocumentNumber');
+    const msg = document.getElementById('docNumberValidationMsg');
+    if (!sel || !inp || !msg) return;
+    const raw  = inp.value.trim().toUpperCase();
+    const type = sel.value;
+    inp.value = raw;
+    if (!raw || !type) { clearDocValidation(); return; }
+    const config = DOC_TYPE_CONFIG[type];
+    if (!config) return;
+    showFieldFeedback(inp, msg, config.validate(raw));
+}
+
+function validateTaxIdInline() {
+    const inp     = document.getElementById('customerTaxId');
+    const msg     = document.getElementById('taxIdValidationMsg');
+    const nifSel  = document.getElementById('customerNifDocType');
+    if (!inp || !msg) return;
+    const raw  = inp.value.trim().toUpperCase();
+    inp.value = raw;
+    if (!raw) { clearTaxIdValidation(); return; }
+    const docType = nifSel ? nifSel.value : 'NIF';
+    const config  = DOC_TYPE_CONFIG[docType] || DOC_TYPE_CONFIG['NIF'];
+    showFieldFeedback(inp, msg, config.validate(raw));
+}
+
+function showFieldFeedback(input, msgEl, error) {
+    if (error) {
+        input.classList.remove('is-valid'); input.classList.add('is-invalid');
+        msgEl.textContent = error; msgEl.style.color = '#e74c3c';
+    } else {
+        input.classList.remove('is-invalid'); input.classList.add('is-valid');
+        msgEl.textContent = '✓ Formato correcto'; msgEl.style.color = '#22c55e';
+    }
+}
+
+function clearDocValidation() {
+    const inp = document.getElementById('customerIdDocumentNumber');
+    const msg = document.getElementById('docNumberValidationMsg');
+    if (inp) { inp.classList.remove('is-valid', 'is-invalid'); inp.value = ''; }
+    if (msg) msg.textContent = '';
+    clearTaxIdValidation();
+}
+
+function clearTaxIdValidation() {
+    const inp = document.getElementById('customerTaxId');
+    const msg = document.getElementById('taxIdValidationMsg');
+    if (inp) inp.classList.remove('is-valid', 'is-invalid');
+    if (msg) msg.textContent = '';
+}
+
+function checkCustomerReCompatibility() {
+    const tariffSelect = document.getElementById('customerTariffId');
+    const reCheckbox   = document.getElementById('customerRecargoEquivalencia');
+    const reSection    = document.getElementById('adminCustomerReSection');
+    const reWarning    = document.getElementById('adminCustomerReIncompatibleMsg');
+    const reInfo       = document.getElementById('adminCustomerReInfoMsg');
+    if (!tariffSelect || !reCheckbox) return;
+    const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
+    const tariffText     = selectedOption ? selectedOption.text.toLowerCase() : '';
+    const isMinorista    = tariffSelect.value === '' || tariffText.includes('minorista');
+    if (isMinorista) {
+        reCheckbox.disabled = false;
+        if (reSection) reSection.style.opacity = '1';
+        if (reWarning) reWarning.classList.add('d-none');
+        if (reInfo) reInfo.classList.remove('d-none');
+    } else {
+        reCheckbox.checked = false; reCheckbox.disabled = true;
+        if (reSection) reSection.style.opacity = '0.7';
+        if (reWarning) reWarning.classList.remove('d-none');
+        if (reInfo) reInfo.classList.add('d-none');
+    }
+}
+
+// ── TPV CUSTOMER ACTIONS ─────────────────────────────────────────────────────
+
+var customerCreationModalInstance;
+
+function openFullCustomerModal() {
+    document.getElementById('customerForm').reset();
+    document.getElementById('customerId').value = '';
+    document.getElementById('customerRecargoEquivalencia').checked = false;
+    clearDocValidation();
+    toggleAdminCustomerType();
+    checkCustomerReCompatibility();
+    
+    customerCreationModalInstance = new bootstrap.Modal(document.getElementById('customerModal'));
+    customerCreationModalInstance.show();
+}
+
+function saveCustomer() {
+    const nameInput = document.getElementById('customerName');
+    const name = nameInput ? nameInput.value.trim() : '';
     if (!name) { showToast('El nombre es obligatorio', 'warning'); return; }
-    if (!taxId) { showToast('El NIF/NIE es obligatorio', 'warning'); return; }
 
-    // Double check RE compatibility before saving
-    if (hasRecargo) {
-        const tariffSelect = document.getElementById('newCustomerTariffId');
-        const selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
-        const tariffText = selectedOption ? selectedOption.text.toLowerCase() : "";
-        const isMinorista = (tariffSelect.value === "" || tariffText.includes("minorista"));
+    const isComp = document.getElementById('adminTypeCompany').checked;
+    let idDocumentType = null, idDocumentNumber = null, taxId = null;
 
-        if (!isMinorista) {
-            showToast('No es posible aplicar el recargo de equivalencia a esta tarifa', 'warning');
-            return;
+    if (isComp) {
+        taxId = document.getElementById('customerTaxId').value.trim().toUpperCase() || null;
+        if (!taxId) { showToast('El CIF/NIF es obligatorio para empresas', 'warning'); return; }
+        const nifSel = document.getElementById('customerNifDocType');
+        idDocumentType = nifSel ? nifSel.value : 'NIF';
+        idDocumentNumber = taxId;
+        const config = DOC_TYPE_CONFIG[idDocumentType] || DOC_TYPE_CONFIG['NIF'];
+        const cfgErr = config.validate(taxId);
+        if (cfgErr) { showToast(cfgErr, 'warning'); return; }
+    } else {
+        const docSel = document.getElementById('customerIdDocumentType');
+        const docNumInp = document.getElementById('customerIdDocumentNumber');
+        idDocumentType = docSel ? docSel.value.trim() || null : null;
+        idDocumentNumber = docNumInp ? docNumInp.value.trim().toUpperCase() || null : null;
+        if (idDocumentType && idDocumentNumber) {
+            const config = DOC_TYPE_CONFIG[idDocumentType];
+            if (config) {
+                const err = config.validate(idDocumentNumber);
+                if (err) { showToast(err, 'warning'); return; }
+            }
+            if (idDocumentType === 'DNI' || idDocumentType === 'NIE') taxId = idDocumentNumber;
+        } else if (idDocumentType && !idDocumentNumber) {
+            showToast('Introduce el número del documento', 'warning'); return;
         }
     }
 
-    var newCustomer = {
-        name: name, taxId: taxId, address: address, city: city,
-        postalCode: postalCode, email: email, phone: phone,
-        type: type, active: isActive, hasRecargoEquivalencia: hasRecargo,
-        tariffId: tariffId || null
+    const hasRE = document.getElementById('customerRecargoEquivalencia').checked;
+    const body = {
+        name, taxId, idDocumentType, idDocumentNumber,
+        email: document.getElementById('customerEmail').value.trim() || null,
+        phone: document.getElementById('customerPhone').value.trim() || null,
+        address: document.getElementById('customerAddress').value.trim() || null,
+        city: document.getElementById('customerCity').value.trim() || null,
+        postalCode: document.getElementById('customerPostalCode').value.trim() || null,
+        type: document.getElementById('customerType').value,
+        active: document.getElementById('customerActive').checked,
+        hasRecargoEquivalencia: hasRE,
+        tariffId: (() => {
+            const el = document.getElementById('customerTariffId');
+            return el && el.value ? parseInt(el.value) : null;
+        })(),
     };
 
     fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCustomer)
+        body: JSON.stringify(body)
     })
-        .then(function (response) {
-            if (!response.ok) throw new Error('Error al crear el cliente');
-            return response.json();
-        })
-        .then(function (savedCustomer) {
-            bootstrap.Modal.getInstance(document.getElementById('fullCustomerModal')).hide();
-            selectCustomer(savedCustomer);
-            showToast('Cliente creado y seleccionado', 'success');
-        })
-        .catch(function (err) {
-            console.error(err);
-            showToast('Error al crear el cliente', 'warning');
-        });
+    .then(r => {
+        if (!r.ok) return r.json().then(d => { throw new Error(d.error || d.message || 'Error'); });
+        return r.json();
+    })
+    .then(savedCustomer => {
+        if (customerCreationModalInstance) customerCreationModalInstance.hide();
+        else bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
+        
+        selectCustomer(savedCustomer);
+        showToast('Cliente creado y seleccionado', 'success');
+    })
+    .catch(e => {
+        console.error(e);
+        showToast('Error al crear el cliente: ' + e.message, 'warning');
+    });
 }
+
+// Ensure global exports for TPV context if needed
+window.saveCustomer = saveCustomer;
+window.toggleAdminCustomerType = toggleAdminCustomerType;
+window.onDocTypeChange = onDocTypeChange;
+window.onNifDocTypeChange = onNifDocTypeChange;
+window.validateDocNumberInline = validateDocNumberInline;
+window.validateTaxIdInline = validateTaxIdInline;
+window.checkCustomerReCompatibility = checkCustomerReCompatibility;
 
 // Cerrar resultados al hacer click fuera
 document.addEventListener('click', function (e) {

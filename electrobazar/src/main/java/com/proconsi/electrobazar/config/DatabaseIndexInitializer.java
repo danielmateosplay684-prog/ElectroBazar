@@ -24,6 +24,7 @@ public class DatabaseIndexInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void ensureIndexesExist() {
+        initializeTables();
         log.info("Checking critical database indexes for performance...");
 
         try {
@@ -89,6 +90,47 @@ public class DatabaseIndexInitializer {
             jdbcTemplate.execute(seedCatsSql);
             log.info("Daily category stats seeded.");
         }
+    }
+
+    private void initializeTables() {
+        log.info("Ensuring analytics and favorite tables exist...");
+        
+        jdbcTemplate.execute("""
+            CREATE TABLE IF NOT EXISTS daily_product_stats (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                date DATE NOT NULL,
+                product_id BIGINT NOT NULL,
+                product_name VARCHAR(255) NOT NULL,
+                category_id BIGINT,
+                category_name VARCHAR(255),
+                units_sold DECIMAL(15,3) NOT NULL DEFAULT 0,
+                revenue DECIMAL(15,2) NOT NULL DEFAULT 0,
+                INDEX idx_prod_stats_date (date),
+                INDEX idx_prod_stats_product (product_id),
+                UNIQUE KEY uk_prod_stats_date_product (date, product_id)
+            )
+        """);
+
+        jdbcTemplate.execute("""
+            CREATE TABLE IF NOT EXISTS hourly_sales_stats (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                date DATE NOT NULL,
+                hour TINYINT NOT NULL,
+                total_revenue DECIMAL(15,2) NOT NULL DEFAULT 0,
+                sales_count INT NOT NULL DEFAULT 0,
+                INDEX idx_hourly_date (date),
+                UNIQUE KEY uk_hourly_date_hour (date, hour)
+            )
+        """);
+
+        jdbcTemplate.execute("""
+            CREATE TABLE IF NOT EXISTS user_favorite_products (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                UNIQUE KEY uk_user_favorite (user_id, product_id)
+            )
+        """);
     }
 
 
