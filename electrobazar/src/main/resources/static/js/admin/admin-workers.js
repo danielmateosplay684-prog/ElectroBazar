@@ -11,10 +11,13 @@ function openWorkerModal(id, username, active, permissions, roleId) {
 
     // Password label adjustment based on edit or create
     var pwdLabel = document.getElementById('workerPasswordLabel');
+    var pinLabel = document.getElementById('workerPinLabel');
     if (id) {
         pwdLabel.innerHTML = 'Contraseña <small class="font-normal" style="color: var(--text-muted);">(opcional, blanco para mantener)</small>';
+        pinLabel.innerHTML = 'PIN de acceso <small class="font-normal" style="color: var(--text-muted);">(opcional, blanco para mantener)</small>';
     } else {
         pwdLabel.innerHTML = 'Contraseña *';
+        pinLabel.innerHTML = 'PIN de acceso *';
     }
 
     // Load roles into select if not already there, then select current
@@ -31,13 +34,20 @@ function saveWorker() {
     var id = document.getElementById('workerId').value;
     var username = document.getElementById('workerUsername').value;
     var password = document.getElementById('workerPassword').value;
+    var pinCode = document.getElementById('workerPin').value;
     var active = document.getElementById('workerActive').checked;
     var roleId = document.getElementById('workerRole').value;
+
+    if (pinCode && pinCode.length !== 4) {
+        showToast("El PIN de acceso debe tener exactamente 4 dígitos.", "error");
+        return;
+    }
 
     var worker = {
         id: id ? parseInt(id) : null,
         username: username,
         password: password || null,
+        pinCode: pinCode || null,
         active: active,
         role: roleId ? { id: parseInt(roleId) } : null
     };

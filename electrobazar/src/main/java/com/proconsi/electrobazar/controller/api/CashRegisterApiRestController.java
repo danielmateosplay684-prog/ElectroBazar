@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -182,13 +183,10 @@ public class CashRegisterApiRestController {
      */
     @PostMapping("/open")
     public ResponseEntity<CashRegister> openCashRegister(
-            @RequestParam BigDecimal openingBalance,
-            @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+            @RequestParam BigDecimal openingBalance) {
 
-        Worker worker = null;
-        if (workerId != null) {
-            worker = workerService.findById(workerId).orElse(null);
-        }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Worker worker = workerService.findByUsername(username).orElse(null);
         try {
             CashRegister cs = cashSessionService.openSession(openingBalance, worker);
             return ResponseEntity.status(HttpStatus.CREATED).body(cs);
@@ -216,13 +214,10 @@ public class CashRegisterApiRestController {
     public ResponseEntity<CashRegister> closeCashRegister(
             @RequestParam BigDecimal closingBalance,
             @RequestParam(required = false) String notes,
-            @RequestParam(required = false) BigDecimal retainedAmount,
-            @RequestHeader(value = "X-Worker-Id", required = false) Long workerId) {
+            @RequestParam(required = false) BigDecimal retainedAmount) {
 
-        Worker worker = null;
-        if (workerId != null) {
-            worker = workerService.findById(workerId).orElse(null);
-        }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Worker worker = workerService.findByUsername(username).orElse(null);
 
         // Use CashRegisterService which handles all calculations (sales, returns,
         // withdrawals, etc.)

@@ -121,15 +121,22 @@ public class WorkerApiRestController {
      */
     @GetMapping("/verify-pin")
     public ResponseEntity<?> verifyPin(@RequestParam("pin") String pin) {
-        List<Worker> workers = workerService.findAll();
-        for (Worker worker : workers) {
-            if (worker.getPinCode() != null && passwordEncoder.matches(pin, worker.getPinCode())) {
-                return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "worker", worker
-                ));
-            }
+        String currentUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null ? 
+                                 org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName() : "anonymousUser";
+        
+        if ("anonymousUser".equals(currentUsername) || currentUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "No hay sesión activa"));
         }
+
+        Worker currentWorker = workerService.findByUsername(currentUsername).orElse(null);
+        
+        if (currentWorker != null && currentWorker.getPinCode() != null && passwordEncoder.matches(pin, currentWorker.getPinCode())) {
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "worker", currentWorker
+            ));
+        }
+        
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "PIN Incorrecto"));
     }
 }

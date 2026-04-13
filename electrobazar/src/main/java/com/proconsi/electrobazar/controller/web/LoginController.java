@@ -76,10 +76,18 @@ public class LoginController {
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         Worker w = (Worker) session.getAttribute("worker");
+        String currentUsername = "Anonymous";
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
+            currentUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+
         if (w != null) {
             activityLogService.logFiscalEvent("LOGOUT", "Cierre de sesión de trabajador: " + w.getUsername(),
                     w.getUsername());
         }
+        
+        activityLogService.logActivity("LOGOUT", "Cierre de sesión manual", currentUsername, "WORKER", w != null ? w.getId() : null);
+        
         session.invalidate();
         return "redirect:/login";
     }

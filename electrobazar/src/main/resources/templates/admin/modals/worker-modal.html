@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="modal">
@@ -29,6 +29,15 @@
                                 <small style="color: var(--text-muted);" th:text="#{admin.worker.password_info}">Se
                                     muestra en texto plano para gestión del
                                     dueño.</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" id="workerPinLabel" th:text="#{admin.worker.pin_required}">PIN de acceso *</label>
+                                <input type="text" class="form-control" id="workerPin" required
+                                    pattern="\d{4}" minlength="4" maxlength="4"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);"
+                                    title="Debe contener exactamente 4 números."
+                                    placeholder="Ej: 1234">
+                                <small style="color: var(--text-muted);" th:text="#{admin.worker.pin_info}">El PIN numérico que se usa para operaciones rápidas en el TPV.</small>
                             </div>
                             <div class="col-12">
                                 <div class="form-check">

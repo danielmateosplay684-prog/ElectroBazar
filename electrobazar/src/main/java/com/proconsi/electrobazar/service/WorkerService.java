@@ -101,11 +101,19 @@ public class WorkerService {
                 existing.setPassword(passwordEncoder.encode(submitted.trim()));
             }
             // If submitted is null/empty, we keep the existing password (already in existing)
+
+            String submittedPin = worker.getPinCode();
+            if (submittedPin != null && !submittedPin.trim().isEmpty() && !submittedPin.startsWith("$2")) {
+                existing.setPinCode(passwordEncoder.encode(submittedPin.trim()));
+            }
             
             workerToSave = existing;
         } else {
             if (worker.getPassword() != null && !worker.getPassword().trim().isEmpty()) {
                 worker.setPassword(passwordEncoder.encode(worker.getPassword().trim()));
+            }
+            if (worker.getPinCode() != null && !worker.getPinCode().trim().isEmpty()) {
+                worker.setPinCode(passwordEncoder.encode(worker.getPinCode().trim()));
             }
             // Handle role for new worker
             if (worker.getRole() != null && worker.getRole().getId() != null) {
