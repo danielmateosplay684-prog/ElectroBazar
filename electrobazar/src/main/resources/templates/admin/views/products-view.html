@@ -91,7 +91,7 @@
                             </td>
                             <td>
                                 <div class="d-flex flex-column align-items-center" style="gap: 0.2rem;">
-                                    <span th:text="${p.stock}"
+                                    <span th:text="${p.measurementUnit != null ? #numbers.formatDecimal(p.stock, 0, p.measurementUnit.decimalPlaces) : #numbers.formatDecimal(p.stock, 0, 0)}"
                                         th:classappend="${p.stock < 5} ? 'fw-bold text-danger' : ''">0</span>
                                     <span th:if="${p.stock < 5}" class="badge-stock-low"
                                         th:text="#{admin.inventory.lowstock}">Stock Bajo</span>

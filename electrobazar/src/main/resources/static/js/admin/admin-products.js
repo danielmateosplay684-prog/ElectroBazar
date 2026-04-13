@@ -7,7 +7,12 @@ function openProductModal(id) {
     const form = document.getElementById('productForm');
     if (form) form.reset();
     document.getElementById('productId').value = id || '';
-    document.getElementById('imagePreview').style.display = 'none';
+    
+    const imagePreview = document.getElementById('imagePreview');
+    if (imagePreview) {
+        imagePreview.src = '';
+        imagePreview.style.display = 'none';
+    }
     document.getElementById('productModalLabel').textContent = id ? 'Editar Producto' : 'Nuevo Producto';
 
     if (id) {
@@ -22,10 +27,13 @@ function openProductModal(id) {
                 document.getElementById('productTaxRate').value = p.taxRate ? p.taxRate.id : '';
                 document.getElementById('productUnit').value = p.measurementUnit ? p.measurementUnit.id : '';
                 document.getElementById('productActive').checked = p.active;
+                
                 if (p.imageUrl) {
                     const img = document.getElementById('imagePreview');
-                    img.src = p.imageUrl;
-                    img.style.display = 'block';
+                    if (img) {
+                        img.src = p.imageUrl;
+                        img.style.display = 'block';
+                    }
                 }
             });
     }
@@ -39,17 +47,17 @@ function saveProduct() {
         id: id ? parseInt(id) : null,
         name: document.getElementById('productName').value,
         description: document.getElementById('productDescription').value,
-        price: parseFloat(document.getElementById('productPrice').value),
-        stock: parseInt(document.getElementById('productStock').value),
+        price: parseFloat(document.getElementById('productPrice').value) || 0,
+        stock: parseFloat(document.getElementById('productStock').value) || 0,
         active: document.getElementById('productActive').checked,
-        category: { id: parseInt(document.getElementById('productCategory').value) },
-        taxRate: { id: parseInt(document.getElementById('productTaxRate').value) },
-        measurementUnit: { id: parseInt(document.getElementById('productUnit').value) }
+        categoryId: document.getElementById('productCategory').value ? parseInt(document.getElementById('productCategory').value) : null,
+        taxRateId: document.getElementById('productTaxRate').value ? parseInt(document.getElementById('productTaxRate').value) : null,
+        measurementUnitId: document.getElementById('productUnit').value ? parseInt(document.getElementById('productUnit').value) : null
     };
 
     formData.append('product', new Blob([JSON.stringify(product)], { type: 'application/json' }));
     const fileInput = document.getElementById('productImage');
-    if (fileInput.files.length > 0) {
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
         formData.append('image', fileInput.files[0]);
     }
 
@@ -148,7 +156,8 @@ if (typeof renderSharedProductsTable === 'function' || true) {
         products.forEach(p => {
             const name = isEn && p.nameEn ? p.nameEn : (p.nameEs || p.name);
             const description = isEn && p.descriptionEn ? p.descriptionEn : (p.descriptionEs || p.description);
-            const formattedPrice = (p.price || 0).toFixed(2) + ' €';
+            const decimals = (p.measurementUnit && p.measurementUnit.decimalPlaces !== undefined) ? p.measurementUnit.decimalPlaces : (p.measurementUnit && p.measurementUnit.decimal_places !== undefined ? p.measurementUnit.decimal_places : 0);
+            const formattedStock = (p.stock || 0).toFixed(decimals);
             const stockStyle = p.stock < 5 ? 'fw-bold text-danger' : '';
             const badgeLowStock = p.stock < 5 ? `<span class="badge-stock-low">${window.sharedInventoryI18n ? window.sharedInventoryI18n.lowStock : 'Stock Bajo'}</span>` : '';
 
@@ -181,7 +190,7 @@ if (typeof renderSharedProductsTable === 'function' || true) {
                 </td>
                 <td style="font-size:0.9rem; font-weight: 500;">${ivaDisplay}</td>
                 <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);text-align:right">${formattedPrice}</td>
-                <td><div class="d-flex flex-column align-items-center" style="gap: 0.2rem;"><span class="${stockStyle}">${p.stock}</span> ${badgeLowStock}</div></td>
+                <td><div class="d-flex flex-column align-items-center" style="gap: 0.2rem;"><span class="${stockStyle}">${formattedStock}</span> ${badgeLowStock}</div></td>
                 <td style="text-align:center"><span style="font-size:0.8rem;font-weight:600;color:var(--text-muted)">${unitSymbol}</span></td>
                 <td><span style="font-size:0.82rem;padding:0.2rem 0.5rem;border-radius:6px;background:var(--surface);color:var(--text-muted)">${catName}</span></td>
                 <td>${activeBadge}</td>

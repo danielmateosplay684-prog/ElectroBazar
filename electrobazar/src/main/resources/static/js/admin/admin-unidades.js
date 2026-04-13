@@ -15,7 +15,7 @@ function loadMeasurementUnits() {
                 tr.innerHTML = `
                     <td>${escHtml(u.name)}</td>
                     <td>${escHtml(u.symbol)}</td>
-                    <td class="text-end">${u.decimalPlaces}</td>
+                    <td class="text-end">${u.decimalPlaces !== undefined ? u.decimalPlaces : (u.decimal_places !== undefined ? u.decimal_places : 0)}</td>
                     <td>${u.promptOnAdd ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
                     <td>${u.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
                     <td class="text-end">
@@ -36,7 +36,7 @@ function openMeasurementUnitModal(id, name, symbol) {
                 document.getElementById('measurementUnitId').value = u.id || '';
                 document.getElementById('measurementUnitName').value = u.name || '';
                 document.getElementById('measurementUnitSymbol').value = u.symbol || '';
-                document.getElementById('measurementUnitDecimals').value = u.decimalPlaces || 0;
+                document.getElementById('measurementUnitDecimals').value = (u.decimalPlaces !== undefined ? u.decimalPlaces : (u.decimal_places !== undefined ? u.decimal_places : 0));
                 document.getElementById('measurementUnitActive').checked = u.active !== false;
                 document.getElementById('measurementUnitPromptOnAdd').checked = u.promptOnAdd === true;
                 document.getElementById('measurementUnitModalLabel').textContent = 'Editar Unidad';

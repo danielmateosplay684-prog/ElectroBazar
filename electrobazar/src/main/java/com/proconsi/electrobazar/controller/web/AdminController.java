@@ -59,6 +59,7 @@ public class AdminController {
     private final ActivityLogService activityLogService;
     private final BackupService backupService;
     private final PromotionService promotionService;
+    private final MeasurementUnitService measurementUnitService;
 
     /**
      * Endpoint to execute a manual backup on demand.
@@ -108,6 +109,8 @@ public class AdminController {
         model.addAttribute("categories", catsPaged.getContent());
         model.addAttribute("categoriesPage", catsPaged);
         model.addAttribute("allCategories", categoryService.findAllActive());
+        model.addAttribute("measurementUnits", measurementUnitService.findAll());
+        model.addAttribute("taxRates", taxRateRepository.findAll());
 
         model.addAttribute("returnView", returnView);
         model.addAttribute("currentPage", page);
@@ -178,6 +181,7 @@ public class AdminController {
         model.addAttribute("companySettings", companySettingsService.getSettings());
         model.addAttribute("coupons", couponService.findAll());
         model.addAttribute("promotions", promotionService.findAll());
+        model.addAttribute("measurementUnits", measurementUnitService.findAll());
 
         // Mark as optimized view
         model.addAttribute("isOptimizedView", true);

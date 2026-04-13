@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="productModalLabel">Nuevo Producto</h5>
+                <h5 class="modal-title" id="productModalLabel" th:text="#{common.product}">Producto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -10,47 +10,49 @@
                     <input type="hidden" id="productId">
                     <div class="row g-3">
                         <div class="col-md-8">
-                            <label class="form-label">Nombre *</label>
+                            <label class="form-label" th:text="#{common.name} + ' *'">Nombre *</label>
                             <input type="text" class="form-control" id="productName" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Precio (€) *</label>
+                            <label class="form-label" th:text="#{common.price.euro} + ' *'">Precio (€) *</label>
                             <input type="number" class="form-control" id="productPrice" step="0.01" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Descripción</label>
+                            <label class="form-label" th:text="#{common.description}">Descripción</label>
                             <textarea class="form-control" id="productDescription" rows="2"></textarea>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Stock</label>
-                            <input type="number" class="form-control" id="productStock" value="0">
+                            <label class="form-label" th:text="#{admin.common.stock}">Stock</label>
+                            <input type="number" class="form-control" id="productStock" value="0" step="any">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Categoría</label>
+                            <label class="form-label" th:text="#{common.category}">Categoría</label>
                             <select class="form-select" id="productCategory">
-                                <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                <option value="" th:text="#{common.none}">-- Ninguna --</option>
+                                <option th:each="cat : ${allCategories}" th:value="${cat.id}" th:text="${cat.name}"></option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Tipo IVA</label>
+                            <label class="form-label" th:text="#{admin.inventory.filter.iva}">Tipo IVA</label>
                             <select class="form-select" id="productTaxRate">
                                 <option th:each="tr : ${taxRates}" th:value="${tr.id}" th:text="${tr.description}"></option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Unidad de Medida</label>
+                            <label class="form-label" th:text="#{admin.dashboard.measurements.title}">Unidad de Medida</label>
                             <select class="form-select" id="productUnit">
+                                <option value="" th:text="#{common.none}">-- Ninguna --</option>
                                 <option th:each="u : ${measurementUnits}" th:value="${u.id}" th:text="${u.name}"></option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="productActive" checked>
-                                <label class="form-check-label">Producto Activo</label>
+                                <label class="form-check-label" th:text="#{admin.product.active}">Producto Activo</label>
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Imagen</label>
+                            <label class="form-label" th:text="#{admin.common.image}">Imagen</label>
                             <input type="file" class="form-control" id="productImage" accept="image/*" onchange="previewImage(this, 'imagePreview')">
                             <img id="imagePreview" src="" alt="Preview" class="mt-2 img-thumbnail" style="display:none; max-height: 150px;">
                         </div>

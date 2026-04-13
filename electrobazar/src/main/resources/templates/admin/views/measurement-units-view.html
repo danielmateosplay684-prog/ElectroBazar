@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="view">
@@ -24,7 +24,7 @@
                             <tr>
                                 <th th:text="#{admin.measurements.name}">Name</th>
                                 <th th:text="#{admin.measurements.symbol}">Symbol</th>
-                                <th th:text="#{admin.measurements.decimals}">Decimals</th>
+                                <th class="text-end" th:text="#{admin.measurements.decimals}">Decimals</th>
                                 <th th:text="#{admin.measurements.promptOnAdd}">Prompt on Add</th>
                                 <th th:text="#{admin.measurements.active}">Active</th>
                                 <th style="text-align:right" th:text="#{common.actions}">Actions</th>

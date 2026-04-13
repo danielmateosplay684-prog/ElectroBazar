@@ -130,11 +130,10 @@ body {
 
 /* ── Table ── */
 .admin-table-wrap {
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     overflow: hidden;
     background: var(--secondary);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 1;
 }
@@ -142,7 +141,7 @@ body {
 .admin-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .admin-table thead tr {
@@ -150,13 +149,14 @@ body {
 }
 
 .admin-table thead th {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
     border: none;
+    white-space: nowrap;
 }
 
 .admin-table tbody tr {
@@ -181,7 +181,7 @@ body {
 }
 
 .admin-table tbody td {
-    padding: 0.8rem 1rem;
+    padding: 0.7rem 1rem;
     color: var(--text-main);
     vertical-align: middle;
 }

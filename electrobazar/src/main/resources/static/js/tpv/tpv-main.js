@@ -215,42 +215,71 @@ function addToTicket(card) {
     var stock = parseFloat(card.dataset.stock) || 0;
     var promptOnAdd = card.dataset.promptOnAdd === 'true';
     var unitSymbol = card.dataset.unitSymbol || 'uds.';
+    var decimalPlaces = parseInt(card.dataset.decimalPlaces) || 0;
     var categoryId = card.dataset.categoryId;
 
     var currentQty = ticket[id] ? ticket[id].quantity : 0;
 
     if (promptOnAdd) {
-        var msg = `Introduce cantidad en ${unitSymbol}:`;
-        var val = prompt(msg, "1.000");
-        if (val === null) return;
-        val = parseFloat(val.replace(',', '.'));
-        if (isNaN(val) || val <= 0) {
-            showToast("Cantidad no válida", 'warning');
-            return;
-        }
-        if (currentQty + val > stock) {
-            showToast("Stock insuficiente para este producto", 'warning');
-            return;
-        }
-        if (ticket[id]) {
-            ticket[id].quantity += val;
-        } else {
-            ticket[id] = { name: name, price: price, quantity: val, stock: stock, categoryId: categoryId };
-        }
+        // Open professional modal instead of prompt()
+        window._pendingAddCard = card;
+        document.getElementById('quantityInput').value = '';
+        document.getElementById('quantity_productName').textContent = name;
+        document.getElementById('quantity_unitSymbol').textContent = unitSymbol;
+        document.getElementById('quantity_stockAvailable').textContent = stock.toLocaleString('es-ES', { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }) + ' ' + unitSymbol;
+        
+        var modal = new bootstrap.Modal(document.getElementById('quantityModal'));
+        modal.show();
+        
+        // Focus input after modal is shown
+        document.getElementById('quantityModal').addEventListener('shown.bs.modal', function() {
+             var input = document.getElementById('quantityInput');
+             input.focus();
+             input.onkeydown = function(e) {
+                 if (e.key === 'Enter') {
+                     document.getElementById('confirmQuantityBtn').click();
+                 }
+             };
+        }, { once: true });
+
+        // Set up the confirm button (one-time handler)
+        var confirmBtn = document.getElementById('confirmQuantityBtn');
+        confirmBtn.onclick = function() {
+            var valStr = document.getElementById('quantityInput').value;
+            var val = parseFloat(valStr.replace(',', '.'));
+            
+            if (isNaN(val) || val <= 0) {
+                showToast("Cantidad no válida", 'warning');
+                return;
+            }
+            if (currentQty + val > stock) {
+                showToast("Stock insuficiente para este producto", 'warning');
+                return;
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('quantityModal')).hide();
+            
+            // Finish adding
+            finishAddingToTicket(id, name, price, val, stock, categoryId, card);
+        };
+        return;
     } else {
         if (currentQty + 1 > stock) {
             showToast("Stock insuficiente para este producto", 'warning');
             return;
         }
-        if (ticket[id]) {
-            ticket[id].quantity++;
-        } else {
-            ticket[id] = { name: name, price: price, quantity: 1, stock: stock, categoryId: categoryId };
-        }
+        finishAddingToTicket(id, name, price, 1, stock, categoryId, card);
+    }
+}
+
+function finishAddingToTicket(id, name, price, quantity, stock, categoryId, card) {
+    if (ticket[id]) {
+        ticket[id].quantity += quantity;
+    } else {
+        ticket[id] = { name: name, price: price, quantity: quantity, stock: stock, categoryId: categoryId };
     }
 
     // ALWAYS fetch the price from the API to respect the "only tariffs" rule.
-    // Priority: line-level tariff > cart tariff > customer tariff > MINORISTA default.
     var effectiveTariffId = getEffectiveTariffId(id);
     var url = '/tpv/api/products/' + id + '/price';
     if (effectiveTariffId) {
@@ -269,7 +298,7 @@ function addToTicket(card) {
         })
         .catch(function (err) {
             console.error('Error fetching tariff price', err);
-            renderTicket(); // fallback to base price from card
+            renderTicket();
         });
 
     // Feedback visual en la tarjeta
@@ -362,9 +391,17 @@ function updateStockBubbles() {
 
         var badge = card.querySelector('.stock-badge');
         if (badge) {
-            var oldVal = parseFloat(badge.textContent.replace(',', '.')) || 0;
-            // Format available to show decimals based on measurement unit (max 2 to fit the bubble)
-            var dispDecimals = Math.min(2, decimalPlaces);
+            // Use data attribute instead of textContent to avoid rounding issues causing false animations
+            var lastAvailable = parseFloat(badge.dataset.lastAvailable);
+            if (isNaN(lastAvailable)) {
+                // First time load: parse from text to avoid animation on first render if possible, 
+                // but better to just set it.
+                lastAvailable = available;
+                badge.dataset.lastAvailable = available;
+            }
+
+            // Format available to show decimals based on measurement unit
+            var dispDecimals = Math.min(3, decimalPlaces);
             badge.textContent = available.toLocaleString('es-ES', {
                 minimumFractionDigits: dispDecimals,
                 maximumFractionDigits: dispDecimals
@@ -380,9 +417,11 @@ function updateStockBubbles() {
                 badge.classList.add('stock-neutral');
             }
 
-            if (Math.abs(oldVal - available) > 0.0001) {
+            // Only animate if the numeric value actually changed
+            if (Math.abs(lastAvailable - available) > 0.0001) {
                 badge.style.transform = 'scale(1.3)';
                 setTimeout(function () { badge.style.transform = 'scale(1)'; }, 150);
+                badge.dataset.lastAvailable = available;
             }
         }
     });
@@ -1127,21 +1166,24 @@ function renderProducts(data) {
 
         var catName = product.category ? escapeHtml(product.category.name) : '';
         var catId = product.category ? product.category.id : '';
+        var mu = product.measurementUnit || {};
+        var unitSymbol = mu.symbol || 'uds.';
+        var decimalPlaces = mu.decimalPlaces !== undefined ? mu.decimalPlaces : (mu.decimal_places !== undefined ? mu.decimal_places : 0);
         var initialStock = parseFloat(product.stock) || 0;
         var inTicket = ticket[product.id] ? ticket[product.id].quantity : 0;
-        var unitSymbol = mu.symbol || 'uds.';
+        var available = initialStock - inTicket;
 
         var badgeClass = 'stock-neutral';
         if (available <= 0) badgeClass = 'stock-danger';
         else if (available < 5) badgeClass = 'stock-warning';
 
-        var dispDecimals = Math.min(2, decimalPlaces);
+        var dispDecimals = Math.min(3, decimalPlaces);
         var disabledClass = window.tpv_is_register_open ? '' : ' disabled-tpv';
 
         var isFav = (window.tpv_user_favorites || []).includes(String(product.id));
         var starClass = isFav ? 'bi-star-fill' : 'bi-star';
         
-        return `<div class="product-card" 
+        return `<div class="product-card${disabledClass}" 
                      style="position: relative; animation: fadeIn 0.3s ease;"
                      data-id="${product.id}" 
                      data-name="${escapeHtml(product.name)}" 
@@ -1149,16 +1191,17 @@ function renderProducts(data) {
                      data-category="${catName}"
                      data-category-id="${catId}"
                      data-stock="${product.stock}"
-                     data-prompt-on-add="${product.promptOnAdd || false}"
-                     data-unit-symbol="${product.unitSymbol || 'uds.'}">
+                     data-prompt-on-add="${decimalPlaces > 0}"
+                     data-unit-symbol="${unitSymbol}"
+                     data-decimal-places="${decimalPlaces}">
                     <i class="bi ${starClass} product-favorite-btn" 
                        data-product-id="${product.id}"
                        style="position: absolute; top: 8px; left: 8px; z-index: 10; font-size: 1.25rem; cursor: pointer; text-shadow: 0 0 3px rgba(0,0,0,0.3);"></i>
                     <div class="product-image-container">
                         ${imgHtml}
-                        <span class="stock-badge ${initialStock <= 0 ? 'stock-empty' : (initialStock < 5 ? 'stock-low' : '')}"
+                        <span class="stock-badge ${badgeClass}"
                               data-initial-stock="${initialStock}">
-                            ${(initialStock - inTicket).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            ${available.toLocaleString('es-ES', { minimumFractionDigits: dispDecimals, maximumFractionDigits: dispDecimals })}
                         </span>
                     </div>
                     <div class="product-info text-center">

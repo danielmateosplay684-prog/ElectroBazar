@@ -403,7 +403,7 @@
                              data-category-id=${product.category != null ? product.category.id : ''}, 
                              data-stock=${product.stock},
                              data-decimal-places=${product.measurementUnit != null ? product.measurementUnit.decimalPlaces : 0},
-                             data-prompt-on-add=${product.measurementUnit != null ? product.measurementUnit.promptOnAdd : false},
+                             data-prompt-on-add=${product.measurementUnit != null ? (product.measurementUnit.promptOnAdd or product.measurementUnit.decimalPlaces > 0) : false},
                              data-unit-symbol=${product.measurementUnit != null ? product.measurementUnit.symbol : 'uds.'}">
                     <i class="bi bi-star product-favorite-btn" 
                        th:attr="data-product-id=${product.id}"
@@ -413,8 +413,8 @@
                             class="product-image">
                         <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
                         <span class="stock-badge"
-                            th:classappend="${product.stock == 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
-                            th:text="${product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, T(java.lang.Math).min(2, product.measurementUnit.decimalPlaces)) : #numbers.formatDecimal(product.stock, 1, 0)}">0</span>
+                            th:classappend="${product.stock <= 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
+                            th:text="${product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, product.measurementUnit.decimalPlaces) : #numbers.formatDecimal(product.stock, 1, 0)}">0</span>
                     </div>
                     <div class="product-info">
                         <div class="product-name" th:text="${product.name}">Nombre producto</div>
@@ -425,6 +425,40 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Modal para Introducir Cantidad -->
+    <div class="modal fade" id="quantityModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content" style="background: var(--secondary); color: var(--text-main); border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold" th:text="#{tpv.quantity_modal.title}">Introducir Cantidad</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: var(--close-filter, invert(1));"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div id="quantity_productName" class="fw-bold mb-3" style="font-size: 1.1rem; color: var(--accent);"></div>
+                    <div class="mb-4">
+                        <label for="quantityInput" class="form-label small text-muted d-block text-start" th:text="#{tpv.quantity_modal.label}">Cantidad</label>
+                        <div class="input-group input-group-lg">
+                            <input type="number" id="quantityInput" class="form-control text-center" 
+                                   placeholder="0.000" step="any" min="0.001" autocomplete="off"
+                                   style="background: var(--primary); color: var(--text-main); border-color: var(--border); font-weight: 700; font-size: 1.5rem;">
+                            <span class="input-group-text" id="quantity_unitSymbol" 
+                                  style="background: var(--surface); color: var(--text-muted); border-color: var(--border); font-weight: 600;">uds.</span>
+                        </div>
+                        <div class="mt-2 text-start">
+                            <small class="text-muted">
+                                <span th:text="#{tpv.quantity_modal.stock_available}">Stock disponible</span>: 
+                                <span id="quantity_stockAvailable" class="fw-bold">0</span>
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-accent btn-lg fw-bold" id="confirmQuantityBtn" th:text="#{tpv.quantity_modal.add}">Añadir al Ticket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal para Acceso Administración -->

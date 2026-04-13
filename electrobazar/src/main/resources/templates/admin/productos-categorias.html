@@ -16,19 +16,29 @@
         href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap"
         rel="stylesheet">
     <th:block th:replace="~{fragments/theme :: themeScript}" />
+    <script th:src="@{/js/admin/admin-core.js}"></script>
     <link rel="stylesheet" th:href="@{/css/admin/admin-productos.css}">
+    <link rel="stylesheet" th:href="@{/css/admin/admin-productos-categorias.css}">
 </head>
 
 <body>
+    <div id="admin-js-translations" style="display:none" 
+         th:attr="data-error-connection=#{common.error.connection},
+                  data-error-network=#{common.error.network},
+                  data-error-save=#{common.error.save},
+                  data-error-delete=#{common.error.delete},
+                  data-success-save=#{common.success.save},
+                  data-success-delete=#{common.success.delete},
+                  data-confirm-delete=#{common.confirm_delete}">
+    </div>
 
     <header class="management-header">
         <a th:href="@{/tpv}" class="m-logo">
             <img th:src="@{/icons/favicon.svg}" alt="Logo" width="32" height="32">
             <span th:text="${companySettings.appName}">ElectroBazar</span>
-            <small style="font-size: 0.7rem; opacity: 0.6; margin-left: 0.5rem;">| Gestión</small>
+            <small>| Gestión</small>
         </a>
-        <a th:href="@{/tpv}" class="btn-cancel"
-            style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <a th:href="@{/tpv}" class="btn-cancel">
             <i class="bi bi-arrow-left"></i> <span th:text="#{admin.inventory.back_to_tpv}">Volver al TPV</span>
         </a>
     </header>
@@ -56,8 +66,7 @@
             <div class="tab-pane fade show active" id="products-pane">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0 fw-bold">
-                        <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2"
-                            style="text-decoration:none;" th:title="#{common.back}">
+                        <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2" th:title="#{common.back}">
                             <i class="bi bi-arrow-left"></i>
                         </a>
                         <span th:text="#{admin.inventory.products.management}">Gestión de Productos</span>
@@ -65,8 +74,7 @@
                     <div class="d-flex gap-2">
                         <input type="file" id="csvFileInput" accept=".csv" style="display: none;"
                             onchange="uploadCsvFile(this)">
-                        <button class="btn-nuevo" onclick="document.getElementById('csvFileInput').click()"
-                            style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border);">
+                        <button class="btn-nuevo btn-nuevo-alt" onclick="document.getElementById('csvFileInput').click()">
                             <i class="bi bi-file-earmark-spreadsheet"></i> <span th:text="#{admin.inventory.import_csv}">Importar CSV</span>
                         </button>
                         <button class="btn-nuevo" onclick="openProductModal()">
@@ -81,65 +89,73 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th th:text="#{admin.inventory.table.image}">Imagen</th>
-                                <th th:text="#{common.name}">Nombre</th>
-                                <th th:text="#{common.description}">Descripción</th>
-                                <th th:text="#{common.iva}">IVA</th>
-                                <th style="text-align: right;" th:text="#{common.price}">Precio</th>
-                                <th th:text="#{common.stock}">Stock</th>
-                                <th th:text="#{common.category}">Categoria</th>
-                                <th th:text="#{common.status}">Estado</th>
-                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                                <th class="id-col">ID</th>
+                                <th class="center" th:text="#{admin.inventory.table.image}">Imagen</th>
+                                <th class="center" th:text="#{common.name}">Nombre</th>
+                                <th class="center" th:title="#{admin.common.iva}" th:text="#{admin.common.iva}">IVA</th>
+                                <th class="right" style="width: 100px;" th:text="#{admin.common.price}">Precio</th>
+                                <th class="center" th:text="#{admin.common.stock}">Stock</th>
+                                <th class="center">Unidad</th>
+                                <th class="center" th:text="#{admin.common.category}">Categoría</th>
+                                <th class="center" th:text="#{admin.taxrates.active}">Activo</th>
+                                <th class="right" th:text="#{common.actions}">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
                             <tr th:each="p : ${products}" class="product-row"
                                 th:data-iva="${p.taxRate != null ? p.taxRate.vatRate : ''}">
-                                <td>
+                                <td class="id-val right" th:text="'#' + ${p.id}"></td>
+                                <td class="center">
                                     <img th:if="${p.imageUrl != null && !#strings.isEmpty(p.imageUrl)}"
                                         th:src="${p.imageUrl}" class="thumb">
                                     <div th:unless="${p.imageUrl != null && !#strings.isEmpty(p.imageUrl)}"
-                                        class="thumb-placeholder"><i class="bi bi-image"></i></div>
+                                        class="thumb-placeholder mx-auto"><i class="bi bi-image"></i></div>
                                 </td>
-                                <td><strong th:text="${p.name}"></strong></td>
-                                <td>
-                                    <div style="font-size:0.78rem; color:var(--text-muted)"
+                                <td class="center">
+                                    <strong th:text="${p.name}"></strong>
+                                    <div class="product-desc-small"
                                         th:if="${p.description != null}"
-                                        th:text="${#strings.abbreviate(p.description,60)}"></div>
-                                    <span th:unless="${p.description != null}" style="color:var(--text-muted)">—</span>
+                                        th:text="${#strings.abbreviate(p.description,60)}">
+                                    </div>
                                 </td>
-                                <td style="font-size:0.9rem; font-weight: 500;">
+                                <td class="product-iva-val center">
                                     <span th:if="${p.taxRate != null && p.taxRate.vatRate != null}"
                                         th:text="${#numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0)} + '%'"></span>
                                     <span th:unless="${p.taxRate != null && p.taxRate.vatRate != null}"
-                                        style="color:var(--text-muted)">—</span>
+                                        class="text-muted">-</span>
                                 </td>
-                                <td class="fw-bold" style="color: #000; text-align: right;"
-                                    th:text="${#numbers.formatDecimal(p.price, 1, (p.price.stripTrailingZeros().scale() < 2 ? 2 : p.price.stripTrailingZeros().scale()), 'COMMA')} + ' '">
+                                <td class="price-val right"
+                                    th:text="${#numbers.formatDecimal(p.price, 1, 2, 'COMMA')} + ' €'">
                                 </td>
-                                <td>
-                                    <div class="d-flex flex-column align-items-center" style="gap: 0.2rem;">
-                                        <span th:text="${p.stock}"
-                                            th:classappend="${p.stock < 5} ? 'fw-bold text-danger' : ''"></span>
+                                <td class="center">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span th:text="${p.measurementUnit != null ? #numbers.formatDecimal(p.stock, 0, p.measurementUnit.decimalPlaces) : #numbers.formatDecimal(p.stock, 0, 0)}"
+                                            th:classappend="${p.stock < 5} ? 'fw-bold text-danger' : ''">0</span>
                                         <span th:if="${p.stock < 5}" class="badge-stock-low"
-                                            style="font-size: 0.7rem;" th:text="#{admin.inventory.stock.low}">Bajo</span>
+                                            th:text="#{admin.inventory.stock.low}">Stock Bajo</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td class="center">
+                                    <span class="product-unit-val"
+                                        th:text="${p.measurementUnit != null ? p.measurementUnit.symbol : '-'}"></span>
+                                </td>
+                                <td class="center">
                                     <span th:if="${p.category != null}" th:text="${p.category.name}"
-                                        style="font-size:0.8rem; background:var(--surface); padding:2px 8px; border-radius:5px;"></span>
+                                        class="product-category-val"></span>
+                                    <span th:unless="${p.category != null}" class="text-muted">-</span>
                                 </td>
-                                <td>
+                                <td class="center">
                                     <span class="badge-active" th:classappend="${p.active} ? 'yes' : 'no'"
-                                        th:text="${p.active} ? #{admin.inventory.status.active} : #{admin.inventory.status.inactive}"></span>
+                                        th:text="${p.active} ? #{common.yes} : #{common.no}"></span>
                                 </td>
-                                <td style="text-align:right">
-                                    <div class="d-flex gap-1 justify-content-end">
-                                        <button class="btn-icon" th:data-id="${p.id}"
+                                <td class="right">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button class="btn-icon" th:title="#{common.edit}" th:data-id="${p.id}"
                                             onclick="openProductModal(this.getAttribute('data-id'))">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn-icon danger" th:data-id="${p.id}" th:data-name="${p.name}"
+                                        <button class="btn-icon danger" th:title="#{common.delete}" th:data-id="${p.id}"
+                                            th:data-name="${p.name}"
                                             onclick="deleteProduct(this.getAttribute('data-id'), this.getAttribute('data-name'))">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -180,7 +196,8 @@
                     </button>
 
                     <button class="pagination-btn" th:onclick="|goToPage(${productsPage.totalPages - 1})|"
-                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" th:title="#{admin.inventory.last_page}">
+                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}"
+                        th:title="#{admin.inventory.last_page}">
                         <i class="bi bi-chevron-double-right"></i>
                     </button>
                 </div>
@@ -190,8 +207,7 @@
             <div class="tab-pane fade" id="categories-pane">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0 fw-bold">
-                        <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2"
-                            style="text-decoration:none;" th:title="#{common.back}">
+                        <a th:href="@{'/admin?view=' + ${returnView}}" class="btn-icon me-2" th:title="#{common.back}">
                             <i class="bi bi-arrow-left"></i>
                         </a>
                         <span th:text="#{admin.inventory.categories.management}">Gestión de Categorias</span>
@@ -201,17 +217,19 @@
                     </button>
                 </div>
 
-                <div class="filter-bar mb-3 p-3 rounded"
-                    style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="filter-bar filter-bar-container mb-3 p-3 rounded">
                     <div class="row g-2">
                         <div class="col-md-10">
-                            <label class="form-label small text-muted mb-1" th:text="#{admin.inventory.categories.search}">Buscar categoria</label>
+                            <label class="form-label small text-muted mb-1"
+                                th:text="#{admin.inventory.categories.search}">Buscar categoria</label>
                             <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
-                                th:placeholder="#{admin.inventory.categories.search.placeholder}" oninput="debounceSharedFilter()">
+                                th:placeholder="#{admin.inventory.categories.search.placeholder}"
+                                oninput="debounceSharedFilter()">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCategoryFilters()">
-                                <i class="bi bi-arrow-counterclockwise"></i> <span th:text="#{common.reset}">Reset</span>
+                                <i class="bi bi-arrow-counterclockwise"></i> <span
+                                    th:text="#{common.reset}">Reset</span>
                             </button>
                         </div>
                     </div>
@@ -224,7 +242,7 @@
                                 <th th:text="#{common.name}">Nombre</th>
                                 <th th:text="#{common.description}">Descripción</th>
                                 <th th:text="#{common.status}">Estado</th>
-                                <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
+                                <th class="right" th:text="#{common.actions}">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="categoriesTableBody">
@@ -235,7 +253,7 @@
                                     <span class="badge-active" th:classappend="${c.active} ? 'yes' : 'no'"
                                         th:text="${c.active} ? #{admin.inventory.status.active} : #{admin.inventory.status.inactive}"></span>
                                 </td>
-                                <td style="text-align:right">
+                                <td class="right">
                                     <div class="d-flex gap-1 justify-content-end">
                                         <button class="btn-icon" th:data-id="${c.id}"
                                             onclick="openCategoryModal(this.getAttribute('data-id'))">
@@ -283,7 +301,7 @@
                     </button>
 
                     <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.totalPages - 1})|"
-                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}" title="ÚÚltima página">
+                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}" title="Última página">
                         <i class="bi bi-chevron-double-right"></i>
                     </button>
                 </div>
@@ -293,69 +311,7 @@
     </div>
 
     <!-- modal PRODUCTO -->
-    <div class="modal fade" id="productModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="productmodalLabel" th:text="#{common.product}">Producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="productId">
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{admin.product.placeholder.name}">Nombre del Producto</label>
-                        <input type="text" id="productName" class="form-control" autocomplete="off">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{common.description}">Descripción</label>
-                        <textarea id="productDescription" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label" th:text="#{common.price.euro}">Precio (&euro;)</label>
-                            <input type="number" id="productPrice" class="form-control" step="0.0001">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label" th:text="#{common.stock}">Stock Actual</label>
-                            <input type="number" id="productStock" class="form-control">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{admin.inventory.filter.iva}">Tipo de IVA</label>
-                        <select class="form-select" id="productIvaRate">
-                            <!-- Populated dynamically via JS from /admin/api/tax-rates/active -->
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{common.category}">Categoria</label>
-                        <select id="productCategory" class="form-select">
-                            <option value="" th:text="#{tpv.customer.search.placeholder}">Selecciona...</option>
-                            <option th:each="c : ${allCategories}" th:value="${c.id}" th:text="${c.name}"></option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{admin.dashboard.measurements.title}">unidad de Medida</label>
-                        <select id="productMeasurementUnit" class="form-select">
-                            <option value="" th:text="#{tpv.customer.search.placeholder}">Selecciona...</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" th:text="#{admin.product.imageUrl}">URL de Imagen</label>
-                        <input type="text" id="productImageUrl" class="form-control" oninput="previewImage(this.value)">
-                        <img id="imgPreview" src="" alt="Vista previa">
-                    </div>
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" type="checkbox" id="productActive">
-                        <label class="form-check-label" for="productActive" th:text="#{admin.product.active}">Producto Activo</label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
-                    <button type="button" class="btn btn-save" onclick="saveProduct()" th:text="#{common.save}">Guardar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <th:block th:replace="~{admin/modals/product-modal :: modal}" />
 
     <!-- modal CATEGORA -->
     <div class="modal fade" id="categoryModal" tabindex="-1">
@@ -368,7 +324,8 @@
                 <div class="modal-body">
                     <input type="hidden" id="categoryId">
                     <div class="mb-3">
-                        <label class="form-label" th:text="#{admin.category.placeholder.name}">Nombre de la Categoria</label>
+                        <label class="form-label" th:text="#{admin.category.placeholder.name}">Nombre de la
+                            Categoria</label>
                         <input type="text" id="categoryName" class="form-control" autocomplete="off">
                     </div>
                     <div class="mb-3">
@@ -377,12 +334,15 @@
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="categoryActive">
-                        <label class="form-check-label" for="categoryActive" th:text="#{admin.category.active}">Categoria Activa</label>
+                        <label class="form-check-label" for="categoryActive"
+                            th:text="#{admin.category.active}">Categoria Activa</label>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" th:text="#{common.cancel}">Cancelar</button>
-                    <button type="button" class="btn btn-save" onclick="saveCategory()" th:text="#{common.save}">Guardar</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
+                        th:text="#{common.cancel}">Cancelar</button>
+                    <button type="button" class="btn btn-save" onclick="saveCategory()"
+                        th:text="#{common.save}">Guardar</button>
                 </div>
             </div>
         </div>
@@ -403,9 +363,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/shared/inventory-filter.js}"></script>
-    <script th:src="@{/js/admin/admin-productos.js}"></script>
+    <script th:src="@{/js/admin/admin-products.js}"></script>
+    <script th:src="@{/js/admin/admin-categories.js}"></script>
+    <script th:src="@{/js/admin/admin-productos-categorias.js}"></script>
     <script th:inline="javascript">
-        /*<!-- [Cdata[*/
+        /*<![CDATA[*/
         window.sharedInventoryI18n = {
             lowStock: /*[[#{admin.inventory.stock.low}]]*/ 'Bajo',
             yes: /*[[#{admin.inventory.status.active}]]*/ 'Activo',
@@ -415,170 +377,8 @@
             actions_edit: /*[[#{common.edit}]]*/ 'Editar',
             actions_delete: /*[[#{common.delete}]]*/ 'Eliminar'
         };
-        /*]] -->*/
-
-        function getSharedInvLocale() {
-            try {
-                const prefs = JSON.parse(localStorage.getItem('tpv-prefs'));
-                return (prefs && prefs.language) ? prefs.language : 'es';
-            } catch (e) {
-                return 'es';
-            }
-        }
-
-        // Override the shared product table rendering to include new columns (IVA and Descripción)
-        if (typeof renderSharedProductsTable === 'function') {
-            window.renderSharedProductsTable = function (products) {
-                const tbody = document.getElementById('productsTableBody');
-                if (!tbody) return;
-                tbody.innerHTML = '';
-                if (!products || products.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-muted">${sharedInventoryI18n.noItems}</td></tr>`;
-                    return;
-                }
-
-                const locale = getSharedInvLocale();
-                const isEn = locale === 'en';
-
-                products.forEach(p => {
-                    const name = isEn && p.nameEn ? p.nameEn : (p.nameEs || p.name);
-                    const description = isEn && p.descriptionEn ? p.descriptionEn : (p.descriptionEs || p.description);
-                    const formattedPrice = (p.price || 0).toFixed(2) + ' ';
-                    const stockStyle = p.stock < 5 ? 'fw-bold text-danger' : '';
-                    const badgeLowStock = p.stock < 5 ? `<span class="badge-stock-low" style="font-size: 0.7rem;">${sharedInventoryI18n.lowStock}</span>` : '';
-
-                    let catName = '—';
-                    if (p.category) {
-                        catName = isEn && p.category.nameEn ? p.category.nameEn : (p.category.nameEs || p.category.name);
-                    }
-
-                    const imgHtml = p.imageUrl
-                        ? `<img src="${p.imageUrl}" class="thumb" alt="">`
-                        : `<div class="thumb-placeholder"><i class="bi bi-image"></i></div>`;
-                    const activeBadge = p.active
-                        ? `<span class="badge-active yes">${sharedInventoryI18n.yes}</span>`
-                        : `<span class="badge-active no">${sharedInventoryI18n.no}</span>`;
-                    const ivaDisplay = p.taxRate && p.taxRate.vatRate != null ? (p.taxRate.vatRate * 100).toFixed(0) + '%' : '—';
-                    const descTruncated = description ? (description.length > 60 ? description.substring(0, 57) + '...' : description) : '—';
-                    const escapedName = name ? name.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-
-                    let tr = document.createElement('tr');
-                    tr.className = 'product-row';
-                    tr.setAttribute('data-iva', p.taxRate ? p.taxRate.vatRate : null);
-                    tr.innerHTML = `
-                        <td>${imgHtml}</td>
-                        <td><strong>${name}</strong></td>
-                        <td><div style="font-size:0.78rem;color:var(--text-muted)">${descTruncated}</div></td>
-                        <td style="font-size:0.9rem; font-weight: 500;">${ivaDisplay}</td>
-                        <td class="fw-bold" style="color: #000;">${formattedPrice}</td>
-                        <td><div class="d-flex flex-column align-items-center" style="gap: 0.2rem;"><span class="${stockStyle}">${p.stock}</span> ${badgeLowStock}</div></td>
-                        <td><span style="font-size:0.8rem; background:var(--surface); padding:2px 8px; border-radius:5px;">${catName}</span></td>
-                        <td>${activeBadge}</td>
-                        <td style="text-align:right">
-                            <div class="d-flex gap-1 justify-content-end">
-                                <button class="btn-icon" title="${sharedInventoryI18n.actions_edit}" onclick="openProductModal(${p.id})"><i class="bi bi-pencil"></i></button>
-                                <button class="btn-icon danger" title="${sharedInventoryI18n.actions_delete}" onclick="deleteProduct(${p.id}, '${escapedName}')"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                if (typeof filterProducts === 'function') filterProducts();
-            };
-        }
-
-        function filterProducts() {
-            const ivaFilter = document.getElementById('sharedFilterIvaRate');
-            if (!ivaFilter) return;
-            const selectedIva = ivaFilter.value;
-            const rows = document.querySelectorAll('.product-row');
-            rows.forEach(row => {
-                const rowIva = row.getAttribute('data-iva');
-                let matchesIva = true;
-                if (selectedIva !== "") {
-                    const val = rowIva ? parseFloat(rowIva).toFixed(2) : null;
-                    const target = parseFloat(selectedIva).toFixed(2);
-                    matchesIva = (val === target);
-                }
-                row.style.display = matchesIva ? '' : 'none';
-            });
-        }
-        function getTotalPages() {
-            const el = document.getElementById('totalPages');
-            return el ? parseInt(el.value, 10) || 1 : 1;
-        }
-
-        function getPageSize() {
-            const el = document.getElementById('pageSize');
-            return el ? parseInt(el.value, 10) || 25 : 25;
-        }
-
-        function goToPage(page) {
-            const totalPages = getTotalPages();
-
-            if (page < 0) page = 0;
-            if (page >= totalPages) page = totalPages - 1;
-
-            const url = new URL(window.location.href);
-            url.searchParams.set('page', page);
-            url.searchParams.set('size', getPageSize());
-            window.location.href = url.toString();
-        }
-
-        function jumpToPage(value) {
-            let page = parseInt(value, 10);
-            const totalPages = getTotalPages();
-
-            if (isNaN(page)) return;
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
-
-            goToPage(page - 1);
-        }
-        function getCategoriesTotalPages() {
-            const el = document.getElementById('categoriesTotalPages');
-            return el ? parseInt(el.value, 10) || 1 : 1;
-        }
-
-        function getCategoriesPageSize() {
-            const el = document.getElementById('categoriesPageSize');
-            return el ? parseInt(el.value, 10) || 25 : 25;
-        }
-
-        function goToCategoriesPage(page) {
-            const totalPages = getCategoriesTotalPages();
-
-            if (page < 0) page = 0;
-            if (page >= totalPages) page = totalPages - 1;
-
-            const url = new URL(window.location.href);
-            url.searchParams.set('categoriesPage', page);
-            url.searchParams.set('categoriesSize', getCategoriesPageSize());
-            window.location.href = url.toString();
-        }
-
-        function jumpToCategoriesPage(value) {
-            let page = parseInt(value, 10);
-            const totalPages = getCategoriesTotalPages();
-
-            if (isNaN(page)) return;
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
-
-            goToCategoriesPage(page - 1);
-        }
-
+        /*]]>*/
     </script>
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-

@@ -2,6 +2,8 @@ package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.dto.ProductRequest;
 import com.proconsi.electrobazar.dto.ProductSelectionItem;
+import com.proconsi.electrobazar.model.Product;
+import com.proconsi.electrobazar.model.ProductPrice;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.model.UserFavoriteProduct;
 import com.proconsi.electrobazar.service.CategoryService;
@@ -12,9 +14,16 @@ import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.repository.MeasurementUnitRepository;
 import com.proconsi.electrobazar.repository.UserFavoriteProductRepository;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +37,7 @@ import java.util.stream.Collectors;
 
 /**
  * REST Controller for managing the Product catalog.
- * Provides endpoints for CRUD operations, advanced filtering, and integration 
+ * Provides endpoints for CRUD operations, advanced filtering, and integration
  * with the temporal pricing system.
  */
 @Slf4j
@@ -47,6 +56,7 @@ public class ProductApiRestController {
 
     /**
      * Retrieves all active products including their category details.
+     * 
      * @return List of active {@link Product} entities.
      */
     @GetMapping
@@ -56,6 +66,7 @@ public class ProductApiRestController {
 
     /**
      * Retrieves a single product by its ID.
+     * 
      * @param id The product ID.
      * @return The requested {@link Product}.
      */
@@ -66,6 +77,7 @@ public class ProductApiRestController {
 
     /**
      * Retrieves all products belonging to a specific category.
+     * 
      * @param categoryId The category ID.
      * @return List of products.
      */
@@ -76,6 +88,7 @@ public class ProductApiRestController {
 
     /**
      * Performs a text-based search on product names with pagination.
+     * 
      * @param name The search query.
      * @param page Page number (0-indexed).
      * @param size Number of items per page.
@@ -92,6 +105,7 @@ public class ProductApiRestController {
 
     /**
      * Advanced filtering for products with pagination.
+     * 
      * @return Page of filtered products.
      */
     @GetMapping("/filter")
@@ -113,26 +127,28 @@ public class ProductApiRestController {
      * @param request The product details.
      * @return 201 Created with the saved {@link Product}.
      */
-    @PostMapping
-    public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Product> create(
+            @Valid @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         log.info("Creating product with request: {}", request);
-        
+
         if (request.getTaxRateId() == null) {
             log.error("taxRateId is null in request");
             return ResponseEntity.badRequest().build();
         }
-        
+
         var taxRateOpt = taxRateRepository.findById(request.getTaxRateId());
         if (taxRateOpt.isEmpty()) {
             log.error("TaxRate not found with id: {}", request.getTaxRateId());
             throw new ResourceNotFoundException("TaxRate no encontrado con id: " + request.getTaxRateId());
         }
-        
+
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setTaxRate(taxRateOpt.get());
-        
+
         if (request.getBasePriceNet() != null) {
             product.setBasePriceNet(request.getBasePriceNet());
         } else {
@@ -140,7 +156,14 @@ public class ProductApiRestController {
         }
 
         product.setStock(request.getStock() != null ? request.getStock() : BigDecimal.ZERO);
-        product.setImageUrl(request.getImageUrl());
+        
+        // Handle image upload
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = saveImage(image);
+            product.setImageUrl(imageUrl);
+        } else {
+            product.setImageUrl(request.getImageUrl());
+        }
 
         if (request.getMeasurementUnitId() != null) {
             product.setMeasurementUnit(measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
@@ -155,18 +178,51 @@ public class ProductApiRestController {
 
     /**
      * Updates an existing product's details.
-     * @param id The product ID.
+     * 
+     * @param id      The product ID.
      * @param request The new product details.
      * @return 200 OK with the updated {@link Product}.
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> update(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Product> update(
+            @PathVariable Long id,
+            @Valid @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         log.info("Updating product {} with request: {}", id, request);
+        
+        // If there's a new image, handle it before updating the service
+        if (image != null && !image.isEmpty()) {
+            request.setImageUrl(saveImage(image));
+        }
+        
         return ResponseEntity.ok(productService.update(id, request));
+    }
+
+    private String saveImage(MultipartFile file) {
+        try {
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            // Path where images are stored (absolute for the local system or relative for Spring serving)
+            String uploadDir = "src/main/resources/static/uploads/products/";
+            Path uploadPath = Paths.get(uploadDir);
+            
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            try (var inputStream = file.getInputStream()) {
+                Path filePath = uploadPath.resolve(fileName);
+                Files.copy(inputStream, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                return "/uploads/products/" + fileName;
+            }
+        } catch (IOException e) {
+            log.error("Error saving image", e);
+            return null;
+        }
     }
 
     /**
      * Deactivates a product (Soft Delete).
+     * 
      * @param id The product ID.
      * @return 204 No Content.
      */
@@ -191,7 +247,8 @@ public class ProductApiRestController {
 
     /**
      * Manually adjusts the stock level of a product.
-     * @param id The product ID.
+     * 
+     * @param id       The product ID.
      * @param quantity The amount to add (positive) or subtract (negative).
      * @return 200 OK.
      */
@@ -212,10 +269,10 @@ public class ProductApiRestController {
         List<Product> products = productService.getTopProductsByRank(100);
         LocalDateTime now = LocalDateTime.now();
 
-        // 1. Bulk fetch active prices to avoid N+1 queries 
+        // 1. Bulk fetch active prices to avoid N+1 queries
         List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
         List<ProductPrice> activePrices = productPriceService.getActivePrices(productIds, now);
-        
+
         // 2. Map prices for efficient lookup
         Map<Long, ProductPrice> priceMap = activePrices.stream()
                 .collect(Collectors.toMap(p -> p.getProduct().getId(), p -> p, (a, b) -> a));
@@ -223,8 +280,9 @@ public class ProductApiRestController {
         List<ProductSelectionItem> selectionItems = products.stream()
                 .map(product -> {
                     BigDecimal currentPrice = product.getPrice();
-                    BigDecimal currentVat = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null 
-                        ? product.getTaxRate().getVatRate() : new BigDecimal("0.21");
+                    BigDecimal currentVat = product.getTaxRate() != null && product.getTaxRate().getVatRate() != null
+                            ? product.getTaxRate().getVatRate()
+                            : new BigDecimal("0.21");
 
                     ProductPrice priceEntity = priceMap.get(product.getId());
                     if (priceEntity != null) {
@@ -249,8 +307,9 @@ public class ProductApiRestController {
     @Transactional
     public ResponseEntity<Void> addFavorite(@PathVariable Long productId) {
         Long userId = getCurrentUserId();
-        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
+        if (userId == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         if (!userFavoriteProductRepository.findProductIdsByUserId(userId).contains(productId)) {
             userFavoriteProductRepository.save(UserFavoriteProduct.builder()
                     .userId(userId)
@@ -264,8 +323,9 @@ public class ProductApiRestController {
     @Transactional
     public ResponseEntity<Void> removeFavorite(@PathVariable Long productId) {
         Long userId = getCurrentUserId();
-        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
+        if (userId == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         userFavoriteProductRepository.deleteByUserIdAndProductId(userId, productId);
         return ResponseEntity.ok().build();
     }
@@ -273,7 +333,8 @@ public class ProductApiRestController {
     @GetMapping("/favorites")
     public ResponseEntity<List<Long>> getFavorites() {
         Long userId = getCurrentUserId();
-        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (userId == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         return ResponseEntity.ok(userFavoriteProductRepository.findProductIdsByUserId(userId));
     }
 

@@ -1,0 +1,98 @@
+/* admin-productos-categorias.css */
+
+.management-header .m-logo small {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    margin-left: 0.5rem;
+}
+
+.management-header .btn-cancel {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-pane h5 .btn-icon {
+    text-decoration: none;
+}
+
+.btn-nuevo-alt {
+    background: var(--surface);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+.admin-table th.id-col,
+.admin-table td.id-col {
+    width: 50px;
+    text-align: right;
+}
+
+.admin-table th.center,
+.admin-table td.center {
+    text-align: center;
+}
+
+.admin-table th.right,
+.admin-table td.right {
+    text-align: right;
+}
+
+.admin-table td.id-val {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.admin-table td.price-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.product-desc-small {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.product-desc-cell {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.product-iva-val {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.product-unit-val {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.product-category-val {
+    font-size: 0.82rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+.pagination-jump input {
+    width: 70px; /* matched from existing */
+}
+
+.filter-bar-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+#imagePreview {
+    max-width: 100%;
+    max-height: 150px;
+    display: none;
+    margin-top: 10px;
+}
