@@ -93,7 +93,7 @@ function renderSalesTable(sales) {
                 <i class="bi ${methodIcon}" style="margin-right:0.3rem"></i>
                 <span>${methodLabel}</span>
             </td>
-            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main);text-align:right">
+            <td style="font-size:1rem;font-weight:700;color:var(--text-main);text-align:right">
                 ${formatDecimal(sale.totalAmount)} €
             </td>
             <td style="text-align:right">
@@ -223,8 +223,8 @@ function renderCashClosuresTable(items) {
             <td style="color:var(--text-muted);font-weight:600">#${item.id}</td>
             <td>${formatDateTime(item.openingTime)}</td>
             <td>${item.closedAt ? formatDateTime(item.closedAt) : '<span class="badge bg-warning text-dark" style="font-size:0.7rem">Abierta</span>'}</td>
-            <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right">${formatDecimal(item.totalCalculated)} €</td>
-            <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right">${formatDecimal(item.closingBalance)} €</td>
+            <td style="font-weight:600;text-align:right">${formatDecimal(item.totalCalculated)} €</td>
+            <td style="font-weight:600;text-align:right">${formatDecimal(item.closingBalance)} €</td>
             <td style="text-align:right">${diffBadge}</td>
             <td style="font-weight: 500;">${escHtml(item.workerUsername || 'Sistema')}</td>
             <td style="text-align:right">

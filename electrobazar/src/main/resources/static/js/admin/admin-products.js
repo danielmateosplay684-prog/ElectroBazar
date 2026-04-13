@@ -157,7 +157,8 @@ if (typeof renderSharedProductsTable === 'function' || true) {
             const name = isEn && p.nameEn ? p.nameEn : (p.nameEs || p.name);
             const description = isEn && p.descriptionEn ? p.descriptionEn : (p.descriptionEs || p.description);
             const decimals = (p.measurementUnit && p.measurementUnit.decimalPlaces !== undefined) ? p.measurementUnit.decimalPlaces : (p.measurementUnit && p.measurementUnit.decimal_places !== undefined ? p.measurementUnit.decimal_places : 0);
-            const formattedStock = (p.stock || 0).toFixed(decimals);
+            const formattedPrice = typeof formatDecimal === 'function' ? formatDecimal(p.price) : (p.price || 0).toFixed(2) + ' €';
+            const formattedStock = (p.stock === 0 || !p.stock) ? "0" : (typeof formatDecimal === 'function' ? formatDecimal(p.stock, decimals, decimals) : p.stock.toFixed(decimals));
             const stockStyle = p.stock < 5 ? 'fw-bold text-danger' : '';
             const badgeLowStock = p.stock < 5 ? `<span class="badge-stock-low">${window.sharedInventoryI18n ? window.sharedInventoryI18n.lowStock : 'Stock Bajo'}</span>` : '';
 
@@ -189,7 +190,7 @@ if (typeof renderSharedProductsTable === 'function' || true) {
                     <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${descTruncated}</div>
                 </td>
                 <td style="font-size:0.9rem; font-weight: 500;">${ivaDisplay}</td>
-                <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);text-align:right">${formattedPrice}</td>
+                <td style="font-size:1rem;font-weight:700;color:var(--accent);text-align:right">${formattedPrice}</td>
                 <td><div class="d-flex flex-column align-items-center" style="gap: 0.2rem;"><span class="${stockStyle}">${formattedStock}</span> ${badgeLowStock}</div></td>
                 <td style="text-align:center"><span style="font-size:0.8rem;font-weight:600;color:var(--text-muted)">${unitSymbol}</span></td>
                 <td><span style="font-size:0.82rem;padding:0.2rem 0.5rem;border-radius:6px;background:var(--surface);color:var(--text-muted)">${catName}</span></td>

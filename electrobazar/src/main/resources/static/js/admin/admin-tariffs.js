@@ -182,7 +182,7 @@ function renderTariffComparisonRows(products) {
             </td>
             <td class="text-end fw-bold py-2 price-cell price-base" 
                 data-product-id="${p.id}" data-tariff-id="base"
-                style="font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; color: #8892a4;">
+                style="font-size: 1rem; color: #8892a4;">
                 ${parseFloat(p.price || 0).toFixed(2).replace('.', ',')} €
             </td>
         `;
@@ -193,7 +193,7 @@ function renderTariffComparisonRows(products) {
             const finalPrice = basePrice * (1 - dto/100);
             
             html += `
-                <td class="text-end py-2" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                <td class="text-end py-2" style="font-weight: 700; font-size: 1.05rem;">
                     <span class="price-cell" data-product-id="${p.id}" data-tariff-id="${t.id}">
                         ${finalPrice.toFixed(2).replace('.', ',')} €
                     </span>

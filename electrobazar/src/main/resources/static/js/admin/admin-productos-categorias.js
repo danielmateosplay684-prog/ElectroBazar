@@ -32,7 +32,8 @@ if (typeof renderSharedProductsTable === 'function' || true) {
             const name = isEn && p.nameEn ? p.nameEn : (p.nameEs || p.name);
             const description = isEn && p.descriptionEn ? p.descriptionEn : (p.descriptionEs || p.description);
             const decimals = (p.measurementUnit && p.measurementUnit.decimalPlaces !== undefined) ? p.measurementUnit.decimalPlaces : (p.measurementUnit && p.measurementUnit.decimal_places !== undefined ? p.measurementUnit.decimal_places : 0);
-            const formattedStock = (p.stock || 0).toFixed(decimals);
+            const formattedPrice = typeof formatDecimal === 'function' ? formatDecimal(p.price) : (p.price || 0).toFixed(2) + ' €';
+            const formattedStock = (p.stock === 0 || !p.stock) ? "0" : (typeof formatDecimal === 'function' ? formatDecimal(p.stock, decimals, decimals) : p.stock.toFixed(decimals));
             const stockStyle = p.stock < 5 ? 'fw-bold text-danger' : '';
             const badgeLowStock = p.stock < 5 ? `<span class="badge-stock-low" style="font-size: 0.7rem;">${i18n.lowStock || 'Low'}</span>` : '';
 

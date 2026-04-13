@@ -45,7 +45,6 @@
 }
 
 .admin-table td.price-val {
-    font-family: 'Barlow Condensed', sans-serif;
     font-size: 1rem;
     font-weight: 700;
     color: var(--accent);

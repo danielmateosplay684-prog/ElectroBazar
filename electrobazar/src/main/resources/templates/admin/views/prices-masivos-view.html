@@ -15,7 +15,7 @@
                     de Precios</span>
             </span>
             <button class="btn btn-accent d-flex align-items-center gap-2" onclick="openIpcUpdateModal()"
-                style="background:var(--accent); color:var(primary); font-weight:600; border:none; padding:8px 16px; border-radius:8px;">
+                style="background:var(--accent); color:var(--btn-accent-text,#1a1a2e); font-weight:600; border:none; padding:8px 16px; border-radius:8px;">
                 <i class="bi bi-graph-up"></i> <span th:text="#{admin.massiveprices.ipc}">Actualización por IPC
                     (INE)</span>
             </button>
@@ -58,7 +58,7 @@
                                 </option>
                             </select>
                             <button class="btn btn-sm btn-accent" onclick="selectBulkByCategory()"
-                                style="background:var(--accent); color:var(primary); font-weight:600; border:none; padding:4px 10px; border-radius:6px;"
+                                style="background:var(--accent); color:var(--btn-accent-text,#1a1a2e); font-weight:600; border:none; padding:4px 10px; border-radius:6px;"
                                 th:text="#{admin.massiveprices.mark_category}">
                                 Marcar Categoria
                             </button>

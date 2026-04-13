@@ -158,7 +158,7 @@ function renderSharedProductsTable(products) {
                 <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${description ? description.substring(0, 60) : ''}</div>
             </td>
             <td>${p.vatRate ? Math.round(p.vatRate * 100) + '%' : '—'}</td>
-            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);text-align:right">${formattedPrice}</td>
+            <td style="font-size:1rem;font-weight:700;color:var(--accent);text-align:right">${formattedPrice}</td>
             <td>
                 <div class="d-flex flex-column align-items-center">
                     <span class="${stockStyle}">${p.stock}</span>

@@ -34,6 +34,21 @@ public class Customer {
     @Column(length = 50)
     private String taxId;
 
+    /**
+     * Type of identity document presented by the customer.
+     * Drives frontend validation rules and label display.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "id_document_type", length = 30)
+    private IdDocumentType idDocumentType;
+
+    /**
+     * The actual identity document number (DNI, NIE, passport number, etc.).
+     * Stored separately from taxId which is used for fiscal/invoicing purposes.
+     */
+    @Column(name = "id_document_number", length = 60)
+    private String idDocumentNumber;
+
     /** Email address for invoices or contact. */
     @Column(length = 100)
     private String email;
@@ -88,5 +103,25 @@ public class Customer {
     public enum CustomerType {
         INDIVIDUAL,
         COMPANY
+    }
+
+    /**
+     * Supported identity document types.
+     * <ul>
+     *   <li>DNI – Spanish national identity (8 digits + letter)</li>
+     *   <li>NIE – Spanish foreigner identity (X/Y/Z + 7 digits + letter)</li>
+     *   <li>NIF – Company tax identifier / CIF (letter + 7 digits + control)</li>
+     *   <li>PASSPORT – International travel document (free format)</li>
+     *   <li>FOREIGN_ID – Foreign national identity card (free format)</li>
+     *   <li>INTRACOMMUNITY_VAT – EU VAT number for intra-community ops (e.g. DE123456789)</li>
+     * </ul>
+     */
+    public enum IdDocumentType {
+        DNI,
+        NIE,
+        NIF,
+        PASSPORT,
+        FOREIGN_ID,
+        INTRACOMMUNITY_VAT
     }
 }

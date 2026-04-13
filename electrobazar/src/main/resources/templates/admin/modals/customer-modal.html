@@ -16,6 +16,8 @@
                 <div class="modal-body">
                     <form id="customerForm" novalidate>
                         <input type="hidden" id="customerId">
+
+                        <!-- ── Tipo de cliente ─────────────────────────────── -->
                         <div class="mb-3">
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="customerTypeRadio"
@@ -28,41 +30,103 @@
                                 <input class="form-check-input" type="radio" name="customerTypeRadio"
                                     id="adminTypeCompany" value="COMPANY" onchange="toggleAdminCustomerType()">
                                 <label class="form-check-label" for="adminTypeCompany"
-                                    th:text="#{admin.crm.type.company}">Empresa</label>
+                                    th:text="#{admin.crm.type.company}">Empresa / Prof.</label>
                             </div>
                             <input type="hidden" id="customerType" value="INDIVIDUAL">
                         </div>
+
                         <div class="row g-3">
+
+                            <!-- ── Nombre / Razón social ───────────────────── -->
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted" id="lblAdminCustomerName" for="customerName">
-                                    <span th:text="#{admin.crm.name_and_surname}">Nombre y Apellidos</span> <span class="text-danger">*</span>
+                                    <span th:text="#{admin.crm.name_and_surname}">Nombre y Apellidos</span>
+                                    <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" id="customerName" required>
                             </div>
-                            <div class="col-md-6">
+
+                            <!-- ── Identificación fiscal (empresa) ─────────── -->
+                            <div class="col-md-6" id="customerTaxIdSection">
                                 <label class="form-label small fw-bold text-muted" id="lblAdminCustomerTaxId" for="customerTaxId">
-                                    <span th:text="#{admin.crm.taxId}">NIF/NIE</span> <span class="text-danger">*</span>
+                                    <i class="bi bi-building me-1 text-accent"></i>
+                                    <span th:text="#{admin.crm.taxId}">CIF / NIF Fiscal</span>
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerTaxId" required placeholder="Ej: 12345678X">
+                                <input type="text" class="form-control" id="customerTaxId"
+                                       placeholder="Ej: B12345678"
+                                       oninput="validateTaxIdInline()">
+                                <div id="taxIdValidationMsg" class="form-text" style="font-size:0.78rem;"></div>
                             </div>
+
+                            <!-- ── Tipo de documento (particulares) ───────── -->
+                            <div class="col-md-3" id="customerDocTypeSection" style="display:none;">
+                                <label class="form-label small fw-bold text-muted" for="customerIdDocumentType">
+                                    <i class="bi bi-card-heading me-1 text-accent"></i>
+                                    <span th:text="#{admin.crm.doc.type}">Tipo de documento</span>
+                                </label>
+                                <select class="form-select" id="customerIdDocumentType"
+                                        onchange="onDocTypeChange()">
+                                    <option value="">-- Seleccionar --</option>
+                                    <option value="DNI"  th:text="#{admin.crm.doc.dni}">DNI</option>
+                                    <option value="NIE"  th:text="#{admin.crm.doc.nie}">NIE</option>
+                                    <option value="PASSPORT" th:text="#{admin.crm.doc.passport}">Pasaporte</option>
+                                    <option value="FOREIGN_ID" th:text="#{admin.crm.doc.foreign_id}">Doc. extranjero</option>
+                                    <option value="INTRACOMMUNITY_VAT" th:text="#{admin.crm.doc.intracom}">NIF intracomunitario</option>
+                                </select>
+                            </div>
+
+                            <!-- Número de documento (particulares) -->
+                            <div class="col-md-3" id="customerDocNumberSection" style="display:none;">
+                                <label class="form-label small fw-bold text-muted" for="customerIdDocumentNumber">
+                                    <span id="lblDocNumber" th:text="#{admin.crm.doc.number}">N.º documento</span>
+                                </label>
+                                <input type="text" class="form-control" id="customerIdDocumentNumber"
+                                       placeholder="Ej: 12345678Z"
+                                       oninput="validateDocNumberInline()">
+                                <div id="docNumberValidationMsg" class="form-text" style="font-size:0.78rem;"></div>
+                            </div>
+
+                            <!-- Hint / ayuda de formato (particulares) -->
+                            <div class="col-12" id="customerDocHintSection" style="display:none;">
+                                <div id="customerDocHint" class="d-flex align-items-center gap-2 px-3 py-2 rounded"
+                                     style="background:rgba(var(--accent-rgb,245,166,35),0.07); border:1px solid rgba(var(--accent-rgb,245,166,35),0.2); font-size:0.8rem; color:var(--text-muted);">
+                                </div>
+                            </div>
+
+                            <!-- ── Empresa: también muestra tipo NIF ─────── -->
+                            <div class="col-md-3" id="customerNifTypeSection" style="display:none;">
+                                <label class="form-label small fw-bold text-muted" for="customerNifDocType">
+                                    <i class="bi bi-card-heading me-1 text-accent"></i>
+                                    <span th:text="#{admin.crm.doc.type}">Tipo</span>
+                                </label>
+                                <select class="form-select" id="customerNifDocType" onchange="onNifDocTypeChange()">
+                                    <option value="NIF" selected th:text="#{admin.crm.doc.nif}">NIF / CIF</option>
+                                    <option value="INTRACOMMUNITY_VAT" th:text="#{admin.crm.doc.intracom}">NIF intracomunitario</option>
+                                </select>
+                            </div>
+
+                            <!-- ── Dirección ───────────────────────────────── -->
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted" for="customerAddress">
-                                    <span th:text="#{admin.crm.address}">Dirección completa</span> <span class="text-danger">*</span>
+                                    <span th:text="#{admin.crm.address}">Dirección completa</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerAddress" required>
+                                <input type="text" class="form-control" id="customerAddress">
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label small fw-bold text-muted" for="customerCity">
-                                    <span th:text="#{admin.crm.city}">Población / Ciudad</span> <span class="text-danger">*</span>
+                                    <span th:text="#{admin.crm.city}">Población / Ciudad</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerCity" required>
+                                <input type="text" class="form-control" id="customerCity">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-muted" for="customerPostalCode">
-                                    <span th:text="#{common.postalcode}">Código Postal</span> <span class="text-danger">*</span>
+                                    <span th:text="#{common.postalcode}">Código Postal</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerPostalCode" required>
+                                <input type="text" class="form-control" id="customerPostalCode">
                             </div>
+
+                            <!-- ── Contacto ─────────────────────────────────── -->
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted" for="customerEmail"
                                     th:text="#{common.email_optional}">Email (Opcional)</label>
@@ -73,12 +137,13 @@
                                     th:text="#{common.phone_optional}">Teléfono (Opcional)</label>
                                 <input type="text" class="form-control" id="customerPhone" placeholder="+34 600 000 000">
                             </div>
-                            <!-- Tariff selector -->
+
+                            <!-- ── Tarifa ────────────────────────────────────── -->
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted" for="customerTariffId">
                                     <i class="bi bi-tags me-1 text-accent"></i><span th:text="#{common.tariff}">Tarifa</span>
                                 </label>
-                                <select class="form-select" id="customerTariffId">
+                                <select class="form-select" id="customerTariffId" onchange="checkCustomerReCompatibility()">
                                     <option value="" th:text="#{admin.crm.no_tariff}">-- Sin tarifa (MINORISTA) --</option>
                                     <th:block th:each="tariff : ${tariffs}">
                                         <option th:if="${tariff.active}" th:value="${tariff.id}"
@@ -88,6 +153,7 @@
                                 <small class="text-muted d-block mt-1" th:text="#{admin.crm.tariff_info}">Descuento automático aplicado al añadir cliente.</small>
                             </div>
 
+                            <!-- ── Recargo de Equivalencia (solo empresas) ── -->
                             <div class="col-12" id="adminCustomerReSection" style="display: none;">
                                 <div class="p-3 rounded" style="background: rgba(255,166,35,0.05); border: 1px solid var(--border)">
                                     <div class="form-check form-switch mb-0">
@@ -97,10 +163,17 @@
                                             <span th:text="#{admin.crm.re.label}">Sujeto a R.E.</span>
                                         </label>
                                     </div>
-                                    <small class="d-block mt-2 text-muted" id="adminCustomerReInfoMsg" style="font-size: 0.8rem;" th:text="#{admin.crm.re.desc}">Activa esta opción si el cliente es minorista en recargo.</small>
+                                    <small class="d-block mt-2 text-muted" id="adminCustomerReInfoMsg"
+                                        style="font-size: 0.8rem;" th:text="#{admin.crm.re.desc}">Activa esta opción si el cliente es minorista en recargo.</small>
+                                    <small class="d-block mt-1 text-warning d-none" id="adminCustomerReIncompatibleMsg"
+                                        style="font-size: 0.78rem;">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        R.E. no es compatible con tarifas mayoristas.
+                                    </small>
                                 </div>
                             </div>
 
+                            <!-- ── Estado ─────────────────────────────────────── -->
                             <div class="col-12">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="customerActive" checked>
@@ -108,9 +181,9 @@
                                         th:text="#{admin.crm.active}">Cliente activo</label>
                                 </div>
                             </div>
-                        </div>
-                    </form>
 
+                        </div><!-- /row -->
+                    </form>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
@@ -126,14 +199,3 @@
 </th:block>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

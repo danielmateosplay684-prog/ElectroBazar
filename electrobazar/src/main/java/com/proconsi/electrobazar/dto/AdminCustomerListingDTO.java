@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.dto;
 
 import com.proconsi.electrobazar.model.Customer.CustomerType;
+import com.proconsi.electrobazar.model.Customer.IdDocumentType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,4 +19,6 @@ public class AdminCustomerListingDTO {
     private Long tariffId;
     private String tariffName;
     private String tariffColor;
+    private IdDocumentType idDocumentType;
+    private String idDocumentNumber;
 }

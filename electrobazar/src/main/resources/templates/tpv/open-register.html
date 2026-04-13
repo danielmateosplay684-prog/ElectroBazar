@@ -19,7 +19,7 @@
         body {
             background-color: var(--primary);
             color: var(--text-main);
-            font-family: 'Barlow', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
             min-height: 100vh;
         }
 
@@ -104,7 +104,7 @@
         h6,
         .display-5 {
             color: var(--text-main) !important;
-            font-family: 'Barlow Condensed', sans-serif;
+            font-family: var(--main-font-family, 'Barlow', sans-serif);
         }
 
         .text-accent {

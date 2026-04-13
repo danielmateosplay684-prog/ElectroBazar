@@ -7,6 +7,7 @@ import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.SaleRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
 import com.proconsi.electrobazar.service.CustomerService;
+import com.proconsi.electrobazar.util.NifCifValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class CustomerApiRestController {
     private final CustomerService customerService;
     private final TariffRepository tariffRepository;
     private final SaleRepository saleRepository;
+    private final NifCifValidator nifCifValidator;
 
     /**
      * Retrieves all active customers.
@@ -73,11 +75,13 @@ public class CustomerApiRestController {
         if (customer.getName() == null || customer.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
-        if (customer.getType() == Customer.CustomerType.COMPANY &&
-                (customer.getTaxId() == null || customer.getTaxId().trim().isEmpty())) {
-            throw new IllegalArgumentException("El CIF es obligatorio para empresas");
+        if (customer.getType() == Customer.CustomerType.COMPANY
+                && (customer.getTaxId() == null || customer.getTaxId().trim().isEmpty())) {
+            throw new IllegalArgumentException("El CIF/NIF fiscal es obligatorio para empresas");
         }
-        
+
+        validateDocumentNumber(customer);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(customerService.save(customer));
     }
 
@@ -93,6 +97,9 @@ public class CustomerApiRestController {
         Customer existing = customerService.findById(id);
         Customer updated = buildCustomerFromBody(body, existing);
         updated.setId(id);
+
+        validateDocumentNumber(updated);
+
         return ResponseEntity.ok(customerService.update(id, updated));
     }
 
@@ -141,6 +148,20 @@ public class CustomerApiRestController {
         return ResponseEntity.ok(result);
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Runs server-side per-type document validation; throws on failure. */
+    private void validateDocumentNumber(Customer customer) {
+        if (customer.getIdDocumentNumber() == null || customer.getIdDocumentNumber().isBlank()) return;
+
+        String error = nifCifValidator.getValidationError(
+                customer.getIdDocumentType(), customer.getIdDocumentNumber());
+
+        if (error != null) {
+            throw new IllegalArgumentException(error);
+        }
+    }
+
     private Customer buildCustomerFromBody(Map<String, Object> body, Customer customer) {
         if (body.containsKey("name"))
             customer.setName((String) body.get("name"));
@@ -156,6 +177,8 @@ public class CustomerApiRestController {
             customer.setCity((String) body.get("city"));
         if (body.containsKey("postalCode"))
             customer.setPostalCode((String) body.get("postalCode"));
+
+        // Customer type (INDIVIDUAL / COMPANY)
         if (body.containsKey("type")) {
             try {
                 customer.setType(Customer.CustomerType.valueOf((String) body.get("type")));
@@ -165,6 +188,27 @@ public class CustomerApiRestController {
         }
         if (customer.getType() == null)
             customer.setType(Customer.CustomerType.INDIVIDUAL);
+
+        // idDocumentType
+        if (body.containsKey("idDocumentType")) {
+            String rawType = (String) body.get("idDocumentType");
+            if (rawType != null && !rawType.isBlank()) {
+                try {
+                    customer.setIdDocumentType(Customer.IdDocumentType.valueOf(rawType.trim().toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unknown idDocumentType received: '{}'", rawType);
+                    customer.setIdDocumentType(null);
+                }
+            } else {
+                customer.setIdDocumentType(null);
+            }
+        }
+
+        // idDocumentNumber (always stored uppercase)
+        if (body.containsKey("idDocumentNumber")) {
+            String num = (String) body.get("idDocumentNumber");
+            customer.setIdDocumentNumber(num != null && !num.isBlank() ? num.trim().toUpperCase() : null);
+        }
 
         if (body.containsKey("active"))
             customer.setActive(Boolean.TRUE.equals(body.get("active")));
