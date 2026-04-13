@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="modal">
@@ -8,7 +8,7 @@
             <div class="modal-content"
                 style="background-color: #16213e !important; background-color: var(--secondary) !important; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 1 !important; backdrop-filter: none !important;">
                 <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i><span
+                    <h5 class="modal-title fw-bold"><i class="bi bi-graph-up me-2 text-accent"></i><span
                             th:text="#{admin.massiveprices.ipc.modal.title}">Actualización por
                             IPC
                             (INE)</span></h5>
@@ -88,7 +88,7 @@
                 <div class="modal-footer border-top-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
                         th:text="#{common.cancel}">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnConfirmIpcUpdate" onclick="applyIpcConfirm()">
+                    <button type="button" class="btn btn-accent" id="btnConfirmIpcUpdate" onclick="applyIpcConfirm()">
                         <i class="bi bi-check-lg me-1"></i><span th:text="#{admin.common.confirm_update}">Confirmar
                             Actualización</span>
                     </button>

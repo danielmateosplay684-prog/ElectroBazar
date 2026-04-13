@@ -25,9 +25,9 @@
         .text-main { color: var(--text-main) !important; }
         .text-muted { color: var(--text-muted) !important; }
         
-        /* Brighter muted text for better contrast */
+        /* Darker muted text for better contrast on light backgrounds */
         :root {
-            --text-muted: #aabac9; 
+            --text-muted: #64748b; 
         }
 
         * {
@@ -654,6 +654,26 @@
         .btn-nuevo:hover {
             background: var(--accent-hover);
             transform: translateY(-1px);
+        }
+
+        /* ── Accent Button ── */
+        .btn-accent {
+            background: var(--accent) !important;
+            color: var(--primary) !important; /* White text on orange accent */
+            font-weight: 700;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-hover) !important;
+            color: var(--primary) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
+        }
+
+        .btn-accent i, .btn-accent span {
+            color: inherit !important;
         }
 
         /* ── Modals ── */
