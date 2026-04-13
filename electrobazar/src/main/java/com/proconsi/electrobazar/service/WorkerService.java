@@ -119,7 +119,7 @@ public class WorkerService {
         activityLogService.logActivity(
                 isNew ? "CREAR_TRABAJADOR" : "ACTUALIZAR_TRABAJADOR",
                 (isNew ? "Nuevo trabajador registrado: " : "Trabajador actualizado: ") + saved.getUsername(),
-                "Admin",
+                "Sistema",
                 "WORKER",
                 saved.getId());
 
@@ -136,7 +136,7 @@ public class WorkerService {
             activityLogService.logActivity(
                     "ELIMINAR_TRABAJADOR",
                     "Trabajador eliminado definitivamente: " + w.getUsername(),
-                    "Admin",
+                    "Sistema",
                     "WORKER",
                     id);
         });

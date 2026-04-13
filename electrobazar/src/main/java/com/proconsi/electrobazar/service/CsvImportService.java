@@ -5,6 +5,7 @@ import com.proconsi.electrobazar.model.Category;
 import com.proconsi.electrobazar.model.Customer;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.TaxRate;
+import com.proconsi.electrobazar.repository.MeasurementUnitRepository;
 import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.util.NifCifValidator;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +37,9 @@ public class CsvImportService {
     private final CategoryService categoryService;
     private final ProductPriceService productPriceService;
     private final TaxRateRepository taxRateRepository;
+    private final MeasurementUnitRepository measurementUnitRepository;
     private final NifCifValidator nifCifValidator;
 
-    /**
-     * Parses a CSV file and creates products, categories, and initial prices.
-     *
-     * @param file The uploaded MultipartFile.
-     * @return A status message summarizing the import results.
-     */
     @Transactional
     public String importProductsCsv(MultipartFile file) {
         if (file.isEmpty()) {
@@ -52,142 +48,153 @@ public class CsvImportService {
 
         int productsCreated = 0;
         int productsUpdated = 0;
-        int linesProcessed = 0;
         int linesSkipped = 0;
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-            String line;
-            boolean isFirstLine = true;
-            // Pre-load all tax rates to avoid N+1 queries later.
+            // Pre-load lookup data to avoid N+1 queries
             List<TaxRate> allTaxRates = taxRateRepository.findAll();
+            List<Category> allCategories = categoryService.findAll(); // Assuming this exists or using service
+            List<com.proconsi.electrobazar.model.MeasurementUnit> allUnits = measurementUnitRepository.findAll();
 
+            String line;
+            boolean isHeader = true;
             while ((line = reader.readLine()) != null) {
-                if (isFirstLine) {
-                    isFirstLine = false;
+                if (line.trim().isEmpty())
+                    continue;
+                if (isHeader) {
+                    isHeader = false;
                     continue;
                 }
 
-                if (line.trim().isEmpty()) {
-                    continue;
-                }
-
-                String[] columns = line.split(",", -1);
-                // Minimum valid row has at least 4 items (cat, name, price, stock).
-                if (columns.length < 4) {
+                String[] cols = parseSimpleCsvLine(line);
+                // Modern format: Categoría, Nombre ES, Nombre EN, Precio, Stock, IVA, Imagen,
+                // Unidad, Desc ES, Desc EN, Activo
+                if (cols.length < 4) {
                     linesSkipped++;
                     continue;
-                }
-
-                String categoryName = columns[0].trim();
-                String productName = columns[1].trim();
-                String priceStr = columns[2].trim().replace("€", "").replace(",", ".");
-
-                if (productName.isEmpty()) {
-                    linesSkipped++;
-                    continue;
-                }
-
-                BigDecimal ivaRate = DEFAULT_VAT;
-                String stockStr;
-                String imageUrl;
-
-                boolean isNewFormat = isIvaColumn(columns[3].trim());
-                if (isNewFormat) {
-                    ivaRate = parseVat(columns[3].trim());
-                    stockStr = columns.length >= 5 ? columns[4].trim() : "0";
-                    imageUrl = columns.length >= 6 ? columns[5].trim() : "";
-                } else {
-                    stockStr = columns[3].trim();
-                    imageUrl = columns.length >= 4 ? columns[4].trim() : "";
                 }
 
                 try {
-                    Category category = null;
-                    if (!categoryName.isEmpty()) {
-                        category = categoryService.findAllActive().stream()
-                                .filter(c -> c.getName().equalsIgnoreCase(categoryName))
-                                .findFirst()
-                                .orElse(null);
+                    String catName = cols[0].trim();
+                    String nameEs = cols[1].trim();
+                    String nameEn = cols.length > 2 ? cols[2].trim() : "";
+                    String priceStr = cols.length > 3 ? cols[3].trim().replace("€", "").replace(",", ".") : "0";
+                    String stockStr = cols.length > 4 ? cols[4].trim().replace(",", ".") : "0";
+                    String ivaStr = cols.length > 5 ? cols[5].trim().replace(",", ".") : "0.21";
+                    String imageUrl = cols.length > 6 ? cols[6].trim() : "";
+                    String unitSymbol = cols.length > 7 ? cols[7].trim() : "";
+                    String descEs = cols.length > 8 ? cols[8].trim() : "";
+                    String descEn = cols.length > 9 ? cols[9].trim() : "";
+                    String activeStr = cols.length > 10 ? cols[10].trim() : "true";
 
-                        if (category == null) {
-                            category = Category.builder()
-                                    .nameEs(categoryName)
-                                    .active(true)
-                                    .build();
-                            category = categoryService.save(category);
-                        }
+                    if (nameEs.isEmpty()) {
+                        linesSkipped++;
+                        continue;
                     }
 
                     BigDecimal priceVal = new BigDecimal(priceStr);
+                    BigDecimal stockVal = new BigDecimal(stockStr);
+                    BigDecimal ivaVal = parseVat(ivaStr);
+                    boolean isActive = !activeStr.equalsIgnoreCase("false");
 
-                    // SEARCH FOR EXISTING PRODUCT BY NAME (EXACT MATCH IGNORE CASE)
-                    Product existing = productService.findByName(productName);
-                    
-                    if (existing != null) {
-                        // UPDATE EXISTING
-                        existing.setStock(new BigDecimal(stockStr));
-                        existing.setImageUrl(imageUrl.isEmpty() ? existing.getImageUrl() : imageUrl);
-                        existing.setCategory(category != null ? category : existing.getCategory());
-                        // IMPORTANT: We update the gross price which recalculates the base price net.
-                        existing.setPrice(priceVal);
-                        
-                        // We also need to re-find the tax rate if ivaRate in CSV differs from current one.
-                        final BigDecimal targetVat = ivaRate;
-                        TaxRate taxRate = allTaxRates.stream()
-                                .filter(t -> t.getVatRate().compareTo(targetVat) == 0)
-                                .findFirst()
-                                .orElse(existing.getTaxRate());
-                        existing.setTaxRate(taxRate);
-                        
-                        productService.save(existing);
-                        productsUpdated++;
-                    } else {
-                        // CREATE NEW
-                        Product product = Product.builder()
-                                .nameEs(productName)
-                                .stock(new BigDecimal(stockStr))
-                                .imageUrl(imageUrl.isEmpty() ? null : imageUrl)
-                                .category(category)
-                                .active(true)
-                                .build();
+                    // 1. Resolve Category
+                    Category category = allCategories.stream()
+                            .filter(c -> c.getName().equalsIgnoreCase(catName))
+                            .findFirst()
+                            .orElse(null);
 
-                        final BigDecimal targetVat = ivaRate;
-                        TaxRate taxRate = allTaxRates.stream()
-                                .filter(t -> t.getVatRate().compareTo(targetVat) == 0)
-                                .findFirst()
-                                .orElse(allTaxRates.isEmpty() ? null : allTaxRates.get(0));
-                        product.setTaxRate(taxRate);
-                        product.setPrice(priceVal);
-
-                        Product saved = productService.save(product);
-                        productsCreated++;
-
-                        // Initialize price history for new products
-                        ProductPriceRequest priceRequest = new ProductPriceRequest();
-                        priceRequest.setPrice(priceVal);
-                        priceRequest.setVatRate(ivaRate);
-                        priceRequest.setStartDate(LocalDateTime.now());
-                        priceRequest.setLabel("Tarifa inicial (import)");
-
-                        productPriceService.schedulePrice(saved.getId(), priceRequest);
+                    if (category == null && !catName.isEmpty()) {
+                        category = Category.builder().nameEs(catName).active(true).build();
+                        category = categoryService.save(category);
+                        allCategories.add(category);
                     }
-                    linesProcessed++;
+
+                    // 2. Resolve TaxRate
+                    TaxRate taxRate = allTaxRates.stream()
+                            .filter(t -> t.getVatRate().compareTo(ivaVal) == 0)
+                            .findFirst()
+                            .orElse(allTaxRates.isEmpty() ? null : allTaxRates.get(0));
+
+                    // 3. Resolve Unit
+                    com.proconsi.electrobazar.model.MeasurementUnit unit = allUnits.stream()
+                            .filter(u -> u.getSymbol().equalsIgnoreCase(unitSymbol))
+                            .findFirst()
+                            .orElse(null);
+
+                    // 4. Upsert Product
+                    Product p = productService.findByName(nameEs);
+                    boolean isNew = (p == null);
+
+                    if (isNew) {
+                        p = new Product();
+                        p.setNameEs(nameEs);
+                    }
+
+                    p.setNameEn(nameEn.isEmpty() ? p.getNameEn() : nameEn);
+                    p.setDescriptionEs(descEs.isEmpty() ? p.getDescriptionEs() : descEs);
+                    p.setDescriptionEn(descEn.isEmpty() ? p.getDescriptionEn() : descEn);
+                    p.setCategory(category);
+                    p.setTaxRate(taxRate);
+                    p.setMeasurementUnit(unit);
+                    p.setStock(stockVal);
+                    p.setActive(isActive);
+                    p.setImageUrl(imageUrl.isEmpty() ? p.getImageUrl() : imageUrl);
+
+                    // Set price logic handles net/gross conversion internnally if taxRate is set
+                    // first
+                    p.setPrice(priceVal);
+
+                    productService.save(p);
+
+                    if (isNew) {
+                        productsCreated++;
+                        // Price History Log
+                        ProductPriceRequest ppr = new ProductPriceRequest();
+                        ppr.setPrice(priceVal);
+                        ppr.setVatRate(ivaVal);
+                        ppr.setStartDate(LocalDateTime.now());
+                        ppr.setLabel("Importación CSV");
+                        productPriceService.schedulePrice(p.getId(), ppr);
+                    } else {
+                        productsUpdated++;
+                    }
+
                 } catch (Exception e) {
-                    log.error("Error importing product line for {}: {}", productName, e.getMessage());
+                    log.error("Error en línea CSV: {}", e.getMessage());
                     linesSkipped++;
                 }
             }
 
-            return String.format(
-                    "Productos procesados: %d creados, %d actualizados, %d omitidos (%d filas en total).",
-                    productsCreated, productsUpdated, linesSkipped, linesProcessed + linesSkipped);
+            return String.format("Importación finalizada: %d creados, %d actualizados, %d omitidos.",
+                    productsCreated, productsUpdated, linesSkipped);
 
         } catch (Exception e) {
-            log.error("Global error parsing products CSV: {}", e.getMessage(), e);
-            return "Error al analizar el CSV de productos: " + e.getMessage();
+            log.error("Error crítico en importación CSV", e);
+            return "Error fatal: " + e.getMessage();
         }
+    }
+
+    /**
+     * Specialized CSV parser that handles quoted values containing commas.
+     */
+    private String[] parseSimpleCsvLine(String line) {
+        List<String> result = new java.util.ArrayList<>();
+        boolean inQuotes = false;
+        StringBuilder sb = new StringBuilder();
+        for (char c : line.toCharArray()) {
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                result.add(sb.toString());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        result.add(sb.toString());
+        return result.toArray(new String[0]);
     }
 
     /**
@@ -252,14 +259,14 @@ public class CsvImportService {
                     continue;
                 }
 
-                String name      = cols.length > 0 ? cols[0].trim() : "";
-                String taxId     = cols.length > 1 ? cols[1].trim() : "";
-                String email     = cols.length > 2 ? cols[2].trim() : "";
-                String phone     = cols.length > 3 ? cols[3].trim() : "";
-                String address   = cols.length > 4 ? cols[4].trim() : "";
-                String city      = cols.length > 5 ? cols[5].trim() : "";
+                String name = cols.length > 0 ? cols[0].trim() : "";
+                String taxId = cols.length > 1 ? cols[1].trim() : "";
+                String email = cols.length > 2 ? cols[2].trim() : "";
+                String phone = cols.length > 3 ? cols[3].trim() : "";
+                String address = cols.length > 4 ? cols[4].trim() : "";
+                String city = cols.length > 5 ? cols[5].trim() : "";
                 String postalCode = cols.length > 6 ? cols[6].trim() : "";
-                String typeStr   = cols.length > 7 ? cols[7].trim().toUpperCase() : "INDIVIDUAL";
+                String typeStr = cols.length > 7 ? cols[7].trim().toUpperCase() : "INDIVIDUAL";
 
                 // Validate NIF before proceeding to avoid transaction rollback marking
                 if (!taxId.isEmpty() && !nifCifValidator.isValid(taxId)) {
@@ -338,5 +345,3 @@ public class CsvImportService {
         return DEFAULT_VAT;
     }
 }
-
-

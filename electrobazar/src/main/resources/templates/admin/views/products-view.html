@@ -30,9 +30,7 @@
     <div class="tab-content" id="mgmtTabsContent">
         <!-- Tab: Productos -->
         <div class="tab-pane fade show active" id="products-pane" role="tabpanel">
-            <div th:replace="~{fragments/product-filter :: sharedFilterBar}"></div>
-
-            <div class="d-flex justify-content-end mt-2 mb-2 gap-2">
+            <div class="d-flex justify-content-end mb-3 gap-2">
                 <input type="file" id="csvFileInput" accept=".csv" style="display: none;"
                     onchange="uploadCsvFile(this)">
                 <button class="btn-nuevo" onclick="document.getElementById('csvFileInput').click()"
@@ -44,6 +42,8 @@
                     <i class="bi bi-plus-lg me-1"></i> <span th:text="#{admin.inventory.new}">Nuevo</span>
                 </button>
             </div>
+
+            <div th:replace="~{fragments/product-filter :: sharedFilterBar}"></div>
 
             <div class="admin-table-wrap mt-3">
                 <table class="admin-table" id="productsTable">
@@ -86,7 +86,7 @@
                                 <span th:unless="${p.taxRate != null && p.taxRate.vatRate != null}"
                                     style="color:var(--text-muted)">-</span>
                             </td>
-                            <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);text-align:right"
+                            <td style="font-size:1rem;font-weight:700;color:var(--accent);text-align:right"
                                 th:text="${#numbers.formatDecimal(p.price, 1, 2, 'COMMA')} + ' €'">
                             </td>
                             <td>
@@ -175,12 +175,19 @@
 
         <!-- Tab: Categorí­as -->
         <div class="tab-pane fade" id="categories-pane" role="tabpanel">
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn-nuevo" onclick="openCategoryModal()">
+                    <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.categories.new}">Nueva
+                        Categoría</span>
+                </button>
+            </div>
+
             <div class="filter-bar-custom">
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label small mb-1" style="color: var(--text-main);"><i
                                 class="bi bi-search me-2"></i><span
-                                th:text="#{admin.inventory.categories.search}">Buscar categorí­a</span></label>
+                                th:text="#{admin.inventory.categories.search}">Buscar categoría</span></label>
                         <input type="text" id="categoryFilterSearch" class="form-control form-control-sm"
                             th:placeholder="#{admin.inventory.categories.search.placeholder}"
                             oninput="debounceSharedFilter()">
@@ -211,11 +218,7 @@
                     </div>
                 </div>
             </div>
-            <div class="d-flex justify-content-end mt-2 mb-2">
-                <button class="btn-nuevo" onclick="openCategoryModal()">
-                    <i class="bi bi-plus-lg"></i> <span th:text="#{admin.inventory.categories.new}">Nueva
-                        Categorí­a</span>
-                </button>
+</button>
             </div>
             <div class="admin-table-wrap">
                 <table class="admin-table" id="categoriesTable">

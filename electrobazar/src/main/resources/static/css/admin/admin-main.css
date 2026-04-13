@@ -308,40 +308,6 @@
             margin-bottom: 1.5rem;
         }
 
-        .activity-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .activity-item {
-            display: flex;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--secondary);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-        }
-
-        .activity-icon {
-            font-size: 1.25rem;
-        }
-
-        .activity-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .badge-stock-low {
-            background: rgba(231, 76, 60, 0.15);
-            color: #ff6b6b;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.75rem;
-            border: 1px solid rgba(231, 76, 60, 0.3);
-        }
-
         /* ── Content ── */
         .admin-body {
             flex: 1;

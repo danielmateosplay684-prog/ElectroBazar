@@ -111,7 +111,7 @@
                             <span
                                 th:text="${ret.paymentMethod != null && ret.paymentMethod.name() == 'CASH'} ? #{admin.invoices.payment.cash} : #{admin.invoices.payment.card}"></span>
                         </td>
-                        <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(danger);text-align:right"
+                        <td style="font-size:1rem;font-weight:700;color:var(danger);text-align:right"
                             th:text="'-' + ${#numbers.formatDecimal(ret.totalRefunded,1,2)} + ' '"></td>
                         <td style="text-align:right">
                             <button type="button" class="btn-icon" th:title="#{admin.common.preview}"

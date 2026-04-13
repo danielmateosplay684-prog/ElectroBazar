@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="modal">
@@ -14,6 +14,7 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
+                            <form id="couponForm">
                             <input type="hidden" id="couponId">
                             <div class="mb-3">
                                 <label class="form-label small fw-bold"><span
@@ -132,6 +133,7 @@
                                     <!-- Chips for selected categories -->
                                 </div>
                             </div>
+                        </form>
                         </div>
                         <div class="modal-footer border-0">
                             <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"

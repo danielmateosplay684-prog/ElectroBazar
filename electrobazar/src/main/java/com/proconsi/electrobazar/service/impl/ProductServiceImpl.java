@@ -146,7 +146,7 @@ public class ProductServiceImpl implements ProductService {
         activityLogService.logActivity(
                 "CREAR_PRODUCTO",
                 "Nuevo producto añadido: " + saved.getName(),
-                "Admin",
+                "Sistema",
                 "PRODUCT",
                 saved.getId());
         return saved;
@@ -214,7 +214,7 @@ public class ProductServiceImpl implements ProductService {
         activityLogService.logActivity(
                 "ACTUALIZAR_PRODUCTO",
                 "Producto actualizado: " + saved.getName(),
-                "Admin",
+                "Sistema",
                 "PRODUCT",
                 saved.getId());
         return saved;
@@ -235,7 +235,7 @@ public class ProductServiceImpl implements ProductService {
         activityLogService.logActivity(
                 "ELIMINAR_PRODUCTO",
                 "Producto desactivado: " + product.getName(),
-                "Admin",
+                "Sistema",
                 "PRODUCT",
                 product.getId());
     }
@@ -261,7 +261,7 @@ public class ProductServiceImpl implements ProductService {
         activityLogService.logActivity(
                 "ELIMINAR_PRODUCTO_HARD",
                 "Producto eliminado permanentemente: " + product.getName(),
-                "Admin",
+                "Sistema",
                 "PRODUCT",
                 id);
     }
@@ -280,7 +280,7 @@ public class ProductServiceImpl implements ProductService {
 
         // Audit log (only once per call)
         activityLogService.logActivity("AJUSTE_STOCK",
-                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Admin", "PRODUCT",
+                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Sistema", "PRODUCT",
                 productId);
     }
 
@@ -302,7 +302,7 @@ public class ProductServiceImpl implements ProductService {
         product.setStock(newStock);
         productRepository.save(product);
         activityLogService.logActivity("AJUSTE_STOCK",
-                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(), "Admin",
+                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(), "Sistema",
                 "PRODUCT", product.getId());
     }
 
@@ -336,7 +336,7 @@ public class ProductServiceImpl implements ProductService {
         activityLogService.logActivity("APLICAR_IVA_MASIVO",
                 "Actualización masiva de IVA: " + newRate.getDescription()
                         + " (aplicado a todos los productos coincidentes)",
-                "Admin", "TAX_RATE", newTaxRateId);
+                "Sistema", "TAX_RATE", newTaxRateId);
     }
 
     @Override

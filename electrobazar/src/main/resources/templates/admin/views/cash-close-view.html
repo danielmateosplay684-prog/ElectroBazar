@@ -87,11 +87,11 @@
                             th:text="${register.closedAt != null ? #temporals.format(register.closedAt, 'dd/MM/yyyy HH:mm') : '—'}">
                         </td>
 
-                        <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right"
+                        <td style="font-weight:600;text-align:right"
                             th:text="${#numbers.formatDecimal((register.openingBalance ?: 0) + (register.totalSales ?: 0), 1, 2)} + ' '">
                         </td>
 
-                        <td style="font-family:'Barlow Condensed',sans-serif;font-weight:600;text-align:right"
+                        <td style="font-weight:600;text-align:right"
                             th:text="${#numbers.formatDecimal(register.closingBalance ?: 0, 1, 2)} + ' '">
                         </td>
 

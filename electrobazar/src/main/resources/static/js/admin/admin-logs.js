@@ -23,57 +23,67 @@ function fetchActivityLogs(page) {
 }
 
 function renderActivityLogs(logs) {
-    const container = document.getElementById('activityFeedContainer');
-    if (!container) return;
-    container.innerHTML = '';
+    const tbody = document.getElementById('activityTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
     if (logs.length === 0) {
-        container.innerHTML = '<div class="text-center py-4 text-muted">No hay registros de actividad.</div>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">No hay registros de actividad que coincidan con los filtros.</td></tr>';
         return;
     }
 
     logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'log-item';
-        div.innerHTML = `
-            <div class="log-icon"><i class="bi bi-info-circle"></i></div>
-            <div class="log-content">
-                <div class="log-header">
-                    <span class="log-worker">${escHtml(log.username || '-')}</span>
-                    <span class="log-time">${formatTimeAgo(log.timestamp)}</span>
-                </div>
-                <div class="log-message">${escHtml(log.description)}</div>
-            </div>
+        const tr = document.createElement('tr');
+        
+        let displayUser = (log.username || 'Sistema').trim();
+        if (displayUser === 'Admin') displayUser = 'Sistema';
+
+        let levelBadge = '<span class="badge-active yes">INFO</span>';
+        if (log.level === 'WARN') levelBadge = '<span class="badge-active" style="background:rgba(241,196,15,0.15); color:#f1c40f;">WARN</span>';
+        if (log.level === 'ERROR' || log.level === 'CRITICAL') levelBadge = '<span class="badge-active no">ERROR</span>';
+        
+        const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '—';
+        
+        tr.innerHTML = `
+            <td class="text-center">${levelBadge}</td>
+            <td style="white-space:nowrap; color:var(--text-muted); font-size:0.8rem;">${timestamp}</td>
+            <td><strong style="color:var(--text-main);">${escHtml(displayUser)}</strong></td>
+            <td><span class="badge bg-secondary text-main border border-border" style="font-size:0.7rem; font-weight:700;">${escHtml(log.action || 'GENERAL')}</span></td>
+            <td style="font-size:0.85rem; color:var(--text-main); opacity:0.8;">${escHtml(log.description)}</td>
         `;
-        container.appendChild(div);
+        tbody.appendChild(tr);
     });
 }
 
 function renderActivityPagination(data) {
-    const container = document.getElementById('activityFeedContainer');
+    const container = document.getElementById('activityPaginationContainer');
     if (!container) return;
+    container.innerHTML = '';
     
     const totalPages = data.totalPages;
     const currentPage = data.currentPage;
     if (totalPages <= 1) return;
 
-    const pagination = document.createElement('nav');
-    pagination.innerHTML = `
-        <ul class="pagination justify-content-center mt-3">
-            <li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
-                <button class="page-link" onclick="fetchActivityLogs(${currentPage - 1})">Anterior</button>
-            </li>
-            ${Array.from({length: totalPages}, (_, i) => `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <button class="page-link" onclick="fetchActivityLogs(${i})">${i + 1}</button>
-                </li>
-            `).join('')}
-            <li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
-                <button class="page-link" onclick="fetchActivityLogs(${currentPage + 1})">Siguiente</button>
-            </li>
-        </ul>
+    const wrap = document.createElement('div');
+    wrap.className = 'pagination-wrap rounded-bottom mt-0';
+    wrap.innerHTML = `
+        <button class="pagination-btn" ${currentPage === 0 ? 'disabled' : ''} onclick="fetchActivityLogs(${currentPage - 1})">
+            <i class="bi bi-chevron-left"></i> <span>Anterior</span>
+        </button>
+        
+        <div class="pagination-info">
+            Página <strong>${currentPage + 1}</strong> de <strong>${totalPages}</strong>
+        </div>
+        
+        <div class="pagination-jump">
+            <input type="number" value="${currentPage + 1}" min="1" max="${totalPages}" onchange="if(this.value > 0 && this.value <= ${totalPages}) fetchActivityLogs(this.value - 1)">
+        </div>
+
+        <button class="pagination-btn" ${currentPage === totalPages - 1 ? 'disabled' : ''} onclick="fetchActivityLogs(${currentPage + 1})">
+            <span>Siguiente</span> <i class="bi bi-chevron-right"></i>
+        </button>
     `;
-    container.appendChild(pagination);
+    container.appendChild(wrap);
 }
 
 function filterActivity() {

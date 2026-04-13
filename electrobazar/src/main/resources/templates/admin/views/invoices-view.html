@@ -132,7 +132,7 @@
                             <span
                                 th:text="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH'} ? #{admin.invoices.payment.cash} : #{admin.invoices.payment.card}"></span>
                         </td>
-                        <td style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text-main);text-align:right"
+                        <td style="font-size:1rem;font-weight:700;color:var(--text-main);text-align:right"
                             th:text="${#numbers.formatDecimal(sale.totalAmount,1,2)} + ' '"></td>
                         <td style="text-align:right">
                             <div style="display:flex;gap:0.4rem;justify-content:flex-end">

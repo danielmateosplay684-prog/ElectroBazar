@@ -98,10 +98,10 @@
                                     </td>
                                     <td class="text-end fw-bold py-2 price-cell price-base"
                                         th:attr="data-product-id=${p.id}, data-tariff-id='base'"
-                                        style="font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; color: #8892a4;"
+                                        style="font-size: 1rem; color: #8892a4;"
                                         th:text="${#numbers.formatDecimal(p.price, 1, 2, 'COMMA') + ' '}"></td>
                                     <td th:each="t : ${tariffs}" th:if="${t.active}" class="text-end py-2"
-                                        style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                                        style="font-weight: 700; font-size: 1.05rem;">
                                         <span th:if="${p.price != null and t.discountPercentage != null}"
                                             class="price-value"
                                             th:with="discountedPrice=${p.price.multiply(T(java.math.BigDecimal).ONE.subtract(t.discountPercentage.divide(new java.math.BigDecimal('100'), 4, T(java.math.RoundingMode).HALF_UP)))}"

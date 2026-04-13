@@ -16,7 +16,7 @@
             </span>
         </div>
 
-        <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
+        <div class="filter-bar-custom mb-3">
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label small mb-1" style="color: var(--text-main);"><i
@@ -63,9 +63,23 @@
             </div>
         </div>
 
-        <div class="activity-feed" id="activityFeedContainer">
-            <!-- data loaded via JS -->
+        <div class="admin-table-wrap mt-3">
+            <table class="admin-table" id="activityTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">LVL</th>
+                        <th th:text="#{admin.activity.time}">Fecha/Hora</th>
+                        <th th:text="#{admin.activity.user}">Usuario</th>
+                        <th th:text="#{admin.activity.action}">Acción</th>
+                        <th th:text="#{admin.activity.desc}">Descripción</th>
+                    </tr>
+                </thead>
+                <tbody id="activityTableBody">
+                    <!-- data loaded via JS -->
+                </tbody>
+            </table>
         </div>
+        <div id="activityPaginationContainer"></div>
     </div>
 
 </th:block>
