@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,52 +58,66 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
 
     @Override
     public List<LocalDate> getDistinctValidFromDates(Long tariffId) {
-        return tariffPriceHistoryRepository.findDistinctValidFromByTariffId(tariffId);
+        return tariffPriceHistoryRepository.findDistinctValidFromByTariffId(tariffId).stream()
+                .map(sqlDate -> sqlDate.toLocalDate())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<LocalTime> getVersionsForDate(Long tariffId, LocalDate date) {
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+        return tariffPriceHistoryRepository.findVersionsForTariffAndDayRange(tariffId, start, end).stream()
+                .map(LocalDateTime::toLocalTime)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
     public Page<TariffPriceEntryDTO> getCurrentPricesForTariff(Long tariffId, Pageable pageable) {
-        return getPricesForTariffAtDate(tariffId, LocalDate.now(), pageable);
+        // Just return current data snapshot (use LocalDateTime.now() for approximation or latest specific)
+        return getPricesForTariffAtExactDateTime(tariffId, LocalDate.now(), LocalTime.now(), pageable);
     }
 
     @Override
-    public Page<TariffPriceEntryDTO> getPricesForTariffAtDate(Long tariffId, LocalDate date, Pageable pageable) {
-        Page<TariffPriceHistory> historyPage = tariffPriceHistoryRepository.findByTariffIdAndDate(tariffId, date, pageable);
+    public Page<TariffPriceEntryDTO> getPricesForTariffAtExactDateTime(Long tariffId, LocalDate date, LocalTime time,
+            Pageable pageable) {
+        LocalDateTime targetDateTime = (time != null) ? date.atTime(time) : date.atTime(LocalTime.MAX);
+        
+        // Buscamos los registros que estaban activos en ese instante exacto
+        Page<TariffPriceHistory> historyPage = tariffPriceHistoryRepository.findByTariffIdAndDateTime(tariffId,
+                targetDateTime, pageable);
 
-        return historyPage.map(h -> TariffPriceEntryDTO.builder()
+        return historyPage.map(this::mapToDTO);
+    }
+
+    @Override
+    public List<TariffPriceEntryDTO> getPricesForTariffAtExactDateTimeList(Long tariffId, LocalDate date, LocalTime time) {
+        LocalDateTime targetDateTime = (time != null) ? date.atTime(time) : date.atTime(LocalTime.MAX);
+        
+        // Buscamos los registros activos en ese instante para la lista completa
+        List<TariffPriceHistory> histories = tariffPriceHistoryRepository.findAllByTariffIdAndDateTime(tariffId,
+                targetDateTime);
+
+        return histories.stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    private TariffPriceEntryDTO mapToDTO(TariffPriceHistory h) {
+        return TariffPriceEntryDTO.builder()
                 .productId(h.getProduct().getId()).productName(h.getProduct().getName())
                 .categoryName(h.getProduct().getCategory() != null ? h.getProduct().getCategory().getName()
                         : "Uncategorized")
                 .basePrice(h.getBasePrice()).netPrice(h.getNetPrice()).vatRate(h.getVatRate())
                 .priceWithVat(h.getPriceWithVat())
                 .reRate(h.getReRate())
-                .priceWithRe(h.getPriceWithRe() != null ? h.getPriceWithRe() : h.getPriceWithVat())
+                .priceWithRe(h.getPriceWithRe() != null ? h.getPriceWithRe() : h.getNetPrice())
                 .vatAmount(h.getPriceWithVat().subtract(h.getNetPrice()))
                 .reAmount(h.getPriceWithRe() != null ? h.getPriceWithRe().subtract(h.getPriceWithVat())
                         : BigDecimal.ZERO)
-                .discountPercent(h.getDiscountPercent()).validFrom(h.getValidFrom()).validTo(h.getValidTo())
-                .isFromHistory(true).build());
-    }
-
-    @Override
-    public List<TariffPriceEntryDTO> getPricesForTariffAtDateList(Long tariffId, LocalDate date) {
-        List<TariffPriceHistory> histories = tariffPriceHistoryRepository.findAllByTariffIdAndDate(tariffId, date);
-
-        return histories.stream()
-                .map(h -> TariffPriceEntryDTO.builder()
-                        .productId(h.getProduct().getId()).productName(h.getProduct().getName())
-                        .categoryName(h.getProduct().getCategory() != null ? h.getProduct().getCategory().getName()
-                                : "Uncategorized")
-                        .basePrice(h.getBasePrice()).netPrice(h.getNetPrice()).vatRate(h.getVatRate())
-                        .priceWithVat(h.getPriceWithVat())
-                        .reRate(h.getReRate())
-                        .priceWithRe(h.getPriceWithRe() != null ? h.getPriceWithRe() : h.getPriceWithVat())
-                        .vatAmount(h.getPriceWithVat().subtract(h.getNetPrice()))
-                        .reAmount(h.getPriceWithRe() != null ? h.getPriceWithRe().subtract(h.getPriceWithVat())
-                                : BigDecimal.ZERO)
-                        .discountPercent(h.getDiscountPercent()).validFrom(h.getValidFrom()).validTo(h.getValidTo())
-                        .isFromHistory(true).build())
-                .collect(Collectors.toList());
+                .discountPercent(h.getDiscountPercent())
+                .validFrom(h.getValidFrom().toLocalDate())
+                .validTo(h.getValidTo() != null ? h.getValidTo().toLocalDate() : null)
+                .isFromHistory(true).build();
     }
 
     @Override
@@ -133,7 +149,6 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
 
             // Usamos el método optimizado para evitar consultas N+1
             List<Product> products = productRepository.findAllActiveForSnapshot();
-            LocalDate today = LocalDate.now();
             Map<BigDecimal, BigDecimal> reRateMap = recargoCalculator.getVatToReRateMap();
 
             List<TariffPriceHistory> snapshots = new ArrayList<>();
@@ -141,6 +156,8 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
                     : BigDecimal.ZERO;
             BigDecimal discountMult = BigDecimal.ONE.subtract(
                     discountPercent.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
+
+            LocalDateTime snapshotTime = LocalDateTime.now();
 
             for (Product product : products) {
                 BigDecimal grossPrice = product.getPrice();
@@ -171,8 +188,8 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
                         .priceWithRe(
                                 net.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(4, RoundingMode.HALF_UP))
                         .discountPercent(discountPercent)
-                        .validFrom(today)
-                        .createdAt(java.time.LocalDateTime.now())
+                        .validFrom(snapshotTime)
+                        .createdAt(snapshotTime)
                         .build());
 
                 // Lotes de 1000 para máximo rendimiento en MySQL
@@ -189,6 +206,13 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
                 tariffPriceHistoryRepository.flush();
                 entityManager.clear();
             }
+
+            // --- SINCRONIZACIÓN DE VERSIÓN ---
+            // El proceso puede tardar varios segundos/minutos. Forzamos que todos los registros
+            // compartan exactamente el mismo segundo de finalización para agruparlos como una única versión.
+            LocalDateTime endTime = LocalDateTime.now();
+            tariffPriceHistoryRepository.updateValidFromForTariffAndTime(tariffId, snapshotTime, endTime);
+            // ----------------------------------
 
             log.info("Finalizada generación de snapshot inicial para tarifa {}. Productos procesados: {}",
                     tariff.getName(), products.size());

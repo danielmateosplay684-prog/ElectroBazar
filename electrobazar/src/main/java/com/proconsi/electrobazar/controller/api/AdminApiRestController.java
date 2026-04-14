@@ -30,6 +30,8 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping({"/api/admin", "/admin/api"})
+@RequestMapping({ "/api/admin", "/admin/api" })
 @RequiredArgsConstructor
 public class AdminApiRestController {
 
@@ -106,7 +108,8 @@ public class AdminApiRestController {
 
         List<AdminSaleListingDTO> list = salesPage.getContent().stream().map(s -> AdminSaleListingDTO.builder()
                 .id(s.getId())
-                .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber() : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
+                .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber()
+                        : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
                 .createdAt(s.getCreatedAt())
                 .type(s.getInvoice() != null ? "factura" : "ticket")
                 .status(s.getStatus() != null ? s.getStatus().name() : "ACTIVE")
@@ -187,14 +190,17 @@ public class AdminApiRestController {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<com.proconsi.electrobazar.model.Category> categoriesPage = categoryService.getFilteredCategories(search, pageable);
+        Page<com.proconsi.electrobazar.model.Category> categoriesPage = categoryService.getFilteredCategories(search,
+                pageable);
 
-        List<AdminCategoryListingDTO> list = categoriesPage.getContent().stream().map(c -> AdminCategoryListingDTO.builder()
-                .id(c.getId())
-                .name(c.getNameEs())
-                .description(c.getDescriptionEs())
-                .active(Boolean.TRUE.equals(c.getActive()))
-                .build()).collect(java.util.stream.Collectors.toList());
+        List<AdminCategoryListingDTO> list = categoriesPage.getContent().stream()
+                .map(c -> AdminCategoryListingDTO.builder()
+                        .id(c.getId())
+                        .name(c.getNameEs())
+                        .description(c.getDescriptionEs())
+                        .active(Boolean.TRUE.equals(c.getActive()))
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
@@ -222,18 +228,20 @@ public class AdminApiRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
         Page<CashRegister> pageData = cashRegisterService.getFilteredRegisters(worker, date, pageable);
 
-        List<AdminCashClosingListingDTO> list = pageData.getContent().stream().map(r -> AdminCashClosingListingDTO.builder()
-                .id(r.getId())
-                .openingTime(r.getOpeningTime())
-                .closedAt(r.getClosedAt())
-                .openingBalance(r.getOpeningBalance())
-                .totalSales(r.getTotalSales())
-                .totalCalculated((r.getOpeningBalance() != null ? r.getOpeningBalance() : BigDecimal.ZERO)
-                        .add(r.getTotalSales() != null ? r.getTotalSales() : BigDecimal.ZERO))
-                .closingBalance(r.getClosingBalance())
-                .difference(r.getDifference())
-                .workerUsername(r.getWorker() != null ? r.getWorker().getUsername() : "Sistema")
-                .build()).toList();
+        List<AdminCashClosingListingDTO> list = pageData.getContent().stream()
+                .map(r -> AdminCashClosingListingDTO.builder()
+                        .id(r.getId())
+                        .openingTime(r.getOpeningTime())
+                        .closedAt(r.getClosedAt())
+                        .openingBalance(r.getOpeningBalance())
+                        .totalSales(r.getTotalSales())
+                        .totalCalculated((r.getOpeningBalance() != null ? r.getOpeningBalance() : BigDecimal.ZERO)
+                                .add(r.getTotalSales() != null ? r.getTotalSales() : BigDecimal.ZERO))
+                        .closingBalance(r.getClosingBalance())
+                        .difference(r.getDifference())
+                        .workerUsername(r.getWorker() != null ? r.getWorker().getUsername() : "Sistema")
+                        .build())
+                .toList();
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
@@ -268,13 +276,17 @@ public class AdminApiRestController {
         List<AdminReturnListingDTO> list = pageData.getContent().stream().map(r -> AdminReturnListingDTO.builder()
                 .id(r.getId())
                 .returnNumber(r.getReturnNumber())
-                .originalNumber(r.getOriginalSale().getInvoice() != null ? r.getOriginalSale().getInvoice().getInvoiceNumber() : 
-                                (r.getOriginalSale().getTicket() != null ? r.getOriginalSale().getTicket().getTicketNumber() : "#" + r.getOriginalSale().getId()))
+                .originalNumber(r.getOriginalSale().getInvoice() != null
+                        ? r.getOriginalSale().getInvoice().getInvoiceNumber()
+                        : (r.getOriginalSale().getTicket() != null ? r.getOriginalSale().getTicket().getTicketNumber()
+                                : "#" + r.getOriginalSale().getId()))
                 .createdAt(r.getCreatedAt())
                 .type(r.getType() != null ? r.getType().name() : "Desconocido")
                 .reason(r.getReason())
                 .workerUsername(r.getWorker() != null ? r.getWorker().getUsername() : "—")
-                .paymentMethod(r.getPaymentMethod() != null ? (r.getPaymentMethod() == PaymentMethod.CASH ? "Efectivo" : "Tarjeta") : "—")
+                .paymentMethod(r.getPaymentMethod() != null
+                        ? (r.getPaymentMethod() == PaymentMethod.CASH ? "Efectivo" : "Tarjeta")
+                        : "—")
                 .amount(r.getTotalRefunded())
                 .ticketUrl("/admin/return/" + r.getId())
                 .build()).toList();
@@ -347,22 +359,23 @@ public class AdminApiRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
         Page<Role> pageData = roleService.getFilteredRoles(search, permissions, pageable);
 
-        // Filter out ADMIN role from the management table listing to avoid accidental deletion/modification
+        // Filter out ADMIN role from the management table listing to avoid accidental
+        // deletion/modification
         List<AdminRoleListingDTO> list = pageData.getContent().stream()
-            .filter(r -> !"ADMIN".equalsIgnoreCase(r.getName()))
-            .map(r -> {
-                long count = workerRepository.findAll().stream()
-                    .filter(w -> w.getRole() != null && w.getRole().getId().equals(r.getId()))
-                    .count();
-                Set<String> perms = new HashSet<>(r.getPermissions());
-                return AdminRoleListingDTO.builder()
-                        .id(r.getId())
-                        .name(r.getName())
-                        .description(r.getDescription())
-                        .permissions(perms)
-                        .workerCount(count)
-                        .build();
-            }).toList();
+                .filter(r -> !"ADMIN".equalsIgnoreCase(r.getName()))
+                .map(r -> {
+                    long count = workerRepository.findAll().stream()
+                            .filter(w -> w.getRole() != null && w.getRole().getId().equals(r.getId()))
+                            .count();
+                    Set<String> perms = new HashSet<>(r.getPermissions());
+                    return AdminRoleListingDTO.builder()
+                            .id(r.getId())
+                            .name(r.getName())
+                            .description(r.getDescription())
+                            .permissions(perms)
+                            .workerCount(count)
+                            .build();
+                }).toList();
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
@@ -390,11 +403,16 @@ public class AdminApiRestController {
         // Convert string filters to typed values
         Customer.CustomerType customerType = null;
         if (type != null && !type.isBlank()) {
-            try { customerType = Customer.CustomerType.valueOf(type); } catch (Exception ignored) {}
+            try {
+                customerType = Customer.CustomerType.valueOf(type);
+            } catch (Exception ignored) {
+            }
         }
         Boolean hasRecargo = null;
-        if ("yes".equalsIgnoreCase(re)) hasRecargo = true;
-        else if ("no".equalsIgnoreCase(re)) hasRecargo = false;
+        if ("yes".equalsIgnoreCase(re))
+            hasRecargo = true;
+        else if ("no".equalsIgnoreCase(re))
+            hasRecargo = false;
 
         // Whitelist allowed sort fields
         Set<String> allowedSort = Set.of("id", "name", "taxId", "city");
@@ -404,8 +422,7 @@ public class AdminApiRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
         Page<Customer> pageData = customerService.getFilteredCustomers(search, customerType, hasRecargo, pageable);
 
-        List<AdminCustomerListingDTO> list = pageData.getContent().stream().map(c -> 
-            AdminCustomerListingDTO.builder()
+        List<AdminCustomerListingDTO> list = pageData.getContent().stream().map(c -> AdminCustomerListingDTO.builder()
                 .id(c.getId())
                 .name(c.getName())
                 .taxId(c.getTaxId())
@@ -417,8 +434,7 @@ public class AdminApiRestController {
                 .tariffId(c.getTariff() != null ? c.getTariff().getId() : null)
                 .tariffName(c.getTariff() != null ? c.getTariff().getName() : null)
                 .tariffColor(c.getTariff() != null ? c.getTariff().getColor() : null)
-                .build()
-        ).toList();
+                .build()).toList();
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
@@ -430,37 +446,9 @@ public class AdminApiRestController {
     }
 
     /**
-     * Paginated list of future (scheduled) prices with server-side filtering.
-     */
-    @GetMapping("/future-prices")
-    public ResponseEntity<Map<String, Object>> getFuturePricesPage(
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
-            @RequestParam(defaultValue = "startDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-
-        Set<String> allowedSort = Set.of("id", "startDate", "price");
-        String safeSort = allowedSort.contains(sortBy) ? sortBy : "startDate";
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<ProductPrice> pageData = productPriceService.getFilteredFuturePrices(search, pageable);
-
-        List<ProductPriceResponse> list = pageData.getContent().stream()
-                .map(p -> productPriceService.toResponse(p, false))
-                .toList();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
+     * Paginated list of system activity logs with server-side filtering.
+     * 
+     * /**
      * Paginated list of system activity logs with server-side filtering.
      */
     @GetMapping("/activity-logs")
@@ -500,25 +488,25 @@ public class AdminApiRestController {
         String pin = body.get("pin");
         if (adminPinService.verifyPin(pin)) {
             // Escalation logic for API/Mobile: Return a new token with ADMIN_ACCESS
-            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-                if (auth != null && auth.isAuthenticated()) {
-                    String username = auth.getName();
-                    Optional<Worker> workerOpt = workerService.findByUsername(username);
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                String username = auth.getName();
+                Optional<Worker> workerOpt = workerService.findByUsername(username);
 
-                    if (workerOpt.isPresent()) {
-                        Worker worker = workerOpt.get();
-                        Set<String> permissions = worker.getEffectivePermissions();
-                        permissions.add("ACCESO_TOTAL_ADMIN"); // Temporarily escalate for this token
+                if (workerOpt.isPresent()) {
+                    Worker worker = workerOpt.get();
+                    Set<String> permissions = worker.getEffectivePermissions();
+                    permissions.add("ACCESO_TOTAL_ADMIN"); // Temporarily escalate for this token
 
-                        String newToken = jwtService.generateToken(worker.getUsername(), worker.getId(), permissions);
-                        return ResponseEntity.ok(Map.of(
-                                "ok", true,
-                                "token", newToken,
-                                "worker", worker
-                        ));
-                    }
+                    String newToken = jwtService.generateToken(worker.getUsername(), worker.getId(), permissions);
+                    return ResponseEntity.ok(Map.of(
+                            "ok", true,
+                            "token", newToken,
+                            "worker", worker));
                 }
-                return ResponseEntity.ok(Map.of("ok", true));
+            }
+            return ResponseEntity.ok(Map.of("ok", true));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "PIN incorrecto"));
         }
@@ -664,12 +652,16 @@ public class AdminApiRestController {
     @GetMapping("/tariffs/{id}/history/pdf")
     public ResponseEntity<Resource> downloadTariffPdf(
             @PathVariable Long id,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time) {
         Tariff tariff = tariffService.findById(id).orElseThrow(() -> new RuntimeException("Tarifa no encontrada"));
         LocalDate targetDate = date != null ? date : LocalDate.now();
-        List<TariffPriceEntryDTO> history = tariffPriceHistoryService.getPricesForTariffAtDateList(id, targetDate);
+        LocalTime targetTime = time != null ? time : LocalTime.now();
+
+        List<TariffPriceEntryDTO> history = tariffPriceHistoryService.getPricesForTariffAtExactDateTimeList(id, targetDate, targetTime);
         byte[] pdfData = pdfReportService.generateTariffSheet(tariff, history, targetDate);
-        String filename = String.format("Tarifa_%s_%s.pdf", tariff.getName(), targetDate);
+        String filename = String.format("Tarifa_%s_%s_%s.pdf", tariff.getName(), targetDate,
+                targetTime.toString().replace(":", "-"));
         return createPdfResponse(pdfData, filename);
     }
 
@@ -722,6 +714,7 @@ public class AdminApiRestController {
 
     /**
      * Retrieves the current mail settings (SMTP).
+     * 
      * @return Map of mail configuration.
      */
     @GetMapping("/mail-settings")
@@ -736,15 +729,20 @@ public class AdminApiRestController {
 
     /**
      * Updates mail settings (SMTP) and encrypts the password.
+     * 
      * @param body Payload with host, port, username and password.
      * @return 200 OK.
      */
     @PostMapping("/mail-settings")
     public ResponseEntity<?> saveMailSettings(@RequestBody Map<String, String> body) {
-        if (body.get("host") != null) saveAppSetting("mail.host", body.get("host"));
-        if (body.get("port") != null) saveAppSetting("mail.port", body.get("port"));
-        if (body.get("username") != null) saveAppSetting("mail.username", body.get("username"));
-        if (body.get("password") != null && !body.get("password").isBlank() && !body.get("password").equals("••••••••")) {
+        if (body.get("host") != null)
+            saveAppSetting("mail.host", body.get("host"));
+        if (body.get("port") != null)
+            saveAppSetting("mail.port", body.get("port"));
+        if (body.get("username") != null)
+            saveAppSetting("mail.username", body.get("username"));
+        if (body.get("password") != null && !body.get("password").isBlank()
+                && !body.get("password").equals("••••••••")) {
             saveAppSetting("mail.password", aesEncryptionUtil.encrypt(body.get("password")));
         }
         return ResponseEntity.ok(Map.of("message", "Configuración guardada correctamente"));
@@ -752,6 +750,7 @@ public class AdminApiRestController {
 
     /**
      * Updates the admin PIN securely.
+     * 
      * @param body Payload with currentPin and newPin.
      * @return 200 OK or error message.
      */
@@ -834,6 +833,7 @@ public class AdminApiRestController {
 
     /**
      * Bulk updates multiple prices (base and tariffs) in a single transaction.
+     * 
      * @param request The price matrix update request.
      * @return 200 OK.
      */

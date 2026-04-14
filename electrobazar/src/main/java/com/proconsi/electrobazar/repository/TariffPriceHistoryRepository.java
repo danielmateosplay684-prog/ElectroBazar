@@ -2,11 +2,13 @@ package com.proconsi.electrobazar.repository;
 
 import com.proconsi.electrobazar.model.TariffPriceHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -20,7 +22,8 @@ import org.springframework.data.domain.Pageable;
 public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceHistory, Long> {
 
     /**
-     * Retrieves the chronological price history (most recent first) for a specific product.
+     * Retrieves the chronological price history (most recent first) for a specific
+     * product.
      */
     List<TariffPriceHistory> findByProductIdOrderByValidFromDesc(Long productId);
 
@@ -28,11 +31,12 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
      * Retrieves all price histories associated with a specific tariff.
      */
     List<TariffPriceHistory> findByTariffIdOrderByValidFromDesc(Long tariffId);
-    
+
     boolean existsByTariffId(Long tariffId);
 
     @Query("SELECT t FROM TariffPriceHistory t WHERE t.product.id = :productId AND t.tariff.id = :tariffId AND t.validTo IS NULL")
-    Optional<TariffPriceHistory> findCurrentByProductAndTariff(@Param("productId") Long productId, @Param("tariffId") Long tariffId);
+    Optional<TariffPriceHistory> findCurrentByProductAndTariff(@Param("productId") Long productId,
+            @Param("tariffId") Long tariffId);
 
     /**
      * Efficiently retrieves active price history records for many products in bulk.
@@ -42,28 +46,53 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
     List<TariffPriceHistory> findAllCurrentByProductIds(@Param("productIds") List<Long> productIds);
 
     /**
-     * Lists distinct dates when historical price transitions occurred for a tariff.
+     * Lists distinct dates (days) when historical price transitions occurred for a
+     * tariff.
      */
-    @Query("SELECT DISTINCT t.validFrom FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId ORDER BY t.validFrom DESC")
-    List<LocalDate> findDistinctValidFromByTariffId(@Param("tariffId") Long tariffId);
+    @Query("SELECT DISTINCT CAST(t.validFrom AS date) FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId ORDER BY 1 DESC")
+    List<java.sql.Date> findDistinctValidFromByTariffId(@Param("tariffId") Long tariffId);
 
     /**
-     * Finds price records that were active at a specific point in time for a given tariff.
+     * Finds price records that were active at a specific point in time for a given
+     * tariff.
      */
-    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :date AND (t.validTo >= :date OR t.validTo IS NULL)")
-    Page<TariffPriceHistory> findByTariffIdAndDate(@Param("tariffId") Long tariffId, @Param("date") LocalDate date, Pageable pageable);
+    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :dateTime AND (t.validTo > :dateTime OR t.validTo IS NULL)")
+    Page<TariffPriceHistory> findByTariffIdAndDateTime(@Param("tariffId") Long tariffId,
+            @Param("dateTime") LocalDateTime dateTime, Pageable pageable);
 
-    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :date AND (t.validTo >= :date OR t.validTo IS NULL)")
-    List<TariffPriceHistory> findAllByTariffIdAndDate(@Param("tariffId") Long tariffId, @Param("date") LocalDate date);
+    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :dateTime AND (t.validTo > :dateTime OR t.validTo IS NULL)")
+    List<TariffPriceHistory> findAllByTariffIdAndDateTime(@Param("tariffId") Long tariffId,
+            @Param("dateTime") LocalDateTime dateTime);
 
     /**
-     * Finds price records that started exactly on a specific date for a tariff.
+     * Lists distinct version start times for a given tariff and day range.
      */
-    List<TariffPriceHistory> findByTariffIdAndValidFrom(@Param("tariffId") Long tariffId, @Param("validFrom") LocalDate validFrom);
+    @Query("SELECT DISTINCT t.validFrom FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom >= :startOfDay AND t.validFrom < :startOfNextDay ORDER BY t.validFrom ASC")
+    List<LocalDateTime> findVersionsForTariffAndDayRange(@Param("tariffId") Long tariffId,
+            @Param("startOfDay") LocalDateTime startOfDay, @Param("startOfNextDay") LocalDateTime startOfNextDay);
+
     /**
-     * Deletes all tariff histories associated with a product.
+     * Finds price records that started exactly at a specific timestamp for a tariff
+     * (Paginated).
      */
-    void deleteByProductId(Long productId);
+    @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom = :validFrom")
+    Page<TariffPriceHistory> findByTariffIdAndValidFrom(@Param("tariffId") Long tariffId,
+            @Param("validFrom") LocalDateTime validFrom, Pageable pageable);
+
+    /**
+     * Finds price records that started exactly at a specific timestamp for a tariff
+     * (List).
+     */
+    List<TariffPriceHistory> findByTariffIdAndValidFrom(@Param("tariffId") Long tariffId,
+            @Param("validFrom") LocalDateTime validFrom);
+
+    /**
+     * Updates the validFrom timestamp for all records of a tariff that share a
+     * specific old timestamp.
+     * Used to group slow batch snapshots into a single version.
+     */
+    @Modifying
+    @Query("UPDATE TariffPriceHistory t SET t.validFrom = :newTime WHERE t.tariff.id = :tariffId AND t.validFrom = :oldTime")
+    void updateValidFromForTariffAndTime(@Param("tariffId") Long tariffId, @Param("oldTime") LocalDateTime oldTime,
+            @Param("newTime") LocalDateTime newTime);
 }
-
-

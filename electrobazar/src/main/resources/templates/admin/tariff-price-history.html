@@ -144,6 +144,29 @@
             box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
             color: var(--primary);
         }
+
+        .btn-version-p {
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .btn-version-p:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-version-p.active {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: var(--primary);
+        }
     </style>
 </head>
 
@@ -193,10 +216,25 @@
             <a href="/admin?view=preciosMasivosView" class="nav-link sidebar-menu-btn">
                 <i class="bi bi-percent"></i> <span th:text="#{admin.menu.massiveprices}">Precios Masivos</span>
             </a>
-            <a href="/admin?view=activityView" class="nav-link sidebar-menu-btn">
+            <a href="/admin#activity" class="nav-link sidebar-menu-btn">
                 <i class="bi bi-clock-history"></i> <span th:text="#{admin.menu.activity}">Actividad</span>
             </a>
-            <a href="/admin?view=settingsView" class="nav-link sidebar-menu-btn">
+            <a href="/admin#tarifas" class="nav-link sidebar-menu-btn active">
+                <i class="bi bi-tags"></i> <span th:text="#{admin.menu.tariffs}">Tarifas</span>
+            </a>
+            <a href="/admin#tiposIva" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-percent"></i> <span th:text="#{admin.menu.taxrates}">Tipos de IVA</span>
+            </a>
+            <a href="/admin#unidades" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-rulers"></i> <span>Unidades</span>
+            </a>
+            <a href="/admin#cupones" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-ticket-perforated"></i> <span th:text="#{admin.menu.coupons}">Cupones</span>
+            </a>
+            <a href="/admin#promociones" class="nav-link sidebar-menu-btn">
+                <i class="bi bi-megaphone"></i> <span th:text="#{admin.sidebar.promotions}">Promociones</span>
+            </a>
+            <a href="/admin#config" class="nav-link sidebar-menu-btn">
                 <i class="bi bi-gear"></i> <span th:text="#{admin.menu.settings}">Configuración</span>
             </a>
         </nav>
@@ -219,8 +257,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-border">
                 <div>
                     <a href="/admin#tarifas" 
-                       onclick="if(window.history.length > 1) { history.back(); return false; }"
-                       class="btn-back text-decoration-none mb-2">
+                       class="btn-back text-decoration-none">
                         <i class="bi bi-arrow-left"></i> Volver al panel
                     </a>
                     <h2 class="h3 mb-0 fw-bold">Historial de Precios: <span th:text="${tariff.name}"
@@ -229,7 +266,7 @@
                         importes</p>
                 </div>
                 <div>
-                    <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate}}"
+                    <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history/pdf' + '?date=' + ${selectedDate} + '&time=' + ${selectedTime}}"
                         class="btn-action-accent">
                         <i class="bi bi-file-earmark-pdf me-2"></i> Descargar PDF del día
                     </a>
@@ -284,6 +321,20 @@
                             </a>
                         </div>
 
+                        <!-- VERSIONES DEL DÍA (NUEVO) -->
+                        <div th:if="${dayVersions != null and #lists.size(dayVersions) > 1}" class="ms-4 border-start border-border ps-4 d-flex align-items-center gap-2">
+                            <span class="small text-muted text-uppercase fw-bold letter-spacing-1">Versiones del día:</span>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <a th:each="v : ${dayVersions}"
+                                   th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${selectedDate} + '&time=' + ${v}}"
+                                   class="btn-version-p"
+                                   th:classappend="${v.equals(selectedTime)} ? 'active' : ''">
+                                   <i class="bi bi-clock me-1"></i>
+                                   <span th:text="${#temporals.format(v, 'HH:mm')}">14:00</span>
+                                </a>
+                            </div>
+                        </div>
+
                         <div class="ms-4 border-start border-border ps-4 d-flex align-items-center gap-2">
                             <label class="small text-muted mb-0"><i class="bi bi-search me-1"></i>Ir a:</label>
                             <input type="date" id="dateFilter" class="date-input-custom-p" th:value="${selectedDate}"
@@ -291,7 +342,7 @@
                         </div>
                     </div>
 
-                    <div class="search-box">
+                    <div th:unless="${needsVersionSelection}" class="search-box">
                         <div class="input-group input-group-sm" style="width: 250px;">
                             <span class="input-group-text bg-secondary border-border text-muted"><i
                                     class="bi bi-funnel"></i></span>
@@ -301,6 +352,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Loading / Error Message -->
                 <div th:if="${isInitializing}" class="text-center py-5">
@@ -319,13 +371,51 @@
                         automáticamente.</p>
                 </div>
 
-                <div th:if="${!dateExists and !isInitializing}"
-                    class="alert alert-warning d-flex align-items-center mt-3" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>No hay tarifario registrado para esta fecha especifica.</div>
+                <!-- OVERLAY DE SELECCION DE VERSION (NUEVO) -->
+                <div th:if="${needsVersionSelection}" class="version-selection-overlay text-center py-5 my-5">
+                    <div class="mb-4">
+                        <div class="display-1 text-accent opacity-25 mb-3">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h4 class="fw-bold text-main">Selecciona una versión</h4>
+                        <p class="text-muted">Se han detectado varias actualizaciones de precios para este día.<br>Cual deseas consultar?</p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a th:each="v : ${dayVersions}"
+                           th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${selectedDate} + '&time=' + ${v}}"
+                           class="btn-version-p active px-4 py-3 d-flex flex-column align-items-center"
+                           style="min-width: 140px; border-radius: 12px; background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                           <span class="small text-muted mb-1">Actualizado a las</span>
+                           <span class="h4 mb-0 fw-bold text-accent" th:text="${#temporals.format(v, 'HH:mm')}">14:00</span>
+                           <span class="small opacity-50 mt-1" th:text="${#temporals.format(v, 'ss') + 's'}">00s</span>
+                        </a>
+                    </div>
                 </div>
 
-                <div class="admin-table-wrap" th:if="${dateExists}">
+                <div th:unless="${needsVersionSelection}">
+                    <div th:if="${!dateExists and !isInitializing}"
+                        class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>No hay tarifario registrado para esta fecha especifica.</div>
+                    </div>
+
+                    <div class="admin-table-wrap" th:if="${dateExists}">
+                        <!-- VERSIONES DEL DÍA (Recordatorio pequeño si ya está cargado) -->
+                        <div th:if="${dayVersions != null and #lists.size(dayVersions) > 1}" class="mb-4 p-3 rounded-3" style="background: var(--primary); border: 1px solid var(--border);">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="small text-muted text-uppercase fw-bold letter-spacing-1"><i class="bi bi-clock-history me-1"></i> Cambiar versión:</span>
+                                <div class="d-flex gap-2">
+                                    <a th:each="v : ${dayVersions}"
+                                       th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history?date=' + ${selectedDate} + '&time=' + ${v}}"
+                                       class="btn-version-p"
+                                       th:classappend="${v.equals(selectedTime)} ? 'active' : ''">
+                                       <i class="bi bi-clock me-1"></i>
+                                       <span th:text="${#temporals.format(v, 'HH:mm')}">14:00</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     <table class="admin-table" id="historyTable" style="margin-bottom: 0;">
                         <thead>
                             <tr>
@@ -419,6 +509,7 @@
                     </div>
                 </div>
             </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

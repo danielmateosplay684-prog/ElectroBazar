@@ -499,10 +499,19 @@
                     <td class="lbl">Base imponible:</td>
                     <td class="amt" th:text="${#numbers.formatDecimal(totalBase, 1, 2)} + ' &euro;'">0.00 &euro;</td>
                 </tr>
-                <tr th:if="${sale.appliedDiscountPercentage != null and sale.appliedDiscountPercentage > 0 and sale.totalDiscount > 0}">
-                    <td class="lbl" style="color: #27ae60;">Descuento aplicado (<span
-                            th:text="${sale.appliedTariff}"></span> <span
-                            th:text="${#numbers.formatDecimal(sale.appliedDiscountPercentage, 1, 0)}"></span>% dto.):
+                <!-- Mostrar if hay Tarifa Aplicada (Informativo, ya que el precio unitario ya lo incluye) -->
+                <tr th:if="${sale.appliedDiscountPercentage != null and sale.appliedDiscountPercentage > 0}">
+                    <td class="lbl" style="font-style: italic;">Tarifa aplicada:</td>
+                    <td class="amt" style="font-size: 11px;">
+                        <span th:text="${sale.appliedTariff}"></span> (<span th:text="${#numbers.formatDecimal(sale.appliedDiscountPercentage, 1, 0)}"></span>% dto. incl.)
+                    </td>
+                </tr>
+
+                <!-- Mostrar CUPÓN/BONO (Campo totalDiscount en Sale) -->
+                <tr th:if="${sale.coupon != null or (sale.totalDiscount != null and sale.totalDiscount > 0)}">
+                    <td class="lbl" style="color: #27ae60; font-weight: 700;">
+                        <i class="bi bi-tag-fill"></i> 
+                        <span th:text="${sale.coupon != null ? 'Cupón (' + sale.coupon.code + '):' : 'Bono / Descuento:'}">Cupón:</span>
                     </td>
                     <td class="amt" style="color: #27ae60; font-weight: 700;">
                         -<span th:text="${#numbers.formatDecimal(sale.totalDiscount, 1, 2)} + ' &euro;'"></span>

@@ -31,7 +31,7 @@ public class AbonoController {
     }
 
     @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<List<Abono>> listarPorCliente(@PathVariable Long clienteId) {
+    public ResponseEntity<List<Abono>> listarPorCliente(@PathVariable String clienteId) {
         return ResponseEntity.ok(abonoService.getAbonosByCliente(clienteId));
     }
 

@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'trabajadores': 'workersView',
             'roles': 'rolesView',
             'clientes': 'crmView',
-            'precios': 'preciosView',
+            'precios': 'preciosTempView',
             'cupones': 'couponsView',
             'promociones': 'promotionsView',
             'tarifas': 'tarifasView',
@@ -156,6 +156,8 @@ function switchView(viewId, btn, isBack = false) {
     if (viewId === 'tiposIvaView' && typeof loadTaxRates === 'function') loadTaxRates();
     if (viewId === 'analyticsView' && typeof initDashboardCharts === 'function') initDashboardCharts();
     if (viewId === 'abonosView' && typeof loadAbonos === 'function') loadAbonos();
+    if (viewId === 'preciosTempView' && typeof loadFuturePrices === 'function') loadFuturePrices();
+    if (viewId === 'preciosMasivosView' && typeof loadBulkProducts === 'function') loadBulkProducts();
 
     // Scroll to top
     window.scrollTo(0, 0);

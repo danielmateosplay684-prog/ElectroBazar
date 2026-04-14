@@ -14,7 +14,7 @@ public class AbonoRequest {
     private Long ventaOriginalId;
 
     @NotNull(message = "El cliente es obligatorio")
-    private Long clienteId;
+    private String clienteId;
 
     @NotNull(message = "El importe es obligatorio")
     @Positive(message = "El importe debe ser un valor positivo")

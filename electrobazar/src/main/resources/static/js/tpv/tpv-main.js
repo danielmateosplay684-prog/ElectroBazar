@@ -561,7 +561,7 @@ function renderTicket() {
         }
 
         if (eligibleAmount > 0) {
-            if (coupon.discountType === 'PERCENTAGE') {
+            if (currentCoupon.discountType === 'PERCENTAGE') {
                 couponDiscountAmount = eligibleAmount * (currentCoupon.discountValue / 100);
             } else {
                 couponDiscountAmount = currentCoupon.discountValue;
@@ -757,7 +757,6 @@ function openCheckoutModal() {
         if (mixedSection) mixedSection.style.display = 'none';
         receivedInput.value = '';
         calculateChange();
-        document.getElementById('changeAmount').textContent = '0.00€';
         receivedInputForm.value = '';
     } else if (isMixed) {
         if (cashSection) cashSection.style.display = 'none';
@@ -811,7 +810,9 @@ function openCheckoutModal() {
     invoiceModalInstance.show();
 
     if (isCash) {
-        setTimeout(function () { receivedInput.focus(); }, 150);
+        setTimeout(function () { 
+            receivedInput.focus(); 
+        }, 150);
     }
 }
 // Live calculation for change
@@ -833,8 +834,8 @@ function calculateChange() {
     const transTable = document.getElementById('tpv-js-translations');
     const missingTr = transTable ? transTable.dataset.checkoutMissing : 'Faltan';
 
-    if (received === 0 && inputVal === '') {
-        // Campo vacío: mostrar neutro
+    if (received === 0 && total === 0) {
+        // Realmente es cero
         changeEl.textContent = '0,00€';
         changeEl.style.color = 'var(--text-muted)';
     } else if (diff < 0) {

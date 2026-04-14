@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface AbonoService {
     Abono createAbono(AbonoRequest request);
-    List<Abono> getAbonosByCliente(Long clienteId);
+    List<Abono> getAbonosByCliente(String clienteIdOrDoc);
     void anularAbono(Long id);
 }

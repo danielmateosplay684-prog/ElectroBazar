@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "tariff_price_history", indexes = {
-    @Index(name = "idx_tph_product", columnList = "product_id"),
-    @Index(name = "idx_tph_tariff", columnList = "tariff_id"),
-    @Index(name = "idx_tph_dates", columnList = "valid_from, valid_to"),
-    @Index(name = "idx_tph_current", columnList = "product_id, valid_to")
+        @Index(name = "idx_tph_product", columnList = "product_id"),
+        @Index(name = "idx_tph_tariff", columnList = "tariff_id"),
+        @Index(name = "idx_tph_dates", columnList = "valid_from, valid_to"),
+        @Index(name = "idx_tph_current", columnList = "product_id, valid_to")
 })
 @Getter
 @Setter
@@ -67,13 +67,13 @@ public class TariffPriceHistory {
     @Column(name = "discount_percent", nullable = false, precision = 5, scale = 2)
     private BigDecimal discountPercent;
 
-    /** Date from which these prices were valid. */
+    /** Date and time from which these prices were valid. */
     @Column(name = "valid_from", nullable = false)
-    private LocalDate validFrom;
+    private LocalDateTime validFrom;
 
-    /** Date until which these prices were valid (inclusive). */
+    /** Date and time until which these prices were valid (inclusive). */
     @Column(name = "valid_to")
-    private LocalDate validTo;
+    private LocalDateTime validTo;
 
     /** Documentation timestamp. */
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -87,5 +87,3 @@ public class TariffPriceHistory {
         }
     }
 }
-
-

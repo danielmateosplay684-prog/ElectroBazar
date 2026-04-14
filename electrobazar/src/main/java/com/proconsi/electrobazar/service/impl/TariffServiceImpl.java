@@ -142,15 +142,15 @@ public class TariffServiceImpl implements TariffService {
         List<Tariff> activeTariffs = findAllActive();
         if (activeTariffs.isEmpty()) return;
 
-        LocalDate today = LocalDate.now();
-        LocalDate yesterday = today.minusDays(1);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime justBefore = now.minusSeconds(1);
 
         // 1. Bulk find and close current histories for all products
         List<Long> productIds = affectedProducts.stream().map(Product::getId).collect(java.util.stream.Collectors.toList());
         List<TariffPriceHistory> toClose = tariffPriceHistoryRepository.findAllCurrentByProductIds(productIds);
         
         for (TariffPriceHistory history : toClose) {
-            history.setValidTo(yesterday);
+            history.setValidTo(justBefore);
         }
         if (!toClose.isEmpty()) tariffPriceHistoryRepository.saveAll(toClose);
 
@@ -173,7 +173,7 @@ public class TariffServiceImpl implements TariffService {
                 newRecords.add(TariffPriceHistory.builder()
                         .product(product).tariff(tariff).basePrice(baseGross).netPrice(net).vatRate(vatRate)
                         .priceWithVat(withVat).reRate(reRate).priceWithRe(withRecargo)
-                        .discountPercent(tariff.getDiscountPercentage()).validFrom(today).build());
+                        .discountPercent(tariff.getDiscountPercentage()).validFrom(now).build());
             }
         }
         if (!newRecords.isEmpty()) {

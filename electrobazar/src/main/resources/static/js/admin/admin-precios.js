@@ -66,12 +66,12 @@ function filterFuturePrices() {
 }
 
 function renderFuturePricesTable(items) {
-    const tbody = document.getElementById('futurePricesTableBody');
+    const tbody = document.getElementById('futurePricesBody');
     if (!tbody) return;
     tbody.innerHTML = '';
     
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay cambios de precio programados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay cambios de precio programados.</td></tr>';
         return;
     }
 
@@ -79,9 +79,11 @@ function renderFuturePricesTable(items) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${item.productName}</strong></td>
-            <td>${formatDecimal(item.oldPrice)} €</td>
-            <td class="text-success fw-bold">${formatDecimal(item.newPrice)} €</td>
-            <td><span class="badge bg-info text-dark">${formatDateTime(item.scheduledDate)}</span></td>
+            <td>${formatDecimal(item.price)} €</td>
+            <td>${item.vatRate * 100}%</td>
+            <td><span class="badge bg-info text-dark">${formatDateTime(item.startDate || item.scheduledDate)}</span></td>
+            <td>${formatDateTime(item.endDate) || '—'}</td>
+            <td>${item.label || ''}</td>
             <td class="text-end">
                 <button class="btn-icon danger" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
             </td>
@@ -108,20 +110,34 @@ function showPreciosTab(tabId) {
     if (pane) pane.style.display = 'block';
 
     if (tabId === 'bulk') loadBulkProducts();
-    if (tabId === 'future') loadFuturePrices();
+    if (tabId === 'futuros') loadFuturePrices();
 }
 
 // Bulk Updates Logic
 let bulkSelectedProducts = new Set();
 let bulkProductsData = [];
 
+let bulkDefaultData = []; // Store the initial top 100
+let bulkSearchTimeout = null;
+let bulkSelectAllAbsolute = false;
+
 function loadBulkProducts() {
+    bulkSelectAllAbsolute = false;
     fetch('/api/products/bulk-list')
         .then(res => res.json())
         .then(data => {
+            bulkDefaultData = data;
             bulkProductsData = data;
             renderBulkProductList(data);
         });
+}
+
+function selectAllAbsoluteBulk() {
+    bulkSelectAllAbsolute = true;
+    bulkSelectedProducts.clear(); 
+    renderBulkProductList(bulkProductsData);
+    updateBulkSelectedCount();
+    showToast("Has seleccionado TODOS los productos que coinciden con el filtro actual.");
 }
 
 function renderBulkProductList(products) {
@@ -129,13 +145,17 @@ function renderBulkProductList(products) {
     if (!container) return;
     container.innerHTML = '';
 
-    products.forEach(p => {
+    const limit = 200;
+    const itemsToShow = (products || []).slice(0, limit);
+
+    itemsToShow.forEach(p => {
+        const isSelected = bulkSelectAllAbsolute || bulkSelectedProducts.has(p.id);
         const div = document.createElement('div');
-        div.className = 'bulk-item' + (bulkSelectedProducts.has(p.id) ? ' selected' : '');
+        div.className = 'bulk-item' + (isSelected ? ' selected' : '');
         div.onclick = () => handleBulkProductToggle(p.id);
         div.innerHTML = `
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" ${bulkSelectedProducts.has(p.id) ? 'checked' : ''} onclick="event.stopPropagation(); handleBulkProductToggle(${p.id})">
+                <input class="form-check-input" type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); handleBulkProductToggle(${p.id})">
             </div>
             <div class="bulk-item-info">
                 <strong>${p.name}</strong>
@@ -145,21 +165,25 @@ function renderBulkProductList(products) {
         `;
         container.appendChild(div);
     });
+
+    if (products && products.length > limit) {
+        const info = document.createElement('div');
+        info.className = 'text-center p-2 small text-muted';
+        info.innerHTML = `<i class="bi bi-info-circle me-1"></i> Mostrando solo los primeros ${limit} productos. Usa el buscador para filtrar.`;
+        container.appendChild(info);
+    }
+
     const labelEl = document.getElementById('bulkProductCountLabel');
     if (labelEl) {
-        const query = document.getElementById('bulkProductSearch')?.value || '';
-        const category = document.getElementById('bulkCategoryFilter')?.value || '';
-        if (query || category) {
-            labelEl.textContent = `Mostrando ${products.length} productos coincidentes.`;
-        } else {
-            labelEl.textContent = 'Mostrando todos los productos disponibles.';
-        }
+        const totalCount = products ? products.length : 0;
+        labelEl.textContent = `Mostrando ${Math.min(totalCount, limit)} de ${totalCount} productos en esta vista.`;
     }
 
     updateBulkSelectedCount();
 }
 
 function handleBulkProductToggle(id) {
+    bulkSelectAllAbsolute = false;
     if (bulkSelectedProducts.has(id)) {
         bulkSelectedProducts.delete(id);
     } else {
@@ -168,12 +192,52 @@ function handleBulkProductToggle(id) {
     renderBulkProductList(bulkProductsData);
 }
 
+function filterBulkProductList() {
+    if (bulkSearchTimeout) clearTimeout(bulkSearchTimeout);
+    bulkSearchTimeout = setTimeout(() => {
+        const query = document.getElementById('bulkProductSearch').value.toLowerCase();
+        const category = document.getElementById('bulkCategoryFilter').value;
+        
+        if (!query && !category) {
+            bulkProductsData = bulkDefaultData;
+            renderBulkProductList(bulkProductsData);
+            return;
+        }
+
+        const url = new URL('/api/products/filter', window.location.origin);
+        if (query) url.searchParams.set('search', query);
+        if (category) url.searchParams.set('category', category);
+        url.searchParams.set('size', 100);
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                // Map from the paginated API response to our simpler DTO
+                // data is Page object, so we use data.content
+                bulkProductsData = (data.content || []).map(p => ({
+                    id: p.id,
+                    name: p.nameEs || p.name,
+                    price: p.price,
+                    categoryName: p.category ? (p.category.nameEs || p.category.name) : null
+                }));
+                renderBulkProductList(bulkProductsData);
+            });
+    }, 300);
+}
+
 function updateBulkSelectedCount() {
     const el = document.getElementById('bulkSelectedCount');
-    if (el) el.textContent = bulkSelectedProducts.size;
+    if (el) {
+        if (bulkSelectAllAbsolute) {
+            el.textContent = "TODOS (según filtros)";
+        } else {
+            el.textContent = bulkSelectedProducts.size;
+        }
+    }
 }
 
 function selectAllBulkProducts(select) {
+    bulkSelectAllAbsolute = false;
     if (select) {
         bulkProductsData.forEach(p => bulkSelectedProducts.add(p.id));
     } else {
@@ -183,32 +247,119 @@ function selectAllBulkProducts(select) {
 }
 
 function toggleBulkPriceFields() {
-    const type = document.getElementById('bulkUpdateType').value;
-    document.getElementById('bulkFixedPriceField').style.display = (type === 'FIXED') ? 'block' : 'none';
-    document.getElementById('bulkPercentageField').style.display = (type === 'PERCENTAGE' || type === 'MARGIN') ? 'block' : 'none';
+    const type = document.getElementById('bulkPriceType').value;
+    const label = document.getElementById('bulkPriceValueLabel');
+    if (label) label.textContent = (type === 'percentage') ? 'Porcentaje (%)' : 'Cantidad Fija (€)';
 }
 
 function applyBulkPriceUpdate() {
-    if (bulkSelectedProducts.size === 0) {
+    if (bulkSelectedProducts.size === 0 && !bulkSelectAllAbsolute) {
         showToast('Selecciona al menos un producto', 'error');
         return;
     }
-    // Implement bulk save API call
+
+    const type = document.getElementById('bulkPriceType').value;
+    const value = parseFloat(document.getElementById('bulkPriceValue').value);
+    const date = document.getElementById('bulkEffectivedate').value;
+    const label = document.getElementById('bulkLabel').value;
+    const search = document.getElementById('bulkProductSearch').value;
+    const categoryName = document.getElementById('bulkCategoryFilter').value;
+
+    if (isNaN(value)) {
+        showToast('Debes indicar un valor válido', 'error');
+        return;
+    }
+
+    // Get selected tariffs
+    const tariffIds = Array.from(document.querySelectorAll('.tariff-bulk-checkbox:checked')).map(cb => parseInt(cb.value));
+
+    // Generate a unique task ID for progress tracking
+    const taskId = 'bulk_' + Date.now();
+    
+    const payload = {
+        productIds: bulkSelectAllAbsolute ? [] : Array.from(bulkSelectedProducts),
+        applyToAll: bulkSelectAllAbsolute,
+        search: bulkSelectAllAbsolute ? search : null,
+        categoryName: bulkSelectAllAbsolute ? categoryName : null,
+        taskId: taskId,
+        effectiveDate: date || new Date(Date.now() + 60000).toISOString(),
+        label: label || 'Actualización masiva',
+        tariffIds: tariffIds
+    };
+
+    if (type === 'percentage') {
+        payload.percentage = value;
+    } else {
+        payload.fixedAmount = value;
+    }
+
+    // UI Updates: show progress, disable button
+    const btn = document.getElementById('btnApplyBulkUpdate');
+    const progressContainer = document.getElementById('bulkUpdateProgressContainer');
+    if (btn) btn.disabled = true;
+    if (progressContainer) progressContainer.style.display = 'block';
+    
+    const pollInterval = setInterval(() => {
+        fetch(`/api/products/bulk-progress/${taskId}`)
+            .then(res => res.json())
+            .then(progress => {
+                const bar = document.getElementById('bulkUpdateProgressBar');
+                const percentText = document.getElementById('bulkUpdatePercent');
+                const statusText = document.getElementById('bulkUpdateStatusText');
+                
+                if (bar) bar.style.width = progress.percentage + '%';
+                if (percentText) percentText.textContent = progress.percentage + '%';
+                if (statusText) statusText.textContent = progress.message;
+            }).catch(e => console.error("Error polling progress", e));
+    }, 2000);
+
+    fetch('/api/products/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(res => {
+        clearInterval(pollInterval);
+        if (btn) btn.disabled = false;
+        
+        if (res.ok) {
+            showToast('Actualización masiva programada con éxito');
+            if (progressContainer) progressContainer.style.display = 'none';
+            // Clear selection
+            bulkSelectedProducts.clear();
+            bulkSelectAllAbsolute = false;
+            renderBulkProductList(bulkProductsData);
+            document.getElementById('bulkResults').style.display = 'block';
+            document.getElementById('bulkResultsText').textContent = 'Se han programado cambios.';
+        } else {
+            showToast('Error al aplicar la actualización', 'error');
+            if (progressContainer) progressContainer.style.display = 'none';
+        }
+    }).catch(err => {
+        clearInterval(pollInterval);
+        if (btn) btn.disabled = false;
+        if (progressContainer) progressContainer.style.display = 'none';
+        showToast('Error de red al aplicar actualización', 'error');
+    });
 }
 
-function filterBulkProductList() {
-    const query = document.getElementById('bulkSearch').value.toLowerCase();
-    const filtered = bulkProductsData.filter(p => p.name.toLowerCase().includes(query));
-    renderBulkProductList(filtered);
-}
 
-function selectBulkByCategory(categoryId) {
+function selectBulkByCategory() {
+    const categoryName = document.getElementById('bulkCategoryFilter').value;
+    if (!categoryName) {
+        showToast('Selecciona una categoría primero', 'info');
+        return;
+    }
+    
+    let count = 0;
     bulkProductsData.forEach(p => {
-        if (!categoryId || p.categoryId == categoryId) {
+        if (p.categoryName === categoryName) {
             bulkSelectedProducts.add(p.id);
+            count++;
         }
     });
-    renderBulkProductList(bulkProductsData);
+    
+    showToast(`${count} productos seleccionados de la categoría ${categoryName}`);
+    filterBulkProductList(); // Re-render with filter
 }
 
 function openIpcUpdateModal() {
@@ -287,7 +438,7 @@ function loadPendingPriceChanges() {
                     <td>${new Date(item.scheduledDate).toLocaleString()}</td>
                     <td>${item.productName}</td>
                     <td>${item.tariffName || 'BASE'}</td>
-                    <td class="text-end fw-bold">${parseFloat(item.newPrice).toFixed(2)} €</td>
+                    <td class="text-end fw-bold">${parseFloat(item.price).toFixed(2)} €</td>
                     <td class="text-center">
                         <button class="btn-icon danger" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
                     </td>

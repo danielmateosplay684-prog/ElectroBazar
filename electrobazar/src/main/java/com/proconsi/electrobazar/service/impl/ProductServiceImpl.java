@@ -253,7 +253,7 @@ public class ProductServiceImpl implements ProductService {
 
         // 2. Clear metadata/history cascade manually if not mapped as cascade
         productPriceRepository.deleteByProductId(id);
-        tariffPriceHistoryRepository.deleteByProductId(id);
+        tariffPriceHistoryRepository.deleteById(id);
 
         // 3. Final Delete
         productRepository.deleteById(id);
@@ -280,7 +280,8 @@ public class ProductServiceImpl implements ProductService {
 
         // Audit log (only once per call)
         activityLogService.logActivity("AJUSTE_STOCK",
-                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Sistema", "PRODUCT",
+                "Disminución manual de stock: -" + quantity + " para el producto ID: " + productId, "Sistema",
+                "PRODUCT",
                 productId);
     }
 
@@ -302,7 +303,8 @@ public class ProductServiceImpl implements ProductService {
         product.setStock(newStock);
         productRepository.save(product);
         activityLogService.logActivity("AJUSTE_STOCK",
-                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(), "Sistema",
+                "Ajuste de stock: " + quantity + " (Nuevo stock: " + newStock + ") para " + product.getName(),
+                "Sistema",
                 "PRODUCT", product.getId());
     }
 

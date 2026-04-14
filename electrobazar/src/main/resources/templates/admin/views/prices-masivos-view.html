@@ -41,13 +41,26 @@
                     <label class="form-label fw-600" style="color: var(--text-main);"
                         th:text="#{admin.massiveprices.select_products}">Seleccionar
                         Productos</label>
-                    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(true)"
-                            th:text="#{common.selectall}">Seleccionar Todos</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(false)"
-                            th:text="#{common.deselectall}">Deseleccionar Todos</button>
+                    <div class="d-flex flex-wrap gap-3 mb-3 align-items-center">
+                        <!-- Search on LEFT as requested -->
+                        <div class="position-relative" style="min-width:250px">
+                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted"></i>
+                            <input type="text" id="bulkProductSearch" class="form-control form-control-sm ps-5"
+                                th:placeholder="#{admin.common.searchproduct.placeholder}"
+                                oninput="filterBulkProductList()">
+                        </div>
 
-                        <!-- Filter by category -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="selectAllBulkProducts(true)"
+                                th:text="#{common.selectall}">Seleccionar Todos (Cargados)</button>
+                            <button class="btn btn-sm btn-accent" onclick="selectAllAbsoluteBulk()">
+                                <i class="bi bi-asterisk me-1"></i> Seleccionar ABSOLUTAMENTE TODOS
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="selectAllBulkProducts(false)"
+                                th:text="#{common.deselectall}">Deseleccionar Todos</button>
+                        </div>
+
+                        <!-- Filter by category on RIGHT -->
                         <div class="d-flex align-items-center gap-2 ms-auto">
                             <select id="bulkCategoryFilter" class="form-select form-select-sm" style="max-width:180px"
                                 onchange="filterBulkProductList()">
@@ -56,15 +69,11 @@
                                 <option th:each="c : ${allCategories}" th:value="${c.name}" th:text="${c.name}">
                                 </option>
                             </select>
-                            <button class="btn btn-sm btn-accent" onclick="selectBulkByCategory()"
+                            <button class="btn btn-sm btn-outline-accent" onclick="selectBulkByCategory()"
                                 th:text="#{admin.massiveprices.mark_category}">
                                 Marcar Categoria
                             </button>
                         </div>
-
-                        <input type="text" id="bulkProductSearch" class="form-control form-control-sm"
-                            style="max-width:180px" th:placeholder="#{admin.common.searchproduct.placeholder}"
-                            oninput="filterBulkProductList()">
                     </div>
                     <div id="bulkProductCountLabel" class="small mb-2" style="color: var(--text-muted);">
                         Mostrando todos los productos disponibles.
@@ -79,7 +88,7 @@
                         <div class="text-center py-3" style="color: var(--text-muted);"
                             th:text="#{admin.massiveprices.loading}">Cargando productos...</div>
                     </div>
-                    <small id="selectedCountLabel" style="color: var(--text-muted);">0 <span
+                    <small style="color: var(--text-muted);"><span id="bulkSelectedCount">0</span> <span
                             th:text="#{admin.massiveprices.selected_count}">productos
                             seleccionados</span></small>
                 </div>
@@ -136,10 +145,23 @@
                     </div>
                 </div>
 
-                <button class="btn-nuevo" onclick="applyBulkPriceUpdate()">
+                <button class="btn-nuevo" id="btnApplyBulkUpdate" onclick="applyBulkPriceUpdate()">
                     <i class="bi bi-check-lg"></i> <span th:text="#{admin.massiveprices.apply}">Aplicar
                         Cambio</span>
                 </button>
+
+                <!-- Progress Bar -->
+                <div id="bulkUpdateProgressContainer" class="mt-4" style="display:none">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-600" style="color:var(--text-main)">Procesando actualización masiva...</span>
+                        <span id="bulkUpdatePercent" class="small fw-600 text-accent">0%</span>
+                    </div>
+                    <div class="progress" style="height: 10px; background: var(--surface); border: 1px solid var(--border);">
+                        <div id="bulkUpdateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-accent" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="bulkUpdateStatusText" class="small mt-2 text-center" style="color: var(--text-muted);">Iniciando...</div>
+                </div>
             </div>
         </div>
 

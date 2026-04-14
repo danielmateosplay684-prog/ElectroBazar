@@ -338,6 +338,41 @@ public class ProductApiRestController {
         return ResponseEntity.ok(userFavoriteProductRepository.findProductIdsByUserId(userId));
     }
 
+    @GetMapping("/future-prices")
+    public ResponseEntity<List<com.proconsi.electrobazar.dto.ProductPriceResponse>> getFuturePrices(
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(productPriceService.getFilteredFuturePrices(search, org.springframework.data.domain.PageRequest.of(0, 100))
+                .getContent().stream()
+                .map(p -> productPriceService.toResponse(p, false))
+                .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/bulk-list")
+    public ResponseEntity<List<com.proconsi.electrobazar.dto.AdminProductListingDTO>> getBulkProductList() {
+        return ResponseEntity.ok(productService.getTopProductsByRank(100).stream()
+                .map(p -> com.proconsi.electrobazar.dto.AdminProductListingDTO.builder()
+                        .id(p.getId())
+                        .name(p.getNameEs())
+                        .price(p.getPrice())
+                        .categoryName(p.getCategory() != null ? p.getCategory().getNameEs() : null)
+                        .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                        .build())
+                .collect(Collectors.toList()));
+    }
+
+    @PostMapping("/bulk-update")
+    public ResponseEntity<?> bulkPriceMassiveUpdate(@RequestBody com.proconsi.electrobazar.dto.BulkPriceUpdateRequest request) {
+        productPriceService.bulkSchedulePrice(request);
+        return ResponseEntity.ok(Map.of("message", "Actualización masiva programada con éxito."));
+    }
+
+    private final com.proconsi.electrobazar.service.TaskProgressService taskProgressService;
+
+    @GetMapping("/bulk-progress/{taskId}")
+    public ResponseEntity<?> getBulkProgress(@PathVariable String taskId) {
+        return ResponseEntity.ok(taskProgressService.getProgress(taskId));
+    }
+
     private Long getCurrentUserId() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return workerService.findByUsername(username).map(Worker::getId).orElse(null);

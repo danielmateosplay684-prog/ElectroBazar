@@ -35,13 +35,13 @@
         <!-- Tabs: Precios Futuros / Buscar Historial -->
         <ul class="nav nav-tabs mb-3" id="preciosTabs">
             <li class="nav-item">
-                <button class="nav-link active" id="tabFuturos" onclick="showPreciosTab('futuros')">
+                <button class="nav-link active precios-tab" id="futurosTab" onclick="showPreciosTab('futuros')">
                     <i class="bi bi-clock me-1"></i><span th:text="#{admin.prices.scheduled.tab}">Precios
                         Programados</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="tabHistorial" onclick="showPreciosTab('historial')">
+                <button class="nav-link precios-tab" id="historialTab" onclick="showPreciosTab('historial')">
                     <i class="bi bi-search me-1"></i><span th:text="#{admin.prices.history.tab}">Historial por
                         Producto</span>
                 </button>
@@ -49,7 +49,7 @@
         </ul>
 
         <!-- Tab: Futuros -->
-        <div id="preciosTabFuturos">
+        <div id="futurosPane" class="precios-pane">
             <div class="filter-bar mb-3 p-4 rounded"
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-3">
@@ -113,7 +113,7 @@
         </div>
 
         <!-- Tab: Historial -->
-        <div id="preciosTabHistorial" style="display:none">
+        <div id="historialPane" class="precios-pane" style="display:none">
             <div class="filter-bar mb-3 p-4 rounded"
                 style="background: var(--surface); border: 1px solid var(--border);">
                 <div class="row g-3">

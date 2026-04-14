@@ -26,15 +26,15 @@ function saveAbono() {
     }
 
     const payload = {
-        customerId: parseInt(clienteId),
-        originalSaleId: ventaId ? parseInt(ventaId) : null,
-        amount: parseFloat(importe),
-        type: tipo,
-        paymentMethod: pago,
-        reason: motivo
+        clienteId: clienteId.trim(),
+        ventaOriginalId: ventaId ? parseInt(ventaId) : null,
+        importe: parseFloat(importe),
+        tipoAbono: tipo,
+        metodoPago: pago,
+        motivo: motivo
     };
 
-    fetch('/api/admin/abonos', {
+    fetch('/api/abonos', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ function filterAbonos() {
 
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</td></tr>';
 
-    fetch(`/api/admin/abonos/customer/${customerId}`)
+    fetch(`/api/abonos/cliente/${customerId}`)
         .then(res => res.json())
         .then(data => {
             tbody.innerHTML = '';
@@ -96,20 +96,20 @@ function filterAbonos() {
 
             data.forEach(a => {
                 const tr = document.createElement('tr');
-                const statusClass = a.status === 'ACTIVE' ? 'badge-status-p status-active-p' : 'badge-status-p status-cancelled-p';
-                const statusText = a.status === 'ACTIVE' ? 'ACTIVO' : 'ANULADO';
+                const statusClass = a.estado === 'PENDIENTE' ? 'badge-status-p status-active-p' : 'badge-status-p status-cancelled-p';
+                const statusText = a.estado === 'PENDIENTE' ? 'ACT. PAGO' : (a.estado === 'APLICADO' ? 'APLICADO' : 'ANULADO');
 
                 tr.innerHTML = `
                     <td><strong>#${a.id}</strong></td>
-                    <td>${new Date(a.createdAt).toLocaleString()}</td>
-                    <td>${a.customerId}</td>
-                    <td><span class="text-accent fw-bold">${a.type}</span></td>
-                    <td>${a.paymentMethod}</td>
-                    <td class="text-end fw-bold">${parseFloat(a.amount).toFixed(2)} €</td>
+                    <td>${new Date(a.fecha).toLocaleString()}</td>
+                    <td>${a.cliente ? a.cliente.id : '--'}</td>
+                    <td><span class="text-accent fw-bold">${a.tipoAbono}</span></td>
+                    <td>${a.metodoPago}</td>
+                    <td class="text-end fw-bold">${parseFloat(a.importe).toFixed(2)} €</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-2">
-                             ${a.status === 'ACTIVE' ? `
+                             ${a.estado === 'PENDIENTE' ? `
                                 <button class="btn-icon danger" onclick="anularAbono(${a.id})" title="Anular">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -131,7 +131,7 @@ function filterAbonos() {
 function anularAbono(id) {
     if (!confirm('¿Seguro que desea anular este abono?')) return;
 
-    fetch(`/api/admin/abonos/${id}/cancel`, {
+    fetch(`/api/abonos/${id}/anular`, {
         method: 'POST',
         headers: { 
             [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content

@@ -14,7 +14,6 @@ import java.util.List;
 public class BulkPriceUpdateRequest {
     
     /** List of product IDs to update. */
-    @NotEmpty
     private List<Long> productIds;
     
     /** Percentage to increase/decrease the price. E.g., 10 for +10%. */
@@ -35,4 +34,12 @@ public class BulkPriceUpdateRequest {
     
     /** Optional: specific tariffs to which this change applies. */
     private List<Long> tariffIds;
+
+    /** If true, apply to all active products (optionally filtered by search/category) instead of productIds list. */
+    private boolean applyToAll;
+    private String search;
+    private String categoryName;
+    
+    /** Tracking ID for progress updates. */
+    private String taskId;
 }

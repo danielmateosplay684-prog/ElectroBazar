@@ -17,6 +17,7 @@ public class AdminProductListingDTO {
     private BigDecimal price;
     private BigDecimal stock;
     private String categoryName;
+    private Long categoryId;
     private String measurementUnitSymbol;
     private BigDecimal vatRate;
     private String imageUrl;

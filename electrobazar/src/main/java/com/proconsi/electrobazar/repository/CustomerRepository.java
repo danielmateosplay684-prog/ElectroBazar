@@ -31,6 +31,11 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     Optional<Customer> findByTaxId(String taxId);
 
     /**
+     * Finds a customer by its identity document number (DNI/NIE/Passport).
+     */
+    Optional<Customer> findByIdDocumentNumber(String idDocumentNumber);
+
+    /**
      * Searches for active customers whose name or tax ID matches the query.
      */
     @org.springframework.data.jpa.repository.Query("SELECT c FROM Customer c WHERE (c.name LIKE %:query% OR c.taxId LIKE %:query%) AND c.active = true ORDER BY c.name ASC")

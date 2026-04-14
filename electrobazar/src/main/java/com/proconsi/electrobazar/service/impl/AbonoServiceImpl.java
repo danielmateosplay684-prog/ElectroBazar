@@ -25,8 +25,30 @@ public class AbonoServiceImpl implements AbonoService {
     @Override
     @Transactional
     public Abono createAbono(AbonoRequest request) {
-        Customer cliente = customerRepository.findById(request.getClienteId())
-                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
+        String cliInput = request.getClienteId();
+        if (cliInput == null || cliInput.trim().isEmpty()) {
+            throw new IllegalArgumentException("El cliente es obligatorio");
+        }
+        cliInput = cliInput.trim();
+
+        Customer cliente = null;
+        try {
+            Long id = Long.parseLong(cliInput);
+            cliente = customerRepository.findById(id).orElse(null);
+        } catch (NumberFormatException e) {
+            // Not a number, try Document/TaxId
+        }
+
+        if (cliente == null) {
+            cliente = customerRepository.findByIdDocumentNumber(cliInput).orElse(null);
+        }
+        if (cliente == null) {
+            cliente = customerRepository.findByTaxId(cliInput).orElse(null);
+        }
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente no encontrado con ese identificador o documento");
+        }
 
         Sale venta = null;
         if (request.getVentaOriginalId() != null) {
@@ -66,8 +88,28 @@ public class AbonoServiceImpl implements AbonoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Abono> getAbonosByCliente(Long clienteId) {
-        return abonoRepository.findByClienteId(clienteId);
+    public List<Abono> getAbonosByCliente(String clienteIdOrDoc) {
+        if (clienteIdOrDoc == null || clienteIdOrDoc.trim().isEmpty()) {
+            return List.of();
+        }
+        String doc = clienteIdOrDoc.trim();
+        Customer cliente = null;
+        try {
+            Long id = Long.parseLong(doc);
+            cliente = customerRepository.findById(id).orElse(null);
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
+        if (cliente == null) {
+            cliente = customerRepository.findByIdDocumentNumber(doc).orElse(null);
+        }
+        if (cliente == null) {
+            cliente = customerRepository.findByTaxId(doc).orElse(null);
+        }
+        if (cliente == null) {
+            return List.of();
+        }
+        return abonoRepository.findByClienteId(cliente.getId());
     }
 
     @Override

@@ -56,6 +56,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     private final TariffRepository tariffRepository;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
     private final RecargoEquivalenciaCalculator recargoCalculator;
+    private final com.proconsi.electrobazar.service.TaskProgressService taskProgressService;
 
     @Override
     @Transactional(readOnly = true)
@@ -175,23 +176,39 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                 .build();
     }
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Override
     @Transactional
     public List<ProductPriceResponse> bulkSchedulePrice(BulkPriceUpdateRequest request) {
         LocalDateTime effectiveDate = request.getEffectiveDate() != null ? request.getEffectiveDate() : LocalDateTime.now();
         LocalDateTime closingDate = effectiveDate.minusSeconds(1);
 
+        List<Long> productIds = request.getProductIds();
+        if (request.isApplyToAll()) {
+            Specification<Product> spec = com.proconsi.electrobazar.repository.specification.ProductSpecification.filterProducts(request.getSearch(), request.getCategoryName(), null, true);
+            // Fetch ONLY IDs to save memory
+            productIds = productRepository.findAll(spec).stream().map(Product::getId).collect(Collectors.toList());
+        }
+
+        if (productIds == null || productIds.isEmpty()) return new ArrayList<>();
+
         List<ProductPriceResponse> responses = new ArrayList<>();
         List<Tariff> activeTariffs = tariffRepository.findByActiveTrueOrderByNameAsc();
         List<Long> selectedTariffIds = request.getTariffIds() != null ? request.getTariffIds() : new ArrayList<>();
 
-        for (Long productId : request.getProductIds()) {
-            Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product " + productId + " not found."));
+        boolean isMassive = productIds.size() > 500;
+
+        for (int i = 0; i < productIds.size(); i++) {
+            Long productId = productIds.get(i);
+            Product product = productRepository.findById(productId).orElse(null);
+            if (product == null) continue;
 
             ProductPrice current = productPriceRepository.findCurrentOpenPrice(productId).orElse(null);
             BigDecimal oldGross = (current != null) ? current.getPrice() : product.getPrice();
             BigDecimal vatRate = (request.getVatRate() != null) ? request.getVatRate() : 
-                                 ((current != null) ? current.getVatRate() : product.getTaxRate().getVatRate());
+                                 ((current != null) ? current.getVatRate() : (product.getTaxRate() != null ? product.getTaxRate().getVatRate() : new BigDecimal("0.21")));
 
             if (current != null) {
                 current.setEndDate(closingDate);
@@ -199,7 +216,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
             }
 
             BigDecimal newGross = (request.getPercentage() != null) 
-                    ? oldGross.multiply(BigDecimal.ONE.add(request.getPercentage().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)))
+                    ? oldGross.multiply(BigDecimal.ONE.add(request.getPercentage().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)))
                     : oldGross.add(request.getFixedAmount() != null ? request.getFixedAmount() : BigDecimal.ZERO);
             newGross = newGross.setScale(2, RoundingMode.HALF_UP);
 
@@ -211,46 +228,66 @@ public class ProductPriceServiceImpl implements ProductPriceService {
             nextEntry.setPrice(newGross);
             ProductPrice saved = productPriceRepository.save(nextEntry);
 
-            product.setPrice(newGross);
-            productRepository.save(product);
-
             // Sync with all active tariffs
             for (Tariff t : activeTariffs) {
+                // Determine if this tariff should receive the new price or keep the old base
+                BigDecimal tariffBase = selectedTariffIds.contains(t.getId()) ? newGross : oldGross;
+
                 tariffPriceHistoryRepository.findCurrentByProductAndTariff(productId, t.getId()).ifPresent(h -> {
-                    h.setValidTo(closingDate.toLocalDate());
+                    // Update to use exact seconds since we now support LocalDateTime in history
+                    h.setValidTo(effectiveDate.minusSeconds(1));
                     tariffPriceHistoryRepository.save(h);
                 });
 
-                BigDecimal oldBase = product.getPrice();
-                BigDecimal newBase = selectedTariffIds.contains(t.getId()) ? newGross : oldBase;
-                
-                // 1. Extraemos el multiplicador de descuento
                 BigDecimal discountMult = BigDecimal.ONE.subtract(
                     (t.getDiscountPercentage() != null ? t.getDiscountPercentage() : BigDecimal.ZERO)
                     .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
                 );
 
-                // 2. Extraemos la BASE IMPONIBLE REAL del precio bruto y aplicamos el descuento (Cálculo corregido)
-                BigDecimal net = newBase.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP)
+                BigDecimal net = tariffBase.divide(BigDecimal.ONE.add(vatRate), 10, RoundingMode.HALF_UP)
                                         .multiply(discountMult)
                                         .setScale(2, RoundingMode.HALF_UP);
 
                 BigDecimal reRate = recargoCalculator.getRecargoRate(vatRate);
 
-                // 3. Generamos el snapshot con los totales correctos
                 TariffPriceHistory news = TariffPriceHistory.builder()
-                        .product(product).tariff(t).basePrice(newBase).netPrice(net).vatRate(vatRate)
+                        .product(product).tariff(t).basePrice(tariffBase).netPrice(net).vatRate(vatRate)
                         .priceWithVat(net.multiply(BigDecimal.ONE.add(vatRate)).setScale(2, RoundingMode.HALF_UP))
                         .reRate(reRate).priceWithRe(net.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP))
-                        .discountPercent(t.getDiscountPercentage()).validFrom(effectiveDate.toLocalDate())
+                        .discountPercent(t.getDiscountPercentage()).validFrom(effectiveDate)
                         .build();
                 tariffPriceHistoryRepository.save(news);
             }
-            responses.add(toResponse(saved, false));
+
+            // Finally update the product table base price
+            product.setPrice(newGross);
+            productRepository.save(product);
+
+            if (!isMassive) {
+                responses.add(toResponse(saved, false));
+            }
+
+            // Progress tracking
+            if (request.getTaskId() != null && i % 50 == 0) {
+                int percent = (int) (((double) i / productIds.size()) * 100);
+                taskProgressService.updateProgress(request.getTaskId(), percent, "Procesando " + i + " de " + productIds.size() + "...");
+            }
+
+            // Batch maintenance: avoid OOM by clearing persistence context every 100 products
+            if (i > 0 && i % 100 == 0) {
+                entityManager.flush();
+                entityManager.clear();
+                // Re-fetch Small config lists if needed, but here we can just continue as we fetch Product by ID
+                activeTariffs = tariffRepository.findByActiveTrueOrderByNameAsc();
+            }
+        }
+
+        if (request.getTaskId() != null) {
+            taskProgressService.finishTask(request.getTaskId());
         }
 
         activityLogService.logActivity("PROGRAMAR_PRECIOS_MASIVOS", 
-                "Actualización masiva de precios para " + responses.size() + " productos.", "Admin", "PRODUCT", null);
+                "Actualización masiva de precios para " + productIds.size() + " productos. applyToAll=" + request.isApplyToAll(), "Admin", "PRODUCT", null);
 
         return responses;
     }
@@ -291,7 +328,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                         .orElseThrow(() -> new ResourceNotFoundException("Tariff " + change.getTariffId() + " not found."));
 
                 tariffPriceHistoryRepository.findCurrentByProductAndTariff(product.getId(), tariff.getId()).ifPresent(current -> {
-                    current.setValidTo(closingDate.toLocalDate());
+                    current.setValidTo(closingDate);
                     tariffPriceHistoryRepository.save(current);
                 });
 
@@ -309,7 +346,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                         .reRate(reRate)
                         .priceWithRe(net.multiply(BigDecimal.ONE.add(vatRate).add(reRate)).setScale(2, RoundingMode.HALF_UP))
                         .discountPercent(BigDecimal.ZERO) // Using zero because it's now a manual override
-                        .validFrom(effectiveDate.toLocalDate())
+                        .validFrom(effectiveDate)
                         .build();
                 tariffPriceHistoryRepository.save(history);
             }
@@ -343,7 +380,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
         // Pending Tariff changes (simplified: we use validFrom > today)
         tariffPriceHistoryRepository.findAll().stream()
-                .filter(h -> h.getValidFrom().isAfter(LocalDate.now()))
+                .filter(h -> h.getValidFrom().isAfter(LocalDateTime.now()))
                 .forEach(h -> {
                     BigDecimal oldPrice = tariffPriceHistoryRepository.findByProductIdOrderByValidFromDesc(h.getProduct().getId()).stream()
                             .filter(prev -> prev.getTariff().getId().equals(h.getTariff().getId()) && prev.getValidFrom().isBefore(h.getValidFrom()))
@@ -356,7 +393,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                             .tariffName(h.getTariff().getName())
                             .oldPrice(oldPrice)
                             .newPrice(h.getPriceWithVat())
-                            .startDate(h.getValidFrom().atStartOfDay())
+                            .startDate(h.getValidFrom())
                             .pending(true)
                             .build());
                 });
@@ -373,7 +410,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
         
         // From Tariff History (last applied)
         tariffPriceHistoryRepository.findAll().stream()
-                .filter(h -> h.getValidFrom().isBefore(LocalDate.now()) || h.getValidFrom().isEqual(LocalDate.now()))
+                .filter(h -> h.getValidFrom().isBefore(LocalDateTime.now()) || h.getValidFrom().isEqual(LocalDateTime.now()))
                 .sorted(Comparator.comparing(TariffPriceHistory::getCreatedAt).reversed())
                 .limit(30)
                 .forEach(h -> {
@@ -408,7 +445,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
         // Then try TariffPriceHistory
         else if (tariffPriceHistoryRepository.existsById(id)) {
             tariffPriceHistoryRepository.findById(id).ifPresent(h -> {
-                if (h.getValidFrom().isAfter(LocalDate.now())) {
+                if (h.getValidFrom().isAfter(LocalDateTime.now())) {
                     tariffPriceHistoryRepository.delete(h);
                 }
             });

@@ -14,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ByteArrayResource;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
+import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 
 /**
  * Main controller for administrative views and operations.
@@ -158,7 +160,8 @@ public class AdminController {
 
         // Convert entities to DTOs to avoid Hibernate Proxy serialization issues in JS
         List<AdminCategoryDTO> categoryDTOs = categoryService.findAllActive().stream()
-                .map(c -> new AdminCategoryDTO(c.getId(), c.getName(), c.getNameEs(), c.getActive(), c.getDescription()))
+                .map(c -> new AdminCategoryDTO(c.getId(), c.getName(), c.getNameEs(), c.getActive(),
+                        c.getDescription()))
                 .toList();
         model.addAttribute("allCategories", categoryDTOs);
 
@@ -187,7 +190,8 @@ public class AdminController {
         model.addAttribute("roles", roleDTOs);
 
         List<AdminTariffDTO> tariffDTOs = tariffService.findAll().stream()
-                .map(t -> new AdminTariffDTO(t.getId(), t.getName(), t.getActive(), t.getDescription(), t.getColor(), t.getDiscountPercentage(), t.getSystemTariff()))
+                .map(t -> new AdminTariffDTO(t.getId(), t.getName(), t.getActive(), t.getDescription(), t.getColor(),
+                        t.getDiscountPercentage(), t.getSystemTariff()))
                 .toList();
         model.addAttribute("tariffs", tariffDTOs);
 
@@ -388,44 +392,66 @@ public class AdminController {
     public String tariffHistory(
             @PathVariable Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
             @RequestParam(required = false, defaultValue = "tarifasView") String returnView,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "100") int size,
             Model model,
             HttpSession session) {
-        tariffPriceHistoryService.generateInitialSnapshotIfEmpty(id);
-        if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
-            return "redirect:/tpv";
-        }
-        Tariff tariff = tariffService.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tariff not found"));
 
-        LocalDate targetDate = date;
+        Worker worker = (Worker) session.getAttribute("worker");
+        if (worker == null || !Boolean.TRUE.equals(session.getAttribute("admin"))) {
+            return "redirect:/login";
+        }
+
+        Tariff tariff = tariffService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tarifa no encontrada"));
         List<LocalDate> availableDates = tariffPriceHistoryService.getDistinctValidFromDates(id);
 
-        // Add TODAY to the list of relevant dates if it has active prices and is not
-        // already there
         LocalDate today = LocalDate.now();
         if (!availableDates.contains(today)) {
-            // We don't add it to the DB but to the list shown in the UI
             availableDates.add(0, today);
         }
+        LocalDate targetDate = date != null ? date : (availableDates.isEmpty() ? today : availableDates.get(0));
 
-        // Default to most recent if no date provided
-        if (targetDate == null && !availableDates.isEmpty()) {
-            targetDate = availableDates.get(0);
-        } else if (targetDate == null) {
-            targetDate = today;
+        List<LocalTime> dayVersions = tariffPriceHistoryService.getVersionsForDate(id, targetDate);
+        
+        boolean needsVersionSelection = false;
+        LocalTime selectedTime = time;
+
+        // 2. Aplicar lógica de pasarela (Gatekeeper)
+        if (dayVersions.size() > 1 && selectedTime == null) {
+            needsVersionSelection = true;
+        } else if (selectedTime == null && !dayVersions.isEmpty()) {
+            selectedTime = dayVersions.get(0); // Única versión disponible
+        } else if (selectedTime == null) {
+            selectedTime = LocalTime.MIN; // Caso de seguridad
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> pricesPage = tariffPriceHistoryService
-                .getPricesForTariffAtDate(id, targetDate, pageable);
+        Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> pricesPage;
+        
+        if (needsVersionSelection) {
+            pricesPage = org.springframework.data.domain.Page.empty();
+        } else {
+            // Consulta exacta por fecha y hora
+            pricesPage = tariffPriceHistoryService.getPricesForTariffAtExactDateTime(id, targetDate, selectedTime, pageable);
+        }
 
         boolean isInitializing = false;
-        if (pricesPage.isEmpty() && tariffPriceHistoryService.isInitializationInProgress(id)) {
+        if (pricesPage.isEmpty() && !needsVersionSelection && tariffPriceHistoryService.isInitializationInProgress(id)) {
             isInitializing = true;
         }
+
+        model.addAttribute("tariff", tariff);
+        model.addAttribute("pricesPage", pricesPage);
+        model.addAttribute("selectedDate", targetDate);
+        model.addAttribute("selectedTime", selectedTime);
+        model.addAttribute("dayVersions", dayVersions);
+        model.addAttribute("needsVersionSelection", needsVersionSelection);
+        model.addAttribute("availableDates", availableDates);
+        model.addAttribute("returnView", returnView);
+
+
 
         boolean dateExists = !pricesPage.isEmpty();
 
@@ -468,10 +494,6 @@ public class AdminController {
             }
         }
 
-        model.addAttribute("tariff", tariff);
-        model.addAttribute("pricesPage", pricesPage);
-        model.addAttribute("selectedDate", targetDate);
-        model.addAttribute("availableDates", availableDates);
         model.addAttribute("prevDate", prevDate);
         model.addAttribute("nextDate", nextDate);
         model.addAttribute("firstDate",
@@ -479,7 +501,6 @@ public class AdminController {
         model.addAttribute("lastDate", availableDates.isEmpty() ? null : availableDates.get(0));
         model.addAttribute("dateExists", dateExists);
         model.addAttribute("isInitializing", isInitializing);
-        model.addAttribute("returnView", returnView);
 
         return "admin/tariff-price-history";
     }
@@ -489,6 +510,7 @@ public class AdminController {
     public ResponseEntity<?> downloadTariffPdf(
             @PathVariable Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
             HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return ResponseEntity.status(401).build();
@@ -496,11 +518,13 @@ public class AdminController {
 
         try {
             Tariff tariff = tariffService.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Tariff not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tarifa no encontrada"));
 
             LocalDate targetDate = date != null ? date : LocalDate.now();
+            LocalTime targetTime = time != null ? time : LocalTime.now();
+            
             List<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> history = tariffPriceHistoryService
-                    .getPricesForTariffAtDateList(id, targetDate);
+                    .getPricesForTariffAtExactDateTimeList(id, targetDate, targetTime);
 
             byte[] pdfData = pdfReportService.generateTariffSheet(tariff, history, targetDate);
             String filename = String.format("Tariff_%s_%s.pdf", tariff.getName(), targetDate);
@@ -585,12 +609,19 @@ public class AdminController {
         redirectAttributes.addFlashAttribute("successMessage", "Company settings updated successfully.");
         return "redirect:/admin?view=settingsView";
     }
+
     /**
-     * Internal DTOs for Admin view to avoid Hibernate proxy issues and provide typed access in Thymeleaf.
+     * Internal DTOs for Admin view to avoid Hibernate proxy issues and provide
+     * typed access in Thymeleaf.
      */
-    public static record AdminCategoryDTO(Long id, String name, String nameEs, Boolean active, String description) {}
-    public static record AdminRoleDTO(Long id, String name) {}
-    public static record AdminTariffDTO(Long id, String name, Boolean active, String description, String color, java.math.BigDecimal discountPercentage, Boolean systemTariff) {
+    public static record AdminCategoryDTO(Long id, String name, String nameEs, Boolean active, String description) {
+    }
+
+    public static record AdminRoleDTO(Long id, String name) {
+    }
+
+    public static record AdminTariffDTO(Long id, String name, Boolean active, String description, String color,
+            java.math.BigDecimal discountPercentage, Boolean systemTariff) {
         public String getDisplayLabel() {
             if (discountPercentage != null && discountPercentage.compareTo(java.math.BigDecimal.ZERO) > 0) {
                 return name + " -" + discountPercentage.stripTrailingZeros().toPlainString() + "%";
@@ -598,6 +629,8 @@ public class AdminController {
             return name;
         }
     }
-    public static record AdminMeasurementUnitDTO(Long id, String name, String symbol, boolean active) {}
+
+    public static record AdminMeasurementUnitDTO(Long id, String name, String symbol, boolean active) {
+    }
 
 }

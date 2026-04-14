@@ -27,26 +27,26 @@ import java.util.Optional;
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificationExecutor<Sale> {
 
-    @EntityGraph(attributePaths = { "customer", "worker", "invoice", "ticket" })
+    @EntityGraph(attributePaths = { "customer", "worker", "invoice", "ticket", "coupon" })
     @Query("SELECT s FROM Sale s")
     Page<Sale> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query("SELECT s FROM Sale s WHERE s.id = :id")
     Optional<Sale> findWithDetailsById(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query("SELECT s FROM Sale s ORDER BY s.createdAt DESC")
     List<Sale> findAllWithDetails();
 
     @Override
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     Optional<Sale> findById(Long id);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     List<Sale> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query(value = "SELECT * FROM sales WHERE created_at >= CURDATE() AND status = 'ACTIVE' ORDER BY created_at DESC", nativeQuery = true)
     List<Sale> findToday();
 
@@ -102,7 +102,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             """, nativeQuery = true)
     String findTopProductNameBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query("SELECT s FROM Sale s WHERE s.customer.id = :customerId ORDER BY s.createdAt DESC")
     List<Sale> findByCustomerIdOrderByCreatedAtDesc(@Param("customerId") Long customerId);
 
@@ -170,11 +170,11 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             """, nativeQuery = true)
     List<Object[]> getTopProductsDetailed(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query("SELECT s FROM Sale s WHERE s.createdAt BETWEEN :from AND :to ORDER BY s.createdAt DESC")
     Page<Sale> findByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker" })
+    @EntityGraph(attributePaths = { "lines", "lines.product", "customer", "worker", "coupon" })
     @Query("SELECT s FROM Sale s WHERE s.createdAt BETWEEN :from AND :to AND s.worker.id = :workerId ORDER BY s.createdAt DESC")
     Page<Sale> findByCreatedAtBetweenAndWorkerId(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("workerId") Long workerId, Pageable pageable);
 
