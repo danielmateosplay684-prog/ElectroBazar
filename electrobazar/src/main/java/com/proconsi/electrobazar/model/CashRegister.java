@@ -110,7 +110,7 @@ public class CashRegister {
     private Worker retainedByWorker;
 
     /** Detailed list of manual cash movements. */
-    @OneToMany(mappedBy = "cashSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cashRegister", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private java.util.List<CashWithdrawal> withdrawals = new java.util.ArrayList<>();
 
@@ -124,11 +124,4 @@ public class CashRegister {
             this.registerDate = LocalDate.now();
         }
     }
-
-    // Aliases for compatibility with CashSession model
-    public LocalDateTime getOpeningDate() { return openingTime; }
-    public LocalDateTime getClosingDate() { return closedAt; }
-    public BigDecimal getInitialCash() { return openingBalance; }
-    public BigDecimal getExpectedCash() { return closingBalance; }
-    public BigDecimal getActualCash() { return actualCash; }
 }

@@ -445,7 +445,11 @@ function saveCustomer() {
         .then(() => {
             customerModal.hide();
             showToast(id ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente');
-            setTimeout(() => location.reload(), 900);
+            if (typeof filterCRM === 'function') {
+                filterCRM();
+            } else {
+                location.reload();
+            }
         })
         .catch(e => showToast('Error al guardar el cliente: ' + (e.message || ''), 'error'));
 }
@@ -458,7 +462,8 @@ function deleteCustomer(id, name) {
         .then(r => {
             if (r.ok) {
                 showToast('Cliente desactivado correctamente');
-                setTimeout(() => location.reload(), 900);
+                if (typeof filterCRM === 'function') filterCRM();
+                else setTimeout(() => location.reload(), 900);
             } else {
                 r.json().then(err =>
                     showToast('Error al eliminar cliente: ' + (err.error || err.message || 'Desconocido'), 'error')
@@ -682,7 +687,8 @@ function uploadCustomersCsvFile(input) {
         .then(data => {
             if (data.ok) {
                 showToast(data.message, 'success');
-                setTimeout(() => location.reload(), 2000);
+                if (typeof filterCRM === 'function') filterCRM();
+                else setTimeout(() => location.reload(), 2000);
             } else {
                 showToast(data.message || 'Error al procesar el archivo.', 'error');
             }

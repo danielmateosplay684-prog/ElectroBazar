@@ -28,7 +28,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
     private final MessageSource messageSource;
 
     @Override
-    public CashWithdrawal processMovement(Long sessionId, BigDecimal amount, String reason,
+    public CashWithdrawal processMovement(Long registerId, BigDecimal amount, String reason,
             CashWithdrawal.MovementType type, Worker worker) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero.");
@@ -53,7 +53,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
 
         // Asignamos el objeto session entero
         CashWithdrawal movement = CashWithdrawal.builder()
-                .cashSession(session)
+                .cashRegister(session)
                 .amount(amount)
                 .reason(reason)
                 .worker(worker)
@@ -76,8 +76,7 @@ public class CashWithdrawalServiceImpl implements CashWithdrawalService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CashWithdrawal> findBySessionId(Long sessionId) {
-        // Usa el ID aquí
-        return cashWithdrawalRepository.findByCashSessionId(sessionId);
+    public List<CashWithdrawal> findByRegisterId(Long registerId) {
+        return cashWithdrawalRepository.findByCashRegisterId(registerId);
     }
 }

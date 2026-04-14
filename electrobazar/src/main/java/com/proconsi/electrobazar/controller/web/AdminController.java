@@ -5,6 +5,7 @@ import com.proconsi.electrobazar.service.*;
 import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.model.Tariff;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
@@ -45,7 +46,7 @@ public class AdminController {
     private final CategoryService categoryService;
     private final CsvImportService csvImportService;
     private final SaleService saleService;
-    private final CashSessionService cashSessionService;
+    private final CashRegisterService cashRegisterService;
     private final PdfReportService pdfReportService;
     private final WorkerService workerService;
     private final CustomerService customerService;
@@ -154,7 +155,12 @@ public class AdminController {
         model.addAttribute("productsPage", productsPaged);
         model.addAttribute("categories", catsPaged.getContent());
         model.addAttribute("categoriesPage", catsPaged);
-        model.addAttribute("allCategories", categoryService.findAllActive()); // For modals/filters
+
+        // Convert entities to DTOs to avoid Hibernate Proxy serialization issues in JS
+        List<AdminCategoryDTO> categoryDTOs = categoryService.findAllActive().stream()
+                .map(c -> new AdminCategoryDTO(c.getId(), c.getName(), c.getNameEs(), c.getActive(), c.getDescription()))
+                .toList();
+        model.addAttribute("allCategories", categoryDTOs);
 
         // Metadata for pagination
         model.addAttribute("currentPage", page);
@@ -169,19 +175,33 @@ public class AdminController {
         model.addAttribute("returns", returnService.findAll(latest50).getContent());
 
         // Infrastructure and Management (Limited to recent 100 for performance)
-        model.addAttribute("cashRegisters", cashSessionService.findAllClosed());
+        model.addAttribute("cashRegisters", cashRegisterService.findAllClosed());
+        model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
         model.addAttribute("workers", workerService.findAll());
         model.addAttribute("customers",
                 customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
-        model.addAttribute("roles", roleService.findAll());
-        model.addAttribute("tariffs", tariffService.findAll());
+
+        List<AdminRoleDTO> roleDTOs = roleService.findAll().stream()
+                .map(r -> new AdminRoleDTO(r.getId(), r.getName()))
+                .toList();
+        model.addAttribute("roles", roleDTOs);
+
+        List<AdminTariffDTO> tariffDTOs = tariffService.findAll().stream()
+                .map(t -> new AdminTariffDTO(t.getId(), t.getName(), t.getActive(), t.getDescription(), t.getColor(), t.getDiscountPercentage(), t.getSystemTariff()))
+                .toList();
+        model.addAttribute("tariffs", tariffDTOs);
+
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
         model.addAttribute("taxRates", taxRateRepository.findAll());
         model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
         model.addAttribute("companySettings", companySettingsService.getSettings());
         model.addAttribute("coupons", couponService.findAll());
         model.addAttribute("promotions", promotionService.findAll());
-        model.addAttribute("measurementUnits", measurementUnitService.findAll());
+
+        List<AdminMeasurementUnitDTO> unitDTOs = measurementUnitService.findAll().stream()
+                .map(u -> new AdminMeasurementUnitDTO(u.getId(), u.getName(), u.getSymbol(), u.isActive()))
+                .toList();
+        model.addAttribute("measurementUnits", unitDTOs);
 
         // Mark as optimized view
         model.addAttribute("isOptimizedView", true);
@@ -327,14 +347,14 @@ public class AdminController {
         }
 
         try {
-            com.proconsi.electrobazar.model.CashRegister cs = cashSessionService.findById(id);
+            com.proconsi.electrobazar.model.CashRegister cs = cashRegisterService.findById(id);
             if (cs == null)
                 return ResponseEntity.notFound().build();
 
             // Regenerate on demand
             byte[] pdfData = pdfReportService.generateCashCloseReport(cs);
-            String dateStr = cs.getClosingDate() != null
-                    ? cs.getClosingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+            String dateStr = cs.getClosedAt() != null
+                    ? cs.getClosedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                     : "UnknownDate";
             String filename = String.format("CashClose_%s_ID%d.pdf", dateStr, id);
 
@@ -401,12 +421,12 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size);
         Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> pricesPage = tariffPriceHistoryService
                 .getPricesForTariffAtDate(id, targetDate, pageable);
-        
+
         boolean isInitializing = false;
         if (pricesPage.isEmpty() && tariffPriceHistoryService.isInitializationInProgress(id)) {
             isInitializing = true;
         }
-        
+
         boolean dateExists = !pricesPage.isEmpty();
 
         LocalDate prevDate = null;
@@ -502,13 +522,13 @@ public class AdminController {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/login";
         }
-        com.proconsi.electrobazar.model.CashRegister register = cashSessionService.findById(id);
+        com.proconsi.electrobazar.model.CashRegister register = cashRegisterService.findById(id);
         if (register == null) {
             return "redirect:/admin?view=cashCloseView";
         }
 
-        LocalDateTime startTime = register.getOpeningDate();
-        LocalDateTime endTime = register.getClosingDate() != null ? register.getClosingDate() : LocalDateTime.now();
+        LocalDateTime startTime = register.getOpeningTime();
+        LocalDateTime endTime = register.getClosedAt() != null ? register.getClosedAt() : LocalDateTime.now();
 
         model.addAttribute("register", register);
         model.addAttribute("sales", saleService.findBetween(startTime, endTime));
@@ -565,4 +585,19 @@ public class AdminController {
         redirectAttributes.addFlashAttribute("successMessage", "Company settings updated successfully.");
         return "redirect:/admin?view=settingsView";
     }
+    /**
+     * Internal DTOs for Admin view to avoid Hibernate proxy issues and provide typed access in Thymeleaf.
+     */
+    public static record AdminCategoryDTO(Long id, String name, String nameEs, Boolean active, String description) {}
+    public static record AdminRoleDTO(Long id, String name) {}
+    public static record AdminTariffDTO(Long id, String name, Boolean active, String description, String color, java.math.BigDecimal discountPercentage, Boolean systemTariff) {
+        public String getDisplayLabel() {
+            if (discountPercentage != null && discountPercentage.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                return name + " -" + discountPercentage.stripTrailingZeros().toPlainString() + "%";
+            }
+            return name;
+        }
+    }
+    public static record AdminMeasurementUnitDTO(Long id, String name, String symbol, boolean active) {}
+
 }

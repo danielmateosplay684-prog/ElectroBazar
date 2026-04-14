@@ -51,7 +51,7 @@ public class TpvController {
     private final CompanySettingsService companySettingsService;
     private final AdminPinService adminPinService;
     private final ActivityLogService activityLogService;
-    private final CashSessionService cashSessionService;
+
     private final CashRegisterService cashRegisterService;
     private final MessageSource messageSource;
 
@@ -79,8 +79,8 @@ public class TpvController {
             products = productService.getTopProductsByRank(100);
         }
 
-        java.util.Optional<CashRegister> activeSessionOpt = cashSessionService.getActiveSession();
-        boolean isRegisterOpen = activeSessionOpt.isPresent();
+        java.util.Optional<CashRegister> activeRegisterOpt = cashRegisterService.getOpenRegister();
+        boolean isRegisterOpen = activeRegisterOpt.isPresent();
         model.addAttribute("isRegisterOpen", isRegisterOpen);
 
         model.addAttribute("products", products);
@@ -92,7 +92,7 @@ public class TpvController {
         model.addAttribute("tariffs", tariffService.findAllActive());
 
         if (isRegisterOpen) {
-            model.addAttribute("activeSession", activeSessionOpt.get());
+            model.addAttribute("activeRegister", activeRegisterOpt.get());
         } else {
             CashRegisterOpenSuggestion suggestion = cashRegisterService.getOpenSuggestion();
             model.addAttribute("hasSuggestion", suggestion.isHasSuggestion());
@@ -373,13 +373,13 @@ public class TpvController {
             return "redirect:/tpv";
         }
 
-        Optional<CashRegister> activeSessionOpt = cashSessionService.getActiveSession();
-        if (activeSessionOpt.isEmpty()) {
+        Optional<CashRegister> activeRegisterOpt = cashRegisterService.getOpenRegister();
+        if (activeRegisterOpt.isEmpty()) {
             return "redirect:/tpv/open-register";
         }
 
-        CashRegister activeSession = activeSessionOpt.get();
-        LocalDateTime startOfShift = activeSession.getOpeningDate();
+        CashRegister activeRegister = activeRegisterOpt.get();
+        LocalDateTime startOfShift = activeRegister.getOpeningTime();
 
         // 1. Fetch Summary (Combined query for Efficiency)
         SaleSummaryResponse summary = saleService.getSummaryToday();
@@ -388,7 +388,7 @@ public class TpvController {
         BigDecimal cashRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CASH);
         BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
 
-        List<CashWithdrawal> movements = cashWithdrawalService.findBySessionId(activeSession.getId());
+        List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(activeRegister.getId());
         BigDecimal totalWithdrawals = movements.stream()
                 .filter(m -> m.getType() == null || m.getType() == CashWithdrawal.MovementType.WITHDRAWAL)
                 .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
@@ -400,7 +400,7 @@ public class TpvController {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 3. Expected Cash Logic (Calculated sum of movements)
-        BigDecimal expectedCashInDrawer = activeSession.getOpeningBalance()
+        BigDecimal expectedCashInDrawer = activeRegister.getOpeningBalance()
                 .add(summary.getTotalCashAmount())
                 .subtract(cashRefundsToday)
                 .add(totalEntries)
@@ -413,7 +413,7 @@ public class TpvController {
         model.addAttribute("totalToday", summary.getTotalSalesAmount());
         model.addAttribute("countToday", summary.getTotalSalesCount());
 
-        model.addAttribute("activeSession", activeSession);
+        model.addAttribute("activeRegister", activeRegister);
         model.addAttribute("cashSalesToday", summary.getTotalCashAmount());
         model.addAttribute("cashRefundsToday", cashRefundsToday);
         model.addAttribute("cardSalesToday", summary.getTotalCardAmount());
@@ -423,7 +423,7 @@ public class TpvController {
         model.addAttribute("expectedCashInDrawer", expectedCashInDrawer);
         model.addAttribute("workerStats", saleService.getWorkerStatsBetween(startOfShift, LocalDateTime.now()));
         model.addAttribute("shiftStartTime", startOfShift.toString());
-        model.addAttribute("todayRegister", activeSession);
+        model.addAttribute("todayRegister", activeRegister);
 
         model.addAttribute("categories", categoryService.findAllActive());
         model.addAttribute("companySettings", companySettingsService.getSettings());
@@ -450,19 +450,17 @@ public class TpvController {
         }
 
         try {
-            java.util.Optional<com.proconsi.electrobazar.model.CashRegister> activeSessionOpt = cashSessionService
-                    .getActiveSession();
-            if (activeSessionOpt.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessage", "There is no active cash session.");
+            java.util.Optional<com.proconsi.electrobazar.model.CashRegister> activeRegisterOpt = cashRegisterService.getOpenRegister();
+            if (activeRegisterOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "There is no active cash register.");
                 return "redirect:/tpv";
             }
-
-            com.proconsi.electrobazar.model.CashRegister activeSession = activeSessionOpt.get();
+            com.proconsi.electrobazar.model.CashRegister activeRegister = activeRegisterOpt.get();
             java.math.BigDecimal amountDecimal = new java.math.BigDecimal(amount.replace(",", "."));
             com.proconsi.electrobazar.model.CashWithdrawal.MovementType movementType = com.proconsi.electrobazar.model.CashWithdrawal.MovementType
                     .valueOf(type.toUpperCase());
 
-            cashWithdrawalService.processMovement(activeSession.getId(), amountDecimal, reason, movementType,
+            cashWithdrawalService.processMovement(activeRegister.getId(), amountDecimal, reason, movementType,
                     worker);
 
             String msg = (movementType == CashWithdrawal.MovementType.ENTRY ? "Entry" : "Withdrawal")
@@ -489,7 +487,7 @@ public class TpvController {
     public String openRegisterForm(HttpSession session, Model model) {
         if (session.getAttribute("worker") == null)
             return "redirect:/login";
-        if (cashSessionService.getActiveSession().isPresent()) {
+        if (cashRegisterService.getOpenRegister().isPresent()) {
             return "redirect:/tpv";
         }
         CashRegisterOpenSuggestion suggestion = cashRegisterService.getOpenSuggestion();
@@ -514,7 +512,7 @@ public class TpvController {
             openingBalanceDecimal = BigDecimal.ZERO;
         }
 
-        cashSessionService.openSession(openingBalanceDecimal, worker);
+        cashRegisterService.openCashRegister(openingBalanceDecimal, worker);
         return "redirect:/tpv";
     }
 
@@ -535,14 +533,14 @@ public class TpvController {
         String normalizedBalance = closingBalance.replace(",", ".");
         BigDecimal actualCash = new BigDecimal(normalizedBalance);
 
-        CashRegister sessionClosed = cashSessionService.closeSession(actualCash, worker);
+        CashRegister registerClosed = cashRegisterService.closeCashRegister(actualCash, null, worker, null);
 
-        BigDecimal actual = sessionClosed.getActualCash() != null
-                ? sessionClosed.getActualCash()
+        BigDecimal actual = registerClosed.getActualCash() != null
+                ? registerClosed.getActualCash()
                 : BigDecimal.ZERO;
 
-        BigDecimal expected = sessionClosed.getExpectedCash() != null
-                ? sessionClosed.getExpectedCash()
+        BigDecimal expected = registerClosed.getClosingBalance() != null
+                ? registerClosed.getClosingBalance()
                 : BigDecimal.ZERO;
 
         redirectAttributes.addFlashAttribute("successMessage",

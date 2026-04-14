@@ -5,7 +5,7 @@ import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.PaymentMethod;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.service.CashRegisterService;
-import com.proconsi.electrobazar.service.CashSessionService;
+
 import com.proconsi.electrobazar.service.PdfReportService;
 import com.proconsi.electrobazar.service.WorkerService;
 import com.proconsi.electrobazar.service.SaleService;
@@ -37,7 +37,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CashRegisterApiRestController {
 
-    private final CashSessionService cashSessionService;
     private final CashRegisterService cashRegisterService;
     private final PdfReportService pdfReportService;
     private final WorkerService workerService;
@@ -53,7 +52,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<CashRegister> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(cashSessionService.findById(id));
+        return ResponseEntity.ok(cashRegisterService.findById(id));
     }
 
     /**
@@ -63,7 +62,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/closed")
     public ResponseEntity<List<CashRegister>> getAllClosed() {
-        return ResponseEntity.ok(cashSessionService.findAllClosed());
+        return ResponseEntity.ok(cashRegisterService.findAllClosed());
     }
 
     /**
@@ -73,7 +72,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/open")
     public ResponseEntity<CashRegister> getOpen() {
-        return cashSessionService.getActiveSession()
+        return cashRegisterService.getOpenRegister()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
@@ -88,7 +87,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/close-info")
     public ResponseEntity<CashCloseInfoDTO> getCloseInfo() {
-        Optional<CashRegister> activeSessionOpt = cashSessionService.getActiveSession();
+        Optional<CashRegister> activeSessionOpt = cashRegisterService.getOpenRegister();
         if (activeSessionOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
@@ -99,7 +98,7 @@ public class CashRegisterApiRestController {
         BigDecimal cardSalesToday = saleService.sumTotalByPaymentMethodToday(PaymentMethod.CARD);
         BigDecimal cardRefundsToday = returnService.sumTotalRefundedTodayByPaymentMethod(PaymentMethod.CARD);
 
-        List<CashWithdrawal> movements = cashWithdrawalService.findBySessionId(activeSession.getId());
+        List<CashWithdrawal> movements = cashWithdrawalService.findByRegisterId(activeSession.getId());
         BigDecimal totalWithdrawals = movements.stream()
                 .filter(m -> m.getType() == null || m.getType() == CashWithdrawal.MovementType.WITHDRAWAL)
                 .map(m -> m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
@@ -112,8 +111,8 @@ public class CashRegisterApiRestController {
 
         LocalDateTime startOfShift = activeSession.getOpeningTime();
 
-        // Compatibility logic for expected cash
-        BigDecimal expectedCashInDrawer = activeSession.getClosingBalance();
+        // Use the comprehensive calculation from the Service
+        BigDecimal expectedCashInDrawer = cashRegisterService.calculateExpectedCashBalance(activeSession);
 
         SaleSummaryResponse summary = saleService.getSummaryToday();
 
@@ -144,11 +143,11 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/today")
     public ResponseEntity<CashRegister> getToday() {
-        return cashSessionService.getActiveSession()
+        return cashRegisterService.getOpenRegister()
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     try {
-                        return ResponseEntity.ok(cashSessionService.findTodayIfClosed());
+                        return ResponseEntity.ok(cashRegisterService.findTodayIfClosed());
                     } catch (Exception e) {
                         return ResponseEntity.noContent().build();
                     }
@@ -163,7 +162,7 @@ public class CashRegisterApiRestController {
      */
     @GetMapping("/{id}/ticket")
     public ResponseEntity<Resource> getTicket(@PathVariable Long id) {
-        CashRegister cs = cashSessionService.findById(id);
+        CashRegister cs = cashRegisterService.findById(id);
         byte[] pdfData = pdfReportService.generateCashCloseReport(cs);
 
         String filename = "Cierre_Caja_" + id + ".pdf";
@@ -175,11 +174,10 @@ public class CashRegisterApiRestController {
     }
 
     /**
-     * Initializes a new cash session.
+     * Initializes a new cash register shift.
      * 
      * @param openingBalance The initial cash money available in the drawer.
-     * @param workerId       ID of the worker opening the register.
-     * @return 201 Created with the new session details.
+     * @return 201 Created with the new register details.
      */
     @PostMapping("/open")
     public ResponseEntity<CashRegister> openCashRegister(
@@ -188,7 +186,7 @@ public class CashRegisterApiRestController {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Worker worker = workerService.findByUsername(username).orElse(null);
         try {
-            CashRegister cs = cashSessionService.openSession(openingBalance, worker);
+            CashRegister cs = cashRegisterService.openCashRegister(openingBalance, worker);
             return ResponseEntity.status(HttpStatus.CREATED).body(cs);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
@@ -198,7 +196,7 @@ public class CashRegisterApiRestController {
     }
 
     /**
-     * Closes the active cash session.
+     * Closes the active cash register.
      * Automatically calculates the difference between expected and actual cash.
      * 
      * @param closingBalance The physical cash counted in the drawer at the end of
@@ -207,8 +205,7 @@ public class CashRegisterApiRestController {
      *                       discrepancies).
      * @param retainedAmount Amount of money to keep in the drawer for the next
      *                       shift.
-     * @param workerId       ID of the worker closing the register.
-     * @return 201 Created with the closed session and audit details.
+     * @return 201 Created with the closed register and audit details.
      */
     @PostMapping("/close")
     public ResponseEntity<CashRegister> closeCashRegister(
@@ -219,14 +216,13 @@ public class CashRegisterApiRestController {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Worker worker = workerService.findByUsername(username).orElse(null);
 
-        // Use CashRegisterService which handles all calculations (sales, returns,
-        // withdrawals, etc.)
+        // Handles all calculations (sales, returns, withdrawals, etc.)
         CashRegister cs = cashRegisterService.closeCashRegister(closingBalance, notes, worker, retainedAmount);
 
         try {
             pdfReportService.generateCashCloseReport(cs);
         } catch (Exception e) {
-            // Log error but don't fail the response, as core business logic succeeded
+            // Log error but don't fail the response
             System.err.println("Error generating PDF at close: " + e.getMessage());
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(cs);

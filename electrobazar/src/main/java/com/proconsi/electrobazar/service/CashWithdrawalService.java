@@ -21,7 +21,7 @@ public interface CashWithdrawalService {
      * @param worker         The worker performing the operation.
      * @return The resulting CashWithdrawal entity.
      */
-    CashWithdrawal processMovement(Long sessionId, BigDecimal amount, String reason,
+    CashWithdrawal processMovement(Long registerId, BigDecimal amount, String reason,
             CashWithdrawal.MovementType type, Worker worker);
 
     /**
@@ -30,5 +30,5 @@ public interface CashWithdrawalService {
      * @param registerId The shift ID.
      * @return A list of CashWithdrawal records.
      */
-    List<CashWithdrawal> findBySessionId(Long sessionId);
+    List<CashWithdrawal> findByRegisterId(Long registerId);
 }

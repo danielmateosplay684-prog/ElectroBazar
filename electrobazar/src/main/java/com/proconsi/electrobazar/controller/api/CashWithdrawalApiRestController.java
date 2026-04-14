@@ -3,7 +3,7 @@ package com.proconsi.electrobazar.controller.api;
 import com.proconsi.electrobazar.model.CashWithdrawal;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.security.JwtService;
-import com.proconsi.electrobazar.service.CashSessionService;
+
 import com.proconsi.electrobazar.service.CashWithdrawalService;
 import com.proconsi.electrobazar.service.WorkerService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ import java.util.Set;
 public class CashWithdrawalApiRestController {
 
     private final CashWithdrawalService cashWithdrawalService;
-    private final CashSessionService cashSessionService;
+    private final com.proconsi.electrobazar.service.CashRegisterService cashRegisterService;
     private final WorkerService workerService;
     private final JwtService jwtService;
 
@@ -79,7 +79,7 @@ public class CashWithdrawalApiRestController {
         Worker worker = workerService.findById(workerId)
                 .orElseThrow(() -> new com.proconsi.electrobazar.exception.ResourceNotFoundException("Trabajador no encontrado"));
 
-        com.proconsi.electrobazar.model.CashRegister activeSession = cashSessionService.getActiveSession()
+        com.proconsi.electrobazar.model.CashRegister activeSession = cashRegisterService.getOpenRegister()
                 .orElseThrow(() -> new IllegalStateException("No hay ninguna sesión de caja abierta."));
 
         if (body == null || body.amount == null || body.amount.trim().isEmpty()) {
