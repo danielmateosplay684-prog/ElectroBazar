@@ -103,7 +103,7 @@
                     th:data-taxid="${c.taxId ?: ''}" th:data-email="${c.email ?: ''}"
                     th:data-phone="${c.phone ?: ''}" th:data-city="${c.city ?: ''}" th:data-type="${c.type}"
                     th:data-re="${c.hasRecargoEquivalencia ? 'yes' : 'no'}">
-                    <td><strong th:text="${c.name}"></strong></td>
+                    <td><strong class="text-body" th:text="${c.name}"></strong></td>
                     <td th:text="${c.taxId ?: '-'}"></td>
                     <td th:text="${c.email ?: '-'}"></td>
                     <td th:text="${c.phone ?: '-'}"></td>
@@ -122,10 +122,10 @@
                             th:text="#{admin.tariffs.minorista}">MINORISTA</span>
                     </td>
                     <td>
-                        <span th:if="${c.hasRecargoEquivalencia}" class="badge badge-re-custom"
-                            th:title="#{admin.crm.re.subject}">R.E.</span>
-                        <span th:unless="${c.hasRecargoEquivalencia}" class="badge"
-                            style="color: var(--text-muted); border: 1px solid var(--border); font-size: 0.8rem; padding: 0.3rem 0.6rem;">-</span>
+                        <span th:if="${c.hasRecargoEquivalencia}" 
+                            style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">SÍ</span>
+                        <span th:unless="${c.hasRecargoEquivalencia}" 
+                            style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;">NO</span>
                     </td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">

@@ -151,17 +151,24 @@ function renderBulkProductList(products) {
     itemsToShow.forEach(p => {
         const isSelected = bulkSelectAllAbsolute || bulkSelectedProducts.has(p.id);
         const div = document.createElement('div');
-        div.className = 'bulk-item' + (isSelected ? ' selected' : '');
+        div.className = 'bulk-item d-flex align-items-center p-2 mb-1 rounded hover-surface' + (isSelected ? ' selected' : '');
+        div.style.cursor = 'pointer';
+        div.style.border = '1px solid var(--border)';
+        // Forzar fondo oscuro si está seleccionado o hover para que resalte
         div.onclick = () => handleBulkProductToggle(p.id);
         div.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); handleBulkProductToggle(${p.id})">
+            <div class="form-check me-3 mb-0">
+                <input class="form-check-input mt-0" type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); handleBulkProductToggle(${p.id})">
             </div>
-            <div class="bulk-item-info">
-                <strong>${p.name}</strong>
-                <small>${p.categoryName || 'Sin categoría'}</small>
+            <div class="bulk-item-info flex-grow-1">
+                <div class="fw-bold" style="font-size:0.9rem; color: #ffffff !important;">${p.name}</div>
+                <div class="small" style="color: #adb5bd !important;">${p.categoryName || 'Sin categoría'}</div>
             </div>
-            <div class="ms-auto">${formatDecimal(p.price)} €</div>
+            <div class="text-end ps-3">
+                <span class="badge bg-dark fw-500" style="border:1px solid var(--border); color: #ffffff !important; background-color: #343a40 !important;">
+                    ${formatDecimal(p.price)} €
+                </span>
+            </div>
         `;
         container.appendChild(div);
     });

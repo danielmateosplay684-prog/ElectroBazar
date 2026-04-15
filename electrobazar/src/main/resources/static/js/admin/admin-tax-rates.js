@@ -152,8 +152,8 @@ function filterSelProducts() {
                                 <input class="form-check-input sel-product-cb me-3 mt-0 flex-shrink-0"
                                     type="checkbox" value="${p.id}" id="selProdDyn${p.id}" style="margin-left:5px;">
                                 <div class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
-                                    <span class="fw-500" style="color:var(--text-main);font-size:0.85rem;">${p.nameEs || p.name}</span>
-                                    <span class="badge bg-secondary text-muted rounded-pill small px-2">
+                                    <span class="fw-500 text-body" style="font-size:0.85rem;">${p.nameEs || p.name}</span>
+                                    <span class="badge bg-dark-subtle text-body-secondary rounded-pill small px-2" style="border:1px solid var(--border);">
                                         IVA: ${p.taxRate ? Math.round(p.taxRate.vatRate * 100) + '%' : '—'}
                                     </span>
                                 </div>
