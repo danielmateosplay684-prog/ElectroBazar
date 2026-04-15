@@ -198,5 +198,15 @@ public interface ProductService {
     List<Product> getTopSellingProducts(int limit);
 
     List<Product> getTopProductsByRank(int limit);
+
+    /**
+     * Applies a tax rate to specific products with memory management and progress reporting.
+     * 
+     * @param productIds List of product IDs.
+     * @param taxRate    The target tax rate.
+     * @param taskId     Optional task tracking ID.
+     * @return Count of updated products.
+     */
+    int applySelectiveTaxRate(List<Long> productIds, TaxRate taxRate, String taskId);
 }
 

@@ -84,8 +84,20 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
             Pageable pageable) {
         LocalDateTime targetDateTime = (time != null) ? date.atTime(time) : date.atTime(LocalTime.MAX);
 
-        // Buscamos los registros que estaban activos en ese instante exacto
+        // Buscamos los registros que estaban ACTIVOS en ese instante (dentro de un rango [validFrom, validTo])
         Page<TariffPriceHistory> historyPage = tariffPriceHistoryRepository.findByTariffIdAndDateTime(tariffId,
+                targetDateTime, pageable);
+
+        return historyPage.map(this::mapToDTO);
+    }
+
+    @Override
+    public Page<TariffPriceEntryDTO> getPricesForTariffAtExactValidFrom(Long tariffId, LocalDate date, LocalTime time,
+            Pageable pageable) {
+        LocalDateTime targetDateTime = (time != null) ? date.atTime(time) : date.atTime(LocalTime.MIN);
+
+        // Buscamos los registros que EMPEZARON exactamente a esa hora (la "versión")
+        Page<TariffPriceHistory> historyPage = tariffPriceHistoryRepository.findByTariffIdAndValidFrom(tariffId,
                 targetDateTime, pageable);
 
         return historyPage.map(this::mapToDTO);
@@ -96,8 +108,8 @@ public class TariffPriceHistoryServiceImpl implements TariffPriceHistoryService 
             LocalTime time) {
         LocalDateTime targetDateTime = (time != null) ? date.atTime(time) : date.atTime(LocalTime.MAX);
 
-        // Buscamos los registros activos en ese instante para la lista completa
-        List<TariffPriceHistory> histories = tariffPriceHistoryRepository.findAllByTariffIdAndDateTime(tariffId,
+        // Usamos la consulta Robusta para el PDF: devuelve el último precio conocido de CADA producto
+        List<TariffPriceHistory> histories = tariffPriceHistoryRepository.findAllLatestByTariffIdAndDateTime(tariffId,
                 targetDateTime);
 
         return histories.stream().map(this::mapToDTO).collect(Collectors.toList());

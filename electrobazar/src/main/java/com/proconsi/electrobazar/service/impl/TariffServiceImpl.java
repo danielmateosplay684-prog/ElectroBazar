@@ -194,10 +194,14 @@ public class TariffServiceImpl implements TariffService {
         }
         if (!newRecords.isEmpty()) {
             tariffPriceHistoryRepository.saveAll(newRecords);
-            activityLogService.logActivity("REGENERAR_PRECIOS_TARIFA",
-                    String.format("Precios regenerados para %d productos en %d tarifas activas.",
-                            affectedProducts.size(), activeTariffs.size()),
-                    "System", "TARIFF", null);
+            // Only log if we are processing several products at once to avoid spamming 
+            // the database during one-by-one bulk loops.
+            if (affectedProducts.size() > 1) {
+                activityLogService.logActivity("REGENERAR_PRECIOS_TARIFA",
+                        String.format("Precios regenerados para %d productos en %d tarifas activas.",
+                                affectedProducts.size(), activeTariffs.size()),
+                        "System", "TARIFF", null);
+            }
         }
     }
 }

@@ -2,11 +2,13 @@ package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.model.TaxRate;
 import com.proconsi.electrobazar.model.Product;
+import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.repository.ProductRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.TariffService;
+import com.proconsi.electrobazar.service.TaskProgressService;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.Data;
@@ -16,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 
 import jakarta.validation.Valid;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +43,10 @@ public class TaxRateApiRestController {
     private final ProductService productService;
     private final TariffService tariffService;
     private final ProductRepository productRepository;
+    private final TaskProgressService taskProgressService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Retrieves all configured tax rates.
@@ -141,41 +149,43 @@ public class TaxRateApiRestController {
      * @return JSON response with the count of affected products.
      */
     @PostMapping("/apply-selective")
-    @Transactional
     public ResponseEntity<?> applySelectiveTaxRate(@RequestBody ApplySelectiveTaxRateRequest request) {
         TaxRate taxRate = taxRateRepository.findById(request.getTaxRateId())
                 .orElseThrow(() -> new ResourceNotFoundException("TaxRate no encontrado: " + request.getTaxRateId()));
 
-        Set<Product> affectedProducts = new HashSet<>();
+        List<Long> productIds = new ArrayList<>();
 
-        if (request.getProductIds() != null && !request.getProductIds().isEmpty()) {
-            affectedProducts.addAll(productRepository.findAllById(request.getProductIds()));
-        }
-
-        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
-            for (Long categoryId : request.getCategoryIds()) {
-                affectedProducts.addAll(productRepository.findByCategoryIdAndActiveTrueOrderByNameEsAsc(categoryId));
+        if (Boolean.TRUE.equals(request.getApplyToAll())) {
+            // Fetch all active product IDs once to pass to service
+            productIds = productRepository.findAll().stream().map(Product::getId).collect(Collectors.toList());
+        } else {
+            Set<Long> idSet = new HashSet<>();
+            if (request.getProductIds() != null) {
+                idSet.addAll(request.getProductIds());
             }
+
+            if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+                for (Long categoryId : request.getCategoryIds()) {
+                    idSet.addAll(productRepository.findByCategoryIdAndActiveTrueOrderByNameEsAsc(categoryId)
+                            .stream().map(Product::getId).collect(Collectors.toList()));
+                }
+            }
+            productIds = new ArrayList<>(idSet);
         }
 
-        if (affectedProducts.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "No se seleccionaron productos ni categorías válidas o sin productos."));
+        if (productIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "No se seleccionaron productos válidos."));
         }
 
-        List<Product> productsList = new ArrayList<>(affectedProducts);
-        productService.applyTaxRateToProducts(productsList.stream().map(Product::getId).collect(Collectors.toList()), taxRate);
-        
-        tariffService.regenerateTariffHistoryForProducts(productsList);
+        int count = productService.applySelectiveTaxRate(productIds, taxRate, request.getTaskId());
 
         activityLogService.logActivity(
                 "APLICAR_IVA_SELECTIVO",
-                "IVA aplicado selectivamente: " + taxRate.getDescription() + " a " + productsList.size() + " productos.",
-                "Admin",
-                "TAX_RATE",
-                taxRate.getId()
+                "IVA aplicado selectivamente: " + taxRate.getDescription() + " a " + count + " productos.",
+                "Admin", "TAX_RATE", taxRate.getId()
         );
 
-        return ResponseEntity.ok(Map.of("success", true, "count", productsList.size()));
+        return ResponseEntity.ok(Map.of("success", true, "count", count));
     }
 
     /**
@@ -186,5 +196,9 @@ public class TaxRateApiRestController {
         private Long taxRateId;
         private List<Long> productIds;
         private List<Long> categoryIds;
+        /** If true, apply to ALL products in the system, ignoring productIds/categoryIds */
+        private Boolean applyToAll;
+        /** Optional task ID for progress tracking via /api/products/bulk-progress/{taskId} */
+        private String taskId;
     }
 }

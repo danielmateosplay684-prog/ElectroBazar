@@ -12,8 +12,12 @@ import com.proconsi.electrobazar.repository.specification.ProductSpecification;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.TariffService;
+import com.proconsi.electrobazar.service.TaskProgressService;
+import com.proconsi.electrobazar.model.Tariff;
+import com.proconsi.electrobazar.model.TariffPriceHistory;
 import com.proconsi.electrobazar.repository.SaleLineRepository;
 import com.proconsi.electrobazar.repository.TariffPriceHistoryRepository;
+import com.proconsi.electrobazar.repository.TariffRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -50,7 +54,12 @@ public class ProductServiceImpl implements ProductService {
     private final TariffService tariffService;
     private final SaleLineRepository saleLineRepository;
     private final TariffPriceHistoryRepository tariffPriceHistoryRepository;
+    private final TariffRepository tariffRepository;
     private final com.proconsi.electrobazar.repository.MeasurementUnitRepository measurementUnitRepository;
+    private final TaskProgressService taskProgressService;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -102,8 +111,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Product> getFilteredProducts(String search, String category, String stock, Boolean active, Long measurementUnitId) {
-        Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active, measurementUnitId);
+    public List<Product> getFilteredProducts(String search, String category, String stock, Boolean active,
+            Long measurementUnitId) {
+        Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active,
+                measurementUnitId);
         return productRepository.findAll(spec);
     }
 
@@ -111,7 +122,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public Page<Product> getFilteredProducts(String search, String category, String stock, Boolean active,
             Long measurementUnitId, Pageable pageable) {
-        Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active, measurementUnitId);
+        Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active,
+                measurementUnitId);
         return productRepository.findAll(spec, pageable);
     }
 
@@ -187,7 +199,8 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // Always update measurementUnit — null clears it, non-null assigns it.
-        // Bug fix: previously only set when non-null, so unsetting a unit had no effect.
+        // Bug fix: previously only set when non-null, so unsetting a unit had no
+        // effect.
         if (request.getMeasurementUnitId() != null) {
             existing.setMeasurementUnit(
                     measurementUnitRepository.findById(request.getMeasurementUnitId()).orElse(null));
@@ -381,6 +394,93 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public List<Product> getTopSellingProducts(int limit) {
         return productRepository.findTopSellingProducts(PageRequest.of(0, limit));
+    }
+
+    @Override
+    @Transactional
+    public int applySelectiveTaxRate(List<Long> productIds, TaxRate taxRate, String taskId) {
+        if (productIds == null || productIds.isEmpty()) return 0;
+        int total = productIds.size();
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (taskId != null) taskProgressService.updateProgress(taskId, 5, "Iniciando proceso masivo de IVA...");
+
+        // Load config once, re-load after clear()
+        List<Tariff> activeTariffs = tariffRepository.findByActiveTrueOrderByNameAsc();
+        TaxRate currentTaxRate = taxRate;
+
+        for (int i = 0; i < total; i++) {
+            Long pId = productIds.get(i);
+            Product p = productRepository.findById(pId).orElse(null);
+            if (p == null) continue;
+
+            // 1. Update Product Tax Rate
+            p.setTaxRate(currentTaxRate);
+            
+            // 2. Recalculate Net Price (Base) to keep same Gross Price (PVP)
+            // PVP = Base * (1 + VAT) -> Base = PVP / (1 + VAT)
+            if (p.getPrice() != null && currentTaxRate != null) {
+                BigDecimal vatRate = currentTaxRate.getVatRate();
+                BigDecimal net = p.getPrice().divide(BigDecimal.ONE.add(vatRate), 10, java.math.RoundingMode.HALF_UP);
+                p.setBasePriceNet(net);
+            }
+            productRepository.save(p);
+
+            // 3. Sync Tariff History (Internal logic like bulkSchedulePrice)
+            // Close current records
+            tariffPriceHistoryRepository.findAllCurrentByProductIds(List.of(pId)).forEach(h -> {
+                h.setValidTo(now);
+                tariffPriceHistoryRepository.save(h);
+            });
+
+            // Create new records for each active tariff
+            for (Tariff t : activeTariffs) {
+                BigDecimal discount = t.getDiscountPercentage() != null ? t.getDiscountPercentage() : BigDecimal.ZERO;
+                BigDecimal dMult = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 10, java.math.RoundingMode.HALF_UP));
+                
+                BigDecimal nPrice = p.getBasePriceNet().multiply(dMult);
+                BigDecimal vRate = currentTaxRate.getVatRate();
+                BigDecimal rRate = currentTaxRate.getReRate() != null ? currentTaxRate.getReRate() : BigDecimal.ZERO;
+                
+                TariffPriceHistory news = new TariffPriceHistory();
+                news.setProduct(p);
+                news.setTariff(t);
+                news.setValidFrom(now);
+                news.setBasePrice(p.getBasePriceNet());
+                news.setVatRate(vRate);
+                news.setReRate(rRate);
+                news.setDiscountPercent(discount);
+                news.setNetPrice(nPrice);
+                news.setPriceWithVat(nPrice.multiply(BigDecimal.ONE.add(vRate)).setScale(2, java.math.RoundingMode.HALF_UP));
+                news.setPriceWithRe(nPrice.multiply(BigDecimal.ONE.add(vRate).add(rRate)).setScale(2, java.math.RoundingMode.HALF_UP));
+                news.setCreatedAt(now);
+                
+                tariffPriceHistoryRepository.save(news);
+            }
+
+            // Progress tracking
+            if (taskId != null && i % 50 == 0) {
+                int pct = 5 + (int) (((double) i / total) * 90);
+                taskProgressService.updateProgress(taskId, pct, "Actualizando producto " + i + " de " + total + "...");
+            }
+
+            // Memory management
+            if (i > 0 && i % 100 == 0) {
+                entityManager.flush();
+                entityManager.clear();
+                // RE-FETCH detached config after clear()
+                currentTaxRate = taxRateRepository.findById(taxRate.getId()).orElse(taxRate);
+                activeTariffs = tariffRepository.findByActiveTrueOrderByNameAsc();
+            }
+        }
+
+        if (taskId != null) taskProgressService.finishTask(taskId);
+        
+        activityLogService.logActivity("APLICAR_IVA_MASIVO", 
+                "Actualización masiva de IVA y tarifas completada para " + total + " productos.",
+                "Sistema", "BULK_IVA", null);
+                
+        return total;
     }
 
     @Override

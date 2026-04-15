@@ -166,7 +166,15 @@ window.onCartTariffChange = function (selectEl) {
             });
     });
 
-    Promise.all(promises).then(renderTicket).catch(function (err) {
+    Promise.all(promises).then(function () {
+        syncPromotions();
+        // Sync tariffIdInput and badge when cart tariff changes
+        var sel = document.getElementById('cartTariffSelect');
+        var selOption = sel ? sel.options[sel.selectedIndex] : null;
+        var selLabel = selOption ? selOption.text : 'MINORISTA';
+        var selDiscount = selOption ? parseFloat(selOption.dataset.discount || 0) : 0;
+        applyTariffById(newTariffId, selDiscount, selLabel);
+    }).catch(function (err) {
         console.error('[CartTariff] Error refreshing prices', err);
         renderTicket();
     });
@@ -295,7 +303,11 @@ function finishAddingToTicket(id, name, price, quantity, stock, categoryId, card
     if (ticket[id]) {
         ticket[id].quantity += quantity;
     } else {
-        ticket[id] = { name: name, price: price, quantity: quantity, stock: stock, categoryId: categoryId };
+        ticket[id] = {
+            name: name, price: price,
+            originalPrice: price,  // catalogue price — stays fixed for discount % display
+            quantity: quantity, stock: stock, categoryId: categoryId
+        };
     }
 
     // ALWAYS fetch the price from the API to respect the "only tariffs" rule.
@@ -321,6 +333,10 @@ function finishAddingToTicket(id, name, price, quantity, stock, categoryId, card
             if (ticket[id]) {
                 ticket[id].price = parseFloat(priceData.price);
                 ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
+                // Keep originalPrice as the catalogue (non-discounted) price
+                if (ticket[id].originalPrice == null) {
+                    ticket[id].originalPrice = ticket[id].price;
+                }
             }
             syncPromotions();
             renderTicket();
@@ -503,11 +519,29 @@ function renderTicket() {
             totalRE += reLine;
         }
 
+        // Determine if a non-default tariff is applied to this line
+        var lineTariffLabel = null;
+        var lineDiscountPct = 0;
+        if (item.lineTariffLabel) {
+            lineTariffLabel = item.lineTariffLabel;
+        } else if (window.cartTariffId && currentTariffLabel && currentTariffLabel !== 'MINORISTA') {
+            lineTariffLabel = currentTariffLabel;
+        } else if (window.currentTariffId && currentTariffLabel && currentTariffLabel !== 'MINORISTA') {
+            lineTariffLabel = currentTariffLabel;
+        }
+        // Calculate actual discount % from original vs selling price
+        if (lineTariffLabel && item.originalPrice && item.originalPrice > 0 && item.price < item.originalPrice) {
+            lineDiscountPct = Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100);
+        }
+        var tariffBadgeHtml = lineTariffLabel
+            ? `<span style="font-size:0.68rem; font-weight:700; letter-spacing:0.5px; background:rgba(39,174,96,0.15); color:#27ae60; border:1px solid rgba(39,174,96,0.3); border-radius:4px; padding:1px 5px; margin-left:4px;" title="Tarifa ${escapeHtml(lineTariffLabel)} aplicada"><i class="bi bi-tags-fill" style="margin-right:2px;"></i>${escapeHtml(lineTariffLabel)}${lineDiscountPct > 0 ? ' -' + lineDiscountPct + '%' : ''}</span>`
+            : '';
+
         linesHTML += `
             <div class="ticket-line-item">
                 <div class="ticket-line-main">
                     <div class="ticket-line-info">
-                        <div class="ticket-line-name">${escapeHtml(item.name)}</div>
+                        <div class="ticket-line-name">${escapeHtml(item.name)}${tariffBadgeHtml}</div>
                         <div class="ticket-line-detail">
                             ${formatPrice(unitPrice)}€ × ${item.quantity.toLocaleString('es-ES', { maximumFractionDigits: 3 })}
                         </div>
@@ -534,6 +568,19 @@ function renderTicket() {
         formHTML += `<input type="hidden" name="productIds" value="${productIdToSend}">`;
         formHTML += `<input type="hidden" name="quantities" value="${item.quantity}">`;
         formHTML += `<input type="hidden" name="unitPrices" value="${unitPrice.toFixed(4)}">`;
+        // Send the tariff name applied to this line for invoice traceability
+        var lineTariffName = item.lineTariffLabel || currentTariffLabel || 'MINORISTA';
+        formHTML += `<input type="hidden" name="lineTariffNames" value="${escapeHtml(lineTariffName)}">`;
+        // Send original unit price for discount display on invoice
+        var origPrice = item.originalPrice != null ? item.originalPrice : unitPrice;
+        formHTML += `<input type="hidden" name="originalUnitPrices" value="${parseFloat(origPrice).toFixed(4)}">`;
+        
+        // Update tariffId form input to reflect current effective tariff (cart or customer level)
+        var effectiveTariffForForm = item.lineTariffId || window.cartTariffId || window.currentTariffId || '';
+        var tariffInput = document.getElementById('tariffIdInput');
+        if (tariffInput && !tariffInput.value && effectiveTariffForForm) {
+            tariffInput.value = effectiveTariffForForm;
+        }
         formHTML += `<input type="hidden" name="productNames" value="${escapeHtml(item.name)}">`;
         formHTML += `<input type="hidden" name="vatRates" value="${item.vatRate != null ? item.vatRate : ''}">`;
     });
@@ -1670,6 +1717,10 @@ function updateTicketPricesForTariff(tariffId, tariffName, discountPct) {
             .then(function (r) { return r.json(); })
             .then(function (priceData) {
                 if (ticket[id]) {
+                    // Preserve catalogue price before updating to tariff price
+                    if (ticket[id].originalPrice == null) {
+                        ticket[id].originalPrice = ticket[id].price;
+                    }
                     ticket[id].price = parseFloat(priceData.price);
                     ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
                 }
@@ -1747,6 +1798,8 @@ function resetTicketPrices() {
                 if (ticket[id]) {
                     ticket[id].price = parseFloat(priceData.price);
                     ticket[id].priceWithRe = parseFloat(priceData.priceWithRe);
+                    // Back to catalogue price — reset originalPrice so no discount badge shows
+                    ticket[id].originalPrice = ticket[id].price;
                 }
             });
     });

@@ -124,6 +124,8 @@ public class TpvController {
             @RequestParam List<Long> productIds,
             @RequestParam List<BigDecimal> quantities,
             @RequestParam(required = false) List<String> unitPrices,
+            @RequestParam(required = false) List<String> originalUnitPrices,
+            @RequestParam(required = false) List<String> lineTariffNames,
             @RequestParam PaymentMethod paymentMethod,
             @RequestParam(required = false) String notes,
             @RequestParam(required = false) String receivedAmount,
@@ -212,18 +214,53 @@ public class TpvController {
                 }
             }
 
+            // Resolve original (catalogue) unit price for discount traceability on invoice
+            BigDecimal origUnitPrice = unitPrice; // default: same as selling price
+            if (originalUnitPrices != null && i < originalUnitPrices.size()
+                    && originalUnitPrices.get(i) != null && !originalUnitPrices.get(i).isBlank()) {
+                try {
+                    origUnitPrice = new BigDecimal(originalUnitPrices.get(i).replace(",", "."));
+                } catch (NumberFormatException ignored) {}
+            } else if (product != null) {
+                origUnitPrice = product.getPrice();
+            }
+
             String customName = (productNames != null && i < productNames.size() && productNames.get(i) != null
                     && !productNames.get(i).isBlank())
                             ? productNames.get(i)
                             : (product != null ? product.getName() : "Producto Comodín");
+
+            // Calc per-line discount % from original vs. selling price
+            BigDecimal discountPercentage = BigDecimal.ZERO;
+            if (origUnitPrice.compareTo(BigDecimal.ZERO) > 0
+                    && unitPrice.compareTo(origUnitPrice) < 0) {
+                discountPercentage = origUnitPrice.subtract(unitPrice)
+                        .divide(origUnitPrice, 10, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
 
             lines.add(SaleLine.builder()
                     .product(product)
                     .productName(customName)
                     .quantity(qty)
                     .unitPrice(unitPrice.setScale(2, RoundingMode.HALF_UP))
+                    .originalUnitPrice(origUnitPrice.setScale(2, RoundingMode.HALF_UP))
+                    .discountPercentage(discountPercentage)
                     .vatRate(vatRate)
                     .build());
+        }
+
+        // If no explicit tariffId from frontend but lines have tariff info, determine
+        // the effective tariff name for the Sale header from the first non-MINORISTA line
+        if (tariffId == null && tariffOverride == null && lineTariffNames != null) {
+            String firstNonMinorista = lineTariffNames.stream()
+                    .filter(t -> t != null && !t.isBlank() && !"MINORISTA".equalsIgnoreCase(t))
+                    .findFirst().orElse(null);
+            if (firstNonMinorista != null) {
+                // Find the matching tariff to set as override for appliedTariff name persistence
+                tariffOverride = tariffService.findByName(firstNonMinorista).orElse(null);
+            }
         }
 
         Worker worker = (Worker) session.getAttribute("worker");

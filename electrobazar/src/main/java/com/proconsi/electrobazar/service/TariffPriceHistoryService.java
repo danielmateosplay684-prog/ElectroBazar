@@ -50,9 +50,15 @@ public interface TariffPriceHistoryService {
     List<java.time.LocalTime> getVersionsForDate(Long tariffId, java.time.LocalDate date);
 
     /**
-     * Retrieves prices that started EXACTLY at a specific date and time.
+     * Retrieves prices that were active at a specific date and time.
      */
     Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> getPricesForTariffAtExactDateTime(Long tariffId,
+            java.time.LocalDate date, java.time.LocalTime time, Pageable pageable);
+
+    /**
+     * Retrieves prices that started EXACTLY at a specific date and time (a version).
+     */
+    Page<com.proconsi.electrobazar.dto.TariffPriceEntryDTO> getPricesForTariffAtExactValidFrom(Long tariffId,
             java.time.LocalDate date, java.time.LocalTime time, Pageable pageable);
 
     /**

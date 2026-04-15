@@ -100,21 +100,91 @@ function deleteTaxRate(id, msg) {
     });
 }
 
+// State: whether "select ALL system products" mode is active for IVA
+let ivaSelectAllAbsolute = false;
+
+// Cache the original static (top-100) list HTML to restore when search is cleared
+let _selProductStaticHtml = null;
+let _selProductSearchTimeout = null;
+
 function filterSelProducts() {
-    const query = document.getElementById('selProductSearch').value.toLowerCase();
-    const items = document.querySelectorAll('.sel-product-item-wrap');
-    items.forEach(it => {
-        const name = it.dataset.name || '';
-        it.style.display = name.includes(query) ? 'block' : 'none';
-    });
+    ivaSelectAllAbsolute = false;
+    const badge = document.getElementById('ivaSelectAllBadge');
+    if (badge) badge.style.display = 'none';
+
+    const container = document.getElementById('selProductList');
+    if (!container) return;
+
+    // Save static HTML once
+    if (_selProductStaticHtml === null) {
+        _selProductStaticHtml = container.innerHTML;
+    }
+
+    const query = document.getElementById('selProductSearch').value.trim();
+
+    // No query → restore static list
+    if (!query) {
+        container.innerHTML = _selProductStaticHtml;
+        return;
+    }
+
+    // Debounce backend search
+    if (_selProductSearchTimeout) clearTimeout(_selProductSearchTimeout);
+    _selProductSearchTimeout = setTimeout(() => {
+        container.innerHTML = '<div class="text-center py-3 small text-muted"><span class="spinner-border spinner-border-sm me-1"></span>Buscando...</div>';
+
+        const url = new URL('/api/products/filter', window.location.origin);
+        url.searchParams.set('search', query);
+        url.searchParams.set('size', 200);
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                const products = data.content || data || [];
+                if (products.length === 0) {
+                    container.innerHTML = '<div class="text-center py-3 small text-muted">No se encontraron productos.</div>';
+                    return;
+                }
+                container.innerHTML = products.map(p => `
+                    <div class="sel-product-item-wrap mb-1" data-name="${(p.nameEs || p.name || '').toLowerCase()}">
+                        <div class="rounded hover-surface shadow-sm" style="background:var(--surface);border:1px solid var(--border);transition:all 0.2s;">
+                            <label class="d-flex align-items-center p-2 m-0 w-100" style="cursor:pointer;" for="selProdDyn${p.id}">
+                                <input class="form-check-input sel-product-cb me-3 mt-0 flex-shrink-0"
+                                    type="checkbox" value="${p.id}" id="selProdDyn${p.id}" style="margin-left:5px;">
+                                <div class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
+                                    <span class="fw-500" style="color:var(--text-main);font-size:0.85rem;">${p.nameEs || p.name}</span>
+                                    <span class="badge bg-secondary text-muted rounded-pill small px-2">
+                                        IVA: ${p.taxRate ? Math.round(p.taxRate.vatRate * 100) + '%' : '—'}
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>`).join('');
+            })
+            .catch(() => {
+                container.innerHTML = '<div class="text-center py-3 small text-muted text-danger">Error al buscar productos.</div>';
+            });
+    }, 300);
 }
 
 function toggleAllSelProducts(checked) {
+    ivaSelectAllAbsolute = false; // manual selection resets global mode
+    const badge = document.getElementById('ivaSelectAllBadge');
+    if (badge) badge.style.display = 'none';
     document.querySelectorAll('.sel-product-cb').forEach(cb => {
         if (cb.closest('.sel-product-item-wrap').style.display !== 'none') {
             cb.checked = checked;
         }
     });
+}
+
+function selectAllSystemIva() {
+    ivaSelectAllAbsolute = true;
+    // Visually check all rendered checkboxes to give feedback
+    document.querySelectorAll('.sel-product-cb').forEach(cb => cb.checked = true);
+    const badge = document.getElementById('ivaSelectAllBadge');
+    if (badge) badge.style.display = 'inline-flex';
+    showToast('Se aplicará el IVA a TODOS los productos del sistema.', 'success');
 }
 
 function toggleAllSelCategories(checked) {
@@ -128,15 +198,21 @@ function applySelectiveTaxRate() {
         return;
     }
 
-    const productIds = Array.from(document.querySelectorAll('.sel-product-cb:checked')).map(cb => parseInt(cb.value));
+    const productIds = ivaSelectAllAbsolute
+        ? []
+        : Array.from(document.querySelectorAll('.sel-product-cb:checked')).map(cb => parseInt(cb.value));
     const categoryIds = Array.from(document.querySelectorAll('.sel-category-cb:checked')).map(cb => parseInt(cb.value));
 
-    if (productIds.length === 0 && categoryIds.length === 0) {
+    if (!ivaSelectAllAbsolute && productIds.length === 0 && categoryIds.length === 0) {
         showToast('Selecciona al menos un producto o categoría.', 'warning');
         return;
     }
 
-    if (!confirm(`¿Estás seguro de que deseas aplicar el nuevo IVA a seleccionados? Se recalcularán los precios de venta.`)) {
+    const scopeMsg = ivaSelectAllAbsolute
+        ? 'TODOS los productos del sistema'
+        : `${productIds.length} productos y/o categorías seleccionadas`;
+
+    if (!confirm(`¿Estás seguro de que deseas aplicar el nuevo IVA a ${scopeMsg}? Se recalcularán los precios de venta.`)) {
         return;
     }
 
@@ -145,29 +221,73 @@ function applySelectiveTaxRate() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESANDO...';
 
+    // Generate unique task ID for progress tracking
+    const taskId = 'iva_' + Date.now();
+
+    // Show progress bar
+    const progressContainer = document.getElementById('ivaSelectiveProgressContainer');
+    const resultContainer = document.getElementById('ivaSelectiveResult');
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (resultContainer) resultContainer.style.display = 'none';
+
+    // Poll progress every 1.5s
+    const pollInterval = setInterval(() => {
+        fetch(`/api/products/bulk-progress/${taskId}`)
+            .then(r => r.json())
+            .then(progress => {
+                const bar = document.getElementById('ivaSelectiveProgressBar');
+                const pct = document.getElementById('ivaSelectivePercent');
+                const status = document.getElementById('ivaSelectiveStatusText');
+                if (bar) bar.style.width = progress.percentage + '%';
+                if (pct) pct.textContent = progress.percentage + '%';
+                if (status) status.textContent = progress.message;
+            })
+            .catch(() => {});
+    }, 1500);
+
     fetch('/admin/api/tax-rates/apply-selective', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             taxRateId: parseInt(taxRateId),
-            productIds: productIds,
-            categoryIds: categoryIds
+            productIds: ivaSelectAllAbsolute ? [] : productIds,
+            categoryIds: categoryIds,
+            applyToAll: ivaSelectAllAbsolute,
+            taskId: taskId
         })
     })
         .then(r => {
-            if (!r.ok) return r.json().then(d => { throw new Error(d.error || 'Error al aplicar'); });
+            if (!r.ok) return r.json().then(d => { throw new Error(d.error || d.message || 'Error al aplicar'); });
             return r.json();
         })
         .then(data => {
-            showToast('IVA aplicado y tarifas regeneradas correctamente.', 'success');
-            setTimeout(() => location.reload(), 1500);
+            clearInterval(pollInterval);
+            ivaSelectAllAbsolute = false;
+            if (progressContainer) progressContainer.style.display = 'none';
+            // Update bar to 100% briefly
+            const bar = document.getElementById('ivaSelectiveProgressBar');
+            if (bar) bar.style.width = '100%';
+            // Show result
+            if (resultContainer) {
+                resultContainer.style.display = 'block';
+                const resultText = document.getElementById('ivaSelectiveResultText');
+                if (resultText) resultText.textContent = `IVA aplicado correctamente a ${data.count} productos. Las tarifas han sido regeneradas.`;
+                
+                // Refresh page after 1.5s to let user see success message
+                setTimeout(() => location.reload(), 1500);
+            }
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         })
         .catch(e => {
+            clearInterval(pollInterval);
+            if (progressContainer) progressContainer.style.display = 'none';
             showToast(e.message, 'warning');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
         });
 }
+
 
 // Global Exports
 window.openCreateTaxRateModal = openCreateTaxRateModal;
@@ -179,3 +299,4 @@ window.filterSelProducts = filterSelProducts;
 window.toggleAllSelProducts = toggleAllSelProducts;
 window.toggleAllSelCategories = toggleAllSelCategories;
 window.applySelectiveTaxRate = applySelectiveTaxRate;
+window.selectAllSystemIva = selectAllSystemIva;

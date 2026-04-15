@@ -432,10 +432,12 @@ public class AdminController {
 
         if (needsVersionSelection) {
             pricesPage = org.springframework.data.domain.Page.empty();
+        } else if (time != null) {
+            // Si el usuario seleccionó una HORA exacta, buscamos la versión que EMPEZÓ en ese momento
+            pricesPage = tariffPriceHistoryService.getPricesForTariffAtExactValidFrom(id, targetDate, selectedTime, pageable);
         } else {
-            // Consulta exacta por fecha y hora
-            pricesPage = tariffPriceHistoryService.getPricesForTariffAtExactDateTime(id, targetDate, selectedTime,
-                    pageable);
+            // Si solo hay fecha, buscamos lo que estaba activo al final de ese día (o ahora)
+            pricesPage = tariffPriceHistoryService.getPricesForTariffAtExactDateTime(id, targetDate, selectedTime, pageable);
         }
 
         boolean isInitializing = false;

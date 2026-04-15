@@ -64,6 +64,15 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
                         @Param("dateTime") LocalDateTime dateTime);
 
         /**
+         * Robust query to get the full catalog snapshot at a specific time.
+         * For each product, it finds the latest record that started on or before the given dateTime.
+         */
+        @Query("SELECT t FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom <= :dateTime " +
+               "AND t.id IN (SELECT MAX(t2.id) FROM TariffPriceHistory t2 WHERE t2.tariff.id = :tariffId AND t2.validFrom <= :dateTime GROUP BY t2.product.id)")
+        List<TariffPriceHistory> findAllLatestByTariffIdAndDateTime(@Param("tariffId") Long tariffId,
+                        @Param("dateTime") LocalDateTime dateTime);
+
+        /**
          * Lists distinct version start times for a given tariff and day range.
          */
         @Query("SELECT DISTINCT t.validFrom FROM TariffPriceHistory t WHERE t.tariff.id = :tariffId AND t.validFrom >= :startOfDay AND t.validFrom < :startOfNextDay ORDER BY t.validFrom ASC")

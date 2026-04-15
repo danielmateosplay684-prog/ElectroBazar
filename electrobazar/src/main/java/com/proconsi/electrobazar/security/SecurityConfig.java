@@ -90,7 +90,7 @@ public class SecurityConfig {
                                 // Enabling it for browser sessions (/admin, /tpv, /login)
                                 // While ignoring it for API calls that use Bearer tokens
                                 .csrf(csrf -> csrf
-                                                .ignoringRequestMatchers("/api/**", "/admin/login",
+                                                .ignoringRequestMatchers("/api/**", "/admin/api/**", "/admin/login",
                                                                 "/admin/products/**", "/admin/upload-csv",
                                                                 "/admin/upload-customers-csv",
                                                                 "/admin/workers/**",
