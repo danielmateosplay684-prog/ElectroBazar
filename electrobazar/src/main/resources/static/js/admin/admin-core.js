@@ -312,6 +312,23 @@ function previewImage(event) {
     reader.readAsDataURL(event.target.files[0]);
 }
 
+function runBackupNow() {
+    showToast('Iniciando copia de seguridad...', 'info');
+    fetch('/admin/backup/now', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            // Check for SUCCESS or true depending on the Backend implementation
+            if (data.status === 'SUCCESS' || data.success === true || data.ok === true) {
+                showToast('Copia de seguridad completada con éxito', 'success');
+            } else {
+                showToast('Error en la copia: ' + (data.message || 'Error desconocido'), 'error');
+            }
+        }).catch(err => {
+            console.error('Backup error:', err);
+            showToast('Error de conexión al realizar el backup', 'error');
+        });
+}
+
 // Global Exports
 window.switchView = switchView;
 window.backToPreviousView = backToPreviousView;
@@ -322,3 +339,4 @@ window.formatDateTime = formatDateTime;
 window.formatDecimal = formatDecimal;
 window.debounce = debounce;
 window.previewImage = previewImage;
+window.runBackupNow = runBackupNow;
