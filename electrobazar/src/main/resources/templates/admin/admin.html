@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <th:block th:replace="~{fragments/theme :: themeScript}" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/shared/inventory-filter.js(v='1.1')}" defer></script>
+    <script th:src="@{/js/shared/inventory-filter.js}" defer></script>
 
 
 
@@ -271,148 +271,220 @@
                     Panel</span>
             </h5>
             <div class="dashboard-grid">
-                <div class="dashboard-card"
-                    onclick="switchView('productsView', document.querySelector('[onclick*=\'productsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('productsView', document.querySelector('[onclick*=\'productsView\']'))">
                     <i class="bi bi-box-seam"></i>
                     <h3 th:text="#{admin.dashboard.inventory.title}">Inventario</h3>
                     <p th:text="#{admin.dashboard.inventory.desc}">Gestiona el catálogo de productos, categorí­as,
                         stocks
                         y precios.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('invoicesView', document.querySelector('[onclick*=\'invoicesView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('invoicesView', document.querySelector('[onclick*=\'invoicesView\']'))">
                     <i class="bi bi-receipt"></i>
                     <h3 th:text="#{admin.dashboard.invoices.title}">Facturación</h3>
                     <p th:text="#{admin.dashboard.invoices.desc}">Consulta el historial de ventas, tickets generados y
                         descarga facturas.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('cashCloseView', document.querySelector('[onclick*=\'cashCloseView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('cashCloseView', document.querySelector('[onclick*=\'cashCloseView\']'))">
                     <i class="bi bi-cash-stack"></i>
                     <h3 th:text="#{admin.dashboard.cashcloses.title}">Cierres de Caja</h3>
                     <p th:text="#{admin.dashboard.cashcloses.desc}">Revisa el histórico de arqueos y aperturas de caja
                         registradas.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
-                <div class="dashboard-card"
-                    onclick="switchView('returnsHistoryView', document.querySelector('[onclick*=\'returnsHistoryView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('returnsHistoryView', document.querySelector('[onclick*=\'returnsHistoryView\']'))">
                     <i class="bi bi-arrow-counterclockwise"></i>
                     <h3 th:text="#{admin.dashboard.returns.title}">Historial Devoluciones</h3>
                     <p th:text="#{admin.dashboard.returns.desc}">Consulta las devoluciones realizadas y descarga
                         facturas rectificativas.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
-                <div class="dashboard-card"
-                    onclick="switchView('abonosView', document.querySelector('[onclick*=\'abonosView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('abonosView', document.querySelector('[onclick*=\'abonosView\']'))">
                     <i class="bi bi-cash-coin"></i>
                     <h3 th:text="#{admin.dashboard.abonos.title}">Abonos y Saldo</h3>
                     <p th:text="#{admin.dashboard.abonos.desc}">Crea, anula y consulta los abonos, devoluciones y saldos
                         a favor (crédito) de los clientes.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('workersView', document.querySelector('[onclick*=\'workersView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('workersView', document.querySelector('[onclick*=\'workersView\']'))">
                     <i class="bi bi-people"></i>
                     <h3 th:text="#{admin.dashboard.workers.title}">Trabajadores</h3>
                     <p th:text="#{admin.dashboard.workers.desc}">Administra las cuentas de usuario, contraseñas y
                         permisos del TPV.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('rolesView', document.querySelector('[onclick*=\'rolesView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('rolesView', document.querySelector('[onclick*=\'rolesView\']'))">
                     <i class="bi bi-shield-lock"></i>
                     <h3 th:text="#{admin.dashboard.roles.title}">Gestión de Roles</h3>
                     <p th:text="#{admin.dashboard.roles.desc}">Define perfiles de acceso y permisos especí­ficos por
                         cargo.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('analyticsView', document.querySelector('[onclick*=\'analyticsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('analyticsView', document.querySelector('[onclick*=\'analyticsView\']'))">
                     <i class="bi bi-graph-up"></i>
                     <h3 th:text="#{admin.dashboard.analytics.title}">Análisis</h3>
                     <p th:text="#{admin.dashboard.analytics.desc}">Visualiza tendencias de ventas, ingresos y productos
                         estrella.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('crmView', document.querySelector('[onclick*=\'crmView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('crmView', document.querySelector('[onclick*=\'crmView\']'))">
                     <i class="bi bi-person-badge"></i>
                     <h3 th:text="#{admin.dashboard.crm.title}">Clientes</h3>
                     <p th:text="#{admin.dashboard.crm.desc}">Gestiona tu base de datos de clientes y su fidelización.
                     </p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('activityView', document.querySelector('[onclick*=\'activityView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('activityView', document.querySelector('[onclick*=\'activityView\']'))">
                     <i class="bi bi-clock-history"></i>
                     <h3 th:text="#{admin.dashboard.activity.title}">Actividad</h3>
                     <p th:text="#{admin.dashboard.activity.desc}">Revisa las últimas acciones realizadas en el sistema.
                     </p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('promotionsView', document.querySelector('[onclick*=\'promotionsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('promotionsView', document.querySelector('[onclick*=\'promotionsView\']'))">
                     <i class="bi bi-megaphone"></i>
                     <h3 th:text="#{admin.dashboard.promotions.title}">Promociones</h3>
                     <p th:text="#{admin.dashboard.promotions.desc}">Configura motores de descuento automático NxM (3x2,
                         2x1) por productos o categorí­as.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
 
-                <div class="dashboard-card"
-                    onclick="switchView('preciosTempView', document.querySelector('[onclick*=\'preciosTempView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('preciosTempView', document.querySelector('[onclick*=\'preciosTempView\']'))">
                     <i class="bi bi-calendar-event"></i>
                     <h3 th:text="#{admin.dashboard.tempprices.title}">Precios Temporales</h3>
                     <p th:text="#{admin.dashboard.tempprices.desc}">Programa cambios de precio futuros y consulta el
                         historial.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('preciosMasivosView', document.querySelector('[onclick*=\'preciosMasivosView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('preciosMasivosView', document.querySelector('[onclick*=\'preciosMasivosView\']'))">
                     <i class="bi bi-percent"></i>
                     <h3 th:text="#{admin.dashboard.massiveprices.title}">Precios Masivos</h3>
                     <p th:text="#{admin.dashboard.massiveprices.desc}">Aplica incrementos o descuentos a múltiples
                         productos.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('tarifasView', document.querySelector('[onclick*=\'tarifasView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('tarifasView', document.querySelector('[onclick*=\'tarifasView\']'))">
                     <i class="bi bi-tags"></i>
                     <h3 th:text="#{admin.dashboard.tariffs.title}">Tarifas</h3>
                     <p th:text="#{admin.dashboard.tariffs.desc}">Configura descuentos especiales y tarifas
                         personalizadas por cliente.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('tiposIvaView', document.querySelector('[onclick*=\'tiposIvaView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('tiposIvaView', document.querySelector('[onclick*=\'tiposIvaView\']'))">
                     <i class="bi bi-calculator"></i>
                     <h3 th:text="#{admin.dashboard.taxrates.title}">Tipos de IVA</h3>
                     <p th:text="#{admin.dashboard.taxrates.desc}">Administra los tipos impositivos de IVA y Recargo de
                         Equivalencia.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('measurementUnitsView', document.querySelector('[onclick*=\'measurementUnitsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('measurementUnitsView', document.querySelector('[onclick*=\'measurementUnitsView\']'))">
                     <i class="bi bi-rulers"></i>
                     <h3 th:text="#{admin.dashboard.measurements.title}">Unidades de Medida</h3>
                     <p th:text="#{admin.dashboard.measurements.desc}">Gestiona las magnitudes y precisiones decimales
                         para el pesado o medido de productos.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('couponsView', document.querySelector('[onclick*=\'couponsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('couponsView', document.querySelector('[onclick*=\'couponsView\']'))">
                     <i class="bi bi-ticket-perforated"></i>
                     <h3 th:text="#{admin.dashboard.coupons.title}">Cupones</h3>
                     <p th:text="#{admin.dashboard.coupons.desc}">Gestiona campañas de descuento mediante códigos
                         promocionales.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
 
-                <div class="dashboard-card"
-                    onclick="switchView('settingsView', document.querySelector('[onclick*=\'settingsView\']'))">
+                <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('settingsView', document.querySelector('[onclick*=\'settingsView\']'))">
                     <i class="bi bi-gear"></i>
                     <h3 th:text="#{admin.dashboard.settings.title}">Configuración</h3>
                     <p th:text="#{admin.dashboard.settings.desc}">Ajustes generales del sistema y seguridad de acceso
                         por PIN.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
                 </div>
             </div>
         </div>

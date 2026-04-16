@@ -32,7 +32,7 @@
                             <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="taxRatesTableBody">
                         <tr th:each="tr : ${taxRates}">
                             <td><strong th:text="${tr.description}">IVA General</strong></td>
                             <td th:text="${#numbers.formatDecimal(tr.vatRate * 100, 1, 1)} + '%'">21.0%</td>
@@ -189,8 +189,8 @@
                                                             th:id="'selProd' + ${p.id}" style="margin-left: 5px;">
                                                         <div
                                                             class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
-                                                            <span class="fw-500" th:text="${p.name}"
-                                                                style="color: var(--text-main); font-size: 0.85rem;"></span>
+                                                            <span class="fw-600" th:text="${p.name}"
+                                                                style="color: #ffffff; font-size: 0.85rem;"></span>
                                                             <span
                                                                 class="badge bg-secondary text-muted rounded-pill small px-2"
                                                                 th:text="'IVA: ' + (${p.taxRate != null ? #numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0) + '%' : '—'})"></span>
@@ -223,8 +223,8 @@
                                                                 type="checkbox" th:value="${c.id}"
                                                                 th:id="'selCat' + ${c.id}" style="margin-left: 2px;">
                                                             <div class="flex-grow-1">
-                                                                <span class="fw-600 d-block"
-                                                                    style="color: var(--text-main); line-height: 1.2;"
+                                                                <span class="fw-700 d-block"
+                                                                    style="color: #ffffff; line-height: 1.2;"
                                                                     th:text="${c.name}"></span>
                                                                 <div class="text-muted small fw-normal mt-1"
                                                                     style="font-size: 0.7rem;"
@@ -282,14 +282,3 @@
 </th:block>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

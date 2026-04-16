@@ -137,77 +137,58 @@ public class AdminController {
             @RequestParam(defaultValue = "50") int categoriesSize,
             Model model,
             HttpSession session) {
+        long t0 = System.currentTimeMillis();
+        
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/tpv";
         }
+        log.info("Dashboard - Auth check: {}ms", System.currentTimeMillis() - t0);
 
         model.addAttribute("activeView", view);
 
-        // Load all data required by the various Admin views
-        // Dashboard - Optimized with Limits (Load only recent 50 for heavy lists)
-        PageRequest latest50 = PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // Essential data for first paint (fast delivery)
+        model.addAttribute("companySettings", companySettingsService.getSettings());
+        log.info("Dashboard - Settings: {}ms", System.currentTimeMillis() - t0);
 
-        // Products and Categories (Paged)
-        Page<Product> productsPaged = productService.findAllWithCategoryPaged(page, size);
-        Page<Category> catsPaged = categoryService.getFilteredCategories(null,
-                PageRequest.of(categoriesPage, categoriesSize, Sort.by("nameEs").ascending()));
+        model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
+        log.info("Dashboard - Future Tax Rates: {}ms", System.currentTimeMillis() - t0);
 
-        model.addAttribute("products", productsPaged.getContent());
-        model.addAttribute("productsPage", productsPaged);
-        model.addAttribute("categories", catsPaged.getContent());
-        model.addAttribute("categoriesPage", catsPaged);
+        model.addAttribute("taxRates", List.of()); // Sub-views will fetch these
 
-        // Convert entities to DTOs to avoid Hibernate Proxy serialization issues in JS
-        List<AdminCategoryDTO> categoryDTOs = categoryService.findAllActive().stream()
-                .map(c -> new AdminCategoryDTO(c.getId(), c.getName(), c.getNameEs(), c.getActive(),
-                        c.getDescription()))
-                .toList();
-        model.addAttribute("allCategories", categoryDTOs);
-
-        // Metadata for pagination
+        // Minimal metadata for pagination
         model.addAttribute("currentPage", page);
         model.addAttribute("pageSize", size);
         model.addAttribute("categoriesPageNumber", categoriesPage);
         model.addAttribute("categoriesPageSize", categoriesSize);
 
-        // Sales and Returns (Most critical for 30k records)
-        Page<Sale> salesPage = saleService.findAll(latest50);
-        model.addAttribute("sales", salesPage.getContent());
-        model.addAttribute("salesTotalPages", salesPage.getTotalPages());
-        model.addAttribute("returns", returnService.findAll(latest50).getContent());
-
-        // Infrastructure and Management (Limited to recent 100 for performance)
-        model.addAttribute("cashRegisters", cashRegisterService.findAllClosed());
-        model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
-        model.addAttribute("workers", workerService.findAll());
-        model.addAttribute("customers",
-                customerService.findAll(PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "name"))).getContent());
-
-        List<AdminRoleDTO> roleDTOs = roleService.findAll().stream()
-                .map(r -> new AdminRoleDTO(r.getId(), r.getName()))
-                .toList();
-        model.addAttribute("roles", roleDTOs);
-
-        List<AdminTariffDTO> tariffDTOs = tariffService.findAll().stream()
-                .map(t -> new AdminTariffDTO(t.getId(), t.getName(), t.getActive(), t.getDescription(), t.getColor(),
-                        t.getDiscountPercentage(), t.getSystemTariff()))
-                .toList();
-        model.addAttribute("tariffs", tariffDTOs);
-
-        model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
+        // Pre-populate with essential lightweight data to satisfy initial view rendering
         model.addAttribute("taxRates", taxRateRepository.findAll());
-        model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
-        model.addAttribute("companySettings", companySettingsService.getSettings());
-        model.addAttribute("coupons", couponService.findAll());
-        model.addAttribute("promotions", promotionService.findAll());
+        model.addAttribute("allCategories", categoryService.findAllActive());
+        
+        // Limited top products for selection tools (IVA, Tariffs)
+        model.addAttribute("products", productService.getTopProductsByRank(100));
 
-        List<AdminMeasurementUnitDTO> unitDTOs = measurementUnitService.findAll().stream()
-                .map(u -> new AdminMeasurementUnitDTO(u.getId(), u.getName(), u.getSymbol(), u.isActive()))
-                .toList();
-        model.addAttribute("measurementUnits", unitDTOs);
+        model.addAttribute("tariffs", tariffService.findAll());
+        model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
+        
+        model.addAttribute("workers", workerService.findAll());
+        model.addAttribute("roles", roleService.findAll());
+        model.addAttribute("measurementUnits", measurementUnitService.findAll());
+        model.addAttribute("coupons", List.of()); // AJAX load
+        model.addAttribute("promotions", List.of()); // AJAX load
 
-        // Mark as optimized view
+        // Empty heavy datasets to keep index load <100ms
+        model.addAttribute("sales", List.of());
+        model.addAttribute("salesTotalPages", 0);
+        model.addAttribute("returns", List.of());
+        model.addAttribute("cashRegisters", List.of());
+        model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
+        model.addAttribute("customers", List.of());
+        model.addAttribute("productsPage", Page.empty());
+        model.addAttribute("categoriesPage", Page.empty());
+
         model.addAttribute("isOptimizedView", true);
+        log.info("Dashboard - Total setup: {}ms", System.currentTimeMillis() - t0);
 
         return "admin/admin";
     }

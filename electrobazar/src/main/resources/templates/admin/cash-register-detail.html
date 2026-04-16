@@ -247,7 +247,7 @@
                 <!-- Flujos de Caja -->
                 <div class="summary-card-p">
                     <div class="summary-label-p" th:text="#{admin.cash.initial}">Fondo Inicial</div>
-                    <div class="summary-value-p" style="color: grey;" th:text="${#numbers.formatDecimal(register.openingBalance, 1, 2)} + ' €'"></div>
+                    <div class="summary-value-p" style="color: var(--text-muted);" th:text="${#numbers.formatDecimal(register.openingBalance, 1, 2)} + ' €'"></div>
                 </div>
                 <div class="summary-card-p">
                     <div class="summary-label-p" th:text="#{admin.cash.entries}">Entradas de Caja</div>
@@ -386,7 +386,7 @@
                 <div class="modal-body p-0">
                     <div class="admin-table-wrap m-0" style="border: none; border-radius: 0; max-height: 60vh; overflow-y: auto;">
                         <table class="admin-table mb-0">
-                            <thead class="sticky-top" style="z-index: 10;">
+                            <thead class="sticky-top" style="z-index: 10; background: var(--surface);">
                                 <tr>
                                     <th th:text="#{common.id}">ID</th>
                                     <th th:text="#{common.date}">Fecha/Hora</th>

@@ -20,7 +20,7 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: #888;
+            color: var(--text-muted);
             margin-bottom: 1.5rem;
         }
 
@@ -37,16 +37,18 @@
             display: block;
             height: 12px;
             background:
-                radial-gradient(circle at 50% 0, transparent 6px, #fff 6px) repeat-x;
+                radial-gradient(circle at 50% 0, transparent 6px, var(--secondary) 6px) repeat-x;
             background-size: 18px 12px;
         }
 
         .ticket {
-            background: #fff;
+            background: var(--secondary);
             padding: 1.5rem 1.75rem;
-            color: #1a1a1a;
+            color: var(--text-main);
             font-size: 0.875rem;
             line-height: 1.5;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
         }
 
         /* Serrated bottom edge */
@@ -55,7 +57,7 @@
             display: block;
             height: 12px;
             background:
-                radial-gradient(circle at 50% 100%, transparent 6px, #fff 6px) repeat-x;
+                radial-gradient(circle at 50% 100%, transparent 6px, var(--secondary) 6px) repeat-x;
             background-size: 18px 12px;
             transform: scaleY(-1);
         }
@@ -316,24 +318,24 @@
         /* ── Print styles ── */
         @media print {
             body {
-                background: #fff;
+                background: #fff !important;
                 padding: 0;
+                color: #000 !important;
             }
 
-            .btn-row {
-                display: none;
+            .ticket-wrap {
+                max-width: none;
             }
 
-            .page-title {
-                display: none;
+            .ticket {
+                background: #fff !important;
+                color: #000 !important;
+                padding: 0.5rem;
+                border: none !important;
             }
 
             .ticket-wrap::before,
             .ticket-wrap::after {
                 display: none;
-            }
-
-            .ticket {
-                padding: 0.5rem;
             }
         }

@@ -25,6 +25,7 @@ window.abonoModal = null;
 window.tariffModal = null;
 window.addTariffValueModal = null;
 window.deleteTariffModal = null;
+window.adminPanelReady = false;
 
 // Initialization
 document.addEventListener('DOMContentLoaded', function () {
@@ -89,6 +90,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.addEventListener('hashchange', handleHashNavigation);
     handleHashNavigation(); // Initial check
+
+    // ── Skeleton Screen Implementation ──
+    const dashboardCards = document.querySelectorAll('.dashboard-card');
+    if (dashboardCards.length > 0) {
+        // 8s Timeout for error state
+        const skeletonTimeout = setTimeout(() => {
+            dashboardCards.forEach(card => {
+                if (card.classList.contains('is-skeleton')) {
+                    card.classList.remove('is-skeleton');
+                    card.classList.add('is-error');
+                }
+            });
+        }, 8000);
+
+        // Immediate parallel load: The skeleton is already visible.
+        // We set the panel as ready as soon as the DOM is stable.
+        const setPanelReady = () => {
+            clearTimeout(skeletonTimeout);
+            dashboardCards.forEach(card => {
+                if (!card.classList.contains('is-error')) {
+                    card.classList.add('is-loaded');
+                    card.classList.remove('is-skeleton');
+                    // Cleanup animation class after duration
+                    setTimeout(() => card.classList.remove('is-loaded'), 400);
+                }
+            });
+            window.adminPanelReady = true;
+        };
+
+        // In addition to window.load, we allow transition as soon as basic init is done
+        // to achieve the ~1s goal.
+        if (document.readyState === 'complete') {
+            setPanelReady();
+        } else {
+            window.addEventListener('load', setPanelReady);
+        }
+    }
 });
 
 // Navigation History
@@ -167,8 +205,8 @@ function switchView(viewId, btn, isBack = false) {
     if (viewId === 'preciosTempView' && typeof loadFuturePrices === 'function') loadFuturePrices();
     if (viewId === 'preciosMasivosView' && typeof loadBulkProducts === 'function') loadBulkProducts();
 
-    // Scroll to top
-    window.scrollTo(0, 0);
+    // Scroll to top removed to avoid unexpected jumps when loading data
+    // window.scrollTo(0, 0);
 }
 
 /**

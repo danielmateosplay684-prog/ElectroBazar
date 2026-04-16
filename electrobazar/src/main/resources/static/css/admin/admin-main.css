@@ -435,11 +435,8 @@
             font-size: 0.88rem;
         }
 
-        .admin-table thead tr {
-            background: var(--surface);
-        }
-
         .admin-table thead th {
+            background: var(--surface);
             padding: 0.75rem 1rem;
             font-size: 0.75rem;
             font-weight: 700;
@@ -451,6 +448,7 @@
         }
 
         .admin-table tbody tr {
+            background-color: transparent !important;
             border-top: 1px solid var(--border);
             transition: background 0.1s;
         }
@@ -678,10 +676,11 @@
 
         /* ── Modals ── */
         .modal-content {
-            background-color: var(--secondary);
+            background-color: var(--secondary) !important;
             border: 1px solid var(--border);
             border-radius: 14px;
-            color: var(--text-main);
+            color: var(--text-main) !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
 
         .modal-header {
@@ -843,6 +842,7 @@
 
         .dashboard-card {
             flex: 0 1 300px;
+            min-height: 240px; /* Reserve space */
             background: var(--secondary);
             border: 1px solid var(--border);
             border-radius: 20px;
@@ -850,9 +850,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             text-align: center;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
             text-decoration: none;
             color: inherit;
         }
@@ -1027,4 +1028,77 @@
 .invoice-row:hover {
     background: rgba(245, 166, 35, 0.08) !important;
     transition: background 0.2s ease;
+}
+
+/* ── Skeleton Screen ── */
+.dashboard-card.is-skeleton {
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    pointer-events: none;
+    cursor: not-allowed;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card.is-skeleton > i,
+.dashboard-card.is-skeleton > h3,
+.dashboard-card.is-skeleton > p {
+    opacity: 0;
+    visibility: hidden; /* Hide without removing from layout */
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.dashboard-card.is-loaded > i,
+.dashboard-card.is-loaded > h3,
+.dashboard-card.is-loaded > p {
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: skeletonFadeIn 0.2s ease-in forwards;
+}
+
+.dashboard-card.is-error {
+    background: var(--surface) !important;
+    animation: none !important;
+    cursor: default !important;
+}
+
+.dashboard-card.is-error .skeleton-error {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--danger);
+}
+
+.dashboard-card:not(.is-skeleton) > i,
+.dashboard-card:not(.is-skeleton) > h3,
+.dashboard-card:not(.is-skeleton) > p {
+    opacity: 1;
+}
+
+.skeleton-error {
+    display: none;
+    position: absolute;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes skeletonFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.dashboard-card.is-loaded > * {
+    animation: skeletonFadeIn 0.2s ease-in forwards;
 }

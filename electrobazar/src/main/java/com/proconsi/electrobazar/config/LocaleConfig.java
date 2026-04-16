@@ -33,4 +33,19 @@ public class LocaleConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
     }
+
+    @Bean
+    public org.springframework.web.servlet.resource.ResourceUrlEncodingFilter resourceUrlEncodingFilter() {
+        return new org.springframework.web.servlet.resource.ResourceUrlEncodingFilter();
+    }
+
+    @Override
+    public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/js/**", "/css/**", "/images/**", "/webjars/**")
+                .addResourceLocations("classpath:/static/js/", "classpath:/static/css/", "classpath:/static/images/", "classpath:/META-INF/resources/webjars/")
+                .setCacheControl(org.springframework.http.CacheControl.maxAge(7, java.util.concurrent.TimeUnit.DAYS))
+                .resourceChain(true)
+                .addResolver(new org.springframework.web.servlet.resource.VersionResourceResolver()
+                        .addContentVersionStrategy("/**"));
+    }
 }

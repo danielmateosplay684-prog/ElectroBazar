@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 }) + '€';
+            realAmountDisplay.className = realAmount > 0 ? 'fw-bold text-accent' : 'fw-bold';
         }
 
         if (diffAmountSpan) {

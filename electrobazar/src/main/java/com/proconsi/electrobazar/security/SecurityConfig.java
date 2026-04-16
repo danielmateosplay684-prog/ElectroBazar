@@ -18,6 +18,8 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 
 /**
  * Main Web Security Configuration.
@@ -46,6 +48,13 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final TpvTokenFilter tpvTokenFilter;
+
+        @Bean
+        public WebSecurityCustomizer webSecurityCustomizer() {
+                return (web) -> web.ignoring()
+                                .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**", "/icons/**",
+                                                "/favicon.svg", "/favicon-light.svg");
+        }
 
         /**
          * Disables the 'Using generated security password' log by providing a custom

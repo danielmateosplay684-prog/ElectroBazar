@@ -107,6 +107,114 @@ let ivaSelectAllAbsolute = false;
 let _selProductStaticHtml = null;
 let _selProductSearchTimeout = null;
 
+async function loadTaxRates() {
+    const tableBody = document.getElementById('taxRatesTableBody');
+    const selProductList = document.getElementById('selProductList');
+    const selCategoryList = document.getElementById('selCategoryList');
+    const selectiveTaxSelect = document.getElementById('selectiveTaxRateId');
+
+    if (!tableBody) return;
+
+    // Show skeletons/loading
+    tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando tipos de IVA...</td></tr>';
+
+    try {
+        // 1. Fetch Tax Rates
+        const resRates = await fetch('/admin/api/tax-rates');
+        const rates = await resRates.json();
+
+        // Render Table
+        tableBody.innerHTML = rates.map(tr => `
+            <tr>
+                <td><strong>${tr.description}</strong></td>
+                <td>${(tr.vatRate * 100).toFixed(1)}%</td>
+                <td>${(tr.reRate * 100).toFixed(2)}%</td>
+                <td>
+                    <span class="badge-active ${tr.active ? 'yes' : 'no'}">
+                        ${tr.active ? 'Si' : 'No'}
+                    </span>
+                </td>
+                <td>${tr.validFrom}</td>
+                <td>${tr.validTo || '—'}</td>
+                <td style="text-align:right">
+                    <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                        <button class="btn-icon" title="Editar" 
+                            data-id="${tr.id}"
+                            data-description="${tr.description}" 
+                            data-vatrate="${tr.vatRate}"
+                            data-rerate="${tr.reRate}" 
+                            data-active="${tr.active}"
+                            data-validfrom="${tr.validFrom}" 
+                            data-validto="${tr.validTo || ''}"
+                            onclick="openEditTaxRateModal(this)">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn-icon danger" title="Eliminar" 
+                            onclick="deleteTaxRate(${tr.id}, '${tr.description}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        // Update selective VAT dropdown
+        if (selectiveTaxSelect) {
+            const currentVal = selectiveTaxSelect.value;
+            selectiveTaxSelect.innerHTML = '<option value="">Elige un tipo de IVA</option>' + 
+                rates.filter(tr => tr.active).map(tr => 
+                    `<option value="${tr.id}" ${currentVal == tr.id ? 'selected' : ''}>${tr.description} (${(tr.vatRate * 100).toFixed(1)}%)</option>`
+                ).join('');
+        }
+
+        // 2. Fetch Top Products for selection
+        const resProducts = await fetch('/api/products/filter?size=100&sortBy=salesRank&sortDir=desc');
+        const productsData = await resProducts.json();
+        const products = productsData.content || productsData || [];
+        
+        selProductList.innerHTML = products.map(p => `
+            <div class="sel-product-item-wrap mb-1" data-name="${(p.name || '').toLowerCase()}">
+                <div class="rounded hover-surface shadow-sm" style="background:var(--surface);border:1px solid var(--border);transition:all 0.2s;">
+                    <label class="d-flex align-items-center p-2 m-0 w-100" style="cursor:pointer;" for="selProd${p.id}">
+                        <input class="form-check-input sel-product-cb me-3 mt-0 flex-shrink-0"
+                            type="checkbox" value="${p.id}" id="selProd${p.id}" style="margin-left:5px;">
+                        <div class="flex-grow-1 d-flex justify-content-between align-items-center pe-1">
+                            <span class="fw-600" style="font-size:0.85rem; color:#ffffff;">${p.name}</span>
+                            <span class="badge bg-secondary text-muted rounded-pill small px-2">
+                                IVA: ${p.taxRate ? (p.taxRate.vatRate * 100).toFixed(0) + '%' : '—'}
+                            </span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        `).join('');
+        _selProductStaticHtml = selProductList.innerHTML;
+
+        // 3. Fetch Categories
+        const resCats = await fetch('/api/categories');
+        const cats = await resCats.json();
+        selCategoryList.innerHTML = cats.map(c => `
+            <div class="col-md-6 mb-2">
+                <div class="rounded-3 hover-surface shadow-sm overflow-hidden" 
+                     style="background: var(--secondary); border: 1px solid var(--border); transition: all 0.2s;">
+                    <label class="d-flex align-items-center p-3 m-0 w-100 h-100" style="cursor: pointer;" for="selCat${c.id}">
+                        <input class="form-check-input sel-category-cb me-3 mt-0 flex-shrink-0"
+                            type="checkbox" value="${c.id}" id="selCat${c.id}" style="margin-left: 2px;">
+                        <div class="flex-grow-1">
+                            <span class="fw-700 d-block" style="line-height: 1.2; color:#ffffff;">${c.name}</span>
+                            <div class="text-muted small fw-normal mt-1" style="font-size: 0.7rem;">Incluye productos de esta categoría</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        console.error('Error loading tax rates:', e);
+        if (tableBody) tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar datos.</td></tr>';
+    }
+}
+
 function filterSelProducts() {
     ivaSelectAllAbsolute = false;
     const badge = document.getElementById('ivaSelectAllBadge');
@@ -300,3 +408,4 @@ window.toggleAllSelProducts = toggleAllSelProducts;
 window.toggleAllSelCategories = toggleAllSelCategories;
 window.applySelectiveTaxRate = applySelectiveTaxRate;
 window.selectAllSystemIva = selectAllSystemIva;
+window.loadTaxRates = loadTaxRates;
