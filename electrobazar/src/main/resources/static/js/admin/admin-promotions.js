@@ -127,15 +127,27 @@ function openPromotionModal(id) {
                 document.getElementById('promoFrom').value = p.validFrom ? p.validFrom.slice(0, 16) : '';
                 document.getElementById('promoUntil').value = p.validUntil ? p.validUntil.slice(0, 16) : '';
                 document.getElementById('promoActive').checked = p.active !== false;
+                
                 selectedPromoProducts.clear();
                 selectedPromoCategories.clear();
-                (p.products || []).forEach(prod => selectedPromoProducts.add(prod));
-                (p.categories || []).forEach(cat => selectedPromoCategories.add(cat));
+                
+                // Mapeo correcto de nombres segun la entidad Java (restrictedProducts/restrictedCategories)
+                if (p.restrictedProducts) {
+                    p.restrictedProducts.forEach(prod => {
+                        selectedPromoProducts.add({ id: prod.id, name: prod.nameEs || prod.name });
+                    });
+                }
+                if (p.restrictedCategories) {
+                    p.restrictedCategories.forEach(cat => {
+                        selectedPromoCategories.add({ id: cat.id, name: cat.nameEs || cat.name });
+                    });
+                }
+                
                 renderSelectedPromoProducts();
                 renderSelectedPromoCategories();
             });
     }
-    promotionModal.show();
+    if (typeof promotionModal !== 'undefined') promotionModal.show();
 }
 
 function savePromotion() {
@@ -167,16 +179,17 @@ function savePromotion() {
 
     // Extraction with null-checks as requested by user
     const promo = {
-        id: idEl ? idEl.value : null,
+        id: idEl ? (idEl.value || null) : null,
         name: name,
         nValue: parseInt(nEl.value) || 3,
         mValue: parseInt(mEl.value) || 2,
         validFrom: fromEl ? (fromEl.value || null) : null,
         validUntil: untilEl ? (untilEl.value || null) : null,
         active: activeEl ? activeEl.checked : true,
-        productIds: [...selectedPromoProducts].map(p => p.id),
-        categoryIds: [...selectedPromoCategories].map(c => c.id)
+        restrictedProducts: [...selectedPromoProducts].map(p => ({ id: p.id })),
+        restrictedCategories: [...selectedPromoCategories].map(c => ({ id: c.id }))
     };
+    console.log('[PROMO] Enviando:', JSON.stringify(promo));
 
     // Generic check for any other product-specific inputs if they were to exist
     // Currently we only have IDs, but this pattern implements the user's requested safety:
@@ -222,6 +235,64 @@ function deletePromotion(id) {
         });
 }
 
+function loadPromotions() {
+    const tableBody = document.querySelector('#promotionsTable tbody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>`;
+
+    fetch('/api/promotions')
+        .then(res => res.json())
+        .then(promotions => {
+            if (promotions.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No hay promociones configuradas.</td></tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = promotions.map(p => {
+                let scope = '<span class="text-muted">Todo el catálogo</span>';
+                if (p.restrictedProducts && p.restrictedProducts.length > 0) {
+                    scope = `<span class="badge bg-info-subtle text-info border border-info-subtle">${p.restrictedProducts.length} Productos</span>`;
+                } else if (p.restrictedCategories && p.restrictedCategories.length > 0) {
+                    const names = p.restrictedCategories.map(c => c.nameEs || c.name).join(', ');
+                    scope = `<span class="badge bg-warning-subtle text-warning border border-warning-subtle">${names}</span>`;
+                }
+
+                return `
+                <tr>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <strong class="text-accent">${escHtml(p.name)}</strong>
+                            <small class="text-muted" style="font-size: 0.75rem;">${scope}</small>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-primary" style="background-color: var(--primary) !important;">${p.nValue}x${p.mValue}</span></td>
+                    <td>
+                        <span class="badge-active ${p.active ? 'yes' : 'no'}">
+                            ${p.active ? 'Si' : 'No'}
+                        </span>
+                    </td>
+                    <td>${formatDateTime(p.validFrom)}</td>
+                    <td>${formatDateTime(p.validUntil)}</td>
+                    <td style="text-align:right">
+                        <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                            <button class="btn-icon" title="Editar" onclick="openPromotionModal(${p.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" title="Eliminar" onclick="deletePromotion(${p.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        })
+        .catch(err => {
+            console.error('Error loading promotions:', err);
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Error al cargar las promociones.</td></tr>`;
+        });
+}
+
 // Global Exports
 window.searchPromoProducts = searchPromoProducts;
 window.searchPromoCategories = searchPromoCategories;
@@ -234,3 +305,4 @@ window.renderSelectedPromoCategories = renderSelectedPromoCategories;
 window.openPromotionModal = openPromotionModal;
 window.savePromotion = savePromotion;
 window.deletePromotion = deletePromotion;
+window.loadPromotions = loadPromotions;

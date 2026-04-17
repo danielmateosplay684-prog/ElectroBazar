@@ -45,7 +45,7 @@ public class Sale {
 
     /** Cash session this sale belongs to. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cash_session_id")
+    @JoinColumn(name = "cash_register_id")
     private CashRegister cashRegister;
 
     /** Selected payment method for the transaction. */

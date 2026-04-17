@@ -7,6 +7,11 @@ import com.proconsi.electrobazar.model.Promotion;
 import com.proconsi.electrobazar.model.SaleLine;
 import com.proconsi.electrobazar.repository.ProductRepository;
 import com.proconsi.electrobazar.repository.PromotionRepository;
+import com.proconsi.electrobazar.model.Category;
+import com.proconsi.electrobazar.repository.CategoryRepository;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.HashSet;
+import java.util.Set;
 import com.proconsi.electrobazar.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +33,7 @@ import java.util.stream.Collectors;
 public class PromotionServiceImpl implements PromotionService {
 
     private final PromotionRepository repository;
+    private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
 
     @Override
@@ -201,16 +207,34 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public Promotion save(Promotion promotion) {
-        if (promotion.getRestrictedProducts() != null) {
+        // 1. Re-attach Products (Attach detached entities to the current persistence context)
+        if (promotion.getRestrictedProducts() != null && !promotion.getRestrictedProducts().isEmpty()) {
+            java.util.Set<Product> managedProducts = new java.util.HashSet<>();
             for (Product pRef : promotion.getRestrictedProducts()) {
                 if (pRef.getId() != null) {
-                    Product dbProduct = productRepository.findById(pRef.getId()).orElse(null);
-                    if (dbProduct != null && dbProduct.getMeasurementUnit() != null && dbProduct.getMeasurementUnit().getDecimalPlaces() > 0) {
-                        throw new IllegalArgumentException("El producto '" + dbProduct.getName() + "' es fraccionario y no puede incluirse en promociones NxM.");
-                    }
+                    productRepository.findById(pRef.getId()).ifPresent(dbProduct -> {
+                        // Validation logic for fractional products
+                        if (dbProduct.getMeasurementUnit() != null && dbProduct.getMeasurementUnit().getDecimalPlaces() > 0) {
+                            throw new IllegalArgumentException("El producto '" + dbProduct.getName() + "' es fraccionario.");
+                        }
+                        managedProducts.add(dbProduct);
+                    });
                 }
             }
+            promotion.setRestrictedProducts(managedProducts);
         }
+
+        // 2. Re-attach Categories
+        if (promotion.getRestrictedCategories() != null && !promotion.getRestrictedCategories().isEmpty()) {
+            java.util.Set<com.proconsi.electrobazar.model.Category> managedCategories = new java.util.HashSet<>();
+            for (com.proconsi.electrobazar.model.Category cRef : promotion.getRestrictedCategories()) {
+                if (cRef.getId() != null) {
+                    categoryRepository.findById(cRef.getId()).ifPresent(managedCategories::add);
+                }
+            }
+            promotion.setRestrictedCategories(managedCategories);
+        }
+
         return repository.save(promotion);
     }
 
