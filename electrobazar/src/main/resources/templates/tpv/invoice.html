@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -399,43 +399,18 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Forma A: Mostrar 3 lineas por producto si hay descuento -->
+                <!-- Simplificado: Las líneas ya muestran el precio unitario con la tarifa aplicada -->
                 <th:block th:each="line, lineStat : ${sale.lines}">
-                    <!-- Main Product Line (shows original price and subtotal before discount) -->
                     <tr>
                         <td class="name" th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</td>
                         <td class="r"
                             th:text="${#numbers.formatDecimal(taxBreakdowns[lineStat.index].unitPrice, 1, 2)} + ' &euro;'">
                             0.00 &euro;</td>
-                        <td class="r" th:text="${line.quantity}">1</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(line.quantity, 1, (line.quantity.stripTrailingZeros().scale() > 0 ? 2 : 0))} + ' ud.'">1 ud.</td>
                         <td class="r" th:text="${#numbers.formatDecimal(line.vatRate * 100, 1, 0)} + '%'">21%</td>
                         <td class="r" th:if="${applyRecargo}"
                             th:text="${#numbers.formatDecimal(line.recargoRate * 100, 1, 1)} + '%'">5.2%</td>
                         <td class="r"
-                            th:text="${#numbers.formatDecimal(taxBreakdowns[lineStat.index].baseAmount, 1, 2)} + ' &euro;'">
-                            0.00 &euro;</td>
-                    </tr>
-
-                    <!-- Discount Detail (only if applicable) -->
-                    <tr th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
-                        style="font-size: 11.5px; color: #555; background: #fafafa;">
-                        <td style="padding-left: 30px; border-bottom: none;"
-                            th:text="'↳ Descuento aplicado (' + ${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '%)'">
-                            ↳ Descuento 15%</td>
-                        <td class="r" style="border-bottom: none;"></td>
-                        <td class="r" style="border-bottom: none;"></td>
-                        <td class="r" style="border-bottom: none;"></td>
-                        <td class="r" th:if="${applyRecargo}" style="border-bottom: none;"></td>
-                        <td class="r" style="border-bottom: none; color: #27ae60;"
-                            th:text="'-' + ${#numbers.formatDecimal(((line.originalUnitPrice - line.unitPrice) / (1 + line.vatRate)) * line.quantity, 1, 2)} + ' &euro;'">
-                            -0.00 &euro;</td>
-                    </tr>
-
-                    <!-- Final Discounted Amount Line (only if applicable) -->
-                    <tr th:if="${line.discountPercentage != null and line.discountPercentage > 0}">
-                        <td style="padding-left: 30px; font-weight: 500;">Precio final (sin IVA)</td>
-                        <td class="r" colspan="4" th:colspan="${applyRecargo} ? 4 : 3"></td>
-                        <td class="r" style="font-weight: 600;"
                             th:text="${#numbers.formatDecimal(taxBreakdowns[lineStat.index].baseAmount, 1, 2)} + ' &euro;'">
                             0.00 &euro;</td>
                     </tr>
@@ -494,27 +469,32 @@
         <!-- TOTALS -->
         <div class="totals-wrap">
             <table class="totals-table">
+                <tr th:if="${totalOriginalBase != null and totalOriginalBase > totalBase}">
+                    <td class="lbl">Subtotal bruto:</td>
+                    <td class="amt" th:text="${#numbers.formatDecimal(totalOriginalBase, 1, 2)} + ' &euro;'">0.00 &euro;</td>
+                </tr>
+                
+                <!-- Descuento por Tarifa (Ej: MAYORISTA 15%) -->
+                <tr th:if="${totalTariffDiscountNet != null and totalTariffDiscountNet > 0}">
+                    <td class="lbl" style="color: #27ae60;">
+                        Descuento Tarifa (<span th:text="${sale.appliedTariff}"></span>):
+                    </td>
+                    <td class="amt" style="color: #27ae60;" 
+                        th:text="'-' + ${#numbers.formatDecimal(totalTariffDiscountNet, 1, 2)} + ' &euro;'">-0.00 &euro;</td>
+                </tr>
+
+                <!-- Descuento por Cupón de Regalo / Promoción -->
+                <tr th:if="${totalCouponDiscountNet != null and totalCouponDiscountNet > 0}">
+                    <td class="lbl" style="color: #27ae60;">
+                        <i class="bi bi-tag-fill"></i> Descuento Cup&oacute;n <span th:if="${sale.coupon != null}" th:text="'(' + ${sale.coupon.code} + ')'"></span>:
+                    </td>
+                    <td class="amt" style="color: #27ae60;" 
+                        th:text="'-' + ${#numbers.formatDecimal(totalCouponDiscountNet, 1, 2)} + ' &euro;'">-0.00 &euro;</td>
+                </tr>
+
                 <tr>
                     <td class="lbl">Base imponible:</td>
                     <td class="amt" th:text="${#numbers.formatDecimal(totalBase, 1, 2)} + ' &euro;'">0.00 &euro;</td>
-                </tr>
-                <!-- Mostrar if hay Tarifa Aplicada (Informativo, ya que el precio unitario ya lo incluye) -->
-                <tr th:if="${sale.appliedDiscountPercentage != null and sale.appliedDiscountPercentage > 0}">
-                    <td class="lbl" style="font-style: italic;">Tarifa aplicada:</td>
-                    <td class="amt" style="font-size: 11px;">
-                        <span th:text="${sale.appliedTariff}"></span> (<span th:text="${#numbers.formatDecimal(sale.appliedDiscountPercentage, 1, 0)}"></span>% dto. incl.)
-                    </td>
-                </tr>
-
-                <!-- Mostrar CUPÓN/BONO (Campo totalDiscount en Sale) -->
-                <tr th:if="${sale.coupon != null or (sale.totalDiscount != null and sale.totalDiscount > 0)}">
-                    <td class="lbl" style="color: #27ae60; font-weight: 700;">
-                        <i class="bi bi-tag-fill"></i> 
-                        <span th:text="${sale.coupon != null ? 'Cupón (' + sale.coupon.code + '):' : 'Bono / Descuento:'}">Cupón:</span>
-                    </td>
-                    <td class="amt" style="color: #27ae60; font-weight: 700;">
-                        -<span th:text="${#numbers.formatDecimal(sale.totalDiscount, 1, 2)} + ' &euro;'"></span>
-                    </td>
                 </tr>
                 <tr>
                     <td class="lbl">IVA total:</td>
@@ -525,8 +505,23 @@
                     <td class="amt" th:text="${#numbers.formatDecimal(totalRecargo, 1, 2)} + ' &euro;'">0.00 &euro;</td>
                 </tr>
 
+                <tr style="border-top: 1px solid #eee;">
+                    <td class="lbl" style="font-weight: 700;">Total Venta:</td>
+                    <td class="amt" style="font-weight: 700;" 
+                        th:text="${#numbers.formatDecimal(totalBase + totalVat + (totalRecargo != null ? totalRecargo : 0), 1, 2)} + ' &euro;'">0.00 &euro;</td>
+                </tr>
+
+                <!-- Abono utilizado (CRÉDITO) -->
+                <tr th:if="${sale.abonoAmount != null and sale.abonoAmount > 0}">
+                    <td class="lbl" style="color: #d35400;">
+                        <i class="bi bi-wallet2"></i> Pago con Abono/Vale:
+                    </td>
+                    <td class="amt" style="color: #d35400;" 
+                        th:text="'-' + ${#numbers.formatDecimal(sale.abonoAmount, 1, 2)} + ' &euro;'">-0.00 &euro;</td>
+                </tr>
+
                 <tr class="grand">
-                    <td class="lbl">TOTAL:</td>
+                    <td class="lbl">TOTAL A PAGAR:</td>
                     <td class="amt" th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 2)} + ' &euro;'">0.00 &euro;
                     </td>
                 </tr>

@@ -136,6 +136,11 @@ public class Sale {
     @Builder.Default
     private BigDecimal totalDiscount = BigDecimal.ZERO;
 
+    /** Amount paid using a customer's credit/voucher (Abono). */
+    @Column(nullable = false, precision = 10, scale = 2, name = "abono_amount")
+    @Builder.Default
+    private BigDecimal abonoAmount = BigDecimal.ZERO;
+
     /**
      * Enumeration for the sale lifecycle state.
      */

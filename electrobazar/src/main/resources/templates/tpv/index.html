@@ -499,6 +499,18 @@
                     </div>
                     <span id="couponAmountDisplay">-0.00€</span>
                 </div>
+
+                <!-- Abonos Sidebar (Selection Modal Trigger) -->
+                <div id="abonos-sidebar" style="display:none; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed var(--border);">
+                    <button class="btn btn-sm w-100" 
+                        style="background: #d35400; color: white; border-radius: 8px; padding: 10px; font-weight: 700; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" 
+                        onclick="openAbonoSelectionModal()">
+                        <i class="bi bi-wallet2 me-2"></i> Canjear Abono / Vale
+                    </button>
+                    <div id="abonosSidebarTotal" style="display:none; text-align: right; font-size: 0.75rem; color: #d35400; font-weight: 700; margin-top: 0.2rem;">
+                        Aplicado: <span>-0.00€</span>
+                    </div>
+                </div>
                 <div class="ticket-total-row d-flex justify-content-between align-items-center py-2">
                     <span class="h5 mb-0" th:text="#{common.total}">Total</span><span class="h3 mb-0"
                         id="ticketTotal">0.00€</span>
@@ -528,6 +540,8 @@
                     <input type="hidden" name="cardAmount" id="cardAmountInput">
                     <input type="hidden" name="notes" id="notesInput">
                     <div id="formLines"></div>
+                    <div id="formAbonoIds"></div>
+                    <input type="hidden" name="manualAbonoAmount" id="manualAbonoAmountInput">
                     <button type="button" class="btn-cobrar" id="btnCobrar" onclick="openCheckoutModal()" disabled
                         th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''">
                         <i class="bi bi-lightning-fill me-1"></i> <span th:text="#{tpv.ticket.checkout}">Cobrar</span>
@@ -808,6 +822,18 @@
                         </div>
                     </div>
 
+                    <!-- Abonos del Cliente -->
+                    <div id="abonosSelectionSection" class="mb-4" style="display: none;">
+                        <label class="form-label fw-bold small text-muted"><i class="bi bi-wallet2 me-1"></i>
+                            Abonos disponibles para este cliente</label>
+                        <div id="abonosListContainer" class="d-flex flex-column gap-2 p-2 rounded" 
+                             style="background: var(--surface); border: 1px solid var(--border); max-height: 150px; overflow-y: auto;">
+                            <!-- Abonos se cargarán aquí dinámicamente -->
+                        </div>
+                        <div class="mt-2 text-end" id="totalAbonoSelectedDisplay" style="display: none; font-size: 0.85rem; color: #d35400; font-weight: 700;">
+                            Abono total a aplicar: <span>0.00€</span>
+                        </div>
+                    </div>
 
                     <!-- Comentario opcional -->
                     <div class="mb-3 px-1">
@@ -1379,6 +1405,55 @@
             box-shadow: 0 0 10px var(--accent);
         }
     </style>
+    <!-- Abono Selection Modal -->
+    <div class="modal fade" id="abonoSelectionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden;">
+                <div class="modal-header" style="background: var(--accent); color: white; border: none;">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-ticket-perforated me-2"></i> Seleccionar Abono / Vale</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p id="abono-modal-instructions" class="text-muted small mb-4">Seleccione el abono que desea aplicar a esta venta (máximo uno por venta).</p>
+                    
+                    <!-- Formulario para cliente con abonos -->
+                    <div id="tpv-abono-selection-list" style="display:none;">
+                        <!-- Radio buttons here -->
+                    </div>
+
+                    <!-- Formulario para cuando NO hay cliente (importe manual o búsqueda por código) -->
+                    <div id="tpv-abono-manual-input" style="display:none;">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase" style="color:var(--accent);">Opción 1: Buscar Bono por Código</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" id="abono-search-code" class="form-control border-start-0" placeholder="Ej: AB-24-XXXX">
+                                <button class="btn btn-outline-primary" type="button" onclick="searchAbonoByCode()">Buscar</button>
+                            </div>
+                            <div id="abono-search-result" class="mt-2" style="display:none;">
+                                <!-- Contenedor para el bono encontrado -->
+                            </div>
+                        </div>
+
+                        <div class="hr-text text-muted mb-4"><span>O</span></div>
+
+                        <div>
+                            <label class="form-label fw-bold small text-uppercase" style="color:var(--accent);">Opción 2: Importe Manual</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" id="abono-manual-amount" class="form-control" placeholder="0.00" step="0.01" min="0">
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <p class="text-muted small mt-1">Use esta opción si no tiene el código pero conoce el saldo a descontar.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-light" style="border-radius: 10px;" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn" style="background: var(--accent); color: white; border-radius: 10px; font-weight: 600;" onclick="confirmAbonoSelection()">Aplicar Seleccionado</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

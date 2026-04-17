@@ -7,6 +7,7 @@ import com.proconsi.electrobazar.dto.TaxBreakdown;
 import com.proconsi.electrobazar.dto.WorkerSaleStatsDTO;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import com.proconsi.electrobazar.model.*;
+import com.proconsi.electrobazar.repository.AbonoRepository;
 import com.proconsi.electrobazar.repository.CashRegisterRepository;
 import com.proconsi.electrobazar.repository.CouponRepository;
 import com.proconsi.electrobazar.repository.SaleRepository;
@@ -64,6 +65,7 @@ public class SaleServiceImpl implements SaleService {
     private final CashRegisterService cashRegisterService;
     private final MessageSource messageSource;
     private final JdbcTemplate jdbcTemplate;
+    private final AbonoRepository abonoRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -420,6 +422,7 @@ public class SaleServiceImpl implements SaleService {
         BigDecimal totalBase = BigDecimal.ZERO;
         BigDecimal totalVat = BigDecimal.ZERO;
         BigDecimal totalRecargo = BigDecimal.ZERO;
+        BigDecimal totalOriginalGross = BigDecimal.ZERO;
 
         for (int i = 0; i < lines.size(); i++) {
             SaleLine line = lines.get(i);
@@ -467,7 +470,12 @@ public class SaleServiceImpl implements SaleService {
             TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(pId, pName, effectiveUnitPrice,
                     line.getQuantity(), vatRate, applyRE);
 
-            line.setOriginalUnitPrice(lineGrossBeforeCoupon.setScale(SCALE, ROUNDING));
+            // Preserve original (catalogue) price for discount calculation if already set by controller
+            BigDecimal catalogPrice = (line.getOriginalUnitPrice() != null && line.getOriginalUnitPrice().compareTo(BigDecimal.ZERO) > 0)
+                    ? line.getOriginalUnitPrice() : lineGrossBeforeCoupon;
+            totalOriginalGross = totalOriginalGross.add(catalogPrice.multiply(line.getQuantity()));
+
+            line.setOriginalUnitPrice(catalogPrice.setScale(SCALE, ROUNDING));
             line.setUnitPrice(effectiveUnitPrice.setScale(SCALE, ROUNDING));
             line.setBasePriceNet(breakdown.getUnitPrice());
             line.setBaseAmount(breakdown.getBaseAmount()); // Rounded to 2 in calculator
@@ -527,7 +535,7 @@ public class SaleServiceImpl implements SaleService {
         Sale sale = Sale.builder()
                 .paymentMethod(paymentMethod).totalAmount(finalTotal).totalBase(totalBase.setScale(SCALE, ROUNDING))
                 .totalVat(totalVat.setScale(SCALE, ROUNDING)).totalRecargo(totalRecargo.setScale(SCALE, ROUNDING))
-                .totalDiscount(couponDiscount.setScale(SCALE, ROUNDING)).applyRecargo(applyRE)
+                .totalDiscount(totalOriginalGross.subtract(finalTotal).setScale(SCALE, ROUNDING)).applyRecargo(applyRE)
                 .receivedAmount(receivedAmount).changeAmount(change)
                 .cashAmount(actualCashAmt).cardAmount(actualCardAmt)
                 .notes(notes).customer(customer).worker(worker).lines(lines).appliedTariff(tariffName)
@@ -550,6 +558,83 @@ public class SaleServiceImpl implements SaleService {
                         username, "SALE", saved.getId());
 
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public Sale createSaleWithAbonos(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
+            BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
+            Worker worker, Tariff tariffOverride, String couponCode, List<Long> abonoIds, BigDecimal manualAbonoAmount) {
+
+        // 1. Calculate the base sale (including coupon and promotions)
+        Sale sale = createSaleWithCoupon(lines, paymentMethod, notes, receivedAmount, cashAmount, cardAmount, customer,
+                worker, tariffOverride, couponCode);
+
+        // 2. Fetch and apply Abonos
+        BigDecimal totalAbonoAplicado = manualAbonoAmount != null ? manualAbonoAmount : BigDecimal.ZERO;
+        if (abonoIds != null && !abonoIds.isEmpty()) {
+            List<Abono> abonos = abonoRepository.findAllById(abonoIds);
+            BigDecimal currentSaleRemaining = sale.getTotalAmount();
+            for (Abono abono : abonos) {
+                if (customer != null && abono.getCliente().getId().equals(customer.getId())) {
+                    BigDecimal val = abono.getImporte();
+                    if (Boolean.TRUE.equals(abono.getRequiresFullUse())) {
+                        if (currentSaleRemaining.compareTo(val) < 0) {
+                            throw new IllegalArgumentException("El abono #" + abono.getId() + " exige compra mínima de " + val + "€.");
+                        }
+                        totalAbonoAplicado = totalAbonoAplicado.add(val);
+                        currentSaleRemaining = currentSaleRemaining.subtract(val);
+                        abonoRepository.delete(abono);
+                    } else {
+                        if (currentSaleRemaining.compareTo(BigDecimal.ZERO) > 0) {
+                            if (val.compareTo(currentSaleRemaining) <= 0) {
+                                totalAbonoAplicado = totalAbonoAplicado.add(val);
+                                currentSaleRemaining = BigDecimal.ZERO;
+                                abonoRepository.delete(abono);
+                            } else {
+                                totalAbonoAplicado = totalAbonoAplicado.add(currentSaleRemaining);
+                                abono.setImporte(val.subtract(currentSaleRemaining));
+                                currentSaleRemaining = BigDecimal.ZERO;
+                                abonoRepository.save(abono);
+                            }
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException("El abono " + abono.getId() + " no pertenece al cliente seleccionado.");
+                }
+            }
+        }
+
+        if (totalAbonoAplicado.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal newTotal = sale.getTotalAmount().subtract(totalAbonoAplicado);
+            if (newTotal.compareTo(BigDecimal.ZERO) < 0) newTotal = BigDecimal.ZERO;
+            sale.setAbonoAmount(totalAbonoAplicado);
+            sale.setTotalAmount(newTotal);
+
+            // Recalculate ReceivedAmount and Change based on the new reduced total
+            if (paymentMethod == PaymentMethod.CASH) {
+                BigDecimal rAmt = (receivedAmount != null) ? receivedAmount : newTotal;
+                sale.setChangeAmount(rAmt.subtract(newTotal));
+                sale.setCashAmount(newTotal);
+            } else if (paymentMethod == PaymentMethod.CARD) {
+                sale.setCardAmount(newTotal);
+            } else if (paymentMethod == PaymentMethod.MIXED) {
+                // For mixed, we prioritize card then cash with the remainder
+                BigDecimal totalPaid = (cardAmount != null ? cardAmount : BigDecimal.ZERO)
+                        .add(cashAmount != null ? cashAmount : BigDecimal.ZERO);
+                sale.setChangeAmount(totalPaid.subtract(newTotal));
+                // Recalculate split if needed, but here we just update the Sale total
+            }
+
+            saleRepository.save(sale);
+
+            String u = (worker != null) ? worker.getUsername() : "Anonymous";
+            activityLogService.logActivity("USO_ABONO", 
+                String.format("Cliente %s usó %.2f € en venta nº %d", (customer != null ? customer.getName() : "Anon"), totalAbonoAplicado, sale.getId()), 
+                u, "SALE", sale.getId());
+        }
+
+        return sale;
     }
 
     @Override

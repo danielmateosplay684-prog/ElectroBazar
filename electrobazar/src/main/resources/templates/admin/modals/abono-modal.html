@@ -47,9 +47,21 @@
                                     <option value="CREDITO" th:text="#{admin.abonos.modal.payment.internal}">Crédito Interno</option>
                                 </select>
                             </div>
-                            <div class="mb-1">
+                            <div class="mb-3">
                                 <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.reason}">Motivo (Opcional)</label>
                                 <textarea id="abonoFormMotivo" class="form-control" rows="2" th:placeholder="#{common.description.placeholder}"></textarea>
+                            </div>
+                            <!-- NUEVA OPCIÓN: CONFIGURACIÓN DE USO -->
+                            <div class="mb-1 p-2 rounded" style="background: rgba(var(--accent-rgb), 0.05); border: 1px dashed var(--border);">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="abonoFormRequiresFullUse" checked>
+                                    <label class="form-check-label small fw-bold" for="abonoFormRequiresFullUse">
+                                        Exigir compra mínima (Importe completo)
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                    Si se desactiva, el cliente podrá usar el abono en varias compras como un monedero.
+                                </small>
                             </div>
                         </form>
                     </div>

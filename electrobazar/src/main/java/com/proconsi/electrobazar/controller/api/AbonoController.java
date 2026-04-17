@@ -75,4 +75,11 @@ public class AbonoController {
             return ResponseEntity.internalServerError().body("Error al anular el abono");
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> findByCode(@RequestParam String code) {
+        return abonoService.findByCode(code)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

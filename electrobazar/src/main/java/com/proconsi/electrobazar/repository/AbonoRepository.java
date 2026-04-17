@@ -14,4 +14,5 @@ public interface AbonoRepository extends JpaRepository<Abono, Long> {
     List<Abono> findByClienteId(Long clienteId);
     Page<Abono> findByClienteId(Long clienteId, Pageable pageable);
     List<Abono> findByTipoAbono(TipoAbono tipoAbono);
+    java.util.Optional<Abono> findByCode(String code);
 }

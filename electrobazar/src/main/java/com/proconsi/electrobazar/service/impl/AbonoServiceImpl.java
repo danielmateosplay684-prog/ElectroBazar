@@ -68,16 +68,22 @@ public class AbonoServiceImpl implements AbonoService {
             }
         }
 
-        // Guarde el importe siempre en negativo internamente
-        BigDecimal importeNegativo = request.getImporte().abs().negate();
+        // Guardamos el importe como valor positivo absoluto para facilitar los cálculos de resta en el TPV
+        BigDecimal importePositivo = request.getImporte().abs();
+
+        // Generar un código único estilo matrícula/localizador: AB-AÑO-RANDOM (ej: AB-24-X9R2)
+        String code = "AB-" + (java.time.Year.now().getValue() % 100) + "-" + 
+                     java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase();
 
         Abono abono = Abono.builder()
+                .code(code)
                 .ventaOriginal(venta)
                 .cliente(cliente)
-                .importe(importeNegativo)
+                .importe(importePositivo)
                 .fecha(LocalDateTime.now())
                 .metodoPago(request.getMetodoPago())
                 .tipoAbono(request.getTipoAbono())
+                .requiresFullUse(request.getRequiresFullUse() != null ? request.getRequiresFullUse() : true)
                 .motivo(request.getMotivo())
                 .estado(EstadoAbono.PENDIENTE)
                 .build();
@@ -147,5 +153,13 @@ public class AbonoServiceImpl implements AbonoService {
 
         abono.setEstado(EstadoAbono.ANULADO);
         abonoRepository.save(abono);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Optional<Abono> findByCode(String code) {
+        if (code == null || code.isBlank()) return java.util.Optional.empty();
+        return abonoRepository.findByCode(code.trim().toUpperCase())
+                .filter(a -> a.getEstado() == EstadoAbono.PENDIENTE);
     }
 }

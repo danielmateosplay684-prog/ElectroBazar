@@ -136,6 +136,8 @@ public class TpvController {
             @RequestParam(required = false) String couponCode,
             @RequestParam(required = false) List<String> productNames,
             @RequestParam(required = false) List<String> vatRates,
+            @RequestParam(required = false) List<Long> abonoIds,
+            @RequestParam(required = false) BigDecimal manualAbonoAmount,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
@@ -293,9 +295,9 @@ public class TpvController {
                 }
             }
 
-            sale = saleService.createSaleWithCoupon(lines, paymentMethod, notes, receivedAmountDecimal,
+            sale = saleService.createSaleWithAbonos(lines, paymentMethod, notes, receivedAmountDecimal,
                     cashAmountDecimal, cardAmountDecimal, customer,
-                    worker, tariffOverride, couponCode);
+                    worker, tariffOverride, couponCode, abonoIds, manualAbonoAmount);
         } catch (IllegalStateException | IllegalArgumentException
                 | com.proconsi.electrobazar.exception.InsufficientCashException e) {
             log.error("Error creating sale: {}", e.getMessage());
@@ -386,6 +388,36 @@ public class TpvController {
             model.addAttribute("totalBase", totalBase);
             model.addAttribute("totalVat", totalVat);
             model.addAttribute("totalRecargo", totalRecargo);
+
+            // Calculate breakdowns for Subtotal Bruto, Tariff Discount, and Header Discounts
+            BigDecimal totalOriginalBase = BigDecimal.ZERO;
+            BigDecimal totalTariffDiscountNet = BigDecimal.ZERO;
+            BigDecimal tariffPct = (sale.getAppliedDiscountPercentage() != null) 
+                    ? sale.getAppliedDiscountPercentage().divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            for (SaleLine line : sale.getLines()) {
+                BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
+                BigDecimal divisor = BigDecimal.ONE.add(vatRate);
+                
+                // Catalog Net
+                BigDecimal catalogNet = (line.getOriginalUnitPrice() != null && line.getOriginalUnitPrice().compareTo(BigDecimal.ZERO) > 0)
+                        ? line.getOriginalUnitPrice().divide(divisor, 10, RoundingMode.HALF_UP)
+                        : line.getUnitPrice().divide(divisor, 10, RoundingMode.HALF_UP);
+                
+                totalOriginalBase = totalOriginalBase.add(catalogNet.multiply(line.getQuantity()));
+                
+                // Tariff saving on this line (Net)
+                BigDecimal lineTariffSavingNet = catalogNet.multiply(tariffPct).multiply(line.getQuantity());
+                totalTariffDiscountNet = totalTariffDiscountNet.add(lineTariffSavingNet);
+            }
+            
+            BigDecimal aggregateDiscountNet = totalOriginalBase.subtract(totalBase);
+            BigDecimal couponDiscountNet = aggregateDiscountNet.subtract(totalTariffDiscountNet);
+
+            model.addAttribute("totalOriginalBase", totalOriginalBase.setScale(2, RoundingMode.HALF_UP));
+            model.addAttribute("totalTariffDiscountNet", totalTariffDiscountNet.setScale(2, RoundingMode.HALF_UP));
+            model.addAttribute("totalCouponDiscountNet", (couponDiscountNet.compareTo(BigDecimal.ZERO) > 0 ? couponDiscountNet : BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP));
         }
 
         if (model.containsAttribute("invoice")) {

@@ -18,8 +18,10 @@ function saveAbono() {
     const importe = document.getElementById('abonoFormImporte').value;
     const tipo = document.getElementById('abonoFormTipo').value;
     const pago = document.getElementById('abonoFormPago').value;
-    const motivo = document.getElementById('abonoFormMotivo').value;
-
+    const requiresFullUse = document.getElementById('abonoFormRequiresFullUse')?.checked;
+    
+    const motivo = document.getElementById('abonoFormMotivo')?.value || '';
+    
     if (!clienteId || !importe || !tipo || !pago) {
         if (typeof showToast === 'function') showToast(getAdminI18n('errorSave') || 'Campos obligatorios', 'error');
         return;
@@ -31,7 +33,8 @@ function saveAbono() {
         importe: parseFloat(importe),
         tipoAbono: tipo,
         metodoPago: pago,
-        motivo: motivo
+        motivo: motivo,
+        requiresFullUse: requiresFullUse
     };
 
     fetch('/api/abonos', {
@@ -101,7 +104,7 @@ function filterAbonos() {
                 const statusText = a.estado === 'PENDIENTE' ? 'ACT. PAGO' : (a.estado === 'APLICADO' ? 'APLICADO' : 'ANULADO');
 
                 tr.innerHTML = `
-                    <td><strong>#${a.id}</strong></td>
+                    <td><strong>${a.code || '#' + a.id}</strong></td>
                     <td>${new Date(a.fecha).toLocaleString()}</td>
                     <td>${a.cliente ? (a.cliente.idDocumentNumber || a.cliente.taxId || '#' + a.cliente.id) : '--'}</td>
                     <td><span class="text-accent fw-bold">${a.tipoAbono}</span></td>
@@ -110,6 +113,9 @@ function filterAbonos() {
                     <td><span class="${statusClass}">${statusText}</span></td>
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-2">
+                            <button class="btn-icon accent" onclick='imprimirAbono(${JSON.stringify(a).replace(/'/g, "&apos;")})' title="Imprimir Ticket">
+                                <i class="bi bi-printer"></i>
+                            </button>
                              ${a.estado === 'PENDIENTE' ? `
                                 <button class="btn-icon danger" onclick="anularAbono(${a.id})" title="Anular">
                                     <i class="bi bi-trash"></i>
@@ -148,9 +154,67 @@ function anularAbono(id) {
     });
 }
 
+/**
+ * Prints the abono in pocket size (80mm)
+ */
+function imprimirAbono(a) {
+    const isWallet = a.requiresFullUse === false;
+    const rulesText = isWallet 
+        ? "MONEDERO: Puedes usarlo parcialmente." 
+        : "VALE: Requiere compra por el importe total.";
+
+    const printWin = window.open('', '', 'width=400,height=600');
+    printWin.document.write(`
+        <html>
+        <head>
+            <title>Imprimir Abono #${a.id}</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; line-height: 1.2; }
+                .text-center { text-align: center; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                .header h2 { margin: 5px 0; font-size: 18px; text-transform: uppercase; }
+                .id-box { border: 2px solid #000; padding: 10px; margin: 10px 0; font-size: 20px; font-weight: bold; background: #eee; }
+                .amount { font-size: 24px; font-weight: bold; margin: 10px 0; }
+                .footer { font-size: 10px; margin-top: 20px; }
+            </style>
+        </head>
+        <body onload="window.print(); window.close();">
+            <div class="header text-center">
+                <h2>ELECTROBAZAR</h2>
+                <div class="divider"></div>
+                <div>VALE DE ABONO / CRÉDITO</div>
+            </div>
+
+            <div class="text-center">
+                <div class="amount">${parseFloat(a.importe).toFixed(2)} €</div>
+                <p>Fecha: ${new Date(a.fecha).toLocaleString()}</p>
+                <p>Cliente: ${a.cliente ? a.cliente.name : 'Cliente Genérico'}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="text-center">
+                <p>INTRODUZCA ESTE CÓDIGO EN EL TPV:</p>
+                <div class="id-box">${a.code || '#' + a.id}</div>
+                <p style="font-size: 9px; font-weight: bold;">${rulesText}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="footer text-center">
+                <p>Gracias por su confianza.</p>
+                <p>Conserve este ticket para futuras compras.</p>
+            </div>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
+}
+
 // Global exports
 window.openAbonoModal = openAbonoModal;
 window.saveAbono = saveAbono;
 window.filterAbonos = filterAbonos;
 window.anularAbono = anularAbono;
+window.imprimirAbono = imprimirAbono;
 

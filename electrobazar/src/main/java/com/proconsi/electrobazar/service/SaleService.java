@@ -114,6 +114,13 @@ public interface SaleService {
             Worker worker, Tariff tariffOverride, String couponCode);
 
     /**
+     * Creates a sale with an explicit tariff override, a discount coupon and abonos (credits).
+     */
+    Sale createSaleWithAbonos(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
+            BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
+            Worker worker, Tariff tariffOverride, String couponCode, List<Long> abonoIds, BigDecimal manualAbonoAmount);
+
+    /**
      * Aggregates the total revenue from today's sales.
      * @return Total BigDecimal amount.
      */

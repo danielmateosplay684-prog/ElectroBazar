@@ -480,7 +480,9 @@ function renderTicket() {
     var ids = Object.keys(ticket);
 
     // Vacío
+    const abonoSidebar = document.getElementById('abonos-sidebar');
     if (ids.length === 0) {
+        if (abonoSidebar) abonoSidebar.style.display = 'none';
         const transTable = document.getElementById('tpv-js-translations');
         const emptyMsg = transTable ? transTable.dataset.ticketEmpty : 'Pulsa un producto para añadirlo';
         linesEl.innerHTML = `
@@ -656,19 +658,42 @@ function renderTicket() {
         }
     }
 
-    // Final Calculation: Basis + RE - Coupon - AutoPromo
-    var finalTotal = totalAmount + totalRE - (couponDiscountAmount || 0) - (autoPromoDiscount || 0);
+    // 2. Abonos logic (Single selection via Modal Radio or Manual Input)
+    let totalAbonos = 0;
+    const selectedAbonoRadio = document.querySelector('.abono-modal-radio:checked');
+    if (selectedAbonoRadio) {
+        let amt = parseFloat(selectedAbonoRadio.dataset.amount || 0);
+        totalAbonos = amt;
+    } else if (window._manualAbonoAmount > 0) {
+        totalAbonos = window._manualAbonoAmount;
+    }
+
+    if (abonoSidebar) abonoSidebar.style.display = 'block';
+
+    // Final Calculation: Basis + RE - Coupon - AutoPromo - Abono
+    var finalTotal = totalAmount + totalRE - (couponDiscountAmount || 0) - (autoPromoDiscount || 0) - totalAbonos;
     finalTotal = Math.round((finalTotal + Number.EPSILON) * 100) / 100;
     if (finalTotal < 0) finalTotal = 0;
     totalEl.textContent = formatPrice(finalTotal) + '€';
+
+    // Update Abono sidebar total display
+    const abonoTotalDisp = document.getElementById('abonosSidebarTotal');
+    if (abonoTotalDisp) {
+        if (totalAbonos > 0) {
+            abonoTotalDisp.style.display = 'block';
+            abonoTotalDisp.querySelector('span').textContent = '-' + totalAbonos.toFixed(2) + '€';
+        } else {
+            abonoTotalDisp.style.display = 'none';
+        }
+    }
 
     // AutoPromo UI
     var autoPromoRow = document.getElementById('autoPromoRow');
     if (autoPromoRow) {
         if (autoPromoDiscount > 0) {
             autoPromoRow.style.display = 'flex';
-            document.getElementById('autoPromoAmountDisplay').textContent = '-' + formatPrice(autoPromoDiscount) + '€';
-            document.getElementById('autoPromoLabel').textContent = appliedPromoNames.join(', ') || 'PROMO NX';
+            autoPromoRow.querySelector('#autoPromoAmountDisplay').textContent = '-' + formatPrice(autoPromoDiscount) + '€';
+            autoPromoRow.querySelector('#autoPromoLabel').textContent = appliedPromoNames.join(', ') || 'PROMO NX';
         } else {
             autoPromoRow.style.display = 'none';
         }
@@ -871,6 +896,12 @@ function calculateChange() {
     if (!totalElement) return;
 
     var total = parsePrice(totalElement.textContent);
+
+    // Subtract selected abonos from the total to pay
+    const selectedAbonoRadio = document.querySelector('.abono-modal-radio:checked');
+    let totalAbono = selectedAbonoRadio ? parseFloat(selectedAbonoRadio.dataset.amount) : 0;
+    total = Math.max(0, total - totalAbono);
+
     var changeEl = document.getElementById('changeAmount');
     if (!changeEl) return;
 
@@ -1081,7 +1112,7 @@ function processSaleWithInvoiceValidation() {
     }
 
     // Validar límite de pago en efectivo (Ley 11/2021)
-    var total = parseFloat(document.getElementById('ticketTotal').textContent.replace('\u20AC', '').trim());
+    var total = parsePrice(document.getElementById('ticketTotal').textContent);
     var customerIdInputEl = document.getElementById('customerIdInput');
     var customerTypeInputEl = document.getElementById('customerTypeInput');
 
@@ -1145,7 +1176,46 @@ function processSaleWithInvoiceValidation() {
     }
 
     // customerIdInput already set by selectCustomer() in sidebar — just submit
+    
+    // ── COLECTAR ABONOS SELECCIONADOS ──
+    const formAbonos = document.getElementById('formAbonoIds');
+    if (formAbonos) {
+        formAbonos.innerHTML = '';
+        const selectedAbono = document.querySelector('.abono-modal-radio:checked');
+        if (selectedAbono) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'abonoIds';
+            input.value = selectedAbono.value;
+            formAbonos.appendChild(input);
+        }
+    }
+
     saleForm.submit();
+}
+
+/**
+ * Render function for abonos sidebar
+ */
+function renderAbonosSidebar(abonos) {
+    const section = document.getElementById('abonos-sidebar');
+    if (!section) return;
+
+    // El sidebar siempre debe estar visible si hay ticket, no lo ocultamos aquí
+    /*
+    if (!abonos || abonos.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    */
+
+    // Solo mostramos el botón de acción
+    section.style.display = 'block';
+}
+
+function updateAbonoTotal() {
+    // This was used when abonos were in the modal. Now it's handled by renderTicket().
+    renderTicket();
 }
 
 function escapeHtml(str) {
@@ -1676,6 +1746,12 @@ function selectCustomer(c) {
         if (badge) badge.style.display = 'none';
         updateTicketPricesForTariff(null, 'MINORISTA', 0);
     }
+
+    // ── CARGAR ABONOS DEL CLIENTE PARA EL CARRITO ──
+    fetch(`/api/customers/${c.id}/abonos`)
+        .then(r => r.json())
+        .then(abonos => renderAbonosSidebar(abonos))
+        .catch(err => console.error("Error loading customer abonos:", err));
 }
 
 function clearSelectedCustomer() {
@@ -1683,6 +1759,10 @@ function clearSelectedCustomer() {
     document.getElementById('customerTypeInput').value = '';
     document.getElementById('selectedCustomerCard').style.display = 'none';
     document.getElementById('customerSelectionControls').style.display = 'block';
+    
+    // No ocultamos el sidebar de abonos ya que ahora permite entrada manual/búsqueda
+    // const abonosSection = document.getElementById('abonos-sidebar');
+    // if (abonosSection) abonosSection.style.display = 'none';
     var _csr = document.getElementById('customerSearchResults');
     if (_csr) { _csr.style.display = 'none'; _csr.innerHTML = ''; }
     window.currentTariffId = null; // clear so addToTicket uses base prices again
@@ -2620,7 +2700,28 @@ function applyCoupon() {
             renderTicket();
         })
         .catch(function (err) {
-            showToast(err.message || 'Cupón no válido', 'warning');
+            // FALLBACK: Probamos si es un ID/CODE de Abono del cliente
+            var customerId = document.getElementById('customerIdInput').value;
+            if (customerId) {
+                // Hacemos el fetch para ver si el código existe y pertenece al cliente
+                fetch(`/api/customers/${customerId}/abonos`)
+                    .then(r => r.json())
+                    .then(abonos => {
+                        const found = abonos.find(a => a.code === code || a.id.toString() === code);
+                        if (found) {
+                            // Simulamos selección en el modal logic (aunque el modal esté cerrado)
+                            // Creamos un radio fantasma o usamos una variable global
+                            window.selectedAbonoViaCode = found; 
+                            input.value = '';
+                            showToast('Abono aplicado: ' + (found.code || found.id), 'success');
+                            renderTicket();
+                        } else {
+                            showToast('Código no válido o no pertenece al cliente', 'warning');
+                        }
+                    });
+                return;
+            }
+            showToast(err.message || 'Código no válido', 'warning');
         });
 }
 
@@ -3159,4 +3260,182 @@ function togglePasswordVisibility(inputId, button) {
         icon.classList.replace('bi-eye-slash', 'bi-eye');
     }
 }
+
+// ── MANEJO DE ABONOS / VALES ──
+window._manualAbonoAmount = 0;
+
+window.openAbonoSelectionModal = function() {
+    const customerIdInput = document.getElementById('customerIdInput');
+    const customerId = customerIdInput ? customerIdInput.value : null;
+    const abonoList = document.getElementById('tpv-abono-selection-list');
+    const manualInput = document.getElementById('tpv-abono-manual-input');
+    const instructions = document.getElementById('abono-modal-instructions');
+    
+    if (!abonoList || !manualInput || !instructions) return;
+
+    // Reset search results if any
+    const searchRes = document.getElementById('abono-search-result');
+    if (searchRes) {
+        searchRes.innerHTML = '';
+        searchRes.style.display = 'none';
+    }
+    const searchInput = document.getElementById('abono-search-code');
+    if (searchInput) searchInput.value = '';
+
+    if (customerId) {
+        instructions.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Cargando bonos del cliente...';
+        abonoList.innerHTML = '';
+        abonoList.style.display = 'none';
+        manualInput.style.display = 'none';
+
+        fetch(`/api/customers/${customerId}/abonos`)
+            .then(r => r.json())
+            .then(abonos => {
+                if (abonos && abonos.length > 0) {
+                    instructions.textContent = "Seleccione el abono que desea aplicar a esta venta.";
+                    let html = '';
+                    abonos.forEach(a => {
+                        html += `
+                            <div class="form-check p-3 mb-2 rounded border" style="background: var(--surface); cursor: pointer;" onclick="this.querySelector('input').click()">
+                                <input class="form-check-input abono-modal-radio" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}">
+                                <label class="form-check-label ps-2 w-100" for="abono-${a.id}" style="cursor: pointer;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</strong>
+                                        <span class="badge bg-secondary">${new Date(a.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="small text-muted text-truncate" style="max-width: 300px;">${a.motivo || 'Bono'}</div>
+                                </label>
+                            </div>`;
+                    });
+                    abonoList.innerHTML = html;
+                    abonoList.style.display = 'block';
+                } else {
+                    instructions.textContent = "El cliente no tiene bonos disponibles.";
+                }
+            })
+            .catch(err => {
+                console.error("[Abonos] Error fetching:", err);
+                instructions.textContent = "Error al cargar los bonos.";
+            });
+    } else {
+        // No hay cliente, mostrar entrada manual y búsqueda por código
+        instructions.textContent = "Busque un bono por código o introduzca el importe manualmente.";
+        abonoList.style.display = 'none';
+        manualInput.style.display = 'block';
+        const manAmtInput = document.getElementById('abono-manual-amount');
+        if (manAmtInput) {
+            if (window._manualAbonoAmount > 0) {
+                manAmtInput.value = window._manualAbonoAmount;
+            } else {
+                manAmtInput.value = '';
+            }
+        }
+        setTimeout(() => {
+            const el = document.getElementById('abono-search-code');
+            if(el) el.focus();
+        }, 500);
+    }
+    
+    const modalEl = document.getElementById('abonoSelectionModal');
+    if (modalEl) new bootstrap.Modal(modalEl).show();
+}
+
+window.searchAbonoByCode = function() {
+    const codeInput = document.getElementById('abono-search-code');
+    const resultDiv = document.getElementById('abono-search-result');
+    if (!codeInput || !resultDiv) return;
+    
+    const code = codeInput.value.trim();
+    if (!code) return;
+
+    resultDiv.innerHTML = '<div class="text-center p-2"><span class="spinner-border spinner-border-sm text-primary"></span> Buscando...</div>';
+    resultDiv.style.display = 'block';
+
+    fetch(`/api/abonos/search?code=${encodeURIComponent(code)}`)
+        .then(r => {
+            if (!r.ok) throw new Error("Bono no encontrado o ya canjeado");
+            return r.json();
+        })
+        .then(a => {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success d-flex align-items-center mb-0" style="border-radius: 12px; border: 2px solid var(--success);">
+                    <div class="form-check w-100" onclick="this.querySelector('input').click()">
+                        <input class="form-check-input abono-modal-radio" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}" checked>
+                        <label class="form-check-label ps-2 w-100" for="abono-${a.id}" style="cursor: pointer;">
+                            <div class="fw-bold">Bono encontrado: ${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</div>
+                            <div class="small">Código: ${a.code} | Cliente: ${a.cliente ? a.cliente.name : 'N/D'}</div>
+                        </label>
+                    </div>
+                </div>`;
+            // Al encontrar uno, borramos el importe manual para evitar confusiones
+            const manAmtInput = document.getElementById('abono-manual-amount');
+            if (manAmtInput) manAmtInput.value = '';
+        })
+        .catch(err => {
+            resultDiv.innerHTML = `<div class="alert alert-danger mb-0 small" style="border-radius: 12px;">${err.message}</div>`;
+        });
+}
+
+window.confirmAbonoSelection = function() {
+    const customerIdInput = document.getElementById('customerIdInput');
+    const customerId = customerIdInput ? customerIdInput.value : null;
+    const manualAmountEl = document.getElementById('abono-manual-amount');
+    const manualInputForm = document.getElementById('manualAbonoAmountInput');
+    
+    const selectedAbonoRadio = document.querySelector('.abono-modal-radio:checked');
+
+    if (selectedAbonoRadio) {
+        // Prioritize found/selected voucher
+        window._manualAbonoAmount = 0;
+        if (manualInputForm) manualInputForm.value = '';
+        // The radio selection is picked up in renderTicket()
+    } else if (!customerId) {
+        // Try manual amount if NO radio is selected and NO customer is present
+        let valStr = (manualAmountEl ? manualAmountEl.value || '' : '').replace(',', '.');
+        const amt = parseFloat(valStr);
+        if (isNaN(amt) || amt < 0) {
+            showToast("Importe no válido o bono no seleccionado", "warning");
+            return;
+        }
+        window._manualAbonoAmount = amt;
+        if (manualInputForm) manualInputForm.value = amt > 0 ? amt.toFixed(2) : '';
+    } else {
+        // Customer present but nothing selected
+        window._manualAbonoAmount = 0;
+        if (manualInputForm) manualInputForm.value = '';
+    }
+    
+    const modalEl = document.getElementById('abonoSelectionModal');
+    if (modalEl) {
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+    }
+    
+    renderTicket();
+};
+
+// Reset abonos when clearing customer
+(function() {
+    const origClear = window.clearSelectedCustomer;
+    if (typeof origClear === 'function') {
+        window.clearSelectedCustomer = function() {
+            origClear();
+            window._manualAbonoAmount = 0;
+            const input = document.getElementById('manualAbonoAmountInput');
+            if (input) input.value = '';
+            renderTicket();
+        };
+    }
+    
+    const origTicketClear = window.clearTicket;
+    if (typeof origTicketClear === 'function') {
+        window.clearTicket = function() {
+            origTicketClear();
+            window._manualAbonoAmount = 0;
+            const input = document.getElementById('manualAbonoAmountInput');
+            if (input) input.value = '';
+            renderTicket();
+        };
+    }
+})();
 

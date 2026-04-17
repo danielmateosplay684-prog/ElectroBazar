@@ -27,4 +27,6 @@ public class AbonoRequest {
     private TipoAbono tipoAbono;
 
     private String motivo;
+    
+    private Boolean requiresFullUse;
 }

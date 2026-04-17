@@ -20,6 +20,9 @@ public class Abono {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, length = 20)
+    private String code;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venta_original_id")
     private Sale ventaOriginal;
@@ -31,6 +34,9 @@ public class Abono {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal importe;
+
+    @Column(name = "requires_full_use", nullable = true)
+    private Boolean requiresFullUse = true;
 
     @Column(nullable = false)
     private LocalDateTime fecha;

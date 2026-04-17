@@ -32,6 +32,7 @@ public class CustomerApiRestController {
     private final CustomerService customerService;
     private final TariffRepository tariffRepository;
     private final SaleRepository saleRepository;
+    private final com.proconsi.electrobazar.repository.AbonoRepository abonoRepository;
     private final NifCifValidator nifCifValidator;
 
     /**
@@ -146,6 +147,14 @@ public class CustomerApiRestController {
             result.add(saleMap);
         }
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Retrieves all active abonos (credits/vouchers) for a specific customer.
+     */
+    @GetMapping("/{id}/abonos")
+    public ResponseEntity<List<com.proconsi.electrobazar.model.Abono>> getAbonosByCustomer(@PathVariable Long id) {
+        return ResponseEntity.ok(abonoRepository.findByClienteId(id));
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
