@@ -9,6 +9,8 @@ import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.VerifactuService;
 import com.proconsi.electrobazar.util.QrCodeGenerator;
 import com.proconsi.electrobazar.util.VerifactuHashCalculator;
+import com.proconsi.electrobazar.config.VerifactuProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final com.proconsi.electrobazar.repository.CompanySettingsRepository companySettingsRepository;
     private final VerifactuHashCalculator hashCalculator;
     private final VerifactuService verifactuService;
+    private final VerifactuProperties verifactuProperties;
+
 
     public InvoiceServiceImpl(
             InvoiceRepository invoiceRepository,
@@ -43,7 +47,9 @@ public class InvoiceServiceImpl implements InvoiceService {
             ActivityLogService activityLogService,
             com.proconsi.electrobazar.repository.CompanySettingsRepository companySettingsRepository,
             VerifactuHashCalculator hashCalculator,
-            @Lazy VerifactuService verifactuService) {
+            @Lazy VerifactuService verifactuService,
+            VerifactuProperties verifactuProperties) {
+
         this.invoiceRepository = invoiceRepository;
         this.invoiceSequenceRepository = invoiceSequenceRepository;
         this.saleRepository = saleRepository;
@@ -51,7 +57,9 @@ public class InvoiceServiceImpl implements InvoiceService {
         this.companySettingsRepository = companySettingsRepository;
         this.hashCalculator = hashCalculator;
         this.verifactuService = verifactuService;
+        this.verifactuProperties = verifactuProperties;
     }
+
 
     @Override
     @Transactional
@@ -251,7 +259,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private String buildVerificacionUrl(String nif, String numSerie, String fecha, String importe) {
         return String.format(
-                "https://www2.agenciatributaria.gob.es/static/v1/verifactu/verificacion?nif=%s&numserie=%s&fecha=%s&importe=%s",
+                verifactuProperties.getQrBaseUrl() + "?nif=%s&numserie=%s&fecha=%s&importe=%s",
                 nif, numSerie, fecha, importe);
     }
+
 }

@@ -43,9 +43,10 @@
     SELECT id, 'HOLD_SALES' FROM roles WHERE name = 'VENDEDOR';
 
     -- 3. COMPANY INITIAL CONFIGURATION
-    INSERT IGNORE INTO company_settings (id, name, cif, address, city, postal_code, phone, email, website, registro_mercantil, invoice_footer_text)
-    SELECT 1, 'ElectroBazar S.L.', 'B12345678', 'Calle Principal 123', 'León', '24001', '987654321', 'info@electrobazar.com', 'www.electrobazar.com', 'Registro Mercantil de León, Tomo 1234, Folio 56, Hoja LE-7890', 'Gracias por su compra. Plazo de devolución: 15 días con ticket original.'
-    WHERE NOT EXISTS (SELECT 1 FROM company_settings WHERE id = 1);
+    INSERT INTO company_settings (id, name, app_name, cif, address, city, postal_code, phone, email, website, registro_mercantil, invoice_footer_text)
+    VALUES (1, 'CERTIFICADO FISICA PRUEBAS', '(VERI*FACTU) CERTIFICADO FISICA PRUEBAS', '99999910G', 'Calle Prueba 123', 'Madrid', '28001', '912345678', 'test@aeat.es', 'www.aeat.es', 'Registro de Pruebas AEAT', 'Documento generado en entorno de pruebas VeriFactu.')
+    ON DUPLICATE KEY UPDATE 
+    name = VALUES(name), app_name = VALUES(app_name), cif = VALUES(cif);
 
     -- 4. ADMIN ROLE PROVISIONING
     -- The ADMIN role has a single master permission: ACCESO_TOTAL_ADMIN.

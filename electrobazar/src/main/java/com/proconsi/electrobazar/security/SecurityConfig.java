@@ -181,7 +181,7 @@ public class SecurityConfig {
                                                 // Strict catch-all for any other request
                                                 .anyRequest().authenticated())
 
-                                // 3. Exception Handling (Redirects vs 401)
+                                // 3. Exception Handling (Redirects vs 401/403)
                                 .exceptionHandling(exceptions -> exceptions
                                                 // For API requests, return 401 UNAUTHORIZED status instead of redirects
                                                 .defaultAuthenticationEntryPointFor(
@@ -191,13 +191,24 @@ public class SecurityConfig {
                                                 .defaultAuthenticationEntryPointFor(
                                                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                                                 request -> !request.getServletPath()
-                                                                                .startsWith("/api")))
+                                                                                .startsWith("/api"))
+                                                // For 403 Access Denied: API returns JSON, browser redirects to login
+                                                .accessDeniedHandler((request, response, ex) -> {
+                                                        if (request.getServletPath().startsWith("/api")) {
+                                                                response.setContentType("application/json;charset=UTF-8");
+                                                                response.setStatus(HttpStatus.FORBIDDEN.value());
+                                                                response.getWriter().write("{\"error\":\"Forbidden\",\"status\":403}");
+                                                        } else {
+                                                                response.sendRedirect(request.getContextPath() + "/login");
+                                                        }
+                                                }))
 
                                 // 4. Session Management Strategy
                                 // Using standard session policy for web browser interactions while keeping API
                                 // authentication stateless
                                 .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                                                .invalidSessionUrl("/login"))
 
                                 // 5. Custom Filter Registration
                                 // Order is important: JWT and TPV tokens are validated before the default

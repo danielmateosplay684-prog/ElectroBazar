@@ -11,6 +11,10 @@ import org.springframework.stereotype.Component;
 @Setter
 public class VerifactuProperties {
 
+    /** URL base para la verificación del código QR AEAT. */
+    private String qrBaseUrl = "https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR";
+
+
     /** Activar/desactivar el envío a la AEAT. false hasta tener el certificado. */
     private boolean enabled = false;
 
