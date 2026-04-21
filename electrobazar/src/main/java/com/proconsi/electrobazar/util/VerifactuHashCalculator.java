@@ -16,47 +16,60 @@ import java.time.format.DateTimeFormatter;
  * (Real Decreto 1007/2023 y documentación AEAT).
  *
  * Cadena de entrada (sin separadores):
- *   IDEmisorFactura + NumSerieFactura + FechaExpedicionFactura(dd-MM-yyyy)
- *   + TipoFactura + CuotaTotal(2dec) + ImporteTotal(2dec)
- *   + HuellaAnterior + FechaHoraHusoGenRegistro(ISO-8601)
+ * IDEmisorFactura + NumSerieFactura + FechaExpedicionFactura(dd-MM-yyyy)
+ * + TipoFactura + CuotaTotal(2dec) + ImporteTotal(2dec)
+ * + HuellaAnterior + FechaHoraHusoGenRegistro(ISO-8601)
  */
 @Component
 public class VerifactuHashCalculator {
 
     private static final ZoneId MADRID = ZoneId.of("Europe/Madrid");
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    public static final String INITIAL_HASH = "0000000000000000";
+    public static final String INITIAL_HASH = "";
 
     /**
      * Calcula la Huella Verifactu.
-     *
-     * @param nif            NIF/CIF emisor (9 chars)
-     * @param numSerie       Número de serie de la factura
-     * @param fechaHora      Fecha/hora de generación del registro
-     * @param tipoFactura    F1, F2, R1, R4, etc.
-     * @param cuotaTotal     Suma de IVA + Recargo de equivalencia
-     * @param importeTotal   Importe total de la factura
-     * @param huellaAnterior Hash del registro anterior (o INITIAL_HASH si es el primero)
-     * @return Huella SHA-256 en hexadecimal mayúsculas (64 chars)
+     * ...
      */
     public String calculate(String nif, String numSerie, LocalDateTime fechaHora,
-                            String tipoFactura, BigDecimal cuotaTotal,
-                            BigDecimal importeTotal, String huellaAnterior) {
+            String tipoFactura, BigDecimal cuotaTotal,
+            BigDecimal importeTotal, String huellaAnterior) {
         ZonedDateTime zdt = fechaHora.atZone(MADRID);
         String fecha = zdt.format(DATE_FMT);
         String fechaHoraHuso = zdt.format(DATETIME_FMT);
 
-        String input = nif
-                + numSerie
-                + fecha
-                + tipoFactura
-                + cuotaTotal.setScale(2, RoundingMode.HALF_UP).toPlainString()
-                + importeTotal.setScale(2, RoundingMode.HALF_UP).toPlainString()
-                + huellaAnterior
-                + fechaHoraHuso;
+        // Formato exacto AEAT: field=value&field=value...
+        String input = String.format(
+                "IDEmisorFactura=%s&NumSerieFactura=%s&FechaExpedicionFactura=%s&" +
+                        "TipoFactura=%s&CuotaTotal=%s&ImporteTotal=%s&Huella=%s&FechaHoraHusoGenRegistro=%s",
+                nif, numSerie, fecha, tipoFactura,
+                cuotaTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                importeTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                huellaAnterior, fechaHoraHuso);
 
+        System.out.println("HASH_INPUT: " + input);
+        return sha256Hex(input);
+    }
+
+    public String calculate(String nif, String numSerie, LocalDateTime fechaExpedicion,
+            String tipoFactura, BigDecimal cuotaTotal,
+            BigDecimal importeTotal, String huellaAnterior,
+            String fechaHoraHusoOverride) {
+        ZonedDateTime zdt = fechaExpedicion.atZone(MADRID);
+        String fecha = zdt.format(DATE_FMT);
+
+        String input = String.format(
+                "IDEmisorFactura=%s&NumSerieFactura=%s&FechaExpedicionFactura=%s&" +
+                        "TipoFactura=%s&CuotaTotal=%s&ImporteTotal=%s&Huella=%s&FechaHoraHusoGenRegistro=%s",
+                nif, numSerie, fecha, tipoFactura,
+                cuotaTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                importeTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                huellaAnterior, fechaHoraHusoOverride);
+
+        System.out.println("HASH_INPUT: " + input);
         return sha256Hex(input);
     }
 
@@ -65,9 +78,24 @@ public class VerifactuHashCalculator {
         return fechaHora.atZone(MADRID).format(DATE_FMT);
     }
 
-    /** Devuelve FechaHoraHusoGenRegistro en formato ISO-8601 para el XML y el hash. */
+    /**
+     * Devuelve FechaHoraHusoGenRegistro en formato ISO-8601 para el XML y el hash.
+     */
     public String getFechaHoraHuso(LocalDateTime fechaHora) {
         return fechaHora.atZone(MADRID).format(DATETIME_FMT);
+    }
+
+    public String getFechaGen(LocalDateTime fechaHora) {
+        return fechaHora.atZone(MADRID).format(DATE_FMT);
+    }
+
+    public String getHoraGen(LocalDateTime fechaHora) {
+        return fechaHora.atZone(MADRID).format(TIME_FMT);
+    }
+
+    public String getHusoGen(LocalDateTime fechaHora) {
+        String offset = fechaHora.atZone(MADRID).getOffset().getId();
+        return "Z".equals(offset) ? "+00:00" : offset;
     }
 
     private String sha256Hex(String input) {
@@ -77,7 +105,8 @@ public class VerifactuHashCalculator {
             StringBuilder hex = new StringBuilder(64);
             for (byte b : hashBytes) {
                 String h = Integer.toHexString(0xff & b);
-                if (h.length() == 1) hex.append('0');
+                if (h.length() == 1)
+                    hex.append('0');
                 hex.append(h);
             }
             return hex.toString().toUpperCase();

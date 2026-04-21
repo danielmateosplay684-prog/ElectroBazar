@@ -638,6 +638,12 @@ public class TpvController {
                         .orElse(null);
             }
 
+            if (saleId == null) {
+                saleId = invoiceService.findByInvoiceNumber(query)
+                        .map(i -> i.getSale().getId())
+                        .orElse(null);
+            }
+
             if (saleId != null) {
                 return ResponseEntity
                         .ok(Collections.singletonMap("redirectUrl", "/tpv/return/" + saleId));
@@ -663,12 +669,18 @@ public class TpvController {
                 }
             }
 
-            return ticketService.findByTicketNumber(query)
-                    .map(t -> "redirect:/tpv/return/" + t.getSale().getId())
-                    .orElseGet(() -> {
-                        redirectAttributes.addFlashAttribute("errorMessage", "Ticket not found: " + query);
-                        return "redirect:/tpv";
-                    });
+            Optional<Ticket> ticketOpt = ticketService.findByTicketNumber(query);
+            if (ticketOpt.isPresent()) {
+                return "redirect:/tpv/return/" + ticketOpt.get().getSale().getId();
+            }
+
+            Optional<Invoice> invoiceOpt = invoiceService.findByInvoiceNumber(query);
+            if (invoiceOpt.isPresent()) {
+                return "redirect:/tpv/return/" + invoiceOpt.get().getSale().getId();
+            }
+
+            redirectAttributes.addFlashAttribute("errorMessage", "Ticket/Invoice not found: " + query);
+            return "redirect:/tpv";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error searching for ticket: " + e.getMessage());
             return "redirect:/tpv";
@@ -827,6 +839,12 @@ public class TpvController {
         }
 
         model.addAttribute("taxBreakdowns", standardBreakdowns);
+        
+        // Add QR code for simplified ticket returns if available
+        if (originalSale.getTicket() != null) {
+            model.addAttribute("qrCodeBase64", invoiceService.generateQrCodeBase64(originalSale.getTicket()));
+        }
+        
         return "tpv/return-receipt";
     }
 

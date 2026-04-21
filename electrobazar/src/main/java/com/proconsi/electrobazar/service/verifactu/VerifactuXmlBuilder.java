@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +32,15 @@ public class VerifactuXmlBuilder {
     private final RectificativeInvoiceRepository rectRepository;
 
     // ================================================================
-    //  Factura completa (F1)
+    // Factura completa (F1)
     // ================================================================
 
     public String buildAltaInvoice(Invoice invoice, CompanySettings company,
-                                   String softwareNombre, String softwareId,
-                                   String softwareVersion, String softwareInstalacion) {
+            String softwareNombre, String softwareId,
+            String softwareVersion, String softwareInstalacion) {
         Sale sale = invoice.getSale();
         String nif = company.getCif();
         String fechaExp = hashCalculator.getFechaExpedicion(invoice.getCreatedAt());
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
 
         StringBuilder sb = new StringBuilder();
         sb.append(soapEnvelopeOpen());
@@ -77,9 +77,17 @@ public class VerifactuXmlBuilder {
                 getPreviousNumSerie(invoice), getPreviousFecha(invoice)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
+        LocalDateTime ahora = LocalDateTime.now();
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        BigDecimal cuotaHash = sale.getTotalVat().add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal importeHash = sale.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+        String huellaEnvio = hashCalculator.calculate(nif, invoice.getInvoiceNumber(),
+                invoice.getCreatedAt(), "F1", cuotaHash, importeHash,
+                invoice.getHashPreviousInvoice(), fechaHoraHuso);
+
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
-        sb.append(tag("sf:Huella", invoice.getHashCurrentInvoice()));
+        sb.append(tag("sf:Huella", huellaEnvio));
         sb.append("        </sf:RegistroAlta>\n");
 
         sb.append(registroFacturaClose());
@@ -89,16 +97,15 @@ public class VerifactuXmlBuilder {
     }
 
     // ================================================================
-    //  Factura simplificada (F2) - Ticket
+    // Factura simplificada (F2) - Ticket
     // ================================================================
 
     public String buildAltaTicket(Ticket ticket, CompanySettings company,
-                                   String softwareNombre, String softwareId,
-                                   String softwareVersion, String softwareInstalacion) {
+            String softwareNombre, String softwareId,
+            String softwareVersion, String softwareInstalacion) {
         Sale sale = ticket.getSale();
         String nif = company.getCif();
         String fechaExp = hashCalculator.getFechaExpedicion(ticket.getCreatedAt());
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
 
         StringBuilder sb = new StringBuilder();
         sb.append(soapEnvelopeOpen());
@@ -111,7 +118,6 @@ public class VerifactuXmlBuilder {
         sb.append(tag("sf:NombreRazonEmisor", esc(company.getName())));
         sb.append(tag("sf:TipoFactura", "F2"));
         sb.append(tag("sf:DescripcionOperacion", "Venta TPV " + ticket.getTicketNumber()));
-        sb.append(tag("sf:FacturaSimplificadaArt7273", "S"));
 
         sb.append(desglose(sale));
 
@@ -124,9 +130,17 @@ public class VerifactuXmlBuilder {
                 getPreviousTicketNumSerie(ticket), getPreviousTicketFecha(ticket)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
+        LocalDateTime ahora = LocalDateTime.now();
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        BigDecimal cuotaHash = sale.getTotalVat().add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal importeHash = sale.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+        String huellaEnvio = hashCalculator.calculate(nif, ticket.getTicketNumber(),
+                ticket.getCreatedAt(), "F2", cuotaHash, importeHash,
+                ticket.getHashPreviousInvoice(), fechaHoraHuso);
+
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
-        sb.append(tag("sf:Huella", ticket.getHashCurrentInvoice()));
+        sb.append(tag("sf:Huella", huellaEnvio));
         sb.append("        </sf:RegistroAlta>\n");
 
         sb.append(registroFacturaClose());
@@ -136,18 +150,17 @@ public class VerifactuXmlBuilder {
     }
 
     // ================================================================
-    //  Factura rectificativa (R1)
+    // Factura rectificativa (R1)
     // ================================================================
 
     public String buildAltaRectificative(RectificativeInvoice rect, CompanySettings company,
-                                          String softwareNombre, String softwareId,
-                                          String softwareVersion, String softwareInstalacion) {
+            String softwareNombre, String softwareId,
+            String softwareVersion, String softwareInstalacion) {
         SaleReturn saleReturn = rect.getSaleReturn();
         Sale originalSale = saleReturn.getOriginalSale();
         Invoice originalInvoice = rect.getOriginalInvoice();
         String nif = company.getCif();
         String fechaExp = hashCalculator.getFechaExpedicion(rect.getCreatedAt());
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(rect.getCreatedAt());
 
         BigDecimal totalRefundedNeg = saleReturn.getTotalRefunded().negate();
         BigDecimal cuotaTotal = estimateCuota(saleReturn, originalSale).negate().setScale(2, RoundingMode.HALF_UP);
@@ -195,9 +208,16 @@ public class VerifactuXmlBuilder {
                 getPreviousRectNumSerie(rect), getPreviousRectFecha(rect)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
+        LocalDateTime ahora = LocalDateTime.now();
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        String huellaEnvio = hashCalculator.calculate(nif, rect.getRectificativeNumber(),
+                rect.getCreatedAt(), "R1", cuotaTotal,
+                totalRefundedNeg.setScale(2, RoundingMode.HALF_UP),
+                rect.getHashPreviousInvoice(), fechaHoraHuso);
+
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
-        sb.append(tag("sf:Huella", rect.getHashCurrentInvoice()));
+        sb.append(tag("sf:Huella", huellaEnvio));
         sb.append("        </sf:RegistroAlta>\n");
 
         sb.append(registroFacturaClose());
@@ -207,7 +227,7 @@ public class VerifactuXmlBuilder {
     }
 
     // ================================================================
-    //  Helpers - estructura XML
+    // Helpers - estructura XML
     // ================================================================
 
     private String soapEnvelopeOpen() {
@@ -258,15 +278,15 @@ public class VerifactuXmlBuilder {
         Map<BigDecimal, BigDecimal[]> groups = new LinkedHashMap<>();
         for (SaleLine line : sale.getLines()) {
             BigDecimal rate = line.getVatRate();
-            groups.merge(rate, new BigDecimal[]{
+            groups.merge(rate, new BigDecimal[] {
                     line.getBaseAmount(), line.getVatAmount(), line.getRecargoRate(), line.getRecargoAmount()
-            }, (a, b) -> new BigDecimal[]{
+            }, (a, b) -> new BigDecimal[] {
                     a[0].add(b[0]), a[1].add(b[1]), b[2], a[3].add(b[3])
             });
         }
         // Si no hay líneas (caso raro), fallback al total de la venta
         if (groups.isEmpty()) {
-            groups.put(BigDecimal.ZERO, new BigDecimal[]{
+            groups.put(BigDecimal.ZERO, new BigDecimal[] {
                     sale.getTotalBase(), sale.getTotalVat(), BigDecimal.ZERO, sale.getTotalRecargo()
             });
         }
@@ -278,11 +298,13 @@ public class VerifactuXmlBuilder {
             sb.append(tag("sf:Impuesto", "01"));
             sb.append(tag("sf:ClaveRegimen", "01"));
             sb.append(tag("sf:CalificacionOperacion", "S1"));
-            sb.append(tag("sf:TipoImpositivo", fmt(vatRate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
+            sb.append(tag("sf:TipoImpositivo",
+                    fmt(vatRate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
             sb.append(tag("sf:BaseImponibleOimporteNoSujeto", fmt(v[0].setScale(2, RoundingMode.HALF_UP))));
             sb.append(tag("sf:CuotaRepercutida", fmt(v[1].setScale(2, RoundingMode.HALF_UP))));
             if (v[2].compareTo(BigDecimal.ZERO) > 0) {
-                sb.append(tag("sf:TipoRecargoEquivalencia", fmt(v[2].multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
+                sb.append(tag("sf:TipoRecargoEquivalencia",
+                        fmt(v[2].multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
                 sb.append(tag("sf:CuotaRecargoEquivalencia", fmt(v[3].setScale(2, RoundingMode.HALF_UP))));
             }
             sb.append("            </sf:DetalleDesglose>\n");
@@ -292,25 +314,28 @@ public class VerifactuXmlBuilder {
     }
 
     private String desgloseRectificativo(SaleReturn saleReturn, Sale originalSale) {
-        // Construir el desglose negativo a partir de las líneas devueltas y sus SaleLines originales
+        // Construir el desglose negativo a partir de las líneas devueltas y sus
+        // SaleLines originales
         Map<BigDecimal, BigDecimal[]> groups = new LinkedHashMap<>();
         for (ReturnLine rl : saleReturn.getLines()) {
             SaleLine sl = rl.getSaleLine();
-            if (sl == null) continue;
+            if (sl == null)
+                continue;
             BigDecimal ratio = rl.getQuantity().abs()
                     .divide(sl.getQuantity().abs(), 10, RoundingMode.HALF_UP);
             BigDecimal base = sl.getBaseAmount().multiply(ratio).negate();
             BigDecimal vat = sl.getVatAmount().multiply(ratio).negate();
             BigDecimal reRate = sl.getRecargoRate();
             BigDecimal re = sl.getRecargoAmount().multiply(ratio).negate();
-            groups.merge(sl.getVatRate(), new BigDecimal[]{base, vat, reRate, re},
-                    (a, b) -> new BigDecimal[]{a[0].add(b[0]), a[1].add(b[1]), b[2], a[3].add(b[3])});
+            groups.merge(sl.getVatRate(), new BigDecimal[] { base, vat, reRate, re },
+                    (a, b) -> new BigDecimal[] { a[0].add(b[0]), a[1].add(b[1]), b[2], a[3].add(b[3]) });
         }
         if (groups.isEmpty()) {
             BigDecimal ratio = originalSale.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
-                    ? saleReturn.getTotalRefunded().divide(originalSale.getTotalAmount().abs(), 10, RoundingMode.HALF_UP)
+                    ? saleReturn.getTotalRefunded().divide(originalSale.getTotalAmount().abs(), 10,
+                            RoundingMode.HALF_UP)
                     : BigDecimal.ONE;
-            groups.put(BigDecimal.ZERO, new BigDecimal[]{
+            groups.put(BigDecimal.ZERO, new BigDecimal[] {
                     originalSale.getTotalBase().multiply(ratio).negate(),
                     originalSale.getTotalVat().multiply(ratio).negate(),
                     BigDecimal.ZERO,
@@ -325,11 +350,13 @@ public class VerifactuXmlBuilder {
             sb.append(tag("sf:Impuesto", "01"));
             sb.append(tag("sf:ClaveRegimen", "01"));
             sb.append(tag("sf:CalificacionOperacion", "S1"));
-            sb.append(tag("sf:TipoImpositivo", fmt(vatRate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
+            sb.append(tag("sf:TipoImpositivo",
+                    fmt(vatRate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
             sb.append(tag("sf:BaseImponibleOimporteNoSujeto", fmt(v[0].setScale(2, RoundingMode.HALF_UP))));
             sb.append(tag("sf:CuotaRepercutida", fmt(v[1].setScale(2, RoundingMode.HALF_UP))));
             if (v[2].compareTo(BigDecimal.ZERO) > 0) {
-                sb.append(tag("sf:TipoRecargoEquivalencia", fmt(v[2].multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
+                sb.append(tag("sf:TipoRecargoEquivalencia",
+                        fmt(v[2].multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP))));
                 sb.append(tag("sf:CuotaRecargoEquivalencia", fmt(v[3].setScale(2, RoundingMode.HALF_UP))));
             }
             sb.append("            </sf:DetalleDesglose>\n");
@@ -361,11 +388,12 @@ public class VerifactuXmlBuilder {
     }
 
     private String sistemaInformatico(String nif, String nombre, String softNombre,
-                                       String softId, String version, String instalacion) {
+            String softId, String version, String instalacion) {
         return "          <sf:SistemaInformatico>\n"
                 + tag("sf:NombreRazon", esc(nombre))
                 + tag("sf:NIF", nif)
-                + tag("sf:NombreSistemaInformatico", softNombre.length() > 30 ? softNombre.substring(0, 30) : softNombre)
+                + tag("sf:NombreSistemaInformatico",
+                        softNombre.length() > 30 ? softNombre.substring(0, 30) : softNombre)
                 + tag("sf:IdSistemaInformatico", softId.length() > 2 ? softId.substring(0, 2) : softId)
                 + tag("sf:Version", version)
                 + tag("sf:NumeroInstalacion", instalacion)
@@ -376,41 +404,47 @@ public class VerifactuXmlBuilder {
     }
 
     // ================================================================
-    //  Helpers - encadenamiento anterior (busca el registro previo)
+    // Helpers - encadenamiento anterior (busca el registro previo)
     // ================================================================
 
     private String getPreviousNumSerie(Invoice current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return invoiceRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(Invoice::getInvoiceNumber).orElse(null);
     }
 
     private String getPreviousFecha(Invoice current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return invoiceRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(i -> hashCalculator.getFechaExpedicion(i.getCreatedAt())).orElse(null);
     }
 
     private String getPreviousTicketNumSerie(Ticket current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return ticketRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(Ticket::getTicketNumber).orElse(null);
     }
 
     private String getPreviousTicketFecha(Ticket current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return ticketRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(t -> hashCalculator.getFechaExpedicion(t.getCreatedAt())).orElse(null);
     }
 
     private String getPreviousRectNumSerie(RectificativeInvoice current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return rectRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(RectificativeInvoice::getRectificativeNumber).orElse(null);
     }
 
     private String getPreviousRectFecha(RectificativeInvoice current) {
-        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice())) return null;
+        if (VerifactuHashCalculator.INITIAL_HASH.equals(current.getHashPreviousInvoice()))
+            return null;
         return rectRepository.findByHashCurrentInvoice(current.getHashPreviousInvoice())
                 .map(r -> hashCalculator.getFechaExpedicion(r.getCreatedAt())).orElse(null);
     }
@@ -424,7 +458,7 @@ public class VerifactuXmlBuilder {
     }
 
     // ================================================================
-    //  Utilidades
+    // Utilidades
     // ================================================================
 
     private String tag(String name, String value) {
@@ -436,7 +470,8 @@ public class VerifactuXmlBuilder {
     }
 
     private String esc(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

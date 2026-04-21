@@ -28,6 +28,13 @@ public interface InvoiceService {
     Optional<Invoice> findBySaleId(Long saleId);
 
     /**
+     * Retrieves an invoice by its unique formatted number.
+     * @param invoiceNumber The number (e.g., "F-2026-1").
+     * @return An Optional containing the Invoice.
+     */
+    Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
+
+    /**
      * Generates a corrective invoice (F series) with negative amounts.
      * Links the new record to the original invoice as its rectification.
      * 

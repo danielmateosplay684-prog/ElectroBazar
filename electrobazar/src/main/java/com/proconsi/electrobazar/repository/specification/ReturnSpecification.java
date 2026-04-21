@@ -14,6 +14,15 @@ public class ReturnSpecification {
     public static Specification<SaleReturn> filterReturns(String search, String method, String date) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            
+            // 1. Fetch relations to avoid N+1 and lazy loading issues in API
+            if (Long.class != query.getResultType() && long.class != query.getResultType()) {
+                 jakarta.persistence.criteria.JoinType joinType = jakarta.persistence.criteria.JoinType.LEFT;
+                 jakarta.persistence.criteria.Fetch<com.proconsi.electrobazar.model.SaleReturn, com.proconsi.electrobazar.model.Sale> saleFetch = root.fetch("originalSale", joinType);
+                 saleFetch.fetch("invoice", joinType);
+                 saleFetch.fetch("ticket", joinType);
+                 root.fetch("worker", joinType);
+            }
 
             if (search != null && !search.isBlank()) {
                 String lSearch = "%" + search.toLowerCase() + "%";
@@ -64,7 +73,7 @@ public class ReturnSpecification {
                 predicates.add(cb.between(root.get("createdAt"), localDate.atStartOfDay(), localDate.atTime(LocalTime.MAX)));
             }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 }

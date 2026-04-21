@@ -198,6 +198,7 @@ function switchView(viewId, btn, isBack = false) {
     if (viewId === 'workersView' && typeof filterWorkers === 'function') filterWorkers();
     if (viewId === 'invoicesView' && typeof fetchSalesPage === 'function') fetchSalesPage(0);
     if (viewId === 'cashCloseView' && typeof filterCashClosures === 'function') filterCashClosures();
+    if (viewId === 'returnsHistoryView' && typeof filterReturns === 'function') filterReturns();
     if (viewId === 'measurementUnitsView' && typeof loadMeasurementUnits === 'function') loadMeasurementUnits();
     if (viewId === 'tarifasView' && typeof loadTariffs === 'function') loadTariffs();
     if (viewId === 'tiposIvaView' && typeof loadTaxRates === 'function') loadTaxRates();

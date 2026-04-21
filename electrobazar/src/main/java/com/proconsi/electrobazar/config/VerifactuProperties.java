@@ -14,7 +14,6 @@ public class VerifactuProperties {
     /** URL base para la verificación del código QR AEAT. */
     private String qrBaseUrl = "https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR";
 
-
     /** Activar/desactivar el envío a la AEAT. false hasta tener el certificado. */
     private boolean enabled = false;
 
@@ -51,7 +50,7 @@ public class VerifactuProperties {
         /** Máximo de reintentos por registro rechazado/no enviado. */
         private int maxAttempts = 5;
         /** Milisegundos entre reintentos del scheduler (defecto 10 min = 600000 ms). */
-        private long delayMs = 600_000;
+        private long delayMs = 60_000;
     }
 
     public String getEndpointUrl() {

@@ -22,16 +22,21 @@ public class SaleSpecification {
 
             // 2. BÚSQUEDA POR TEXTO (Bloque Único)
             if (search != null && !search.trim().isEmpty()) {
-                System.out.println("DEBUG: Buscando el término -> [" + search + "]");
+                String cleanSearch = "%" + search.trim().toLowerCase() + "%";
                 
-                // FORZADO DE ERROR PARA DIAGNÓSTICO: La tabla debe quedar VACÍA si hay búsqueda
-                return cb.disjunction();
+                // Joins (si no se han hecho por fetch arriba, criteria los manejará)
+                Join<Sale, Customer> customerJoin = root.join("customer", JoinType.LEFT);
+                Join<Sale, Invoice> invoiceJoin = root.join("invoice", JoinType.LEFT);
+                Join<Sale, Ticket> ticketJoin = root.join("ticket", JoinType.LEFT);
 
-                /* 
-                // Resto del código comentado temporalmente por el usuario para diagnóstico
-                String cleanSearch = search.trim().toLowerCase();
-                ...
-                */
+                Predicate searchPredicate = cb.or(
+                    cb.like(cb.lower(invoiceJoin.get("invoiceNumber")), cleanSearch),
+                    cb.like(cb.lower(ticketJoin.get("ticketNumber")), cleanSearch),
+                    cb.like(cb.lower(customerJoin.get("name")), cleanSearch),
+                    cb.like(cb.lower(customerJoin.get("taxId")), cleanSearch),
+                    cb.like(cb.concat("#", root.get("id").as(String.class)), cleanSearch)
+                );
+                predicates.add(searchPredicate);
             }
 
             // 3. FILTROS FIJOS (Si están seleccionados, deben cumplirse SIEMPRE)

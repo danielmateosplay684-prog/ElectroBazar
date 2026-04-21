@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${ticket != null ? 'Ticket ' + ticket.ticketNumber : 'Ticket #' + sale.id} + ' — ' + ${companySettings.appName}">
+    <title
+        th:text="${ticket != null ? 'Ticket ' + ticket.ticketNumber : 'Ticket #' + sale.id} + ' — ' + ${companySettings.appName}">
         Ticket de Venta — ElectroBazar</title>
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
@@ -17,6 +18,13 @@
     <div class="page-title">
         <i class="bi" th:classappend="${invoice != null} ? 'bi-receipt-cutoff' : 'bi-receipt'"></i>
         <span th:text="${invoice != null} ? 'Factura de Venta' : 'Ticket de Venta'">Ticket de Venta</span>
+    </div>
+
+    <div style="text-align:center; margin-bottom: 8px;">
+        <div style="font-size: 9px; font-weight: bold; margin-bottom: 3px;">QR tributario:</div>
+        <img th:if="${qrCodeBase64 != null}" th:src="'data:image/png;base64,' + ${qrCodeBase64}" alt="QR AEAT"
+            style="width:113px; height:113px;" />
+        <div style="font-size: 8px; font-weight: bold; margin-top: 3px;">VERI*FACTU</div>
     </div>
 
     <div class="ticket-wrap">
@@ -42,8 +50,10 @@
             <!-- Customer -->
             <div th:if="${sale.customer != null}" class="t-customer">
                 <div class="t-customer-label">Cliente</div>
-                <p th:if="${sale.customer.email != null && !sale.customer.email.trim().isEmpty()}" th:text="${sale.customer.email}">customer@example.com</p>
-                <p th:if="${sale.customer.email == null || sale.customer.email.trim().isEmpty()}"><i>Sin correo asignado</i></p>
+                <p th:if="${sale.customer.email != null && !sale.customer.email.trim().isEmpty()}"
+                    th:text="${sale.customer.email}">customer@example.com</p>
+                <p th:if="${sale.customer.email == null || sale.customer.email.trim().isEmpty()}"><i>Sin correo
+                        asignado</i></p>
                 <div class="t-customer-name" th:text="${sale.customer.name}">Eduardo Garc&iacute;a</div>
                 <div class="t-customer-type"
                     th:text="${sale.customer.type.name() == 'COMPANY' ? 'Empresa' : 'Particular'}">Particular</div>
@@ -52,7 +62,8 @@
             <!-- Items -->
             <div class="t-items">
                 <div th:each="line : ${sale.lines}" class="t-item">
-                    <span class="t-item-name" th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</span>
+                    <span class="t-item-name"
+                        th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</span>
                     <span class="t-item-unit">
                         <!-- If discounted: show strikethrough original + discounted price -->
                         <span th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
@@ -61,7 +72,8 @@
                         <span th:if="${line.discountPercentage != null and line.discountPercentage > 0}"
                             style="background:rgba(39,174,96,0.15);color:#27ae60;border-radius:4px;padding:0.05rem 0.25rem;font-size:0.7rem;font-weight:700;margin-left:0.2rem;"
                             th:text="'-' + ${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '%'"></span>
-                        <span th:text="${#numbers.formatDecimal(line.unitPrice, 1, (line.unitPrice.stripTrailingZeros().scale() < 2 ? 2 : line.unitPrice.stripTrailingZeros().scale()), 'COMMA')} + ' &euro;/ud.'">
+                        <span
+                            th:text="${#numbers.formatDecimal(line.unitPrice, 1, (line.unitPrice.stripTrailingZeros().scale() < 2 ? 2 : line.unitPrice.stripTrailingZeros().scale()), 'COMMA')} + ' &euro;/ud.'">
                             0.00 &euro;/ud.</span>
                     </span>
                     <span class="t-item-qty" th:text="${line.quantity} + ' ud.'">1 ud.</span>
@@ -122,14 +134,14 @@
 
 
 
-            <div th:if="${sale.abonoAmount != null and sale.abonoAmount > 0}" 
-                 class="t-summary" 
-                 style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #d35400; font-weight: 700; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(211, 84, 0, 0.05); border-radius: 6px; border: 1px dashed rgba(211, 84, 0, 0.3);">
+            <div th:if="${sale.abonoAmount != null and sale.abonoAmount > 0}" class="t-summary"
+                style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #d35400; font-weight: 700; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(211, 84, 0, 0.05); border-radius: 6px; border: 1px dashed rgba(211, 84, 0, 0.3);">
                 <span>Abono utilizado:</span>
                 <span th:text="'-' + ${#numbers.formatDecimal(sale.abonoAmount, 1, 2)} + ' €'">-0.00 €</span>
             </div>
 
-            <div th:if="${sale.totalDiscount != null and sale.totalDiscount > 0}" class="t-summary" style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #27ae60; font-weight: 700; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(39, 174, 96, 0.05); border-radius: 6px;">
+            <div th:if="${sale.totalDiscount != null and sale.totalDiscount > 0}" class="t-summary"
+                style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #27ae60; font-weight: 700; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(39, 174, 96, 0.05); border-radius: 6px;">
                 <span th:text="${sale.coupon != null ? 'Cupón: ' + sale.coupon.code : 'Descuento total:'}">Dto.</span>
                 <span th:text="'-' + ${#numbers.formatDecimal(sale.totalDiscount, 1, 2)} + ' €'">-0.00 €</span>
             </div>
@@ -142,9 +154,10 @@
 
             <!-- Payment -->
             <div class="t-payment">
-                <div class="t-payment-method" th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : (sale.paymentMethod.name() == 'CARD' ? 'Tarjeta' : 'Mixto')}">
+                <div class="t-payment-method"
+                    th:text="${sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : (sale.paymentMethod.name() == 'CARD' ? 'Tarjeta' : 'Mixto')}">
                     Efectivo</div>
-                
+
                 <!-- If Not Mixed -->
                 <th:block th:if="${sale.paymentMethod.name() != 'MIXED'}">
                     <div class="t-payment-detail" th:if="${sale.receivedAmount == null}">
@@ -156,44 +169,42 @@
                         <div>Entregado: <strong
                                 th:text="${#numbers.formatDecimal(sale.receivedAmount, 1, 2)} + ' &euro;'">0.00
                                 &euro;</strong></div>
-                        <div>Cambio: <strong th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
+                        <div>Cambio: <strong
+                                th:text="${#numbers.formatDecimal(sale.changeAmount, 1, 2)} + ' &euro;'">0.00
                                 &euro;</strong></div>
                     </div>
                 </th:block>
 
                 <!-- If Mixed -->
-                <div class="t-payment-detail" th:if="${sale.paymentMethod.name() == 'MIXED'}" style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <div>Efectivo: <strong th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong></div>
-                    <div>Tarjeta: <strong th:text="${#numbers.formatDecimal(sale.cardAmount, 1, 2)} + ' &euro;'">0.00 &euro;</strong></div>
+                <div class="t-payment-detail" th:if="${sale.paymentMethod.name() == 'MIXED'}"
+                    style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div>Efectivo: <strong th:text="${#numbers.formatDecimal(sale.cashAmount, 1, 2)} + ' &euro;'">0.00
+                            &euro;</strong></div>
+                    <div>Tarjeta: <strong th:text="${#numbers.formatDecimal(sale.cardAmount, 1, 2)} + ' &euro;'">0.00
+                            &euro;</strong></div>
                 </div>
             </div>
 
             <!-- Notas de venta -->
-            <div th:if="${sale.notes != null and !sale.notes.empty}" 
+            <div th:if="${sale.notes != null and !sale.notes.empty}"
                 style="margin: 0.8rem 0; padding: 0.6rem; border: 1px dashed var(--border); border-radius: 8px; font-size: 0.8rem; background: rgba(var(--accent-rgb), 0.03);">
-                <div style="font-weight: 700; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.2rem;">Comentarios</div>
+                <div
+                    style="font-weight: 700; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.2rem;">
+                    Comentarios</div>
                 <div th:text="${sale.notes}">Nota de la venta</div>
             </div>
 
-                <!-- Verifactu QR -->
-                <div th:if="${qrCodeBase64 != null}" style="margin: 1rem 0; text-align: center;">
-                    <img th:src="'data:image/png;base64,' + ${qrCodeBase64}" 
-                         alt="QR AEAT" 
-                         style="width: 100px; height: 100px; border: 1px solid #000;" />
-                    <div style="font-size: 0.6rem; font-weight: 800; color: #000; margin-top: 2px;">VERIFACTU - Factura Verificable</div>
-                </div>
-
-                <strong>&iexcl;Gracias por su compra!</strong><br>
-                <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; <span th:text="${companySettings.address + ', ' + companySettings.city}">C/ Exemple, 12, Madrid</span><br>
-                Vuelva pronto &mdash; conserve este ticket
-                <div class="legal-info"
-                    style="margin-top:0.8rem; font-size:0.72rem; color:var(--text-muted); text-align:center; line-height: 1.4;">
-                    <span th:text="${companySettings.invoiceFooterText}">Devoluciones en un plazo de 14 d&iacute;as con ticket original</span><br>
-                    Factura simplificada seg&uacute;n RD 1619/2012
-                </div>
-                <div class="t-barcode"></div>
+            <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; <span
+                th:text="${companySettings.address + ', ' + companySettings.city}">C/ Exemple, 12, Madrid</span><br>
+            Vuelva pronto &mdash; conserve este ticket
+            <div class="legal-info"
+                style="margin-top:0.8rem; font-size:0.72rem; color:var(--text-muted); text-align:center; line-height: 1.4;">
+                <span th:text="${companySettings.invoiceFooterText}">Devoluciones en un plazo de 14 d&iacute;as con
+                    ticket original</span><br>
+                Factura simplificada seg&uacute;n RD 1619/2012
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Buttons (screen only) -->
@@ -209,12 +220,12 @@
     <th:block th:if="${pdfMode == null}">
         <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
         <script th:inline="javascript">
-        /*<![CDATA[*/
-        window.onload = function () {
-            // Always auto-print receipts as requested
-            window.print();
-        };
-        /*]]>*/
+            /*<![CDATA[*/
+            window.onload = function () {
+                // Always auto-print receipts as requested
+                window.print();
+            };
+            /*]]>*/
         </script>
     </th:block>
 </body>

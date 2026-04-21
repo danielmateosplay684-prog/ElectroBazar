@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -235,6 +235,14 @@
 </head>
 
 <body>
+    <div style="text-align:center; margin-bottom: 15px;">
+      <div style="font-size: 10px; font-weight: bold; margin-bottom: 4px;">QR tributario:</div>
+      <img th:if="${qrCodeBase64 != null}" 
+           th:src="'data:image/png;base64,' + ${qrCodeBase64}" 
+           alt="QR AEAT" 
+           style="width:151px; height:151px;" />
+      <div style="font-size: 9px; font-weight: bold; margin-top: 4px;">Factura verificable en la sede electrónica de la AEAT</div>
+    </div>
     <div class="invoice-paper">
         <div class="header-bar">
             <div>
@@ -333,15 +341,9 @@
 
         <div class="footer">
             <div style="display: flex; align-items: center; justify-content: center; gap: 30px; margin-bottom: 15px;">
-                <div style="text-align: right; max-width: 400px; color: #444;">
+                <div style="text-align: center; color: #444;">
                     <p style="font-weight: 800; margin-bottom: 2px;">SISTEMA DE EMISIÓN DE FACTURAS VERIFICABLES</p>
                     <p style="font-size: 8px;">Este documento es una Factura Rectificativa encadenada mediante Hash SHA-256 cumpliendo con el Reglamento Verifactu (RD 1007/2023).</p>
-                </div>
-                <div th:if="${qrCodeBase64 != null}">
-                    <img th:src="'data:image/png;base64,' + ${qrCodeBase64}" 
-                         alt="QR AEAT" 
-                         style="border: 2px solid #000; padding: 2px; width: 100px; height: 100px;" />
-                    <div style="font-size: 7px; font-weight: 800; color: #000;">VERIFACTU</div>
                 </div>
             </div>
 

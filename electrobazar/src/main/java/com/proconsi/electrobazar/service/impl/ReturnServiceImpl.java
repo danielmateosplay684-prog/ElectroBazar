@@ -54,7 +54,7 @@ public class ReturnServiceImpl implements ReturnService {
     private final ActivityLogService activityLogService;
     private final MessageSource messageSource;
 
-    private static final String INITIAL_HASH = "0000000000000000";
+    private static final String INITIAL_HASH = "";
 
     @Override
     @Transactional(readOnly = true)
@@ -169,6 +169,7 @@ public class ReturnServiceImpl implements ReturnService {
                     .originalInvoice(originalSale.getInvoice())
                     .reason(reason != null && !reason.isBlank() ? reason : "Return of goods")
                     .hashPreviousInvoice(previousHash)
+                    .aeatStatus(AeatStatus.PENDING_SEND)
                     .build();
 
             // Set creation date for hash calculation if necessary

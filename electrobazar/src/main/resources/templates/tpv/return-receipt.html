@@ -1,10 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'Devolución ' + ${saleReturn.returnNumber} + ' — ' + ${companySettings.name}">Albarán de Devolución — ElectroBazar
+    <title th:text="'Devolución ' + ${saleReturn.returnNumber} + ' — ' + ${companySettings.name}">Albarán de Devolución
+        — ElectroBazar
     </title>
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
@@ -16,6 +17,15 @@
 
 <body>
     <div class="page-title"><i class="bi bi-arrow-counterclockwise"></i> Albarán de Devolución</div>
+
+    <div style="text-align:center; margin-bottom: 8px;">
+      <div style="font-size: 9px; font-weight: bold; margin-bottom: 3px;">QR tributario:</div>
+      <img th:if="${qrCodeBase64 != null}" 
+           th:src="'data:image/png;base64,' + ${qrCodeBase64}" 
+           alt="QR AEAT" 
+           style="width:113px; height:113px;" />
+      <div style="font-size: 8px; font-weight: bold; margin-top: 3px;">VERI*FACTU</div>
+    </div>
 
     <div class="ticket-wrap">
         <div class="ticket">
@@ -107,9 +117,9 @@
             <!-- Footer -->
             <div class="t-footer">
                 <strong>Devolución procesada correctamente</strong><br>
-                <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; <span th:text="${companySettings.address + ', ' + companySettings.city}">C/ Exemple, 12, Madrid</span><br>
+                <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; <span
+                    th:text="${companySettings.address + ', ' + companySettings.city}">C/ Exemple, 12, Madrid</span><br>
                 Conserve este albarán como justificante
-                <div class="t-barcode"></div>
             </div>
         </div>
     </div>

@@ -10,6 +10,8 @@ import com.proconsi.electrobazar.service.VerifactuService;
 import com.proconsi.electrobazar.util.QrCodeGenerator;
 import com.proconsi.electrobazar.util.VerifactuHashCalculator;
 import com.proconsi.electrobazar.config.VerifactuProperties;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -117,6 +119,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional(readOnly = true)
     public Optional<Invoice> findBySaleId(Long saleId) {
         return invoiceRepository.findBySaleId(saleId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Invoice> findByInvoiceNumber(String invoiceNumber) {
+        return invoiceRepository.findByInvoiceNumber(invoiceNumber);
     }
 
     @Override
@@ -260,7 +268,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     private String buildVerificacionUrl(String nif, String numSerie, String fecha, String importe) {
         return String.format(
                 verifactuProperties.getQrBaseUrl() + "?nif=%s&numserie=%s&fecha=%s&importe=%s",
-                nif, numSerie, fecha, importe);
+                URLEncoder.encode(nif, StandardCharsets.UTF_8),
+                URLEncoder.encode(numSerie, StandardCharsets.UTF_8),
+                URLEncoder.encode(fecha, StandardCharsets.UTF_8),
+                URLEncoder.encode(importe, StandardCharsets.UTF_8));
     }
 
 }

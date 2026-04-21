@@ -6,6 +6,7 @@ import com.proconsi.electrobazar.model.Sale;
 import com.proconsi.electrobazar.model.SaleReturn;
 import com.proconsi.electrobazar.model.Worker;
 import com.proconsi.electrobazar.security.JwtService;
+import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.ReturnService;
 import com.proconsi.electrobazar.service.SaleService;
 import com.proconsi.electrobazar.service.TicketService;
@@ -34,6 +35,7 @@ public class ReturnApiRestController {
 
     private final SaleService saleService;
     private final TicketService ticketService;
+    private final InvoiceService invoiceService;
     private final ReturnService returnService;
     private final WorkerService workerService;
     private final JwtService jwtService;
@@ -74,16 +76,22 @@ public class ReturnApiRestController {
                         .orElse(null);
             }
 
+            if (saleId == null) {
+                saleId = invoiceService.findByInvoiceNumber(query)
+                        .map(i -> i.getSale().getId())
+                        .orElse(null);
+            }
+
             if (saleId != null) {
                 return ResponseEntity.ok(new ReturnCheckResponse(saleId, true));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("errorMessage", "Ticket no encontrado: " + query));
+                        .body(Map.of("errorMessage", "Ticket o Factura no encontrado: " + query));
             }
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("errorMessage", "Error al buscar el ticket: " + e.getMessage()));
+                    .body(Map.of("errorMessage", "Error al buscar el ticket/factura: " + e.getMessage()));
         }
     }
 

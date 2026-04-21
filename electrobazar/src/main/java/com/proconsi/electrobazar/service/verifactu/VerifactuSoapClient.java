@@ -63,6 +63,7 @@ public class VerifactuSoapClient {
         conn.setReadTimeout(30_000);
         conn.setDoOutput(true);
 
+        log.debug("Verifactu XML enviado:\n{}", soapXml);
         byte[] body = soapXml.getBytes(StandardCharsets.UTF_8);
         conn.setRequestProperty("Content-Length", String.valueOf(body.length));
 
@@ -75,6 +76,7 @@ public class VerifactuSoapClient {
         String responseBody = is == null ? "" : new String(is.readAllBytes(), StandardCharsets.UTF_8);
 
         log.debug("Verifactu HTTP {}: {}", httpStatus, responseBody);
+        log.info("Verifactu AEAT raw response: {}", responseBody);
 
         if (httpStatus == 200) {
             return parseResponse(responseBody);
@@ -109,18 +111,29 @@ public class VerifactuSoapClient {
 
     private AeatResponse parseResponse(String xml) {
         try {
+            log.info("Verifactu parsing response: {}", xml);
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             dbf.setNamespaceAware(true);
             Document doc = dbf.newDocumentBuilder()
                     .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
 
+            // Verificamos si hay un error SOAP (Fault)
+            String fault = firstText(doc, "faultstring");
+            if (fault != null) {
+                log.warn("Verifactu AEAT SOAP Fault: {}", fault);
+                return new AeatResponse(false, "Fault", fault);
+            }
+
             // EstadoEnvio global
             String estadoEnvio = firstText(doc, "EstadoEnvio");
+            if (estadoEnvio == null) estadoEnvio = firstText(doc, "ResultadoEnvio");
 
             // EstadoRegistro del primer registro (solo enviamos uno a la vez)
             String estadoReg = firstText(doc, "EstadoRegistro");
             String codError = firstText(doc, "CodigoErrorRegistro");
             String descError = firstText(doc, "DescripcionErrorRegistro");
+
+            log.info("EstadoEnvio={}, EstadoRegistro={}, codError={}, descError={}", estadoEnvio, estadoReg, codError, descError);
 
             boolean ok = "Correcto".equalsIgnoreCase(estadoEnvio)
                     || "Correcto".equalsIgnoreCase(estadoReg)
