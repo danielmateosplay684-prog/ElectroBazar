@@ -173,6 +173,8 @@ public class PdfReportServiceImpl implements PdfReportService {
         context.setVariable("sale", sale);
         context.setVariable("companySettings", companySettingsService.getSettings());
         context.setVariable("pdfMode", true);
+        // Resolved customer data for invoice rendering (BD customer or ad-hoc JSON)
+        context.setVariable("datosCliente", sale.getDatosClienteParaFactura());
 
         boolean applyRecargo = sale.getCustomer() != null
                 && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());

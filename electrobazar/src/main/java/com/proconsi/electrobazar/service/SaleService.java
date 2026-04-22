@@ -121,6 +121,11 @@ public interface SaleService {
             Worker worker, Tariff tariffOverride, String couponCode, List<Long> abonoIds, BigDecimal manualAbonoAmount);
 
     /**
+     * Sets the document type and optional ad-hoc customer JSON on an already-persisted sale.
+     */
+    Sale setDocumentType(Sale sale, com.proconsi.electrobazar.model.TipoDocumento tipoDocumento, String clientePuntualJson);
+
+    /**
      * Aggregates the total revenue from today's sales.
      * @return Total BigDecimal amount.
      */

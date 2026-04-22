@@ -102,7 +102,7 @@ public class ProductSpecification {
                 var prefixMatch = cb.<Integer>selectCase()
                         .when(cb.like(cb.lower(root.get("nameEs")), prefixPattern), 0)
                         .otherwise(1);
-                query.orderBy(cb.asc(exactMatch), cb.asc(prefixMatch), cb.asc(root.get("nameEs")));
+                query.orderBy(cb.asc(exactMatch), cb.asc(prefixMatch), cb.asc(cb.length(root.get("nameEs"))), cb.asc(root.get("nameEs")));
             } else {
                 query.orderBy(cb.asc(root.get("nameEs")));
             }

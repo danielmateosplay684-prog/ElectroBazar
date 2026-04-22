@@ -58,6 +58,88 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 var ticket = {}; // { productId: { name, price, quantity, stock } }
 
+// ── Estado tipo documento ──────────────────────────────────────────────────
+var currentDocType = 'FACTURA_SIMPLIFICADA'; // FACTURA_COMPLETA | FACTURA_SIMPLIFICADA
+var currentFacturaPuntual = null; // { nombre, nif, direccion, codigoPostal, ciudad } | null
+
+function validarNifCif(valor) {
+    if (!valor) return false;
+    var v = valor.trim().toUpperCase();
+    // CIF: letra + 7 dígitos + letra/dígito
+    if (/^[ABCDEFGHJKLMNPQRSUVW]\d{7}[0-9A-J]$/.test(v)) return true;
+    // DNI: 8 dígitos + letra
+    if (/^\d{8}[A-Z]$/.test(v)) return true;
+    // NIE: X/Y/Z + 7 dígitos + letra
+    if (/^[XYZ]\d{7}[A-Z]$/.test(v)) return true;
+    return false;
+}
+
+function openFacturaPuntualModal() {
+    var modal = new bootstrap.Modal(document.getElementById('facturaPuntualModal'));
+    // Pre-fill if already entered
+    if (currentFacturaPuntual) {
+        document.getElementById('fp_nombre').value = currentFacturaPuntual.nombre || '';
+        document.getElementById('fp_nif').value = currentFacturaPuntual.nif || '';
+        document.getElementById('fp_direccion').value = currentFacturaPuntual.direccion || '';
+        document.getElementById('fp_cp').value = currentFacturaPuntual.codigoPostal || '';
+        document.getElementById('fp_ciudad').value = currentFacturaPuntual.ciudad || '';
+    }
+    document.getElementById('facturaPuntualAlert').style.display = 'none';
+    modal.show();
+}
+
+function aplicarFacturaPuntual() {
+    var nombre = document.getElementById('fp_nombre').value.trim();
+    var nif = document.getElementById('fp_nif').value.trim().toUpperCase();
+    var direccion = document.getElementById('fp_direccion').value.trim();
+    var cp = document.getElementById('fp_cp').value.trim();
+    var ciudad = document.getElementById('fp_ciudad').value.trim();
+    var alertEl = document.getElementById('facturaPuntualAlert');
+
+    if (!nombre || !nif || !direccion || !cp || !ciudad) {
+        alertEl.textContent = 'Todos los campos son obligatorios.';
+        alertEl.style.display = 'block';
+        return;
+    }
+    if (!validarNifCif(nif)) {
+        alertEl.textContent = 'El formato del NIF/CIF no es válido (DNI: 12345678A, NIE: X1234567A, CIF: B12345678).';
+        alertEl.style.display = 'block';
+        return;
+    }
+
+    currentFacturaPuntual = { nombre: nombre, nif: nif, direccion: direccion, codigoPostal: cp, ciudad: ciudad };
+    currentDocType = 'FACTURA_COMPLETA';
+
+    // Update summary UI
+    document.getElementById('summaryNoCustomerTicket').style.display = 'none';
+    document.getElementById('summaryPuntualActive').style.display = 'block';
+    document.getElementById('summaryPuntualNombre').textContent = nombre + ' · ';
+    document.getElementById('summaryPuntualNif').textContent = 'NIF: ' + nif;
+
+    bootstrap.Modal.getInstance(document.getElementById('facturaPuntualModal')).hide();
+}
+
+function cancelarFacturaPuntual() {
+    currentFacturaPuntual = null;
+    currentDocType = 'FACTURA_SIMPLIFICADA';
+    document.getElementById('summaryNoCustomerTicket').style.display = 'block';
+    document.getElementById('summaryPuntualActive').style.display = 'none';
+    var m = document.getElementById('facturaPuntualModal');
+    var inst = m ? bootstrap.Modal.getInstance(m) : null;
+    if (inst) inst.hide();
+}
+
+function onDocTypeToggle(tipo) {
+    currentDocType = tipo;
+    var ind = document.getElementById('docTypeIndicatorWithCustomer');
+    if (!ind) return;
+    if (tipo === 'FACTURA_COMPLETA') {
+        ind.textContent = '📄 Se generará Factura Completa';
+    } else {
+        ind.textContent = '🎫 Se generará Ticket (venta asociada al cliente)';
+    }
+}
+
 // Helper for i18n in JS
 function getTpvI18n(key) {
     const el = document.getElementById('tpv-js-translations');
@@ -923,15 +1005,23 @@ function openCheckoutModal() {
         document.getElementById('checkoutCustomerTaxId').textContent = document.getElementById('sidebarCustomerTaxId').textContent;
         summaryWith.style.display = 'block';
         summaryNo.style.display = 'none';
-        if (document.getElementById('requestInvoiceInput')) {
-            document.getElementById('requestInvoiceInput').value = 'true';
-        }
+        // Reset toggle to Factura (default with customer)
+        var radioFactura = document.getElementById('docTypeFactura');
+        if (radioFactura) { radioFactura.checked = true; }
+        currentDocType = 'FACTURA_COMPLETA';
+        currentFacturaPuntual = null;
+        var ind = document.getElementById('docTypeIndicatorWithCustomer');
+        if (ind) ind.textContent = '📄 Se generará Factura Completa';
     } else {
         summaryWith.style.display = 'none';
         summaryNo.style.display = 'block';
-        if (document.getElementById('requestInvoiceInput')) {
-            document.getElementById('requestInvoiceInput').value = 'false';
-        }
+        // Reset puntual state
+        currentDocType = 'FACTURA_SIMPLIFICADA';
+        currentFacturaPuntual = null;
+        var noTicket = document.getElementById('summaryNoCustomerTicket');
+        var puntualActive = document.getElementById('summaryPuntualActive');
+        if (noTicket) noTicket.style.display = 'block';
+        if (puntualActive) puntualActive.style.display = 'none';
     }
 
     invoiceModalInstance = new bootstrap.Modal(document.getElementById('checkoutModal'));
@@ -1164,9 +1254,15 @@ function processSaleWithInvoiceValidation() {
     var customerId = document.getElementById('customerIdInput').value;
     var hasCustomer = !!customerId;
 
-    // Set invoice flag based on whether customer is selected
+    // Set invoice flag (legacy compat) and new document-type hidden inputs
     if (requestInvoiceInput) {
-        requestInvoiceInput.value = hasCustomer ? 'true' : 'false';
+        requestInvoiceInput.value = (hasCustomer || currentFacturaPuntual) ? 'true' : 'false';
+    }
+    var tipoDocInput = document.getElementById('tipoDocumentoParamInput');
+    var puntualJsonInput = document.getElementById('clientePuntualJsonInput');
+    if (tipoDocInput) tipoDocInput.value = currentDocType;
+    if (puntualJsonInput) {
+        puntualJsonInput.value = currentFacturaPuntual ? JSON.stringify(currentFacturaPuntual) : '';
     }
 
     // Validar límite de pago en efectivo (Ley 11/2021)

@@ -8,7 +8,7 @@ import com.proconsi.electrobazar.repository.ProductRepository;
 import com.proconsi.electrobazar.repository.specification.CategorySpecification;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.CategoryService;
-import com.proconsi.electrobazar.service.TranslationService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final ActivityLogService activityLogService;
-    private final TranslationService translationService;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -65,6 +65,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category save(Category category) {
+        if (category.getName() == null || category.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la categoría no puede estar vacío.");
+        }
         if (categoryRepository.existsByNameEsIgnoreCase(category.getName())) {
             throw new DuplicateResourceException("A category with name '" + category.getName() + "' already exists.");
         }
@@ -80,6 +83,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category update(Long id, Category updated) {
+        if (updated.getName() == null || updated.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la categoría no puede estar vacío.");
+        }
         Category existing = findById(id);
 
         if (!existing.getNameEs().equalsIgnoreCase(updated.getName())

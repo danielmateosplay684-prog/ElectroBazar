@@ -7,7 +7,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="categoryForm" novalidate>
+                <form id="categoryForm" novalidate onsubmit="event.preventDefault(); saveCategory();">
                     <input type="hidden" id="categoryId">
                     <div class="row g-3">
                         <div class="col-12">
@@ -35,7 +35,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" data-bs-dismiss="modal"
                     th:text="#{common.cancel}">Cancelar</button>
-                <button type="button" class="btn-save" onclick="saveCategory()"><i
+                <button type="submit" class="btn-save" form="categoryForm"><i
                         class="bi bi-check-lg me-1"></i><span th:text="#{common.save}">Guardar</span></button>
             </div>
         </div>

@@ -605,6 +605,8 @@
                     <input type="hidden" name="customerName" id="customerNameInput">
                     <input type="hidden" name="customerType" id="customerTypeInput">
                     <input type="hidden" name="requestInvoice" id="requestInvoiceInput" value="false">
+                    <input type="hidden" name="tipoDocumentoParam" id="tipoDocumentoParamInput" value="FACTURA_SIMPLIFICADA">
+                    <input type="hidden" name="clientePuntualJson" id="clientePuntualJsonInput" value="">
                     <input type="hidden" name="tariffId" id="tariffIdInput">
                     <input type="hidden" name="couponCode" id="couponCodeInput">
                     <input type="hidden" name="receivedAmount" id="receivedAmountInput">
@@ -749,29 +751,56 @@
                 <div class="modal-body">
                     <!-- Resumen del Cliente (Read-only) -->
                     <div id="checkoutCustomerSummary" class="mb-4">
+                        <!-- Con cliente BD: toggle Factura/Ticket + indicador -->
                         <div id="summaryWithCustomer" style="display: none;">
-                            <div class="p-3 rounded d-flex align-items-center justify-content-between"
-                                style="border: 2px solid var(--accent); background: rgba(var(--accent-rgb), 0.05);">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-circle"
-                                        style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary);">
-                                        <i class="bi bi-person-check-fill"></i>
+                            <div class="p-3 rounded" style="border: 2px solid var(--accent); background: rgba(var(--accent-rgb), 0.05);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--primary);">
+                                            <i class="bi bi-person-check-fill"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold" id="checkoutCustomerName" style="color: var(--text-main);"></h6>
+                                            <small id="checkoutCustomerTaxId" style="color: var(--text-muted);"></small>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h6 class="mb-0 fw-bold" id="checkoutCustomerName"
-                                            style="color: var(--text-main);"></h6>
-                                        <small id="checkoutCustomerTaxId" style="color: var(--text-muted);"></small>
+                                    <!-- Factura / Ticket toggle -->
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" name="docTypeToggle" id="docTypeFactura" autocomplete="off" checked onchange="onDocTypeToggle('FACTURA_COMPLETA')">
+                                        <label class="btn btn-outline-success" for="docTypeFactura"><i class="bi bi-file-earmark-text me-1"></i>Factura</label>
+                                        <input type="radio" class="btn-check" name="docTypeToggle" id="docTypeTicket" autocomplete="off" onchange="onDocTypeToggle('FACTURA_SIMPLIFICADA')">
+                                        <label class="btn btn-outline-secondary" for="docTypeTicket"><i class="bi bi-ticket-perforated me-1"></i>Ticket</label>
                                     </div>
                                 </div>
-                                <div class="badge bg-success rounded-pill px-3 py-2"
-                                    th:text="#{tpv.checkout.for_invoice}">PARA FACTURA</div>
+                                <!-- Indicador tipo documento -->
+                                <div id="docTypeIndicatorWithCustomer" class="small text-center mt-1 fw-bold" style="color: var(--accent);"></div>
                             </div>
                         </div>
-                        <div id="summaryNoCustomer" class="p-3 rounded text-center border-dashed"
-                            style="border: 2px dashed var(--border); color: var(--text-muted);">
-                            <i class="bi bi-ticket-perforated fs-3 d-block mb-1"></i>
-                            <span class="fw-bold" th:text="#{tpv.checkout.standard_ticket}">Ticket Estándar</span><br>
-                            <small th:text="#{tpv.checkout.no_customer}">Sin cliente asignado</small>
+                        <!-- Sin cliente: ticket estándar + botón factura puntual -->
+                        <div id="summaryNoCustomer" class="p-3 rounded" style="border: 2px dashed var(--border);">
+                            <div id="summaryNoCustomerTicket" class="text-center" style="color: var(--text-muted);">
+                                <i class="bi bi-ticket-perforated fs-3 d-block mb-1"></i>
+                                <span class="fw-bold" th:text="#{tpv.checkout.standard_ticket}">Ticket Estándar</span><br>
+                                <small th:text="#{tpv.checkout.no_customer}">Sin cliente asignado</small>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openFacturaPuntualModal()">
+                                        <i class="bi bi-file-earmark-plus me-1"></i>¿Necesita factura?
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Si se rellenan datos puntuales se muestra este bloque -->
+                            <div id="summaryPuntualActive" style="display:none;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <span class="fw-bold" style="color: var(--accent);"><i class="bi bi-file-earmark-check me-1"></i>Factura puntual</span><br>
+                                        <small id="summaryPuntualNombre" style="color: var(--text-main);"></small>
+                                        <small id="summaryPuntualNif" style="color: var(--text-muted);"></small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelarFacturaPuntual()">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -893,6 +922,60 @@
 
     <!-- ── MODAL: Crear Cliente Completo (Shared with Admin) ── -->
     <div th:replace="~{admin/modals/customer-modal :: modal}"></div>
+
+    <!-- ── MODAL: Factura Puntual ── -->
+    <div class="modal fade" id="facturaPuntualModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
+                <div class="modal-header" style="border-color: var(--border);">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-plus me-2"></i>Datos para Factura</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: var(--close-filter, invert(1));"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Introduce los datos del cliente para emitir una factura completa. No se guardará en la base de datos.</p>
+                    <div id="facturaPuntualAlert" class="alert alert-danger" style="display:none;"></div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Nombre / Razón Social *</label>
+                        <input type="text" id="fp_nombre" class="form-control" placeholder="Empresa S.L. o Nombre Apellidos"
+                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">NIF / CIF *</label>
+                        <input type="text" id="fp_nif" class="form-control" placeholder="B12345678 o 12345678A" maxlength="20"
+                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);" oninput="this.value=this.value.toUpperCase()">
+                        <div id="fp_nif_feedback" class="invalid-feedback">Formato de NIF/CIF no válido.</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Dirección *</label>
+                        <input type="text" id="fp_direccion" class="form-control" placeholder="Calle Ejemplo, 12"
+                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label class="form-label fw-bold small">C.P. *</label>
+                            <input type="text" id="fp_cp" class="form-control" placeholder="28001" maxlength="10"
+                                   style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label fw-bold small">Ciudad *</label>
+                            <input type="text" id="fp_ciudad" class="form-control" placeholder="Madrid"
+                                   style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-color: var(--border);">
+                    <button type="button" class="btn" data-bs-dismiss="modal" onclick="cancelarFacturaPuntual()"
+                            style="background: var(--primary); border-color: var(--border); color: var(--text-main);">
+                        Cancelar (ticket normal)
+                    </button>
+                    <button type="button" class="btn" onclick="aplicarFacturaPuntual()"
+                            style="background: var(--accent); color: var(--primary);">
+                        <i class="bi bi-check-circle me-1"></i>Usar estos datos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- ── PIN MODAL (ADMIN ACCESS) ── -->

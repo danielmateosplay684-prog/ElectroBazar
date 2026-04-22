@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -328,11 +328,12 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="categorymodalLabel" th:text="#{common.category}">Categoria</h5>
+                    <h5 class="modal-title" id="categoryModalLabel" th:text="#{common.category}">Categoria</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="categoryId">
+                    <form id="categoryForm" onsubmit="event.preventDefault(); saveCategory();">
+                        <input type="hidden" id="categoryId">
                     <div class="mb-3">
                         <label class="form-label" th:text="#{admin.category.placeholder.name}">Nombre de la
                             Categoria</label>
@@ -347,11 +348,12 @@
                         <label class="form-check-label" for="categoryActive"
                             th:text="#{admin.category.active}">Categoria Activa</label>
                     </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"
                         th:text="#{common.cancel}">Cancelar</button>
-                    <button type="button" class="btn btn-save" onclick="saveCategory()"
+                    <button type="submit" class="btn btn-save" form="categoryForm"
                         th:text="#{common.save}">Guardar</button>
                 </div>
             </div>

@@ -375,20 +375,20 @@
                         </div>
                     </div>
                 </td>
-                <td>
+                <td th:if="${datosCliente != null}">
                     <div class="party-label">Cliente</div>
-                    <div class="party-name" th:text="${sale.customer.name}">Cliente</div>
+                    <div class="party-name" th:text="${datosCliente.nombre}">Cliente</div>
                     <div class="party-detail">
-                        <span
-                            th:text="${sale.customer.type.name() == 'COMPANY' ? 'CIF: ' : 'NIF: '} + ${sale.customer.taxId}">NIF:
-                            —</span><br />
-                        <span th:if="${sale.customer.address != null}"
-                            th:text="${sale.customer.address + ', ' + (sale.customer.city ?: '') + ' ' + (sale.customer.postalCode ?: '')}"></span><br />
-                        <div class="customer-contact">
-                            <span th:if="${sale.customer.email != null && !sale.customer.email.trim().isEmpty()}" th:text="${sale.customer.email}"></span>
-                            <span th:if="${sale.customer.email == null || sale.customer.email.trim().isEmpty()}"><i>Sin correo asignado</i></span>
-                            <span th:if="${sale.customer.phone != null && !sale.customer.phone.isEmpty()}" th:text="' &middot; ' + ${sale.customer.phone}"></span>
-                        </div>
+                        <span th:text="${datosCliente.nifLabel + ': ' + datosCliente.nif}">NIF: —</span><br />
+                        <span th:if="${datosCliente.direccion != null and !datosCliente.direccion.trim().isEmpty()}"
+                              th:text="${datosCliente.direccion}"></span><br />
+                        <th:block th:if="${sale.customer != null}">
+                            <div class="customer-contact">
+                                <span th:if="${sale.customer.email != null && !sale.customer.email.trim().isEmpty()}" th:text="${sale.customer.email}"></span>
+                                <span th:if="${sale.customer.email == null || sale.customer.email.trim().isEmpty()}"><i>Sin correo asignado</i></span>
+                                <span th:if="${sale.customer.phone != null && !sale.customer.phone.isEmpty()}" th:text="' · ' + ${sale.customer.phone}"></span>
+                            </div>
+                        </th:block>
                     </div>
                 </td>
             </tr>

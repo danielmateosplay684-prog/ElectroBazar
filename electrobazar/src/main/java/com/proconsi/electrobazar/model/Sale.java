@@ -141,6 +141,51 @@ public class Sale {
     @Builder.Default
     private BigDecimal abonoAmount = BigDecimal.ZERO;
 
+    /** Document type generated for this sale. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_documento", length = 30)
+    private TipoDocumento tipoDocumento;
+
+    /** JSON snapshot of ad-hoc customer data for one-off invoices (no DB customer saved). */
+    @Column(name = "cliente_puntual_json", columnDefinition = "TEXT")
+    private String clientePuntualJson;
+
+    /**
+     * Returns the customer data map to use when rendering invoice documents.
+     * Delegates to BD customer, JSON snapshot, or null (ticket sin cliente).
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.Map<String, String> getDatosClienteParaFactura() {
+        if (customer != null && tipoDocumento == TipoDocumento.FACTURA_COMPLETA) {
+            java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+            m.put("nombre", customer.getName());
+            String label = customer.getType() != null && customer.getType().name().equals("COMPANY") ? "CIF" : "NIF";
+            m.put("nifLabel", label);
+            m.put("nif", customer.getTaxId());
+            String addr = customer.getAddress() != null ? customer.getAddress() : "";
+            String city = customer.getCity() != null ? customer.getCity() : "";
+            String cp = customer.getPostalCode() != null ? customer.getPostalCode() : "";
+            m.put("direccion", addr + (addr.isBlank() ? "" : ", ") + cp + " " + city);
+            return m;
+        }
+        if (clientePuntualJson != null && !clientePuntualJson.isBlank()) {
+            try {
+                org.springframework.boot.json.JsonParser parser = org.springframework.boot.json.JsonParserFactory.getJsonParser();
+                java.util.Map<String, Object> raw = parser.parseMap(clientePuntualJson);
+                java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+                m.put("nombre", String.valueOf(raw.getOrDefault("nombre", "")));
+                m.put("nifLabel", "NIF");
+                m.put("nif", String.valueOf(raw.getOrDefault("nif", "")));
+                String cp = String.valueOf(raw.getOrDefault("codigoPostal", ""));
+                String city = String.valueOf(raw.getOrDefault("ciudad", ""));
+                String addr = String.valueOf(raw.getOrDefault("direccion", ""));
+                m.put("direccion", addr + (addr.isBlank() ? "" : ", ") + cp + " " + city);
+                return m;
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
     /**
      * Enumeration for the sale lifecycle state.
      */

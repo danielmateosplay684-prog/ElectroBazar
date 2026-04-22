@@ -69,6 +69,16 @@ public class SaleWithTaxApiRestController {
                         throw new IllegalArgumentException("La venta debe tener al menos una línea de producto.");
                 }
 
+                // ── 0. Validate document-type combinations ─────────────────────────────
+                if (request.getCustomerId() != null && request.getClientePuntual() != null) {
+                        throw new IllegalArgumentException("No se puede indicar a la vez clienteId y datos de factura puntual.");
+                }
+                if (request.getCustomerId() == null
+                        && request.getClientePuntual() == null
+                        && request.getTipoDocumento() == TipoDocumento.FACTURA_COMPLETA) {
+                        throw new IllegalArgumentException("FACTURA_COMPLETA requiere cliente BD o datos puntuales.");
+                }
+
                 // ── 1. Resolve customer and RE eligibility ─────────────────────────────
                 Customer customer = null;
                 boolean applyRecargo = false;
@@ -173,11 +183,34 @@ public class SaleWithTaxApiRestController {
                                 customer,
                                 worker);
 
-                // ── 6. Generate invoice or ticket ─────────────────────────────────────
-                boolean requestInvoice = Boolean.TRUE.equals(request.getRequestInvoice());
+                // ── 6. Determine tipo documento and persist on sale ───────────────────
+                TipoDocumento tipoDocumento;
+                String clientePuntualJson = null;
+                if (request.getClientePuntual() != null) {
+                        tipoDocumento = TipoDocumento.FACTURA_COMPLETA;
+                        try {
+                            com.proconsi.electrobazar.dto.ClientePuntualDTO dto = request.getClientePuntual();
+                            clientePuntualJson = String.format("{\"nombre\":\"%s\",\"nif\":\"%s\",\"direccion\":\"%s\",\"codigoPostal\":\"%s\",\"ciudad\":\"%s\"}",
+                                dto.getNombre() != null ? dto.getNombre().replace("\"", "\\\"") : "",
+                                dto.getNif() != null ? dto.getNif().replace("\"", "\\\"") : "",
+                                dto.getDireccion() != null ? dto.getDireccion().replace("\"", "\\\"") : "",
+                                dto.getCodigoPostal() != null ? dto.getCodigoPostal().replace("\"", "\\\"") : "",
+                                dto.getCiudad() != null ? dto.getCiudad().replace("\"", "\\\"") : ""
+                            );
+                        } catch (Exception e) { clientePuntualJson = "{}"; }
+                } else if (customer != null) {
+                        tipoDocumento = (request.getTipoDocumento() == TipoDocumento.FACTURA_SIMPLIFICADA)
+                                ? TipoDocumento.FACTURA_SIMPLIFICADA
+                                : TipoDocumento.FACTURA_COMPLETA;
+                } else {
+                        tipoDocumento = TipoDocumento.FACTURA_SIMPLIFICADA;
+                }
+                saleService.setDocumentType(savedSale, tipoDocumento, clientePuntualJson);
+
+                // ── 7. Generate invoice or ticket ─────────────────────────────────────
                 Invoice invoice = null;
                 try {
-                        if (requestInvoice && customer != null) {
+                        if (tipoDocumento == TipoDocumento.FACTURA_COMPLETA) {
                                 invoice = invoiceService.createInvoice(savedSale);
                                 log.info("Invoice {} generated for saleId={}", invoice.getInvoiceNumber(), savedSale.getId());
                         } else {
@@ -187,7 +220,7 @@ public class SaleWithTaxApiRestController {
                         log.error("Error generating document for saleId={}: {}", savedSale.getId(), e.getMessage());
                 }
 
-                // ── 7. Build and return the response ──────────────────────────────────
+                // ── 8. Build and return the response ──────────────────────────────────
                 SaleWithTaxResponse response = SaleWithTaxResponse.builder()
                                 .saleId(savedSale.getId())
                                 .createdAt(savedSale.getCreatedAt())

@@ -198,6 +198,62 @@ function deleteCoupon(id) {
         });
 }
 
+function loadCoupons() {
+    const tbody = document.getElementById('couponsTable')?.querySelector('tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+
+    fetch('/api/coupons')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay cupones registrados.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td><strong class="text-accent">${escHtml(c.code)}</strong></td>
+                    <td>${escHtml(c.description || '—')}</td>
+                    <td>
+                        <span class="badge ${c.discountType === 'PERCENTAGE' ? 'bg-primary' : 'bg-info'}">
+                            ${c.discountType === 'PERCENTAGE' ? 'Porcentaje' : 'Importe Fijo'}
+                        </span>
+                    </td>
+                    <td class="fw-bold">
+                        ${c.discountType === 'PERCENTAGE' ? (c.discountValue + '%') : (c.discountValue.toFixed(2) + '€')}
+                    </td>
+                    <td>
+                        <span class="badge-active ${c.active ? 'yes' : 'no'}">
+                            ${c.active ? 'Si' : 'No'}
+                        </span>
+                    </td>
+                    <td>
+                        <span>${c.timesUsed || 0}</span> / <span>${c.usageLimit || '—'}</span>
+                    </td>
+                    <td>${c.validUntil ? c.validUntil.substring(0, 10) : '—'}</td>
+                    <td style="text-align:right">
+                        <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                            <button class="btn-icon" title="Editar" 
+                                onclick="openCouponModal(${c.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" title="Eliminar"
+                                onclick="deleteCoupon(${c.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(err => {
+            console.error("Error loading coupons:", err);
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error al conectar con el servidor.</td></tr>';
+        });
+}
+
 // Global Exports
 window.searchCouponProducts = searchCouponProducts;
 window.searchCouponCategories = searchCouponCategories;
@@ -210,3 +266,4 @@ window.renderSelectedCouponCategories = renderSelectedCouponCategories;
 window.openCouponModal = openCouponModal;
 window.saveCoupon = saveCoupon;
 window.deleteCoupon = deleteCoupon;
+window.loadCoupons = loadCoupons;

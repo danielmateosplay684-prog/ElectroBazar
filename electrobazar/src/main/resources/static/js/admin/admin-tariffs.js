@@ -135,17 +135,30 @@ function filterTariffComparison() {
     }, 400);
 }
 
+function loadTariffs() {
+    fetchTariffComparisonData('', 0);
+}
+
 function fetchTariffComparisonData(search, page) {
     const tbody = document.getElementById('tariffComparisonTable')?.querySelector('tbody');
     if (!tbody) return;
 
     // Show loading state
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-accent me-2" role="status"></div><span class="text-muted">Buscando en catálogo global...</span></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-accent me-2" role="status"></div><span class="text-muted">Buscando productos...</span></td></tr>';
 
     const params = new URLSearchParams();
-    if (search) params.append('search', search);
+    if (search) {
+        params.append('search', search);
+        params.append('size', 50);
+        params.append('sortBy', 'nameEs');
+        params.append('sortDir', 'asc');
+    } else {
+        // Default: Top 10 by Sales Rank (High rank = more sales)
+        params.append('size', 10);
+        params.append('sortBy', 'salesRank');
+        params.append('sortDir', 'desc');
+    }
     params.append('page', page);
-    params.append('size', 50);
 
     fetch(`/api/admin/products?${params.toString()}`)
         .then(res => res.json())
@@ -155,9 +168,9 @@ function fetchTariffComparisonData(search, page) {
             const labelEl = document.getElementById('tariffComparisonLabel');
             if (labelEl) {
                 if (search) {
-                    labelEl.textContent = `Mostrando ${data.totalElements || (data.content || []).length} precios coincidentes con "${search}".`;
+                    labelEl.textContent = `Mostrando ${data.totalElements || (data.content || []).length} resultados para "${search}".`;
                 } else {
-                    labelEl.textContent = 'Mostrando todos los precios actuales.';
+                    labelEl.innerHTML = '<i class="bi bi-star-fill text-warning me-1"></i> Mostrando los 10 productos más vendidos (Top Rank).';
                 }
             }
         })
@@ -223,3 +236,6 @@ window.deactivateTariff = deactivateTariff;
 window.activateTariff = activateTariff;
 window.initColorPicker = initColorPicker;
 window.filterTariffComparison = filterTariffComparison;
+window.loadTariffs = loadTariffs;
+window.fetchTariffComparisonData = fetchTariffComparisonData;
+window.renderTariffComparisonRows = renderTariffComparisonRows;

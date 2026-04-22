@@ -25,4 +25,5 @@ public class AdminProductListingDTO {
     private BigDecimal vatRate;
     private String imageUrl;
     private boolean active;
+    private Integer salesRank;
 }

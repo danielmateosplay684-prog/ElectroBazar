@@ -171,11 +171,17 @@ public class AdminApiRestController {
             @RequestParam(defaultValue = "asc") String sortDir) {
 
         // Whitelist allowed sort fields
-        Set<String> allowedSort = Set.of("id", "nameEs", "price", "stock", "category.nameEs");
+        Set<String> allowedSort = Set.of("id", "nameEs", "price", "stock", "category.nameEs", "salesRank");
         String safeSort = allowedSort.contains(sortBy) ? sortBy : "id";
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
+        Pageable pageable;
+        if (search != null && !search.trim().isEmpty() && ("id".equals(sortBy) || "nameEs".equals(sortBy))) {
+            // Priority to Specification relevance sort
+            pageable = PageRequest.of(page, size);
+        } else {
+            pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
+        }
         Page<Product> productsPage = productService.getFilteredProducts(search, category, stock, active, unitId,
                 pageable);
 
@@ -192,6 +198,7 @@ public class AdminApiRestController {
                 .vatRate(p.getTaxRate() != null ? p.getTaxRate().getVatRate() : null)
                 .imageUrl(p.getImageUrl())
                 .active(Boolean.TRUE.equals(p.getActive()))
+                .salesRank(p.getSalesRank())
                 .build()).collect(java.util.stream.Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();

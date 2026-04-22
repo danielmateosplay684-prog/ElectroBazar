@@ -138,6 +138,8 @@ public class TpvController {
             @RequestParam(required = false) List<String> vatRates,
             @RequestParam(required = false) List<Long> abonoIds,
             @RequestParam(required = false) BigDecimal manualAbonoAmount,
+            @RequestParam(required = false) String tipoDocumentoParam,
+            @RequestParam(required = false) String clientePuntualJson,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
@@ -305,22 +307,40 @@ public class TpvController {
             return "redirect:/tpv";
         }
 
+        // Determine document type
+        TipoDocumento tipoDocumento;
+        String puntualJson = null;
+        boolean hasPuntual = clientePuntualJson != null && !clientePuntualJson.isBlank();
+
+        if (hasPuntual) {
+            tipoDocumento = TipoDocumento.FACTURA_COMPLETA;
+            puntualJson = clientePuntualJson;
+        } else if (customer != null) {
+            tipoDocumento = "FACTURA_SIMPLIFICADA".equals(tipoDocumentoParam)
+                    ? TipoDocumento.FACTURA_SIMPLIFICADA
+                    : TipoDocumento.FACTURA_COMPLETA;
+        } else {
+            tipoDocumento = TipoDocumento.FACTURA_SIMPLIFICADA;
+        }
+
+        try {
+            saleService.setDocumentType(sale, tipoDocumento, puntualJson);
+        } catch (Exception e) {
+            log.warn("Could not persist tipoDocumento for sale {}: {}", sale.getId(), e.getMessage());
+        }
+
         // Generate and Store PDF in DB
         try {
             Invoice invoice = null;
-            // Only create invoice if explicitly requested AND a customer is selected
-            if (Boolean.TRUE.equals(requestInvoice) && customer != null) {
+            if (tipoDocumento == TipoDocumento.FACTURA_COMPLETA) {
                 invoice = invoiceService.createInvoice(sale);
                 redirectAttributes.addFlashAttribute("invoice", invoice);
             }
 
             if (invoice != null) {
-                // For invoices: update success message
                 redirectAttributes.addFlashAttribute("successMessage",
                         "Invoice " + invoice.getInvoiceNumber() + " generated.");
             } else {
-                // For tickets: create ticket record (the sale entity already has the correct
-                // applyRecargo flag)
                 ticketService.createTicket(sale, applyRecargo);
             }
         } catch (Exception e) {

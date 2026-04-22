@@ -22,9 +22,15 @@ function openCategoryModal(id) {
 
 function saveCategory() {
     var id = document.getElementById('categoryId').value;
+    var name = document.getElementById('categoryName').value;
+    if (!name || name.trim() === '') {
+        showToast('El nombre de la categoría es obligatorio', 'error');
+        return;
+    }
+
     var category = {
         id: id ? parseInt(id) : null,
-        nameEs: document.getElementById('categoryName').value,
+        nameEs: name.trim(),
         descriptionEs: document.getElementById('categoryDescription').value,
         active: document.getElementById('categoryActive').checked
     };

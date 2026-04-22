@@ -310,7 +310,7 @@ function showReturnDetailsModal() {
         })
         .then(data => {
             currentReturnsData = data;
-            renderReturnsTable(data);
+            renderAnalyticsReturnsTable(data);
         })
         .catch(err => {
             console.error('Error fetching returns:', err);
@@ -318,7 +318,7 @@ function showReturnDetailsModal() {
         });
 }
 
-function renderReturnsTable(returns) {
+function renderAnalyticsReturnsTable(returns) {
     const tbody = document.getElementById('analyticsReturnsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -361,7 +361,7 @@ function renderReturnsTable(returns) {
 function filterReturnsTable() {
     const query = document.getElementById('returnSearchInput').value.toLowerCase().trim();
     if (!query) {
-        renderReturnsTable(currentReturnsData);
+        renderAnalyticsReturnsTable(currentReturnsData);
         return;
     }
 
@@ -381,7 +381,7 @@ function filterReturnsTable() {
         );
         return matchMaster || matchLines;
     });
-    renderReturnsTable(filtered);
+    renderAnalyticsReturnsTable(filtered);
 }
 
 // Global Exports

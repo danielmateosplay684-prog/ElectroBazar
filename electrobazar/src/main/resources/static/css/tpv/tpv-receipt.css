@@ -321,21 +321,34 @@
                 background: #fff !important;
                 padding: 0;
                 color: #000 !important;
+                width: 80mm;
+                margin: 0;
+            }
+
+            @page {
+                margin: 0;
+            }
+
+            .page-title, .btn-row {
+                display: none !important;
             }
 
             .ticket-wrap {
-                max-width: none;
+                max-width: 80mm;
+                width: 100%;
+                margin: 0;
             }
 
             .ticket {
                 background: #fff !important;
                 color: #000 !important;
-                padding: 0.5rem;
+                padding: 0;
                 border: none !important;
+                box-shadow: none !important;
             }
 
             .ticket-wrap::before,
             .ticket-wrap::after {
-                display: none;
+                display: none !important;
             }
         }

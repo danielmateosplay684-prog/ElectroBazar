@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.dto;
 
 import com.proconsi.electrobazar.model.PaymentMethod;
+import com.proconsi.electrobazar.model.TipoDocumento;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -44,6 +45,18 @@ public class SaleWithTaxRequest {
 
     /** The ID of the worker processing this sale. */
     private Long workerId;
+
+    /**
+     * Document type to generate. Defaults to FACTURA_COMPLETA when customer present,
+     * FACTURA_SIMPLIFICADA otherwise.
+     */
+    private TipoDocumento tipoDocumento;
+
+    /**
+     * Ad-hoc customer data for one-off invoices. Only valid when customerId is null.
+     * If present, a FACTURA_COMPLETA is generated without saving the customer to DB.
+     */
+    private ClientePuntualDTO clientePuntual;
 
     /** The list of items (product + quantity) being sold. */
     private List<SaleLineRequest> lines;

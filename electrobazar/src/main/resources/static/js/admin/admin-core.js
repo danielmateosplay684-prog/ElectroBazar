@@ -207,6 +207,7 @@ function switchView(viewId, btn, isBack = false) {
     if (viewId === 'abonosView' && typeof filterAbonos === 'function') filterAbonos();
     if (viewId === 'preciosTempView' && typeof loadFuturePrices === 'function') loadFuturePrices();
     if (viewId === 'preciosMasivosView' && typeof loadBulkProducts === 'function') loadBulkProducts();
+    if (viewId === 'couponsView' && typeof loadCoupons === 'function') loadCoupons();
 
     // Scroll to top removed to avoid unexpected jumps when loading data
     // window.scrollTo(0, 0);
