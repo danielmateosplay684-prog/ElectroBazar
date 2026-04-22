@@ -67,6 +67,11 @@ public class WorkerApiRestController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<Worker> update(@PathVariable Long id, @Valid @RequestBody Worker worker) {
+        workerService.findById(id).ifPresent(w -> {
+            if ("root".equalsIgnoreCase(w.getUsername())) {
+                throw new RuntimeException("Acceso denegado: El usuario 'root' es una cuenta de sistema protegida y no puede ser modificada.");
+            }
+        });
         worker.setId(id);
         return ResponseEntity.ok(workerService.save(worker));
     }
@@ -78,6 +83,11 @@ public class WorkerApiRestController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        workerService.findById(id).ifPresent(w -> {
+            if ("root".equalsIgnoreCase(w.getUsername())) {
+                throw new RuntimeException("Acceso denegado: El usuario 'root' no puede ser eliminado.");
+            }
+        });
         workerService.deleteById(id);
         return ResponseEntity.noContent().build();
     }

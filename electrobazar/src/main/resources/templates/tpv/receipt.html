@@ -66,10 +66,10 @@
                         th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">Producto</span>
                     <span class="t-item-unit">
                         <!-- If discounted: show strikethrough original + discounted price -->
-                        <span th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0 and line.originalUnitPrice != null and line.originalUnitPrice.compareTo(line.unitPrice) > 0}"
+                        <span th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0 and line.originalUnitPrice != null and line.originalUnitPrice.subtract(line.unitPrice).compareTo(T(java.math.BigDecimal).valueOf(0.01)) >= 0}"
                             style="text-decoration:line-through;color:var(--text-muted);font-size:0.75rem;"
                             th:text="${#numbers.formatDecimal(line.originalUnitPrice, 1, (line.originalUnitPrice.stripTrailingZeros().scale() < 2 ? 2 : line.originalUnitPrice.stripTrailingZeros().scale()), 'COMMA')} + ' &euro;'"></span>
-                        <span th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0}"
+                        <span th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0 and line.originalUnitPrice != null and line.originalUnitPrice.subtract(line.unitPrice).compareTo(T(java.math.BigDecimal).valueOf(0.01)) >= 0}"
                             style="background:rgba(39,174,96,0.15);color:#27ae60;border-radius:4px;padding:0.05rem 0.25rem;font-size:0.7rem;font-weight:700;margin-left:0.2rem;"
                             th:text="'-' + ${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '%'"></span>
                         <span

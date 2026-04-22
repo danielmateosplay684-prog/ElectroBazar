@@ -174,9 +174,7 @@ public class AdminController {
         // Empty heavy datasets to keep index load <100ms
         model.addAttribute("sales", List.of());
         model.addAttribute("salesTotalPages", 0);
-        // Load first page of returns for initial display (optimized with limit)
-        model.addAttribute("returns", returnService.getFilteredReturns(null, null, null, 
-                PageRequest.of(0, 50, Sort.by("createdAt").descending())).getContent());
+        model.addAttribute("returns", List.of());
         model.addAttribute("cashRegisters", List.of());
         model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
         model.addAttribute("customers", List.of());
@@ -213,13 +211,7 @@ public class AdminController {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return ResponseEntity.status(401).build();
         }
-        // Instead of hard delete, we deactivate the worker to preserve history
-        workerService.findById(id).ifPresent(w -> {
-            w.setActive(false);
-            workerService.save(w);
-            activityLogService.logActivity("DEACTIVATE_WORKER", "Trabajador desactivado: " + w.getUsername(), "Admin",
-                    "WORKER", id);
-        });
+        workerService.deleteById(id);
         return ResponseEntity.ok().build();
     }
 

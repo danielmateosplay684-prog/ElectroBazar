@@ -42,12 +42,6 @@
     INSERT IGNORE INTO role_permissions (role_id, permission)
     SELECT id, 'HOLD_SALES' FROM roles WHERE name = 'VENDEDOR';
 
-    -- 3. COMPANY INITIAL CONFIGURATION
-    INSERT INTO company_settings (id, name, app_name, cif, address, city, postal_code, phone, email, website, registro_mercantil, invoice_footer_text)
-    VALUES (1, 'CERTIFICADO FISICA PRUEBAS', '(VERI*FACTU) CERTIFICADO FISICA PRUEBAS', '99999910G', 'Calle Prueba 123', 'Madrid', '28001', '912345678', 'test@aeat.es', 'www.aeat.es', 'Registro de Pruebas AEAT', 'Documento generado en entorno de pruebas VeriFactu.')
-    ON DUPLICATE KEY UPDATE 
-    name = VALUES(name), app_name = VALUES(app_name), cif = VALUES(cif);
-
     -- 4. ADMIN ROLE PROVISIONING
     -- The ADMIN role has a single master permission: ACCESO_TOTAL_ADMIN.
     -- That permission is accepted as a master key in all SecurityConfig rules.

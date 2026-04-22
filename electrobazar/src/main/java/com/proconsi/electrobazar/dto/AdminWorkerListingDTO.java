@@ -13,4 +13,5 @@ public class AdminWorkerListingDTO {
     private Long roleId;
     private String roleName;
     private List<String> permissions;
+    private boolean hasSales;
 }

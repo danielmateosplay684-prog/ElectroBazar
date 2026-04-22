@@ -7,8 +7,8 @@ let selectedPromoProducts = new Set();
 let selectedPromoCategories = new Set();
 
 // Initialize autocompletes
-document.addEventListener('DOMContentLoaded', function() {
-    initProductAutocomplete('promoProductSearch', 'promoProductSearchResults', function(p) {
+document.addEventListener('DOMContentLoaded', function () {
+    initProductAutocomplete('promoProductSearch', 'promoProductSearchResults', function (p) {
         // Validation: Only products sold by units (not literal volume/weight with fractions)
         // Usually, integer units have decimalPlaces = 0 or a specific unit symbol
         const unit = p.measurementUnit;
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('⚠️ Solo se pueden añadir productos que se vendan por unidades (sin decimales).');
             return;
         }
-        
+
         addPromoProduct(p.id, p.name);
     });
 });
@@ -28,7 +28,7 @@ function searchPromoProducts() {
 function searchPromoCategories() {
     const query = document.getElementById('promoCategorySearch').value;
     if (query.length < 2) return;
-    
+
     fetch(`/api/categories/search?q=${query}`)
         .then(res => res.json())
         .then(categories => {
@@ -115,7 +115,7 @@ function openPromotionModal(id) {
     selectedPromoCategories.clear();
     renderSelectedPromoProducts();
     renderSelectedPromoCategories();
-    
+
     if (id) {
         fetch(`/api/promotions/${id}`)
             .then(res => res.json())
@@ -127,10 +127,10 @@ function openPromotionModal(id) {
                 document.getElementById('promoFrom').value = p.validFrom ? p.validFrom.slice(0, 16) : '';
                 document.getElementById('promoUntil').value = p.validUntil ? p.validUntil.slice(0, 16) : '';
                 document.getElementById('promoActive').checked = p.active !== false;
-                
+
                 selectedPromoProducts.clear();
                 selectedPromoCategories.clear();
-                
+
                 // Mapeo correcto de nombres segun la entidad Java (restrictedProducts/restrictedCategories)
                 if (p.restrictedProducts) {
                     p.restrictedProducts.forEach(prod => {
@@ -142,7 +142,7 @@ function openPromotionModal(id) {
                         selectedPromoCategories.add({ id: cat.id, name: cat.nameEs || cat.name });
                     });
                 }
-                
+
                 renderSelectedPromoProducts();
                 renderSelectedPromoCategories();
             });
@@ -164,7 +164,7 @@ function savePromotion() {
         showToast('⚠️ Error crítico: El formulario de promoción no se cargó correctamente.', 'danger');
         return;
     }
-    
+
     const name = nameEl.value.trim();
     if (!name) {
         showToast('⚠️ El nombre de la promoción es obligatorio', 'warning');
@@ -203,7 +203,7 @@ function savePromotion() {
         //    }
         // }
     }
-    
+
     fetch('/api/promotions', {
         method: promo.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },

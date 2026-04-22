@@ -142,18 +142,36 @@ function renderWorkersTable(items) {
 
         const tr = document.createElement('tr');
         tr.className = 'worker-row';
+        
+        let actionsHtml = '';
+        if (w.username === 'root') {
+            actionsHtml = `
+                <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); font-size: 0.7rem;">
+                    <i class="bi bi-lock-fill me-1"></i> Protegido
+                </span>
+            `;
+        } else {
+            actionsHtml = `
+                <button class="btn-icon" title="Editar" 
+                    onclick="openWorkerModal(${w.id}, '${w.username}', ${w.active}, null, ${w.roleId || 'null'})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            `;
+            if (!w.hasSales) {
+                actionsHtml += `
+                    <button class="btn-icon danger" title="Eliminar" onclick="deleteWorker(${w.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+            }
+        }
+
         tr.innerHTML = `
             <td><strong>${w.username}</strong></td>
             <td>${badgeRole}</td>
             <td>${badgeActive}</td>
             <td style="text-align:right">
-                <button class="btn-icon" title="Editar" 
-                    onclick="openWorkerModal(${w.id}, '${w.username}', ${w.active}, null, ${w.roleId || 'null'})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-icon danger" title="Eliminar" onclick="deleteWorker(${w.id})">
-                    <i class="bi bi-trash"></i>
-                </button>
+                ${actionsHtml}
             </td>
         `;
         tbody.appendChild(tr);

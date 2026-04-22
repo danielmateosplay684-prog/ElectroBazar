@@ -17,7 +17,7 @@ function searchCouponProducts(query) {
         document.getElementById('couponProductSearchResults').innerHTML = '';
         return;
     }
-    
+
     // Using global admin products API for consistency
     fetch(`/api/admin/products?search=${encodeURIComponent(query)}&size=10`)
         .then(res => res.json())
@@ -39,7 +39,7 @@ function searchCouponCategories(query) {
         document.getElementById('couponCategorySearchResults').innerHTML = '';
         return;
     }
-    
+
     fetch(`/api/admin/categories?search=${encodeURIComponent(query)}&size=10`)
         .then(res => res.json())
         .then(data => {
@@ -57,7 +57,7 @@ function searchCouponCategories(query) {
 function addCouponProduct(id, name) {
     // Check if already in set
     if ([...selectedCouponProducts].some(p => p.id === id)) return;
-    
+
     selectedCouponProducts.add({ id, name });
     renderSelectedCouponProducts();
     document.getElementById('couponProductSearchResults').innerHTML = '';
@@ -112,11 +112,11 @@ function openCouponModal(id) {
 
     const form = document.getElementById('couponForm');
     if (form) form.reset();
-    
+
     document.getElementById('couponId').value = couponId || '';
     selectedCouponProducts.clear();
     selectedCouponCategories.clear();
-    
+
     // Clear list search results
     document.getElementById('couponProductSearchResults').innerHTML = '';
     document.getElementById('couponCategorySearchResults').innerHTML = '';
@@ -136,10 +136,10 @@ function openCouponModal(id) {
                 document.getElementById('couponUntil').value = c.validUntil ? c.validUntil.substring(0, 16) : '';
 
                 if (c.restrictedProducts) {
-                    c.restrictedProducts.forEach(p => selectedCouponProducts.add({id: p.id, name: p.nameEs || p.name}));
+                    c.restrictedProducts.forEach(p => selectedCouponProducts.add({ id: p.id, name: p.nameEs || p.name }));
                 }
                 if (c.restrictedCategories) {
-                    c.restrictedCategories.forEach(cat => selectedCouponCategories.add({id: cat.id, name: cat.nameEs || cat.name}));
+                    c.restrictedCategories.forEach(cat => selectedCouponCategories.add({ id: cat.id, name: cat.nameEs || cat.name }));
                 }
                 renderSelectedCouponProducts();
                 renderSelectedCouponCategories();
@@ -148,7 +148,7 @@ function openCouponModal(id) {
         renderSelectedCouponProducts();
         renderSelectedCouponCategories();
     }
-    
+
     if (!couponModalInstance) {
         couponModalInstance = new bootstrap.Modal(document.getElementById('couponModal'));
     }
@@ -171,7 +171,7 @@ function saveCoupon() {
         restrictedProducts: [...selectedCouponProducts].map(p => ({ id: p.id })),
         restrictedCategories: [...selectedCouponCategories].map(c => ({ id: c.id }))
     };
-    
+
     fetch('/api/coupons', {
         method: 'POST', // The backend save method handles both creation and update
         headers: { 'Content-Type': 'application/json' },

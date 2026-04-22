@@ -2,7 +2,7 @@
  * admin-core.js
  * Core functions and initialization for the Admin Panel.
  */
- 
+
 // Helper for i18n in Admin JS
 function getAdminI18n(key) {
     const el = document.getElementById('admin-js-translations');
@@ -136,8 +136,8 @@ let viewHistory = [];
 function switchView(viewId, btn, isBack = false) {
     // 0. History tracking: don't track if navigating back or if it's the same view
     const currentActiveView = Array.from(document.querySelectorAll('[id$="View"]'))
-                                  .find(v => v.style.display !== 'none');
-    
+        .find(v => v.style.display !== 'none');
+
     if (!isBack && currentActiveView && currentActiveView.id !== viewId) {
         // Only push if not already at the top of history to avoid simple loops
         if (viewHistory.length === 0 || viewHistory[viewHistory.length - 1] !== currentActiveView.id) {
@@ -233,7 +233,7 @@ function showToast(message, type = 'success') {
         container.style = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
         document.body.appendChild(container);
     }
-    
+
     const toast = document.createElement('div');
     const colors = {
         'success': '#22c55e',
@@ -241,7 +241,7 @@ function showToast(message, type = 'success') {
         'warning': '#f5a623',
         'info': '#3b82f6'
     };
-    
+
     toast.style = `
         background: var(--surface);
         color: var(--text-main);
@@ -256,12 +256,12 @@ function showToast(message, type = 'success') {
         animation: slideIn 0.3s ease forwards;
         min-width: 250px;
     `;
-    
+
     const icon = type === 'error' ? 'bi-exclamation-circle' : 'bi-check-circle';
     toast.innerHTML = `<i class="bi ${icon}"></i> <span>${message}</span>`;
-    
+
     document.getElementById('toastContainer').appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);
@@ -307,7 +307,7 @@ function debounce(func, wait) {
 
 function previewImage(input, previewId = 'imagePreview') {
     if (!input || !input.files || !input.files[0]) return;
-    
+
     var reader = new FileReader();
     reader.onload = function () {
         var output = document.getElementById(previewId);

@@ -87,7 +87,7 @@
                         <th th:text="#{admin.invoices.customer}">Cliente / NIF</th>
                         <th th:text="#{admin.invoices.worker}">Atendido por</th>
                         <th th:text="#{admin.invoices.payment.method}">Método Pago</th>
-                        <th style="text-align:right; width: 100px;" th:text="#{common.total}">Total</th>
+                        <th style="text-align:right; width: 130px;" th:text="#{common.total}">Total</th>
                         <th style="text-align:right" th:text="#{common.download}">Descargar</th>
                     </tr>
                 </thead>
@@ -135,8 +135,8 @@
                             <span
                                 th:text="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH'} ? #{admin.invoices.payment.cash} : #{admin.invoices.payment.card}"></span>
                         </td>
-                        <td style="font-size:1rem;font-weight:700;color:var(--text-main);text-align:right"
-                            th:text="${#numbers.formatDecimal(sale.totalAmount,1,2)} + ' '"></td>
+                        <td style="font-size:1rem;font-weight:700;color:var(--text-main);text-align:right;white-space:nowrap"
+                            th:text="${#numbers.formatDecimal(sale.totalAmount,1,2)} + ' &euro;'"></td>
                         <td style="text-align:right">
                             <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                                 <button th:if="${sale.status != null && sale.status.name() == 'ACTIVE'}"

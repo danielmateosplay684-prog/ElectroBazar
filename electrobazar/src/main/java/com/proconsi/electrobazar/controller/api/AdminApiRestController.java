@@ -71,6 +71,7 @@ public class AdminApiRestController {
     private final ProductPriceService productPriceService;
     private final RoleService roleService;
     private final WorkerRepository workerRepository;
+    private final com.proconsi.electrobazar.repository.SaleRepository saleRepository;
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
@@ -358,6 +359,7 @@ public class AdminApiRestController {
                 .roleId(w.getRole() != null ? w.getRole().getId() : null)
                 .roleName(w.getRole() != null ? w.getRole().getName() : null)
                 .permissions(w.getRole() != null ? new ArrayList<>(w.getRole().getPermissions()) : new ArrayList<>())
+                .hasSales(saleRepository.existsByWorkerId(w.getId()))
                 .build()).toList();
 
         Map<String, Object> response = new HashMap<>();
@@ -824,12 +826,7 @@ public class AdminApiRestController {
      */
     @DeleteMapping("/workers/{id}")
     public ResponseEntity<?> deleteWorker(@PathVariable Long id) {
-        workerService.findById(id).ifPresent(w -> {
-            w.setActive(false);
-            workerService.save(w);
-            activityLogService.logActivity("DESACTIVAR_TRABAJADOR", "Trabajador desactivado: " + w.getUsername(),
-                    "Admin", "WORKER", id);
-        });
+        workerService.deleteById(id);
         return ResponseEntity.ok().build();
     }
 

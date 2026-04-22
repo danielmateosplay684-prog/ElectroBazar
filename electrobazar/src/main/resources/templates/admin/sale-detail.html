@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -344,7 +344,7 @@
                                     <div class="fw-bold text-main"
                                         th:text="${line.productName != null ? line.productName : (line.product != null ? line.product.name : 'Producto')}">
                                     </div>
-                                    <div th:if="${line.discountPercentage > 0}" class="small text-success">
+                                    <div th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0}" class="small text-success">
                                         <i class="bi bi-tag-fill me-1"></i>
                                         <span
                                             th:text="${#numbers.formatDecimal(line.discountPercentage, 1, 0)} + '% Dto.'"></span>
@@ -352,7 +352,7 @@
                                 </td>
                                 <td class="text-center" th:text="${line.quantity} + ' ud.'"></td>
                                 <td class="text-end">
-                                    <span th:if="${line.discountPercentage > 0}"
+                                    <span th:if="${line.discountPercentage != null and line.discountPercentage.compareTo(T(java.math.BigDecimal).ONE) >= 0 and line.originalUnitPrice != null and line.originalUnitPrice.subtract(line.unitPrice).compareTo(T(java.math.BigDecimal).valueOf(0.01)) >= 0}"
                                         class="text-muted text-decoration-line-through small me-1"
                                         th:text="${#numbers.formatDecimal(line.originalUnitPrice, 1, 2)} + ' €'"></span>
                                     <span th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)} + ' €'"></span>

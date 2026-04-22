@@ -199,4 +199,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "customer", "worker", "invoice", "ticket" })
     org.springframework.data.domain.Slice<Sale> findSliceBy(org.springframework.data.jpa.domain.Specification<Sale> spec, org.springframework.data.domain.Pageable pageable);
+
+    boolean existsByWorkerId(Long workerId);
 }

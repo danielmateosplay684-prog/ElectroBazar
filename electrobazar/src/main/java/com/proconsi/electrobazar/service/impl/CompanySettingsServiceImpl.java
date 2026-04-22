@@ -29,17 +29,18 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
         // ID 1 is the convention for the single configuration row
         return repository.findById(1L).orElseGet(() -> CompanySettings.builder()
                 .id(1L)
-                .appName("ElectroBazar")
-                .name("ElectroBazar S.L.")
-                .cif("B12345678")
-                .address("Calle Principal 123")
-                .city("León")
-                .postalCode("24001")
-                .phone("987654321")
-                .email("info@electrobazar.com")
-                .website("www.electrobazar.com")
-                .registroMercantil("Registro Mercantil de León, Tomo 1234, Folio 56, Hoja LE-7890")
-                .invoiceFooterText("Thanks for your purchase. Return policy: 15 days with original ticket.")
+                .appName("")
+                .name("")
+                .cif("")
+                .address("")
+                .city("")
+                .postalCode("")
+                .phone("")
+                .email("")
+                .website("")
+                .registroMercantil("")
+                .invoiceFooterText("")
+                .returnDeadlineDays(15)
                 .build());
     }
 
@@ -47,7 +48,7 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
     @Transactional
     public CompanySettings save(CompanySettings incoming) {
         CompanySettings existing = repository.findById(1L)
-                .orElseThrow(() -> new RuntimeException("Company settings record not found."));
+                .orElse(CompanySettings.builder().id(1L).build());
 
         List<String> changes = new ArrayList<>();
         if (!Objects.equals(existing.getAppName(), incoming.getAppName())) changes.add("App Name");

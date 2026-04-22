@@ -9,15 +9,16 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}" />
     <title th:text="'Administración — ' + ${companySettings.appName}"></title>
 
-            
+
 
     <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="preload" 
-        href="/vendor/fonts/barlow/barlow.css" 
-        as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="/vendor/fonts/barlow/barlow.css" rel="stylesheet"></noscript>
-    
+    <link rel="preload" href="/vendor/fonts/barlow/barlow.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="/vendor/fonts/barlow/barlow.css" rel="stylesheet">
+    </noscript>
+
     <th:block th:replace="~{fragments/theme :: themeScript}" />
     <script th:src="@{/js/shared/inventory-filter.js}" defer></script>
 
@@ -40,14 +41,15 @@
                  data-label-sales=#{admin.analytics.label.sales}">
     </div>
     <!-- Global JS Translations -->
-    <div id="admin-js-translations" style="display:none" 
-         th:attr="data-error-connection=#{common.error.connection},
+    <div id="admin-js-translations" style="display:none" th:attr="data-error-connection=#{common.error.connection},
                   data-error-network=#{common.error.network},
                   data-error-save=#{common.error.save},
                   data-error-delete=#{common.error.delete},
                   data-success-save=#{common.success.save},
                   data-success-delete=#{common.success.delete},
-                  data-confirm-delete=#{common.confirm_delete}">
+                  data-confirm-delete=#{common.confirm_delete},
+                  data-no-scheduled-prices=#{admin.prices.no_scheduled},
+                  data-no-pending-changes=#{admin.prices.no_pending}">
     </div>
 
     <!--  Sidebar  -->
@@ -557,9 +559,7 @@
         <div id="settingsView" style="display: none;">
             <div class="panel-header mb-4">
                 <span class="panel-title">
-                    <button class="btn-icon me-2"
-                        onclick="backToPreviousView()"
-                        th:title="#{admin.common.backtopanel}">
+                    <button class="btn-icon me-2" onclick="backToPreviousView()" th:title="#{admin.common.backtopanel}">
                         <i class="bi bi-arrow-left"></i>
                     </button>
                     <i class="bi bi-gear me-2"></i><span th:text="#{admin.settings.title}">Configuración del
@@ -677,13 +677,14 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <input type="number" th:field="*{returnDeadlineDays}"
-                                            class="form-control form-control-sm border-border"
-                                            min="0" max="365" step="1"
-                                            placeholder="15">
-                                        <span class="input-group-text border-border" style="background:var(--surface);color:var(--text-muted);">días</span>
+                                            class="form-control form-control-sm border-border" min="0" max="365"
+                                            step="1" placeholder="15">
+                                        <span class="input-group-text border-border"
+                                            style="background:var(--surface);color:var(--text-muted);">días</span>
                                     </div>
                                     <div class="form-text" style="color:var(--text-muted);font-size:0.75rem;">
-                                        Número de días desde la fecha de compra durante los que se puede solicitar una devolución.
+                                        Número de días desde la fecha de compra durante los que se puede solicitar una
+                                        devolución.
                                         Este valor queda grabado en cada ticket en el momento de la venta.
                                         Si se pone 0, no se aplica límite de plazo.
                                     </div>
@@ -910,28 +911,28 @@
         <th:block th:replace="~{admin/modals/abono-modal :: modal}" />
         <th:block th:replace="~{admin/modals/role-users-modal :: modal}" />
 
-    <!-- Optimized Script Loading -->
-    <script src="/vendor/chartjs/chart.min.js" defer></script>
-    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
-    <script th:src="@{/js/util/product-autocomplete.js}" defer></script>
-    <script th:src="@{/js/admin/admin-core.js}" defer></script>
-    <script th:src="@{/js/admin/admin-products.js}" defer></script>
-    <script th:src="@{/js/admin/admin-categories.js}" defer></script>
-    <script th:src="@{/js/admin/admin-workers.js}" defer></script>
-    <script th:src="@{/js/admin/admin-roles.js}" defer></script>
-    <script th:src="@{/js/admin/admin-customers.js}" defer></script>
-    <script th:src="@{/js/admin/admin-precios.js}" defer></script>
-    <script th:src="@{/js/admin/admin-invoices.js}" defer></script>
-    <script th:src="@{/js/admin/admin-returns.js}" defer></script>
-    <script th:src="@{/js/admin/admin-coupons.js}" defer></script>
-    <script th:src="@{/js/admin/admin-promotions.js}" defer></script>
-    <script th:src="@{/js/admin/admin-analytics.js}" defer></script>
-    <script th:src="@{/js/admin/admin-settings.js}" defer></script>
-    <script th:src="@{/js/admin/admin-unidades.js}" defer></script>
-    <script th:src="@{/js/admin/admin-abonos.js}" defer></script>
-    <script th:src="@{/js/admin/admin-tariffs.js}" defer></script>
-    <script th:src="@{/js/admin/admin-tax-rates.js}" defer></script>
-    <script th:src="@{/js/admin/admin-logs.js}" defer></script>
+        <!-- Optimized Script Loading -->
+        <script src="/vendor/chartjs/chart.min.js" defer></script>
+        <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
+        <script th:src="@{/js/util/product-autocomplete.js}" defer></script>
+        <script th:src="@{/js/admin/admin-core.js}" defer></script>
+        <script th:src="@{/js/admin/admin-products.js}" defer></script>
+        <script th:src="@{/js/admin/admin-categories.js}" defer></script>
+        <script th:src="@{/js/admin/admin-workers.js}" defer></script>
+        <script th:src="@{/js/admin/admin-roles.js}" defer></script>
+        <script th:src="@{/js/admin/admin-customers.js}" defer></script>
+        <script th:src="@{/js/admin/admin-precios.js}" defer></script>
+        <script th:src="@{/js/admin/admin-invoices.js}" defer></script>
+        <script th:src="@{/js/admin/admin-returns.js}" defer></script>
+        <script th:src="@{/js/admin/admin-coupons.js}" defer></script>
+        <script th:src="@{/js/admin/admin-promotions.js}" defer></script>
+        <script th:src="@{/js/admin/admin-analytics.js}" defer></script>
+        <script th:src="@{/js/admin/admin-settings.js}" defer></script>
+        <script th:src="@{/js/admin/admin-unidades.js}" defer></script>
+        <script th:src="@{/js/admin/admin-abonos.js}" defer></script>
+        <script th:src="@{/js/admin/admin-tariffs.js}" defer></script>
+        <script th:src="@{/js/admin/admin-tax-rates.js}" defer></script>
+        <script th:src="@{/js/admin/admin-logs.js}" defer></script>
 
         <script th:inline="javascript">
             function showDocPreview(url) {

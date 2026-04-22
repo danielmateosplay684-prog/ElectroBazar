@@ -29,6 +29,7 @@ public class WorkerService {
     private final ActivityLogService activityLogService;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final com.proconsi.electrobazar.repository.SaleRepository saleRepository;
 
     /**
      * Retrieves workers with optional filtering (search query, role, and status).
@@ -140,6 +141,24 @@ public class WorkerService {
      */
     public void deleteById(Long id) {
         workerRepository.findById(id).ifPresent(w -> {
+            if ("root".equalsIgnoreCase(w.getUsername())) {
+                throw new RuntimeException("No se puede eliminar el usuario root.");
+            }
+
+            // Check if worker has sales
+            if (saleRepository.existsByWorkerId(id)) {
+                log.info("Worker {} has sales. Deactivating instead of deleting.", w.getUsername());
+                w.setActive(false);
+                workerRepository.save(w);
+                activityLogService.logActivity(
+                        "DESACTIVAR_TRABAJADOR",
+                        "Trabajador con ventas desactivado (no se puede borrar): " + w.getUsername(),
+                        "Sistema",
+                        "WORKER",
+                        id);
+                return;
+            }
+
             workerRepository.deleteById(id);
             activityLogService.logActivity(
                     "ELIMINAR_TRABAJADOR",
@@ -203,12 +222,42 @@ public class WorkerService {
         worker.setResetPinExpiration(java.time.LocalDateTime.now().plusMinutes(15));
         workerRepository.save(worker);
 
-        String subject = "Código de recuperación de contraseña";
-        String body = "Hola " + worker.getUsername() + ",\n\n" +
-                      "Has solicitado restablecer tu contraseña. Tu código de recuperación es:\n\n" +
-                      pin + "\n\n" +
-                      "Este código caducará en 15 minutos.\n\n" +
-                      "Si no has solicitado este cambio, por favor ignora este correo.";
+        String subject = "Código de recuperación de contraseña - Electrobazar";
+        
+        String body = "<!DOCTYPE html>" +
+                      "<html>" +
+                      "<head>" +
+                      "<style>" +
+                      "body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }" +
+                      ".container { max-width: 600px; margin: 40px auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }" +
+                      ".header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }" +
+                      ".header h2 { color: #1e293b; margin: 0; font-size: 24px; }" +
+                      ".content { color: #475569; font-size: 16px; line-height: 1.6; }" +
+                      ".pin-box { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }" +
+                      ".pin-code { font-size: 32px; font-weight: bold; color: #0284c7; letter-spacing: 5px; }" +
+                      ".footer { margin-top: 30px; font-size: 13px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; }" +
+                      "</style>" +
+                      "</head>" +
+                      "<body>" +
+                      "<div class='container'>" +
+                      "  <div class='header'>" +
+                      "    <h2>Restablecimiento de Contraseña</h2>" +
+                      "  </div>" +
+                      "  <div class='content'>" +
+                      "    <p>Hola <strong>" + worker.getUsername() + "</strong>,</p>" +
+                      "    <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta. Tu código de verificación es:</p>" +
+                      "    <div class='pin-box'>" +
+                      "      <div class='pin-code'>" + pin + "</div>" +
+                      "    </div>" +
+                      "    <p><em>Este código caducará en 15 minutos.</em></p>" +
+                      "    <p>Si no has solicitado este cambio, puedes ignorar este correo. Tu contraseña actual seguirá siendo válida.</p>" +
+                      "  </div>" +
+                      "  <div class='footer'>" +
+                      "    <p>&copy; " + java.time.Year.now().getValue() + " Electrobazar TPV. Todos los derechos reservados.</p>" +
+                      "  </div>" +
+                      "</div>" +
+                      "</body>" +
+                      "</html>";
 
         emailService.sendEmail(email, subject, body);
         return true;

@@ -82,9 +82,11 @@ public class SaleServiceImpl implements SaleService {
         long totalCancelledCount;
         BigDecimal totalCancelledAmount;
         long totalReturnsCount;
+        BigDecimal totalReturnsAmount;
         BigDecimal cashTotal;
         BigDecimal cardTotal;
         BigDecimal mixedTotal;
+        BigDecimal totalUnitsSold;
         Map<String, BigDecimal> trend = new TreeMap<>();
         Map<String, BigDecimal> categories = new LinkedHashMap<>();
         Map<Integer, BigDecimal> hourly = new TreeMap<>();
@@ -114,9 +116,11 @@ public class SaleServiceImpl implements SaleService {
             totalCancelledCount = (long) summaryData[2];
             totalCancelledAmount = (BigDecimal) summaryData[3];
             totalReturnsCount = (long) summaryData[4];
+            totalReturnsAmount = (BigDecimal) summaryData[5];
             cashTotal = (BigDecimal) summaryData[6];
             cardTotal = (BigDecimal) summaryData[7];
             mixedTotal = (BigDecimal) summaryData[8];
+            totalUnitsSold = (BigDecimal) summaryData[9];
 
             // ── 2. Tendencia mensual ───────────────────────────────────────────
             String trendSql = """
@@ -193,9 +197,11 @@ public class SaleServiceImpl implements SaleService {
             totalCancelledCount = (long) summaryData[2];
             totalCancelledAmount = (BigDecimal) summaryData[3];
             totalReturnsCount = (long) summaryData[4];
+            totalReturnsAmount = (BigDecimal) summaryData[5];
             cashTotal = (BigDecimal) summaryData[6];
             cardTotal = (BigDecimal) summaryData[7];
             mixedTotal = (BigDecimal) summaryData[8];
+            totalUnitsSold = (BigDecimal) summaryData[9];
 
             topProduct = findTopProductNameBetween(from, to);
 
@@ -301,7 +307,8 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Slice<Sale> searchSlice(String search, String type, String method, LocalDate date, Pageable pageable) {
+    public org.springframework.data.domain.Slice<Sale> searchSlice(String search, String type, String method,
+            LocalDate date, Pageable pageable) {
         org.springframework.data.jpa.domain.Specification<Sale> spec = com.proconsi.electrobazar.repository.specification.SaleSpecification
                 .filterSales(search, type, method, date);
         return saleRepository.findSliceBy(spec, pageable);
@@ -473,9 +480,12 @@ public class SaleServiceImpl implements SaleService {
             TaxBreakdown breakdown = recargoCalculator.calculateLineBreakdown(pId, pName, effectiveUnitPrice,
                     line.getQuantity(), vatRate, applyRE);
 
-            // Preserve original (catalogue) price for discount calculation if already set by controller
-            BigDecimal catalogPrice = (line.getOriginalUnitPrice() != null && line.getOriginalUnitPrice().compareTo(BigDecimal.ZERO) > 0)
-                    ? line.getOriginalUnitPrice() : lineGrossBeforeCoupon;
+            // Preserve original (catalogue) price for discount calculation if already set
+            // by controller
+            BigDecimal catalogPrice = (line.getOriginalUnitPrice() != null
+                    && line.getOriginalUnitPrice().compareTo(BigDecimal.ZERO) > 0)
+                            ? line.getOriginalUnitPrice()
+                            : lineGrossBeforeCoupon;
             totalOriginalGross = totalOriginalGross.add(catalogPrice.multiply(line.getQuantity()));
 
             line.setOriginalUnitPrice(catalogPrice.setScale(SCALE, ROUNDING));
@@ -535,10 +545,22 @@ public class SaleServiceImpl implements SaleService {
             }
         }
 
+        BigDecimal totalDiscountCalculated = totalOriginalGross.subtract(finalTotal).setScale(SCALE, ROUNDING);
+        
+        // Anti-noise logic: if no real discount factors are present, force discount to zero
+        // (Prevents showing 0,01€ or -0,01€ due to rounding differences between Gross sum and Base+VAT sum)
+        boolean hasRealDiscount = (tariffDiscountPct != null && tariffDiscountPct.compareTo(BigDecimal.ZERO) > 0)
+                || coupon != null
+                || lines.stream().anyMatch(l -> l.getDiscountPercentage() != null && l.getDiscountPercentage().compareTo(BigDecimal.ZERO) > 0);
+        
+        if (!hasRealDiscount) {
+            totalDiscountCalculated = BigDecimal.ZERO;
+        }
+
         Sale sale = Sale.builder()
                 .paymentMethod(paymentMethod).totalAmount(finalTotal).totalBase(totalBase.setScale(SCALE, ROUNDING))
                 .totalVat(totalVat.setScale(SCALE, ROUNDING)).totalRecargo(totalRecargo.setScale(SCALE, ROUNDING))
-                .totalDiscount(totalOriginalGross.subtract(finalTotal).setScale(SCALE, ROUNDING)).applyRecargo(applyRE)
+                .totalDiscount(totalDiscountCalculated).applyRecargo(applyRE)
                 .receivedAmount(receivedAmount).changeAmount(change)
                 .cashAmount(actualCashAmt).cardAmount(actualCardAmt)
                 .notes(notes).customer(customer).worker(worker).lines(lines).appliedTariff(tariffName)
@@ -567,7 +589,8 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public Sale createSaleWithAbonos(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
             BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
-            Worker worker, Tariff tariffOverride, String couponCode, List<Long> abonoIds, BigDecimal manualAbonoAmount) {
+            Worker worker, Tariff tariffOverride, String couponCode, List<Long> abonoIds,
+            BigDecimal manualAbonoAmount) {
 
         // 1. Calculate the base sale (including coupon and promotions)
         Sale sale = createSaleWithCoupon(lines, paymentMethod, notes, receivedAmount, cashAmount, cardAmount, customer,
@@ -583,7 +606,8 @@ public class SaleServiceImpl implements SaleService {
                     BigDecimal val = abono.getImporte();
                     if (Boolean.TRUE.equals(abono.getRequiresFullUse())) {
                         if (currentSaleRemaining.compareTo(val) < 0) {
-                            throw new IllegalArgumentException("El abono #" + abono.getId() + " exige compra mínima de " + val + "€.");
+                            throw new IllegalArgumentException(
+                                    "El abono #" + abono.getId() + " exige compra mínima de " + val + "€.");
                         }
                         totalAbonoAplicado = totalAbonoAplicado.add(val);
                         currentSaleRemaining = currentSaleRemaining.subtract(val);
@@ -603,14 +627,16 @@ public class SaleServiceImpl implements SaleService {
                         }
                     }
                 } else {
-                    throw new IllegalArgumentException("El abono " + abono.getId() + " no pertenece al cliente seleccionado.");
+                    throw new IllegalArgumentException(
+                            "El abono " + abono.getId() + " no pertenece al cliente seleccionado.");
                 }
             }
         }
 
         if (totalAbonoAplicado.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal newTotal = sale.getTotalAmount().subtract(totalAbonoAplicado);
-            if (newTotal.compareTo(BigDecimal.ZERO) < 0) newTotal = BigDecimal.ZERO;
+            if (newTotal.compareTo(BigDecimal.ZERO) < 0)
+                newTotal = BigDecimal.ZERO;
             sale.setAbonoAmount(totalAbonoAplicado);
             sale.setTotalAmount(newTotal);
 
@@ -632,9 +658,10 @@ public class SaleServiceImpl implements SaleService {
             saleRepository.save(sale);
 
             String u = (worker != null) ? worker.getUsername() : "Anonymous";
-            activityLogService.logActivity("USO_ABONO", 
-                String.format("Cliente %s usó %.2f € en venta nº %d", (customer != null ? customer.getName() : "Anon"), totalAbonoAplicado, sale.getId()), 
-                u, "SALE", sale.getId());
+            activityLogService.logActivity("USO_ABONO",
+                    String.format("Cliente %s usó %.2f € en venta nº %d",
+                            (customer != null ? customer.getName() : "Anon"), totalAbonoAplicado, sale.getId()),
+                    u, "SALE", sale.getId());
         }
 
         return sale;

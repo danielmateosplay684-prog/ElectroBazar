@@ -71,7 +71,8 @@ function renderFuturePricesTable(items) {
     tbody.innerHTML = '';
     
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay cambios de precio programados.</td></tr>';
+        const noScheduledText = document.getElementById('admin-js-translations')?.getAttribute('data-no-scheduled-prices') || 'No hay cambios de precio programados.';
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${noScheduledText}</td></tr>`;
         return;
     }
 
@@ -436,7 +437,8 @@ function loadPendingPriceChanges() {
             if (!tbody) return;
             tbody.innerHTML = '';
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay cambios pendientes</td></tr>';
+                const noPendingText = document.getElementById('admin-js-translations')?.getAttribute('data-no-pending-changes') || 'No hay cambios pendientes';
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${noPendingText}</td></tr>`;
                 return;
             }
             data.forEach(item => {
