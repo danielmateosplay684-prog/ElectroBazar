@@ -230,7 +230,7 @@
             padding: 1.5rem;
         }
 
-        /* --- New Dashboard Analytics Modern Styles --- */
+        .kpi-card {
             padding: 1.5rem;
             min-height: 160px; /* Reserved space for KPI content */
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -426,6 +426,7 @@
             background: var(--secondary);
             position: relative;
             z-index: 1;
+            min-height: 500px;
         }
 
         .admin-table {
@@ -436,9 +437,10 @@
 
         .admin-table thead th {
             background: var(--surface);
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             font-size: 0.75rem;
             font-weight: 700;
+            height: 50px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-muted);
@@ -709,12 +711,21 @@
         }
 
         .form-label {
+            display: flex;
+            align-items: center;
+            min-height: 1.2rem;
             font-size: 0.8rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             color: var(--text-muted);
             margin-bottom: 0.35rem;
+        }
+
+        .form-label i {
+            display: inline-block;
+            width: 1.4rem;
+            text-align: center;
         }
 
         .form-control,
@@ -832,20 +843,20 @@
 
         /* ── Dashboard Cards ── */
         .dashboard-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-top: 1rem;
-            justify-content: center;
+            width: 100%;
         }
 
         .dashboard-card {
-            flex: 0 1 300px;
-            min-height: 240px; /* Reserve space */
+            min-height: 240px;
+            height: 240px; /* Reserve space */
             background: var(--secondary);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 2.5rem 2rem;
+            padding: 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;

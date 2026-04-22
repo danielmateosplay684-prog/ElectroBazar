@@ -27,7 +27,6 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final InvoiceSequenceRepository invoiceSequenceRepository;
     private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
-    private final VerifactuHashCalculator hashCalculator;
     private final VerifactuService verifactuService;
     private final CompanySettingsService companySettingsService;
 
@@ -35,13 +34,11 @@ public class TicketServiceImpl implements TicketService {
             TicketRepository ticketRepository,
             InvoiceSequenceRepository invoiceSequenceRepository,
             com.proconsi.electrobazar.service.InvoiceService invoiceService,
-            VerifactuHashCalculator hashCalculator,
             @Lazy VerifactuService verifactuService,
             CompanySettingsService companySettingsService) {
         this.ticketRepository = ticketRepository;
         this.invoiceSequenceRepository = invoiceSequenceRepository;
         this.invoiceService = invoiceService;
-        this.hashCalculator = hashCalculator;
         this.verifactuService = verifactuService;
         this.companySettingsService = companySettingsService;
     }

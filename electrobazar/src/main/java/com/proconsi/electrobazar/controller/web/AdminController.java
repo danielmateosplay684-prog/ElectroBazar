@@ -27,7 +27,6 @@ import org.springframework.data.domain.Page;
 
 import com.proconsi.electrobazar.model.Category;
 import com.proconsi.electrobazar.model.Product;
-import com.proconsi.electrobazar.model.Sale;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -50,17 +49,14 @@ public class AdminController {
     private final CashRegisterService cashRegisterService;
     private final PdfReportService pdfReportService;
     private final WorkerService workerService;
-    private final CustomerService customerService;
     private final RoleService roleService;
     private final ReturnService returnService;
     private final TariffService tariffService;
     private final TaxRateRepository taxRateRepository;
     private final TariffPriceHistoryService tariffPriceHistoryService;
     private final CompanySettingsService companySettingsService;
-    private final CouponService couponService;
     private final ActivityLogService activityLogService;
     private final BackupService backupService;
-    private final PromotionService promotionService;
     private final MeasurementUnitService measurementUnitService;
 
     /**
@@ -153,8 +149,6 @@ public class AdminController {
         model.addAttribute("futureTaxRates", taxRateRepository.findByValidFromAfter(LocalDate.now()));
         log.info("Dashboard - Future Tax Rates: {}ms", System.currentTimeMillis() - t0);
 
-        model.addAttribute("taxRates", List.of()); // Sub-views will fetch these
-
         // Minimal metadata for pagination
         model.addAttribute("currentPage", page);
         model.addAttribute("pageSize", size);
@@ -171,7 +165,7 @@ public class AdminController {
         model.addAttribute("tariffs", tariffService.findAll());
         model.addAttribute("tariffCustomerCounts", tariffService.getCustomerCountPerTariff());
 
-        model.addAttribute("workers", workerService.findAll());
+        model.addAttribute("workers", List.of());
         model.addAttribute("roles", roleService.findAll());
         model.addAttribute("measurementUnits", measurementUnitService.findAll());
         model.addAttribute("coupons", List.of()); // AJAX load
@@ -180,7 +174,9 @@ public class AdminController {
         // Empty heavy datasets to keep index load <100ms
         model.addAttribute("sales", List.of());
         model.addAttribute("salesTotalPages", 0);
-        model.addAttribute("returns", List.of());
+        // Load first page of returns for initial display (optimized with limit)
+        model.addAttribute("returns", returnService.getFilteredReturns(null, null, null, 
+                PageRequest.of(0, 50, Sort.by("createdAt").descending())).getContent());
         model.addAttribute("cashRegisters", List.of());
         model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
         model.addAttribute("customers", List.of());

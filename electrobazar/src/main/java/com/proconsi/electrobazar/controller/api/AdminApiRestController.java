@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -284,6 +285,7 @@ public class AdminApiRestController {
      * Paginated list of returns with server-side filtering and sorting.
      */
     @GetMapping("/returns")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getReturnsPage(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String method,

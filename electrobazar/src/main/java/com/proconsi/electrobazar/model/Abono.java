@@ -36,6 +36,7 @@ public class Abono {
     private BigDecimal importe;
 
     @Column(name = "requires_full_use", nullable = true)
+    @Builder.Default
     private Boolean requiresFullUse = true;
 
     @Column(nullable = false)

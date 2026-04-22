@@ -2,13 +2,10 @@ package com.proconsi.electrobazar.controller.api;
 
 import com.proconsi.electrobazar.model.TaxRate;
 import com.proconsi.electrobazar.model.Product;
-import com.proconsi.electrobazar.model.Tariff;
 import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.repository.ProductRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.ProductService;
-import com.proconsi.electrobazar.service.TariffService;
-import com.proconsi.electrobazar.service.TaskProgressService;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.Data;
@@ -41,9 +38,7 @@ public class TaxRateApiRestController {
     private final TaxRateRepository taxRateRepository;
     private final ActivityLogService activityLogService;
     private final ProductService productService;
-    private final TariffService tariffService;
     private final ProductRepository productRepository;
-    private final TaskProgressService taskProgressService;
 
     @PersistenceContext
     private EntityManager entityManager;
