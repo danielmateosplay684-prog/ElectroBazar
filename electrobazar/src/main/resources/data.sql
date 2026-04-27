@@ -111,3 +111,6 @@ UPDATE rectificative_invoices SET aeat_retry_count = 0 WHERE aeat_retry_count IS
 -- 13. Return deadline columns (snapshotted per-ticket at sale time)
 ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS return_deadline_days INT DEFAULT 15;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS return_deadline_days INT DEFAULT 15;
+
+-- 14. FIX RECTIFICATIVE_INVOICES: optional original_ticket_id (for R5 rectificativas)
+ALTER TABLE rectificative_invoices MODIFY COLUMN original_invoice_id BIGINT NULL;

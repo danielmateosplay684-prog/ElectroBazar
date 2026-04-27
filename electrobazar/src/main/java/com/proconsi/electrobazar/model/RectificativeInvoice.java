@@ -32,10 +32,15 @@ public class RectificativeInvoice {
     @JoinColumn(name = "sale_return_id", nullable = false, unique = true)
     private SaleReturn saleReturn;
 
-    /** Reference to the original invoice being corrected. */
+    /** Reference to the original invoice being corrected. Null if original was a ticket. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "original_invoice_id", nullable = false)
+    @JoinColumn(name = "original_invoice_id", nullable = true)
     private Invoice originalInvoice;
+
+    /** Reference to the original ticket being corrected. Null if original was a full invoice. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "original_ticket_id", nullable = true)
+    private Ticket originalTicket;
 
     /** When this record was created. */
     @Column(name = "created_at", nullable = false, updatable = false)

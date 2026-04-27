@@ -100,7 +100,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-600" id="bulkPriceValueLabel" style="color: var(--text-main);"
                             th:text="#{admin.common.percentage}">Porcentaje (%)</label>
-                        <input type="number" class="form-control" id="bulkPriceValue" step="0.01"
+                        <input type="number" class="form-control" id="bulkPriceValue" step="0.01" min="0"
                             th:placeholder="#{admin.massiveprices.placeholder.percentage}">
                     </div>
                 </div>

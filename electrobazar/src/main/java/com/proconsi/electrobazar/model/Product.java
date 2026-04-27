@@ -109,6 +109,13 @@ public class Product {
     @Builder.Default
     private BigDecimal basePriceNet = BigDecimal.ZERO;
 
+    public void setBasePriceNet(BigDecimal basePriceNet) {
+        if (basePriceNet != null && basePriceNet.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("El precio base no puede ser negativo");
+        }
+        this.basePriceNet = basePriceNet != null ? basePriceNet.setScale(4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
 
     /**
      * Sets the Net price based on a Gross price input.
@@ -121,6 +128,9 @@ public class Product {
             this.basePriceNet = BigDecimal.ZERO;
             this.price = BigDecimal.ZERO;
             return;
+        }
+        if (grossPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("El precio no puede ser negativo");
         }
         BigDecimal rate = taxRate != null && taxRate.getVatRate() != null ? taxRate.getVatRate()
                 : BigDecimal.ZERO;

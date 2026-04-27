@@ -18,8 +18,9 @@ import com.proconsi.electrobazar.service.InvoiceService;
 import com.proconsi.electrobazar.service.ProductService;
 import com.proconsi.electrobazar.service.PromotionService;
 import com.proconsi.electrobazar.service.SaleService;
+import com.proconsi.electrobazar.model.event.VerifactuSubmissionEvent;
 import com.proconsi.electrobazar.util.RecargoEquivalenciaCalculator;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,7 +48,6 @@ import org.springframework.data.domain.PageRequest;
  * and linking sales with customers, workers, and tariffs.
  */
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class SaleServiceImpl implements SaleService {
 
@@ -66,6 +66,39 @@ public class SaleServiceImpl implements SaleService {
     private final MessageSource messageSource;
     private final JdbcTemplate jdbcTemplate;
     private final AbonoRepository abonoRepository;
+    private final PromotionService promotionService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public SaleServiceImpl(
+            SaleRepository saleRepository,
+            ProductService productService,
+            CashRegisterRepository cashRegisterRepository,
+            ActivityLogService activityLogService,
+            RecargoEquivalenciaCalculator recargoCalculator,
+            TariffRepository tariffRepository,
+            InvoiceService invoiceService,
+            CouponRepository couponRepository,
+            CashRegisterService cashRegisterService,
+            MessageSource messageSource,
+            JdbcTemplate jdbcTemplate,
+            AbonoRepository abonoRepository,
+            PromotionService promotionService,
+            ApplicationEventPublisher eventPublisher) {
+        this.saleRepository = saleRepository;
+        this.productService = productService;
+        this.cashRegisterRepository = cashRegisterRepository;
+        this.activityLogService = activityLogService;
+        this.recargoCalculator = recargoCalculator;
+        this.tariffRepository = tariffRepository;
+        this.invoiceService = invoiceService;
+        this.couponRepository = couponRepository;
+        this.cashRegisterService = cashRegisterService;
+        this.messageSource = messageSource;
+        this.jdbcTemplate = jdbcTemplate;
+        this.abonoRepository = abonoRepository;
+        this.promotionService = promotionService;
+        this.eventPublisher = eventPublisher;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -96,6 +129,7 @@ public class SaleServiceImpl implements SaleService {
         if (useMonthly) {
             // ── 1. Totales desde monthly_sales_stats ──────────────────────────
             String summarySql = """
+                        SELECT
                             COALESCE(SUM(total_revenue),0), COALESCE(SUM(sales_count),0),
                             COALESCE(SUM(cancelled_count),0), COALESCE(SUM(cancelled_total),0),
                             COALESCE(SUM(returns_count),0), COALESCE(SUM(returns_total),0),
@@ -349,8 +383,6 @@ public class SaleServiceImpl implements SaleService {
                 worker, null);
     }
 
-    private final PromotionService promotionService;
-
     // 2. Initial logic
     @Override
     @CacheEvict(value = "analyticsSummary", key = "T(java.time.LocalDate).now().toString() + '-' + T(java.time.LocalDate).now().toString()")
@@ -377,6 +409,12 @@ public class SaleServiceImpl implements SaleService {
         cashRegisterService.checkOpenRegisterForToday();
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("A sale must contain at least one line.");
+        }
+
+        if ((receivedAmount != null && receivedAmount.compareTo(BigDecimal.ZERO) < 0) ||
+            (cashAmount != null && cashAmount.compareTo(BigDecimal.ZERO) < 0) ||
+            (cardAmount != null && cardAmount.compareTo(BigDecimal.ZERO) < 0)) {
+            throw new IllegalArgumentException("No se permiten importes de pago negativos.");
         }
 
         Tariff effective = (tariffOverride != null) ? tariffOverride
@@ -742,7 +780,19 @@ public class SaleServiceImpl implements SaleService {
             throw new IllegalStateException("Sale already cancelled.");
 
         if (sale.getInvoice() != null) {
-            invoiceService.generateRectificativeInvoice(sale, reason);
+            // Si la factura ya fue aceptada por la AEAT, enviamos una ANULACIÓN técnica
+            if (sale.getInvoice().getAeatStatus() == AeatStatus.ACCEPTED || 
+                sale.getInvoice().getAeatStatus() == AeatStatus.ACCEPTED_WITH_ERRORS) {
+                eventPublisher.publishEvent(new VerifactuSubmissionEvent(sale.getInvoice().getId(), VerifactuSubmissionEvent.SubmissionType.ANNULACION_INVOICE));
+            }
+        }
+
+        if (sale.getTicket() != null) {
+            // Si el ticket ya fue aceptado por la AEAT, enviamos una ANULACIÓN técnica
+            if (sale.getTicket().getAeatStatus() == AeatStatus.ACCEPTED || 
+                sale.getTicket().getAeatStatus() == AeatStatus.ACCEPTED_WITH_ERRORS) {
+                eventPublisher.publishEvent(new VerifactuSubmissionEvent(sale.getTicket().getId(), VerifactuSubmissionEvent.SubmissionType.ANNULACION_TICKET));
+            }
         }
 
         sale.getLines().stream()

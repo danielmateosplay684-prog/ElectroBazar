@@ -8,10 +8,10 @@ import com.proconsi.electrobazar.repository.InvoiceSequenceRepository;
 import com.proconsi.electrobazar.repository.TicketRepository;
 import com.proconsi.electrobazar.service.CompanySettingsService;
 import com.proconsi.electrobazar.service.TicketService;
-import com.proconsi.electrobazar.service.VerifactuService;
+import com.proconsi.electrobazar.model.event.VerifactuSubmissionEvent;
 import com.proconsi.electrobazar.util.VerifactuHashCalculator;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,20 +27,20 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final InvoiceSequenceRepository invoiceSequenceRepository;
     private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
-    private final VerifactuService verifactuService;
     private final CompanySettingsService companySettingsService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TicketServiceImpl(
             TicketRepository ticketRepository,
             InvoiceSequenceRepository invoiceSequenceRepository,
             com.proconsi.electrobazar.service.InvoiceService invoiceService,
-            @Lazy VerifactuService verifactuService,
-            CompanySettingsService companySettingsService) {
+            CompanySettingsService companySettingsService,
+            ApplicationEventPublisher eventPublisher) {
         this.ticketRepository = ticketRepository;
         this.invoiceSequenceRepository = invoiceSequenceRepository;
         this.invoiceService = invoiceService;
-        this.verifactuService = verifactuService;
         this.companySettingsService = companySettingsService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -84,7 +84,7 @@ public class TicketServiceImpl implements TicketService {
         Ticket saved = ticketRepository.save(ticket);
         log.info("Ticket creado: {} para Venta #{}", ticketNumber, sale.getId());
 
-        verifactuService.submitTicketAsync(saved.getId());
+        eventPublisher.publishEvent(new VerifactuSubmissionEvent(saved.getId(), VerifactuSubmissionEvent.SubmissionType.TICKET));
         return saved;
     }
 

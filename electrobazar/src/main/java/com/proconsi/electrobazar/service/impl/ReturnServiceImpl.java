@@ -17,7 +17,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.context.MessageSource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.i18n.LocaleContextHolder;
+import com.proconsi.electrobazar.model.event.VerifactuSubmissionEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +57,7 @@ public class ReturnServiceImpl implements ReturnService {
     private final ActivityLogService activityLogService;
     private final MessageSource messageSource;
     private final TicketRepository ticketRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final String INITIAL_HASH = "";
 
@@ -76,12 +79,9 @@ public class ReturnServiceImpl implements ReturnService {
     public SaleReturn processReturn(Long originalSaleId, List<ReturnLineRequest> lineRequests,
             String reason, PaymentMethod paymentMethod, Worker worker) {
         
-        // POS Business Rule: Verifies that a cash register session is open for today before processing returns.
         cashRegisterService.checkOpenRegisterForToday();
-
         Sale originalSale = saleService.findById(originalSaleId);
 
-        // Return deadline validation: check the deadline snapshotted on THIS ticket at the time of sale.
         ticketRepository.findBySaleId(originalSaleId).ifPresent(ticket -> {
             Integer deadlineDays = ticket.getReturnDeadlineDays();
             if (deadlineDays != null && deadlineDays > 0) {
@@ -107,15 +107,10 @@ public class ReturnServiceImpl implements ReturnService {
             SaleLine saleLine = saleLineRepository.findById(req.getSaleLineId())
                     .orElseThrow(() -> new IllegalArgumentException("Sale line " + req.getSaleLineId() + " not found."));
 
-            if (!saleLine.getSale().getId().equals(originalSaleId)) {
-                throw new IllegalArgumentException("Cross-sale return violation detected.");
-            }
-
             BigDecimal alreadyReturned = returnLineRepository.sumReturnedQuantityBySaleLineId(saleLine.getId());
             if (alreadyReturned == null) alreadyReturned = BigDecimal.ZERO;
             
             BigDecimal availableToReturn = saleLine.getQuantity().subtract(alreadyReturned);
-
             if (req.getQuantity().compareTo(availableToReturn) > 0) {
                 throw new IllegalArgumentException("Cantidad a devolver supera la cantidad disponible");
             }
@@ -132,19 +127,12 @@ public class ReturnServiceImpl implements ReturnService {
             totalOriginalUnits = totalOriginalUnits.add(saleLine.getQuantity());
             totalReturnedUnits = totalReturnedUnits.add(alreadyReturned.add(req.getQuantity()));
 
-            // 1. Inventory Restoration
             productService.increaseStock(saleLine.getProduct().getId(), req.getQuantity());
         }
 
-        if (returnLines.isEmpty()) {
-            throw new IllegalArgumentException("No products selected for return.");
-        }
-
-        // 2. Liquidity Check for Cash Refunds
         if (paymentMethod == PaymentMethod.CASH) {
             BigDecimal currentDrawerCash = cashRegisterService.getCurrentCashBalance();
             if (totalRefunded.compareTo(currentDrawerCash) > 0) {
-                log.warn("Blocked cash refund: -%.2f € requested, %.2f € available in drawer.", totalRefunded, currentDrawerCash);
                 String localizedMsg = messageSource.getMessage("error.insufficient_cash_refund", 
                     new Object[]{currentDrawerCash}, LocaleContextHolder.getLocale());
                 throw new InsufficientCashException(localizedMsg);
@@ -161,10 +149,8 @@ public class ReturnServiceImpl implements ReturnService {
 
         for (ReturnLine line : returnLines) line.setSaleReturn(saleReturn);
         saleReturn.setLines(returnLines);
-
         SaleReturn saved = saleReturnRepository.save(saleReturn);
 
-        // 3. Document Invalidation (Audit)
         if (returnType == SaleReturn.ReturnType.TOTAL) {
             invoiceService.findBySaleId(originalSaleId).ifPresent(invoice -> {
                 invoice.setStatus(Invoice.InvoiceStatus.RECTIFIED);
@@ -172,11 +158,9 @@ public class ReturnServiceImpl implements ReturnService {
             });
         }
 
-        // 4. Corrective Invoice Generation (Fiscal Requirement with Verifactu Chaining)
-        if (originalSale.getInvoice() != null) {
+        // Corrective Invoice Generation
+        if (originalSale.getInvoice() != null || originalSale.getTicket() != null) {
             String rectNumber = generateNumber("FR");
-            
-            // Verifactu Chaining: Get previous hash for FR series
             String previousHash = rectificativeInvoiceRepository.findFirstByOrderByCreatedAtDesc()
                     .map(RectificativeInvoice::getHashCurrentInvoice)
                     .orElse(INITIAL_HASH);
@@ -185,20 +169,19 @@ public class ReturnServiceImpl implements ReturnService {
                     .rectificativeNumber(rectNumber)
                     .saleReturn(saved)
                     .originalInvoice(originalSale.getInvoice())
+                    .originalTicket(originalSale.getTicket())
                     .reason(reason != null && !reason.isBlank() ? reason : "Return of goods")
                     .hashPreviousInvoice(previousHash)
                     .aeatStatus(AeatStatus.PENDING_SEND)
                     .build();
 
-            // Set creation date for hash calculation if necessary
-            if (rect.getCreatedAt() == null) {
-                rect.prePersist();
-            }
-            
+            if (rect.getCreatedAt() == null) rect.prePersist();
             rect.setHashCurrentInvoice(invoiceService.calculateHash(rect, previousHash));
+            RectificativeInvoice savedRect = rectificativeInvoiceRepository.save(rect);
+            saved.setRectificativeInvoice(savedRect);
             
-            rectificativeInvoiceRepository.save(rect);
-            saved.setRectificativeInvoice(rect);
+            // Queue for Verifactu submission after commit
+            eventPublisher.publishEvent(new VerifactuSubmissionEvent(savedRect.getId(), VerifactuSubmissionEvent.SubmissionType.RECTIFICATIVE));
         }
 
         String username = (worker != null) ? worker.getUsername() : "System";
@@ -209,9 +192,6 @@ public class ReturnServiceImpl implements ReturnService {
         return saved;
     }
 
-    /**
-     * Protected utility to generate correlative numbers for Returns (D-*) or Corrective Invoices (FR-*).
-     */
     private String generateNumber(String serie) {
         int currentYear = LocalDate.now().getYear();
         InvoiceSequence sequence = invoiceSequenceRepository.findBySerieAndYearForUpdate(serie, currentYear)
@@ -220,7 +200,6 @@ public class ReturnServiceImpl implements ReturnService {
         int next = sequence.getLastNumber() + 1;
         sequence.setLastNumber(next);
         invoiceSequenceRepository.save(sequence);
-
         return String.format("%s-%d-%d", serie, currentYear, next);
     }
 

@@ -2,6 +2,8 @@ package com.proconsi.electrobazar.repository;
 
 import com.proconsi.electrobazar.model.AeatStatus;
 import com.proconsi.electrobazar.model.RectificativeInvoice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +14,10 @@ import java.util.Optional;
 
 @Repository
 public interface RectificativeInvoiceRepository extends JpaRepository<RectificativeInvoice, Long> {
+
+    @EntityGraph(attributePaths = {"saleReturn", "saleReturn.originalSale", "originalInvoice", "originalTicket"})
+    @Query("SELECT r FROM RectificativeInvoice r")
+    List<RectificativeInvoice> findAllWithDetails(Sort sort);
 
     Optional<RectificativeInvoice> findBySaleReturnId(Long returnId);
 

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--/* VeriFactu / AEAT Submission Status View */-->
+<th:block th:fragment="view">
+<div id="verifactuView" style="display:none;">
+
+    <div class="panel-header mb-4">
+        <span class="panel-title">
+            <button class="btn-icon me-2" onclick="backToPreviousView()" title="Volver al panel">
+                <i class="bi bi-arrow-left"></i>
+            </button>
+            <i class="bi bi-shield-check me-2"></i>VeriFactu — Estado de Envíos AEAT
+        </span>
+        <button class="btn btn-outline-secondary btn-sm" onclick="vfLoad()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+    </div>
+
+    <!-- ── KPI CARDS ─────────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-12"><div class="section-badge mb-1"><i class="bi bi-file-earmark-text me-1"></i>Facturas</div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('invoices','ALL')"><div class="kpi-value" id="ki-inv-total">—</div><div class="kpi-label">Total</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#27ae60" onclick="vfFilter('invoices','ACCEPTED')"><div class="kpi-value" id="ki-inv-acc" style="color:#27ae60">—</div><div class="kpi-label">Aceptadas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#f39c12" onclick="vfFilter('invoices','ACCEPTED_WITH_ERRORS')"><div class="kpi-value" id="ki-inv-awe" style="color:#f39c12">—</div><div class="kpi-label">Acept. con errores</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#e74c3c" onclick="vfFilter('invoices','REJECTED')"><div class="kpi-value" id="ki-inv-rej" style="color:#e74c3c">—</div><div class="kpi-label">Rechazadas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#3498db" onclick="vfFilter('invoices','PENDING_SEND')"><div class="kpi-value" id="ki-inv-pend" style="color:#3498db">—</div><div class="kpi-label">Pend. envío</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#2c3e50" onclick="vfFilter('invoices','ANNULLED')"><div class="kpi-value" id="ki-inv-ann" style="color:#2c3e50">—</div><div class="kpi-label">Anuladas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('invoices','NOT_SENT')"><div class="kpi-value" id="ki-inv-ns" style="color:var(--text-muted)">—</div><div class="kpi-label">No enviadas</div></div></div>
+
+        <div class="col-12 mt-1"><div class="section-badge mb-1"><i class="bi bi-file-earmark-medical me-1"></i>Rectificativas</div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('rectificativas','ALL')"><div class="kpi-value" id="ki-rec-total">—</div><div class="kpi-label">Total</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#27ae60" onclick="vfFilter('rectificativas','ACCEPTED')"><div class="kpi-value" id="ki-rec-acc" style="color:#27ae60">—</div><div class="kpi-label">Aceptadas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#f39c12" onclick="vfFilter('rectificativas','ACCEPTED_WITH_ERRORS')"><div class="kpi-value" id="ki-rec-awe" style="color:#f39c12">—</div><div class="kpi-label">Acept. con errores</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#e74c3c" onclick="vfFilter('rectificativas','REJECTED')"><div class="kpi-value" id="ki-rec-rej" style="color:#e74c3c">—</div><div class="kpi-label">Rechazadas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#3498db" onclick="vfFilter('rectificativas','PENDING_SEND')"><div class="kpi-value" id="ki-rec-pend" style="color:#3498db">—</div><div class="kpi-label">Pend. envío</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#2c3e50" onclick="vfFilter('rectificativas','ANNULLED')"><div class="kpi-value" id="ki-rec-ann" style="color:#2c3e50">—</div><div class="kpi-label">Anuladas</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('rectificativas','NOT_SENT')"><div class="kpi-value" id="ki-rec-ns" style="color:var(--text-muted)">—</div><div class="kpi-label">No enviadas</div></div></div>
+
+        <div class="col-12 mt-1"><div class="section-badge mb-1"><i class="bi bi-receipt me-1"></i>Tickets simplificados</div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('tickets','ALL')"><div class="kpi-value" id="ki-tck-total">—</div><div class="kpi-label">Total</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#27ae60" onclick="vfFilter('tickets','ACCEPTED')"><div class="kpi-value" id="ki-tck-acc" style="color:#27ae60">—</div><div class="kpi-label">Aceptados</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#f39c12" onclick="vfFilter('tickets','ACCEPTED_WITH_ERRORS')"><div class="kpi-value" id="ki-tck-awe" style="color:#f39c12">—</div><div class="kpi-label">Acept. con errores</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#e74c3c" onclick="vfFilter('tickets','REJECTED')"><div class="kpi-value" id="ki-tck-rej" style="color:#e74c3c">—</div><div class="kpi-label">Rechazados</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#3498db" onclick="vfFilter('tickets','PENDING_SEND')"><div class="kpi-value" id="ki-tck-pend" style="color:#3498db">—</div><div class="kpi-label">Pend. envío</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer;border-color:#2c3e50" onclick="vfFilter('tickets','ANNULLED')"><div class="kpi-value" id="ki-tck-ann" style="color:#2c3e50">—</div><div class="kpi-label">Anulados</div></div></div>
+        <div class="col-6 col-md-2"><div class="kpi-card text-center" style="cursor:pointer" onclick="vfFilter('tickets','NOT_SENT')"><div class="kpi-value" id="ki-tck-ns" style="color:var(--text-muted)">—</div><div class="kpi-label">No enviados</div></div></div>
+    </div>
+
+    <!-- ── TABS + FILTERS ─────────────────────────────────────── -->
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary active" id="vf-tab-invoices"       onclick="vfSwitchTab('invoices')"><i class="bi bi-file-earmark-text me-1"></i>Facturas</button>
+        <button class="btn btn-sm btn-outline-secondary"        id="vf-tab-rectificativas" onclick="vfSwitchTab('rectificativas')"><i class="bi bi-file-earmark-medical me-1"></i>Rectificativas</button>
+        <button class="btn btn-sm btn-outline-secondary"        id="vf-tab-tickets"        onclick="vfSwitchTab('tickets')"><i class="bi bi-receipt me-1"></i>Tickets</button>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+            <select id="vf-status-filter" class="form-select form-select-sm border-border" style="width:auto" onchange="vfApplyFilter()">
+                <option value="ALL">Todos los estados</option>
+                <option value="ACCEPTED">Aceptado</option>
+                <option value="ACCEPTED_WITH_ERRORS">Aceptado con errores</option>
+                <option value="REJECTED">Rechazado</option>
+                <option value="ANNULLED">Anulado</option>
+                <option value="PENDING_SEND">Pendiente envío</option>
+                <option value="NOT_SENT">No enviado</option>
+            </select>
+            <input type="text" id="vf-search" class="form-control form-control-sm border-border"
+                   placeholder="Buscar número, hash..." style="width:210px" oninput="vfSearchTable()">
+        </div>
+    </div>
+
+    <!-- ── INVOICES TABLE ─────────────────────────────────────── -->
+    <div id="vf-table-invoices">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" style="font-size:0.82rem">
+                <thead><tr>
+                    <th>Nº Factura</th><th>Estado factura</th><th>ID Venta</th>
+                    <th>Fecha</th><th>Estado AEAT</th><th>Fecha envío</th>
+                    <th class="text-center">Reintentos</th><th>Último error</th><th>Hash</th><th></th>
+                </tr></thead>
+                <tbody id="vf-tbody-invoices"><tr><td colspan="10" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr></tbody>
+            </table>
+        </div>
+        <div id="vf-pag-invoices" class="d-flex gap-2 justify-content-end align-items-center mt-2 mb-3"></div>
+    </div>
+
+    <!-- ── RECTIFICATIVAS TABLE ───────────────────────────────── -->
+    <div id="vf-table-rectificativas" style="display:none">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" style="font-size:0.82rem">
+                <thead><tr>
+                    <th>Nº Rectificativa</th><th>Factura orig.</th><th>Motivo</th>
+                    <th>ID Venta</th><th>Fecha</th><th>Estado AEAT</th>
+                    <th>Fecha envío</th><th class="text-center">Reintentos</th>
+                    <th>Último error</th><th>Hash</th><th></th>
+                </tr></thead>
+                <tbody id="vf-tbody-rectificativas"><tr><td colspan="11" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr></tbody>
+            </table>
+        </div>
+        <div id="vf-pag-rectificativas" class="d-flex gap-2 justify-content-end align-items-center mt-2 mb-3"></div>
+    </div>
+
+    <!-- ── TICKETS TABLE ──────────────────────────────────────── -->
+    <div id="vf-table-tickets" style="display:none">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" style="font-size:0.82rem">
+                <thead><tr>
+                    <th>Nº Ticket</th><th>ID Venta</th><th>Fecha</th>
+                    <th>Estado AEAT</th><th>Fecha envío</th>
+                    <th class="text-center">Reintentos</th><th>Último error</th><th>Hash</th><th></th>
+                </tr></thead>
+                <tbody id="vf-tbody-tickets"><tr><td colspan="9" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr></tbody>
+            </table>
+        </div>
+        <div id="vf-pag-tickets" class="d-flex gap-2 justify-content-end align-items-center mt-2 mb-3"></div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── State ─────────────────────────────────────────── */
+    var vfCurrentTab  = 'invoices';
+    var vfStatus      = 'ALL';
+    var vfPages       = { invoices: 0, rectificativas: 0, tickets: 0 };
+    var PAGE_SIZE     = 50;
+    var vfLoaded      = false;
+
+    /* ── Public entry points ────────────────────────────── */
+    window.vfLoad = function () {
+        loadSummary();
+        loadTable(vfCurrentTab, 0);
+    };
+
+    window.vfSwitchTab = function (tab) {
+        vfCurrentTab = tab;
+        ['invoices','rectificativas','tickets'].forEach(function (t) {
+            document.getElementById('vf-table-' + t).style.display = t === tab ? '' : 'none';
+            document.getElementById('vf-tab-'   + t).classList.toggle('active', t === tab);
+        });
+        /* Load the tab only if not already loaded at current filter */
+        loadTable(tab, vfPages[tab]);
+    };
+
+    window.vfFilter = function (tab, status) {
+        document.getElementById('vf-status-filter').value = status;
+        vfStatus = status;
+        vfPages  = { invoices: 0, rectificativas: 0, tickets: 0 };
+        vfSwitchTab(tab);
+    };
+
+    window.vfApplyFilter = function () {
+        vfStatus = document.getElementById('vf-status-filter').value;
+        vfPages  = { invoices: 0, rectificativas: 0, tickets: 0 };
+        loadTable(vfCurrentTab, 0);
+    };
+
+    window.vfSearchTable = function () {
+        var q = (document.getElementById('vf-search').value || '').toLowerCase();
+        var tbody = document.getElementById('vf-tbody-' + vfCurrentTab);
+        if (!tbody) return;
+        Array.from(tbody.querySelectorAll('tr[data-s]')).forEach(function (tr) {
+            tr.style.display = q ? (tr.dataset.s.toLowerCase().includes(q) ? '' : 'none') : '';
+        });
+    };
+
+    /* ── Auto-load on first visibility (MutationObserver) ── */
+    function attachObserver() {
+        var el = document.getElementById('verifactuView');
+        if (!el) { setTimeout(attachObserver, 200); return; }
+        new MutationObserver(function () {
+            if (el.style.display !== 'none' && !vfLoaded) {
+                vfLoaded = true;
+                window.vfLoad();
+            }
+        }).observe(el, { attributes: true, attributeFilter: ['style'] });
+    }
+    attachObserver();
+
+    /* ── Summary KPIs ───────────────────────────────────── */
+    function loadSummary() {
+        fetch('/api/admin/verifactu/summary')
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                setKpi(d.invoices,       'inv');
+                setKpi(d.rectificativas, 'rec');
+                setKpi(d.tickets,        'tck');
+            }).catch(function () {});
+    }
+
+    function setKpi(g, prefix) {
+        if (!g) return;
+        set(prefix + '-total', g.total);
+        set(prefix + '-acc',   g.accepted);
+        set(prefix + '-awe',   g.acceptedWithError);
+        set(prefix + '-rej',   g.rejected);
+        set(prefix + '-ann',   g.annulled);
+        set(prefix + '-pend',  g.pending);
+        set(prefix + '-ns',    g.notSent);
+    }
+
+    function set(id, val) {
+        var el = document.getElementById('ki-' + id);
+        if (el) el.textContent = (val !== undefined && val !== null) ? val : '—';
+    }
+
+    /* ── Table loader ───────────────────────────────────── */
+    function loadTable(type, page) {
+        var tbody  = document.getElementById('vf-tbody-' + type);
+        var pagDiv = document.getElementById('vf-pag-'   + type);
+        var cols   = colCount(type);
+
+        tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center text-muted py-4">'
+            + '<div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
+
+        var statusParam = (vfStatus === 'ALL') ? '' : vfStatus;
+        var url = '/api/admin/verifactu/' + type
+                + '?page=' + page + '&size=' + PAGE_SIZE
+                + (statusParam ? '&status=' + encodeURIComponent(statusParam) : '');
+
+        fetch(url)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                vfPages[type] = page;
+                renderRows(type, data.content || [], tbody);
+                renderPag(pagDiv, page, data.totalPages || 0, function (p) { loadTable(type, p); });
+            })
+            .catch(function (e) {
+                tbody.innerHTML = '<tr><td colspan="' + cols
+                    + '" class="text-center text-danger py-4">'
+                    + '<i class="bi bi-exclamation-circle me-1"></i>Error al cargar: ' + e.message + '</td></tr>';
+                if (pagDiv) pagDiv.innerHTML = '';
+            });
+    }
+
+    function colCount(type) {
+        return type === 'rectificativas' ? 11 : (type === 'invoices' ? 10 : 9);
+    }
+
+    /* ── Row renderers ──────────────────────────────────── */
+    function renderRows(type, rows, tbody) {
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="' + colCount(type)
+                + '" class="text-center text-muted py-4">Sin registros para este filtro.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function (r) {
+            return type === 'invoices'       ? rowInvoice(r)
+                 : type === 'rectificativas' ? rowRectif(r)
+                 :                            rowTicket(r);
+        }).join('');
+    }
+
+    function rowInvoice(r) {
+        var searchable = [r.number, r.hash, r.lastError, r.aeatStatus].filter(Boolean).join(' ');
+        var invStatusBadge = r.invoiceStatus === 'RECTIFIED'
+            ? '<span class="badge bg-secondary">Rectificada</span>'
+            : '<span class="badge bg-success bg-opacity-25 text-success">Activa</span>';
+        return '<tr data-s="' + esc(searchable) + '">'
+            + '<td><strong>' + esc(r.number) + '</strong></td>'
+            + '<td>' + invStatusBadge + '</td>'
+            + '<td>' + saleLink(r.saleId) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.createdAt) + '</td>'
+            + '<td>' + aeatBadge(r.aeatStatus) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.submissionDate) + '</td>'
+            + '<td class="text-center">' + (r.retryCount || 0) + '</td>'
+            + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.lastError||'') + '">' + esc(r.lastError||'—') + '</td>'
+            + '<td style="font-family:monospace;font-size:0.7rem" title="' + esc(r.hash||'') + '">' + hashShort(r.hash) + '</td>'
+            + '<td>' + viewBtn(r.saleId) + '</td>'
+            + '</tr>';
+    }
+
+    function rowRectif(r) {
+        var searchable = [r.number, r.originalNumber, r.reason, r.hash, r.lastError, r.aeatStatus].filter(Boolean).join(' ');
+        return '<tr data-s="' + esc(searchable) + '">'
+            + '<td><strong>' + esc(r.number) + '</strong></td>'
+            + '<td>' + (r.originalNumber ? '<span class="badge bg-secondary">' + esc(r.originalNumber) + '</span>' : '—') + '</td>'
+            + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.reason||'') + '">' + esc(r.reason||'—') + '</td>'
+            + '<td>' + saleLink(r.saleId) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.createdAt) + '</td>'
+            + '<td>' + aeatBadge(r.aeatStatus) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.submissionDate) + '</td>'
+            + '<td class="text-center">' + (r.retryCount || 0) + '</td>'
+            + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.lastError||'') + '">' + esc(r.lastError||'—') + '</td>'
+            + '<td style="font-family:monospace;font-size:0.7rem" title="' + esc(r.hash||'') + '">' + hashShort(r.hash) + '</td>'
+            + '<td>' + viewBtn(r.saleId) + '</td>'
+            + '</tr>';
+    }
+
+    function rowTicket(r) {
+        var searchable = [r.number, r.hash, r.lastError, r.aeatStatus].filter(Boolean).join(' ');
+        return '<tr data-s="' + esc(searchable) + '">'
+            + '<td><strong>' + esc(r.number) + '</strong></td>'
+            + '<td>' + saleLink(r.saleId) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.createdAt) + '</td>'
+            + '<td>' + aeatBadge(r.aeatStatus) + '</td>'
+            + '<td style="white-space:nowrap">' + fmtDt(r.submissionDate) + '</td>'
+            + '<td class="text-center">' + (r.retryCount || 0) + '</td>'
+            + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.lastError||'') + '">' + esc(r.lastError||'—') + '</td>'
+            + '<td style="font-family:monospace;font-size:0.7rem" title="' + esc(r.hash||'') + '">' + hashShort(r.hash) + '</td>'
+            + '<td>' + viewBtn(r.saleId) + '</td>'
+            + '</tr>';
+    }
+
+    /* ── Pagination ─────────────────────────────────────── */
+    function renderPag(container, page, total, cb) {
+        if (!container) return;
+        if (total <= 1) { container.innerHTML = ''; return; }
+        var html = '';
+        if (page > 0)
+            html += '<button class="btn btn-outline-secondary btn-sm" onclick="(' + cb + ')(' + (page-1) + ')">&laquo; Anterior</button>';
+        html += '<span class="small text-muted px-1">Pág. ' + (page+1) + ' / ' + total + '</span>';
+        if (page < total - 1)
+            html += '<button class="btn btn-outline-secondary btn-sm" onclick="(' + cb + ')(' + (page+1) + ')">Siguiente &raquo;</button>';
+        container.innerHTML = html;
+    }
+
+    /* ── Micro helpers ──────────────────────────────────── */
+    var AEAT_MAP = {
+        'ACCEPTED':             ['success',   'Aceptado'],
+        'ACCEPTED_WITH_ERRORS': ['warning',   'Acept. con errores'],
+        'REJECTED':             ['danger',    'Rechazado'],
+        'ANNULLED':             ['dark',      'Anulado'],
+        'PENDING_SEND':         ['primary',   'Pendiente envío'],
+        'NOT_SENT':             ['secondary', 'No enviado']
+    };
+
+    function aeatBadge(s) {
+        var entry = AEAT_MAP[s] || ['secondary', s || 'No enviado'];
+        return '<span class="badge bg-' + entry[0] + '">' + entry[1] + '</span>';
+    }
+
+    function saleLink(id) {
+        return id ? '<a href="/admin/sale/' + id + '" target="_blank">#' + id + '</a>' : '—';
+    }
+
+    function viewBtn(saleId) {
+        return saleId
+            ? '<a href="/admin/sale/' + saleId + '" target="_blank" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-eye"></i></a>'
+            : '';
+    }
+
+    function hashShort(h) { return h ? esc(h.substring(0, 12)) + '…' : '—'; }
+
+    function fmtDt(s) {
+        if (!s) return '—';
+        try {
+            var d = new Date(s);
+            return d.toLocaleDateString('es-ES') + ' '
+                 + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return s; }
+    }
+
+    function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+})();
+</script>
+
+</th:block>
+</html>

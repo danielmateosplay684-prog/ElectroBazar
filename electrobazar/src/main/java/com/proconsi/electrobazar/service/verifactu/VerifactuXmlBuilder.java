@@ -53,16 +53,24 @@ public class VerifactuXmlBuilder {
         sb.append(tag("sf:TipoFactura", "F1"));
         sb.append(tag("sf:DescripcionOperacion", "Venta TPV " + invoice.getInvoiceNumber()));
 
-        // Destinatario (cliente con NIF)
-        if (sale.getCustomer() != null && sale.getCustomer().getTaxId() != null) {
+        // Factura completa (F1) requiere Destinatario. Si no hay NIF, usamos Art. 6.1.d
+        if (sale.getCustomer() == null || sale.getCustomer().getTaxId() == null || sale.getCustomer().getTaxId().isBlank()) {
+            sb.append(tag("sf:FacturaSinIdentifDestinatarioArt61d", "S"));
+            sb.append("          <sf:Destinatarios>\n");
+            sb.append("            <sf:IDDestinatario>\n");
+            String nombre = (sale.getCustomer() != null && !sale.getCustomer().getName().isBlank()) 
+                            ? sale.getCustomer().getName() : "CLIENTE FINAL";
+            sb.append(tag("sf:NombreRazon", esc(nombre)));
+            sb.append(tag("sf:NIF", "000000000")); // NIF genérico para cumplir esquema F1
+            sb.append("            </sf:IDDestinatario>\n");
+            sb.append("          </sf:Destinatarios>\n");
+        } else {
             sb.append("          <sf:Destinatarios>\n");
             sb.append("            <sf:IDDestinatario>\n");
             sb.append(tag("sf:NombreRazon", esc(sale.getCustomer().getName())));
             sb.append(tag("sf:NIF", sale.getCustomer().getTaxId().trim()));
             sb.append("            </sf:IDDestinatario>\n");
             sb.append("          </sf:Destinatarios>\n");
-        } else {
-            sb.append(tag("sf:FacturaSinIdentifDestinatarioArt61d", "S"));
         }
 
         sb.append(desglose(sale));
@@ -173,30 +181,49 @@ public class VerifactuXmlBuilder {
         sb.append("          <sf:IDVersion>1.0</sf:IDVersion>\n");
         sb.append(idFactura(nif, rect.getRectificativeNumber(), fechaExp));
         sb.append(tag("sf:NombreRazonEmisor", esc(company.getName())));
-        sb.append(tag("sf:TipoFactura", "R1"));
+        
+        boolean isOriginalTicket = rect.getOriginalTicket() != null;
+        String tipoFactura = isOriginalTicket ? "R5" : "R4";
+        String originalNum = isOriginalTicket ? rect.getOriginalTicket().getTicketNumber() : 
+                                               rect.getOriginalInvoice().getInvoiceNumber();
+        LocalDateTime originalFecha = isOriginalTicket ? rect.getOriginalTicket().getCreatedAt() : 
+                                                     rect.getOriginalInvoice().getCreatedAt();
+
+        sb.append(tag("sf:TipoFactura", tipoFactura));
         sb.append(tag("sf:TipoRectificativa", "I"));
 
-        // Referencia a la factura original rectificada
+        // Referencia a la factura/ticket original rectificado
         sb.append("          <sf:FacturasRectificadas>\n");
         sb.append("            <sf:IDFacturaRectificada>\n");
         sb.append(tag("sf:IDEmisorFactura", nif));
-        sb.append(tag("sf:NumSerieFactura", originalInvoice.getInvoiceNumber()));
-        sb.append(tag("sf:FechaExpedicionFactura",
-                hashCalculator.getFechaExpedicion(originalInvoice.getCreatedAt())));
+        sb.append(tag("sf:NumSerieFactura", originalNum));
+        sb.append(tag("sf:FechaExpedicionFactura", hashCalculator.getFechaExpedicion(originalFecha)));
         sb.append("            </sf:IDFacturaRectificada>\n");
         sb.append("          </sf:FacturasRectificadas>\n");
 
         sb.append(tag("sf:DescripcionOperacion",
-                "Rectificación " + originalInvoice.getInvoiceNumber() + ". " + esc(rect.getReason())));
+                "Rectificación " + originalNum + ". " + esc(rect.getReason())));
 
-        // Destinatario (del original)
-        if (originalSale.getCustomer() != null && originalSale.getCustomer().getTaxId() != null) {
-            sb.append("          <sf:Destinatarios>\n");
-            sb.append("            <sf:IDDestinatario>\n");
-            sb.append(tag("sf:NombreRazon", esc(originalSale.getCustomer().getName())));
-            sb.append(tag("sf:NIF", originalSale.getCustomer().getTaxId().trim()));
-            sb.append("            </sf:IDDestinatario>\n");
-            sb.append("          </sf:Destinatarios>\n");
+        // Destinatarios (Obligatorio en R4, ausente en R5)
+        if (!isOriginalTicket) {
+            if (originalSale.getCustomer() == null || originalSale.getCustomer().getTaxId() == null || originalSale.getCustomer().getTaxId().isBlank()) {
+                sb.append(tag("sf:FacturaSinIdentifDestinatarioArt61d", "S"));
+                sb.append("          <sf:Destinatarios>\n");
+                sb.append("            <sf:IDDestinatario>\n");
+                String nombre = (originalSale.getCustomer() != null && !originalSale.getCustomer().getName().isBlank()) 
+                                ? originalSale.getCustomer().getName() : "CLIENTE FINAL";
+                sb.append(tag("sf:NombreRazon", esc(nombre)));
+                sb.append(tag("sf:NIF", "000000000"));
+                sb.append("            </sf:IDDestinatario>\n");
+                sb.append("          </sf:Destinatarios>\n");
+            } else {
+                sb.append("          <sf:Destinatarios>\n");
+                sb.append("            <sf:IDDestinatario>\n");
+                sb.append(tag("sf:NombreRazon", esc(originalSale.getCustomer().getName())));
+                sb.append(tag("sf:NIF", originalSale.getCustomer().getTaxId().trim()));
+                sb.append("            </sf:IDDestinatario>\n");
+                sb.append("          </sf:Destinatarios>\n");
+            }
         }
 
         sb.append(desgloseRectificativo(saleReturn, originalSale));
@@ -210,7 +237,7 @@ public class VerifactuXmlBuilder {
         LocalDateTime ahora = LocalDateTime.now();
         String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
         String huellaEnvio = hashCalculator.calculate(nif, rect.getRectificativeNumber(),
-                rect.getCreatedAt(), "R1", cuotaTotal,
+                rect.getCreatedAt(), tipoFactura, cuotaTotal,
                 totalRefundedNeg.setScale(2, RoundingMode.HALF_UP),
                 rect.getHashPreviousInvoice(), fechaHoraHuso);
 
@@ -223,6 +250,157 @@ public class VerifactuXmlBuilder {
         sb.append(regFactuClose());
         sb.append(soapEnvelopeClose());
         return sb.toString();
+    }
+
+    // ================================================================
+    // Anulación de Factura
+    // ================================================================
+
+    public String buildAnulacionInvoice(Invoice invoice, CompanySettings company,
+            String softwareNombre, String softwareId,
+            String softwareVersion, String softwareInstalacion) {
+        String nif = company.getCif();
+        String fechaExp = hashCalculator.getFechaExpedicion(invoice.getCreatedAt());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(soapEnvelopeOpen());
+        sb.append(regFactuOpen(nif, company.getName()));
+        sb.append(registroFacturaOpen());
+
+        sb.append("        <sf:RegistroAnulacion>\n");
+        sb.append("          <sf:IDVersion>1.0</sf:IDVersion>\n");
+        sb.append("          <sf:IDFactura>\n");
+        sb.append(tag("sf:IDEmisorFacturaAnulada", nif));
+        sb.append(tag("sf:NumSerieFacturaAnulada", invoice.getInvoiceNumber()));
+        sb.append(tag("sf:FechaExpedicionFacturaAnulada", fechaExp));
+        sb.append("          </sf:IDFactura>\n");
+
+        // Encadenamiento global VeriFactu
+        LastRecordInfo last = getLatestRecordInfo();
+        sb.append(encadenamientoAnulacion(last, nif));
+
+        sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
+                softwareId, softwareVersion, softwareInstalacion));
+
+        LocalDateTime ahora = LocalDateTime.now();
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        
+        // El hash de anulación usa la huella del ÚLTIMO registro enviado al sistema (no de la propia factura)
+        String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, invoice.getInvoiceNumber(),
+                invoice.getCreatedAt(), last.hash, fechaHoraHuso);
+
+        sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
+        sb.append(tag("sf:TipoHuella", "01"));
+        sb.append(tag("sf:Huella", huellaEnvio));
+        sb.append("        </sf:RegistroAnulacion>\n");
+
+        sb.append(registroFacturaClose());
+        sb.append(regFactuClose());
+        sb.append(soapEnvelopeClose());
+        return sb.toString();
+    }
+
+    public String buildAnulacionTicket(Ticket ticket, CompanySettings company,
+            String softwareNombre, String softwareId,
+            String softwareVersion, String softwareInstalacion) {
+        String nif = company.getCif();
+        String fechaExp = hashCalculator.getFechaExpedicion(ticket.getCreatedAt());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(soapEnvelopeOpen());
+        sb.append(regFactuOpen(nif, company.getName()));
+        sb.append(registroFacturaOpen());
+
+        sb.append("        <sf:RegistroAnulacion>\n");
+        sb.append("          <sf:IDVersion>1.0</sf:IDVersion>\n");
+        sb.append("          <sf:IDFactura>\n");
+        sb.append(tag("sf:IDEmisorFacturaAnulada", nif));
+        sb.append(tag("sf:NumSerieFacturaAnulada", ticket.getTicketNumber()));
+        sb.append(tag("sf:FechaExpedicionFacturaAnulada", fechaExp));
+        sb.append("          </sf:IDFactura>\n");
+
+        // Encadenamiento global VeriFactu
+        LastRecordInfo last = getLatestRecordInfo();
+        sb.append(encadenamientoAnulacion(last, nif));
+
+        sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
+                softwareId, softwareVersion, softwareInstalacion));
+
+        LocalDateTime ahora = LocalDateTime.now();
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        
+        String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, ticket.getTicketNumber(),
+                ticket.getCreatedAt(), last.hash, fechaHoraHuso);
+
+        sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
+        sb.append(tag("sf:TipoHuella", "01"));
+        sb.append(tag("sf:Huella", huellaEnvio));
+        sb.append("        </sf:RegistroAnulacion>\n");
+
+        sb.append(registroFacturaClose());
+        sb.append(regFactuClose());
+        sb.append(soapEnvelopeClose());
+        return sb.toString();
+    }
+
+    private static class LastRecordInfo {
+        String hash = VerifactuHashCalculator.INITIAL_HASH;
+        String numSerie = null;
+        String fecha = null;
+    }
+
+    private LastRecordInfo getLatestRecordInfo() {
+        // Buscar el último registro procesado por la AEAT (Invoice, Ticket o Rectificative)
+        Invoice lastInv = invoiceRepository.findAll().stream()
+                .filter(i -> i.getAeatSubmissionDate() != null)
+                .max((a, b) -> a.getAeatSubmissionDate().compareTo(b.getAeatSubmissionDate()))
+                .orElse(null);
+        
+        Ticket lastTick = ticketRepository.findAll().stream()
+                .filter(t -> t.getAeatSubmissionDate() != null)
+                .max((a, b) -> a.getAeatSubmissionDate().compareTo(b.getAeatSubmissionDate()))
+                .orElse(null);
+                
+        RectificativeInvoice lastRect = rectRepository.findAll().stream()
+                .filter(r -> r.getAeatSubmissionDate() != null)
+                .max((a, b) -> a.getAeatSubmissionDate().compareTo(b.getAeatSubmissionDate()))
+                .orElse(null);
+
+        Object winner = null;
+        LocalDateTime maxDate = LocalDateTime.MIN;
+
+        if (lastInv != null && lastInv.getAeatSubmissionDate().isAfter(maxDate)) {
+            maxDate = lastInv.getAeatSubmissionDate();
+            winner = lastInv;
+        }
+        if (lastTick != null && lastTick.getAeatSubmissionDate().isAfter(maxDate)) {
+            maxDate = lastTick.getAeatSubmissionDate();
+            winner = lastTick;
+        }
+        if (lastRect != null && lastRect.getAeatSubmissionDate().isAfter(maxDate)) {
+            maxDate = lastRect.getAeatSubmissionDate();
+            winner = lastRect;
+        }
+
+        LastRecordInfo info = new LastRecordInfo();
+        if (winner instanceof Invoice i) {
+            info.hash = i.getHashCurrentInvoice();
+            info.numSerie = i.getInvoiceNumber();
+            info.fecha = hashCalculator.getFechaExpedicion(i.getCreatedAt());
+        } else if (winner instanceof Ticket t) {
+            info.hash = t.getHashCurrentInvoice();
+            info.numSerie = t.getTicketNumber();
+            info.fecha = hashCalculator.getFechaExpedicion(t.getCreatedAt());
+        } else if (winner instanceof RectificativeInvoice r) {
+            info.hash = r.getHashCurrentInvoice();
+            info.numSerie = r.getRectificativeNumber();
+            info.fecha = hashCalculator.getFechaExpedicion(r.getCreatedAt());
+        }
+        return info;
+    }
+
+    private String encadenamientoAnulacion(LastRecordInfo last, String nif) {
+        return encadenamiento(last.hash, nif, last.numSerie, last.fecha);
     }
 
     // ================================================================

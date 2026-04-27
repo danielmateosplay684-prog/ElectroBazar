@@ -6,15 +6,15 @@ import com.proconsi.electrobazar.repository.InvoiceSequenceRepository;
 import com.proconsi.electrobazar.repository.SaleRepository;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.InvoiceService;
-import com.proconsi.electrobazar.service.VerifactuService;
 import com.proconsi.electrobazar.util.QrCodeGenerator;
 import com.proconsi.electrobazar.util.VerifactuHashCalculator;
 import com.proconsi.electrobazar.config.VerifactuProperties;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import com.proconsi.electrobazar.model.event.VerifactuSubmissionEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +38,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ActivityLogService activityLogService;
     private final com.proconsi.electrobazar.repository.CompanySettingsRepository companySettingsRepository;
     private final VerifactuHashCalculator hashCalculator;
-    private final VerifactuService verifactuService;
     private final VerifactuProperties verifactuProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     public InvoiceServiceImpl(
@@ -49,8 +49,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             ActivityLogService activityLogService,
             com.proconsi.electrobazar.repository.CompanySettingsRepository companySettingsRepository,
             VerifactuHashCalculator hashCalculator,
-            @Lazy VerifactuService verifactuService,
-            VerifactuProperties verifactuProperties) {
+            VerifactuProperties verifactuProperties,
+            ApplicationEventPublisher eventPublisher) {
 
         this.invoiceRepository = invoiceRepository;
         this.invoiceSequenceRepository = invoiceSequenceRepository;
@@ -58,8 +58,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         this.activityLogService = activityLogService;
         this.companySettingsRepository = companySettingsRepository;
         this.hashCalculator = hashCalculator;
-        this.verifactuService = verifactuService;
         this.verifactuProperties = verifactuProperties;
+        this.eventPublisher = eventPublisher;
     }
 
 
@@ -111,7 +111,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                         invoiceNumber, sale.getId(), saved.getHashCurrentInvoice()),
                 "System", "INVOICE", saved.getId());
 
-        verifactuService.submitInvoiceAsync(saved.getId());
+        eventPublisher.publishEvent(new VerifactuSubmissionEvent(saved.getId(), VerifactuSubmissionEvent.SubmissionType.INVOICE));
         return saved;
     }
 
@@ -226,8 +226,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             cuotaTotal = original.getTotalVat().add(original.getTotalRecargo())
                     .multiply(ratio).negate().setScale(2, java.math.RoundingMode.HALF_UP);
         }
+        // R4 when original was a full invoice, R5 when original was a simplified ticket
+        String tipoFactura = rect.getOriginalTicket() != null ? "R5" : "R4";
         return hashCalculator.calculate(nif, rect.getRectificativeNumber(),
-                rect.getCreatedAt(), "R1", cuotaTotal, totalRefunded, previousHash);
+                rect.getCreatedAt(), tipoFactura, cuotaTotal, totalRefunded, previousHash);
     }
 
     // ---- QR code generation ----

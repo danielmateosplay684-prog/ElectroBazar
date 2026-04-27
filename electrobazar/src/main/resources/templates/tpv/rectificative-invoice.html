@@ -266,11 +266,11 @@
                 Motivo: <span th:text="${saleReturn.rectificativeInvoice.reason}">Devolución de mercancía</span>
             </div>
             <div>
-                <strong>Factura Original Rectificada</strong><br />
+                <strong>Documento Original Rectificado</strong><br />
                 Número: <span
-                    th:text="${saleReturn.rectificativeInvoice.originalInvoice.invoiceNumber}">F-2026-0001</span><br />
+                    th:text="${saleReturn.rectificativeInvoice.originalTicket != null ? saleReturn.rectificativeInvoice.originalTicket.ticketNumber : saleReturn.rectificativeInvoice.originalInvoice.invoiceNumber}">F-2026-0001</span><br />
                 Fecha: <span
-                    th:text="${#temporals.format(saleReturn.rectificativeInvoice.originalInvoice.createdAt, 'dd/MM/yyyy')}">25/02/2026</span>
+                    th:text="${#temporals.format(saleReturn.rectificativeInvoice.originalTicket != null ? saleReturn.rectificativeInvoice.originalTicket.createdAt : saleReturn.rectificativeInvoice.originalInvoice.createdAt, 'dd/MM/yyyy')}">25/02/2026</span>
             </div>
         </div>
 
@@ -283,11 +283,16 @@
                 </td>
                 <td>
                     <div class="party-label">Persona Receptor/a</div>
-                    <div class="party-name" th:text="${saleReturn.originalSale.customer.name}">Cliente Ejemplo</div>
-                    <div
-                        th:text="${(saleReturn.originalSale.customer.type.name() == 'COMPANY' ? 'CIF: ' : 'NIF: ') + saleReturn.originalSale.customer.taxId}">
-                        NIF: —</div>
-                    <div th:text="${saleReturn.originalSale.customer.address}">Dirección</div>
+                    <div th:if="${saleReturn.originalSale.customer != null}">
+                        <div class="party-name" th:text="${saleReturn.originalSale.customer.name}">Cliente Ejemplo</div>
+                        <div
+                            th:text="${(saleReturn.originalSale.customer.type != null && saleReturn.originalSale.customer.type.name() == 'COMPANY' ? 'CIF: ' : 'NIF: ') + saleReturn.originalSale.customer.taxId}">
+                            NIF: —</div>
+                        <div th:text="${saleReturn.originalSale.customer.address}">Dirección</div>
+                    </div>
+                    <div th:if="${saleReturn.originalSale.customer == null}">
+                        <div class="party-name">Consumidor Final</div>
+                    </div>
                 </td>
             </tr>
         </table>

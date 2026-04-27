@@ -98,6 +98,18 @@ public class VerifactuHashCalculator {
         return "Z".equals(offset) ? "+00:00" : offset;
     }
 
+    public String calculateAnulacionHash(String nif, String numSerie, LocalDateTime fechaExpedicion,
+            String huellaAnterior, String fechaHoraHusoGen) {
+        String fecha = getFechaExpedicion(fechaExpedicion);
+        String input = String.format(
+                "IDEmisorFacturaAnulada=%s&NumSerieFacturaAnulada=%s&FechaExpedicionFacturaAnulada=%s&" +
+                        "Huella=%s&FechaHoraHusoGenRegistro=%s",
+                nif, numSerie, fecha, huellaAnterior, fechaHoraHusoGen);
+
+        System.out.println("HASH_ANULACION_INPUT: " + input);
+        return sha256Hex(input);
+    }
+
     private String sha256Hex(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

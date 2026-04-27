@@ -13,21 +13,49 @@
         }
 
         /* ── Utility classes for theme variables ── */
-        .bg-primary { background-color: var(--primary) !important; }
-        .bg-secondary { background-color: var(--secondary) !important; }
-        .bg-surface { background-color: var(--surface) !important; }
-        .border-border { border-color: var(--border) !important; }
+        .bg-primary {
+            background-color: var(--primary) !important;
+        }
+
+        .bg-secondary {
+            background-color: var(--secondary) !important;
+        }
+
+        .bg-surface {
+            background-color: var(--surface) !important;
+        }
+
+        .border-border {
+            border-color: var(--border) !important;
+        }
+
         /* ── Typography & Visibility fixes ── */
-        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .h1,
+        .h2,
+        .h3,
+        .h4,
+        .h5,
+        .h6 {
             color: var(--text-main) !important;
         }
 
-        .text-main { color: var(--text-main) !important; }
-        .text-muted { color: var(--text-muted) !important; }
-        
+        .text-main {
+            color: var(--text-main) !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
         /* Darker muted text for better contrast on light backgrounds */
         :root {
-            --text-muted: #64748b; 
+            --text-muted: #64748b;
         }
 
         * {
@@ -47,7 +75,8 @@
         /* ── Sidebar ── */
         .admin-sidebar {
             width: 260px;
-            min-width: 260px; /* Fixed min-width to avoid shift */
+            min-width: 260px;
+            /* Fixed min-width to avoid shift */
             background: var(--secondary);
             border-right: 2px solid var(--border);
             display: flex;
@@ -60,7 +89,8 @@
 
         .admin-logo {
             font-family: var(--main-font-family, 'Barlow', sans-serif);
-            font-size: 22px; /* FIXED px size to ignore global font scale */
+            font-size: 22px;
+            /* FIXED px size to ignore global font scale */
             font-weight: 700;
             color: var(--accent);
             letter-spacing: 0.5px;
@@ -128,7 +158,8 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.85rem 1rem;
-            min-height: 48px; /* Reserved space for text */
+            min-height: 48px;
+            /* Reserved space for text */
             color: var(--text-muted);
             border-radius: 8px;
             text-decoration: none;
@@ -232,7 +263,8 @@
 
         .kpi-card {
             padding: 1.5rem;
-            min-height: 160px; /* Reserved space for KPI content */
+            min-height: 160px;
+            /* Reserved space for KPI content */
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             overflow: hidden;
             position: relative;
@@ -242,7 +274,7 @@
 
         .kpi-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
         .kpi-icon {
@@ -281,8 +313,13 @@
             margin-top: 0.75rem;
         }
 
-        .kpi-growth.up { color: #22c55e; }
-        .kpi-growth.down { color: #ef4444; }
+        .kpi-growth.up {
+            color: #22c55e;
+        }
+
+        .kpi-growth.down {
+            color: #ef4444;
+        }
 
         .chart-card {
             background: var(--secondary);
@@ -330,6 +367,7 @@
             object-fit: contain;
             flex-shrink: 0;
         }
+
         .nav-tabs {
             border-bottom: 2px solid var(--border);
             margin-bottom: 1.5rem;
@@ -426,7 +464,6 @@
             background: var(--secondary);
             position: relative;
             z-index: 1;
-            min-height: 500px;
         }
 
         .admin-table {
@@ -457,11 +494,15 @@
         .admin-table tbody tr:hover {
             background: rgba(255, 255, 255, 0.03);
         }
-        .invoice-row, .return-row {
+
+        .invoice-row,
+        .return-row {
             cursor: pointer;
             transition: background 0.1s ease;
         }
-        .invoice-row:hover, .return-row:hover {
+
+        .invoice-row:hover,
+        .return-row:hover {
             background: rgba(245, 166, 35, 0.08) !important;
         }
 
@@ -658,7 +699,8 @@
         /* ── Accent Button ── */
         .btn-accent {
             background: var(--accent) !important;
-            color: var(--primary) !important; /* White text on orange accent */
+            color: var(--primary) !important;
+            /* White text on orange accent */
             font-weight: 700;
             border: none;
             transition: all 0.2s;
@@ -671,7 +713,8 @@
             box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
         }
 
-        .btn-accent i, .btn-accent span {
+        .btn-accent i,
+        .btn-accent span {
             color: inherit !important;
         }
 
@@ -681,7 +724,7 @@
             border: 1px solid var(--border);
             border-radius: 14px;
             color: var(--text-main) !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
         }
 
         .modal-header {
@@ -844,19 +887,20 @@
         /* ── Dashboard Cards ── */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-top: 1rem;
             width: 100%;
         }
 
         .dashboard-card {
-            min-height: 240px;
-            height: 240px; /* Reserve space */
+            min-height: 280px;
+            height: 280px;
+            /* Reserve space */
             background: var(--secondary);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -876,10 +920,10 @@
         }
 
         .dashboard-card i {
-            font-size: 3.5rem;
+            font-size: 3rem;
             color: var(--accent);
-            margin-bottom: 1.5rem;
-            transition: transform 0.25s;
+            margin-bottom: 1.25rem;
+            transition: transform 0.3s ease;
         }
 
         .dashboard-card:hover i {
@@ -888,7 +932,7 @@
 
         .dashboard-card h3 {
             font-family: var(--main-font-family, 'Barlow', sans-serif);
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             font-weight: 700;
             margin-bottom: 0.75rem;
             color: var(--text-main);
@@ -913,228 +957,265 @@
             border-color: var(--accent);
         }
 
-#ipcUpdateModal .modal-content {
-    background-color: var(--secondary) !important;
-    opacity: 1 !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
-}
-#ipcUpdateModal .modal-backdrop {
-    opacity: 0.85 !important;
-    background-color: #000 !important;
-}
-#ipcUpdateModal .alert-info {
-    background-color: rgba(0, 123, 255, 0.1) !important;
-    border: 1px solid rgba(0, 123, 255, 0.2) !important;
-    color: var(--text-main) !important;
-}
-.hover-surface:hover {
-    background: var(--surface) !important;
-    border-color: var(--accent) !important;
-}
-.custom-scroll::-webkit-scrollbar { width: 6px; }
-.custom-scroll::-webkit-scrollbar-track { background: transparent; }
-.custom-scroll::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 10px;
-}
-.sel-product-item-wrap .form-check:has(input:checked),
-.sel-category-cb:checked+label {
-    background: rgba(245, 166, 35, 0.1) !important;
-    border-color: var(--accent) !important;
-}
-#selectiveIvaTabs .nav-link {
-    background: var(--secondary);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-}
-#selectiveIvaTabs .nav-link.active {
-    background: var(--accent) !important;
-    color: var(--primary) !important;
-    border-color: var(--accent) !important;
-}
-.section-badge {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 1.2px;
-    color: var(--accent);
-    text-transform: uppercase;
-    border-bottom: 2px solid var(--accent);
-    display: inline-block;
-    margin-bottom: 1rem;
-    padding-bottom: 2px;
-    opacity: 0.9;
-}
-.card {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    border-radius: 16px !important;
-    overflow: hidden;
-}
-.card:hover {
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
-}
-.pagination-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    margin-top: 1rem;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-}
-.pagination-btn {
-    background: var(--secondary);
-    border: 1px solid var(--border);
-    color: var(--text-main);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.pagination-btn:hover:not(:disabled) {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(245, 166, 35, 0.05);
-}
-.pagination-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-.pagination-info {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-weight: 500;
-}
-.pagination-jump {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-.pagination-jump input {
-    width: 60px;
-    height: 34px;
-    text-align: center;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--primary);
-    color: var(--text-main);
-    font-weight: 700;
-}
-.form-control:focus {
-    background-color: var(--secondary) !important;
-    border-color: var(--accent) !important;
-    color: var(--text-main) !important;
-    box-shadow: 0 0 0 0.25rem rgba(245, 166, 35, 0.15) !important;
-}
-.cash-row:hover,
-.invoice-row:hover {
-    background: rgba(245, 166, 35, 0.08) !important;
-    transition: background 0.2s ease;
-}
+        #ipcUpdateModal .modal-content {
+            background-color: var(--secondary) !important;
+            opacity: 1 !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+        }
 
-/* ── Skeleton Screen ── */
-.dashboard-card.is-skeleton {
-    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    pointer-events: none;
-    cursor: not-allowed;
-    border-color: transparent !important;
-    box-shadow: none !important;
-    position: relative;
-    overflow: hidden;
-}
+        #ipcUpdateModal .modal-backdrop {
+            opacity: 0.85 !important;
+            background-color: #000 !important;
+        }
 
-.dashboard-card.is-skeleton > i,
-.dashboard-card.is-skeleton > p {
-    opacity: 0;
-    visibility: hidden; /* Hide without removing from layout */
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-}
+        #ipcUpdateModal .alert-info {
+            background-color: rgba(0, 123, 255, 0.1) !important;
+            border: 1px solid rgba(0, 123, 255, 0.2) !important;
+            color: var(--text-main) !important;
+        }
 
-.dashboard-card.is-loaded > i,
-.dashboard-card.is-loaded > p {
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: skeletonFadeIn 0.2s ease-in forwards;
-}
+        .hover-surface:hover {
+            background: var(--surface) !important;
+            border-color: var(--accent) !important;
+        }
 
-.dashboard-card.is-error {
-    background: var(--surface) !important;
-    animation: none !important;
-    cursor: default !important;
-}
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
 
-.dashboard-card.is-error .skeleton-error {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--danger);
-}
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-.dashboard-card:not(.is-skeleton) > i,
-.dashboard-card:not(.is-skeleton) > h3,
-.dashboard-card:not(.is-skeleton) > p {
-    opacity: 1;
-}
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
 
-.skeleton-error {
-    display: none;
-    position: absolute;
-    inset: 0;
-    justify-content: center;
-    padding: 1rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
+        .sel-product-item-wrap .form-check:has(input:checked),
+        .sel-category-cb:checked+label {
+            background: rgba(245, 166, 35, 0.1) !important;
+            border-color: var(--accent) !important;
+        }
 
-@keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
+        #selectiveIvaTabs .nav-link {
+            background: var(--secondary);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
 
-@keyframes skeletonFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+        #selectiveIvaTabs .nav-link.active {
+            background: var(--accent) !important;
+            color: var(--primary) !important;
+            border-color: var(--accent) !important;
+        }
 
-.dashboard-card.is-loaded > * {
-    animation: skeletonFadeIn 0.2s ease-in forwards;
-}
-/* -- Bulk Price Update Items -- */
-.bulk-item {
-    transition: background 0.2s, border-color 0.2s;
-    background: transparent;
-}
+        .section-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            color: var(--accent);
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding-bottom: 2px;
+            opacity: 0.9;
+        }
 
-.bulk-item:hover {
-    background: var(--surface) !important;
-}
+        .card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border-radius: 16px !important;
+            overflow: hidden;
+        }
 
-.bulk-item.selected {
-    background: var(--accent-10) !important;
-    border-color: var(--accent) !important;
-}
+        .card:hover {
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+        }
 
-.bulk-item .fw-bold {
-    color: var(--text-main) !important;
-}
+        .pagination-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
 
-.bulk-item .small {
-    color: var(--text-muted) !important;
-}
+        .pagination-btn {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-.bulk-item .badge {
-    color: var(--text-main) !important;
-    background-color: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-}
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(245, 166, 35, 0.05);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .pagination-jump {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pagination-jump input {
+            width: 60px;
+            height: 34px;
+            text-align: center;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .form-control:focus {
+            background-color: var(--secondary) !important;
+            border-color: var(--accent) !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 0 0 0.25rem rgba(245, 166, 35, 0.15) !important;
+        }
+
+        .cash-row:hover,
+        .invoice-row:hover {
+            background: rgba(245, 166, 35, 0.08) !important;
+            transition: background 0.2s ease;
+        }
+
+        /* ── Skeleton Screen ── */
+        .dashboard-card.is-skeleton {
+            background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            pointer-events: none;
+            cursor: not-allowed;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card.is-skeleton>i,
+        .dashboard-card.is-skeleton>p {
+            opacity: 0;
+            visibility: hidden;
+            /* Hide without removing from layout */
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .dashboard-card.is-loaded>i,
+        .dashboard-card.is-loaded>p {
+            opacity: 1 !important;
+            visibility: visible !important;
+            animation: skeletonFadeIn 0.2s ease-in forwards;
+        }
+
+        .dashboard-card.is-error {
+            background: var(--surface) !important;
+            animation: none !important;
+            cursor: default !important;
+        }
+
+        .dashboard-card.is-error .skeleton-error {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--danger);
+        }
+
+        .dashboard-card:not(.is-skeleton)>i,
+        .dashboard-card:not(.is-skeleton)>h3,
+        .dashboard-card:not(.is-skeleton)>p {
+            opacity: 1;
+        }
+
+        .skeleton-error {
+            display: none;
+            position: absolute;
+            inset: 0;
+            justify-content: center;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes skeletonFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .dashboard-card.is-loaded>* {
+            animation: skeletonFadeIn 0.2s ease-in forwards;
+        }
+
+        /* -- Bulk Price Update Items -- */
+        .bulk-item {
+            transition: background 0.2s, border-color 0.2s;
+            background: transparent;
+        }
+
+        .bulk-item:hover {
+            background: var(--surface) !important;
+        }
+
+        .bulk-item.selected {
+            background: var(--accent-10) !important;
+            border-color: var(--accent) !important;
+        }
+
+        .bulk-item .fw-bold {
+            color: var(--text-main) !important;
+        }
+
+        .bulk-item .small {
+            color: var(--text-muted) !important;
+        }
+
+        .bulk-item .badge {
+            color: var(--text-main) !important;
+            background-color: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+        }

@@ -23,6 +23,11 @@ function saveScheduledPrice() {
         return;
     }
 
+    if (parseFloat(price) < 0) {
+        showToast('El precio no puede ser negativo', 'error');
+        return;
+    }
+
     fetch('/api/products/schedule-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -275,6 +280,11 @@ function applyBulkPriceUpdate() {
 
     if (isNaN(value)) {
         showToast('Debes indicar un valor válido', 'error');
+        return;
+    }
+
+    if (type !== 'percentage' && value < 0) {
+        showToast('El precio no puede ser negativo', 'error');
         return;
     }
 

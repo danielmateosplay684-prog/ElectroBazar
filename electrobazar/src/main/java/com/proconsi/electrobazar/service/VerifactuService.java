@@ -16,6 +16,9 @@ public interface VerifactuService {
     /** Envía una factura rectificativa (R1) a la AEAT de forma asíncrona. */
     void submitRectificativeAsync(Long rectId);
 
+    /** Envía una anulación de factura o ticket a la AEAT de forma asíncrona. */
+    void submitAnulacionAsync(Long invoiceId, boolean isTicket);
+
     /** Reintenta todos los registros en estado PENDING_SEND con reintentos < maxAttempts. */
     void retryPendingSend();
 }

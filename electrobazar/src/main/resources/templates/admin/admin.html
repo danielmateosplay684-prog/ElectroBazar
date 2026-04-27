@@ -119,6 +119,9 @@
             <button class="nav-link sidebar-menu-btn" onclick="switchView('promotionsView', this)">
                 <i class="bi bi-megaphone"></i> <span th:text="#{admin.sidebar.promotions}">Promociones NxM</span>
             </button>
+            <button class="nav-link sidebar-menu-btn" onclick="switchView('verifactuView', this)">
+                <i class="bi bi-shield-check"></i> <span>VeriFactu / AEAT</span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -500,6 +503,17 @@
                 </div>
 
                 <div class="dashboard-card is-skeleton"
+                    onclick="if(!window.adminPanelReady) return; switchView('verifactuView', document.querySelector('[onclick*=\'verifactuView\']'))">
+                    <i class="bi bi-shield-check"></i>
+                    <h3>VeriFactu / AEAT</h3>
+                    <p>Supervisa el estado de los envíos fiscales, anulaciones técnicas y encadenamiento de facturas.</p>
+                    <div class="skeleton-error">
+                        <i class="bi bi-exclamation-circle fs-2"></i>
+                        <span>Error de carga</span>
+                    </div>
+                </div>
+
+                <div class="dashboard-card is-skeleton"
                     onclick="if(!window.adminPanelReady) return; switchView('settingsView', document.querySelector('[onclick*=\'settingsView\']'))">
                     <i class="bi bi-gear"></i>
                     <h3 th:text="#{admin.dashboard.settings.title}">Configuración</h3>
@@ -526,6 +540,9 @@
 
         <!-- PROMOTIONS VIEW -->
         <th:block th:replace="~{admin/views/promotions-view :: view}" />
+
+        <!-- VERIFACTU / AEAT VIEW -->
+        <th:block th:replace="~{admin/views/verifactu-view :: view}" />
 
         <!-- Modal: Crear Tarifa -->
         <th:block th:replace="~{admin/modals/tariff-modals :: modal}" />

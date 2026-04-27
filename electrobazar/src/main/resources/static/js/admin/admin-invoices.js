@@ -210,16 +210,27 @@ function resetInvoiceFilters() {
 function cancelSale(id) {
     if (!confirm('¿Seguro que quieres anular esta venta? Esta operación no se puede deshacer.')) return;
 
-    fetch(`/api/admin/sales/${id}/cancel`, { method: 'POST' })
+    const csrfToken  = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+    const headers = { 'Content-Type': 'application/json' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
+    fetch(`/admin/sales/cancel/${id}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ reason: 'Anulación manual desde administración' })
+    })
         .then(res => {
             if (res.ok) {
                 showToast('Venta anulada correctamente');
                 fetchSalesPage(currentSalesPage);
             } else {
-                showToast('Error al anular la venta', 'error');
+                res.text().then(msg => showToast('Error al anular: ' + (msg || res.status), 'error'));
             }
-        });
+        })
+        .catch(() => showToast('Error de conexión', 'error'));
 }
+
 
 function filterCashClosures() {
     const date = document.getElementById('cashFilterdate').value;

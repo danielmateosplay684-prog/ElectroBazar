@@ -1290,6 +1290,10 @@ function processSaleWithInvoiceValidation() {
             showError('Por favor, indica la cantidad entregada en efectivo.');
             return;
         }
+        if (rVal < 0) {
+            showError('No se permiten importes de pago negativos.');
+            return;
+        }
         if (rVal < total) {
             showError('La cantidad entregada es menor al total a cobrar.');
             return;
@@ -1298,6 +1302,10 @@ function processSaleWithInvoiceValidation() {
     } else if (paymentMethod === 'MIXED') {
         var cardVal = parseFloat(document.getElementById('mixedCardAmount').value) || 0;
         var cashVal = parseFloat(document.getElementById('mixedCashAmount').value) || 0;
+        if (cardVal < 0 || cashVal < 0) {
+            showError('No se permiten importes de pago negativos.');
+            return;
+        }
         if ((cardVal + cashVal) < total) {
             showError('La cantidad mixta entregada es menor al total a cobrar.');
             return;
@@ -1658,6 +1666,18 @@ if (productsContainer) {
         }
     });
 }
+
+// Global protection: Prevent typing '-' or 'e' in numeric inputs that don't allow negatives
+document.addEventListener('keydown', function (e) {
+    if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'number') {
+        const minAttr = e.target.getAttribute('min');
+        if (minAttr !== null && parseFloat(minAttr) >= 0) {
+            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                e.preventDefault();
+            }
+        }
+    }
+});
 
 function updateCategoryButtons(activeId) {
     categoryButtons.forEach(function (btn) {

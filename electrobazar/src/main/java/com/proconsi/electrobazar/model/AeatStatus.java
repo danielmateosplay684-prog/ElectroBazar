@@ -7,5 +7,6 @@ public enum AeatStatus {
     PENDING_SEND,
     ACCEPTED,
     ACCEPTED_WITH_ERRORS,
-    REJECTED
+    REJECTED,
+    ANNULLED
 }

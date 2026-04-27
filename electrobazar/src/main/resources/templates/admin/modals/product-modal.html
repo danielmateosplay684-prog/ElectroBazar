@@ -16,7 +16,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" th:text="#{common.price.euro} + ' *'">Precio (€) *</label>
-                            <input type="number" class="form-control" id="productPrice" step="any" required>
+                            <input type="number" class="form-control" id="productPrice" step="any" min="0" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label" th:text="#{common.description}">Descripción</label>

@@ -41,14 +41,23 @@ function openProductModal(id) {
     productModal.show();
 }
 
+let isSavingProduct = false;
+
 function saveProduct() {
+    if (isSavingProduct) return;
     const id = document.getElementById('productId').value;
     const formData = new FormData();
     
     // Append fields individually (flat structures are easier to handle with @ModelAttribute)
     formData.append('name', document.getElementById('productName').value);
     formData.append('description', document.getElementById('productDescription').value);
-    formData.append('price', document.getElementById('productPrice').value || "0");
+    
+    const price = parseFloat(document.getElementById('productPrice').value) || 0;
+    if (price < 0) {
+        showToast('El precio no puede ser negativo', 'error');
+        return;
+    }
+    formData.append('price', price);
     formData.append('stock', document.getElementById('productStock').value || "0");
     formData.append('active', document.getElementById('productActive').checked);
     
@@ -70,10 +79,12 @@ function saveProduct() {
         if (existingImageUrl) formData.append('imageUrl', existingImageUrl);
     }
 
+    isSavingProduct = true;
     fetch('/api/products' + (id ? '/' + id : ''), {
         method: id ? 'PUT' : 'POST',
         body: formData
     }).then(res => {
+        isSavingProduct = false;
         if (res.ok) {
             productModal.hide();
             showToast(getAdminI18n('successSave'));
@@ -81,6 +92,9 @@ function saveProduct() {
         } else {
             showToast(getAdminI18n('errorSave'), 'error');
         }
+    }).catch(() => {
+        isSavingProduct = false;
+        showToast(getAdminI18n('errorSave'), 'error');
     });
 }
 
@@ -119,3 +133,16 @@ window.openProductModal = openProductModal;
 window.saveProduct = saveProduct;
 window.deleteProduct = deleteProduct;
 window.uploadCsvFile = uploadCsvFile;
+
+// Allow saving with Enter key
+document.addEventListener('DOMContentLoaded', function() {
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+        productForm.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                saveProduct();
+            }
+        });
+    }
+});

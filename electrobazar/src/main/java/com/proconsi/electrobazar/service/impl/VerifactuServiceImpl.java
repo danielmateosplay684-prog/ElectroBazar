@@ -63,6 +63,19 @@ public class VerifactuServiceImpl implements VerifactuService {
         rectRepository.findById(rectId).ifPresent(this::submitRectificative);
     }
 
+    @Override
+    @Async
+    @Transactional
+    public void submitAnulacionAsync(Long invoiceId, boolean isTicket) {
+        System.out.println("ANULACION_DEBUG: submitAnulacionAsync id=" + invoiceId + " isTicket=" + isTicket);
+        if (!props.isEnabled()) return;
+        if (isTicket) {
+            ticketRepository.findById(invoiceId).ifPresent(this::submitAnulacionTicket);
+        } else {
+            invoiceRepository.findById(invoiceId).ifPresent(this::submitAnulacionInvoice);
+        }
+    }
+
     // ================================================================
     //  Retry (llamado desde el scheduler)
     // ================================================================
@@ -141,6 +154,40 @@ public class VerifactuServiceImpl implements VerifactuService {
         }
     }
 
+    private void submitAnulacionInvoice(Invoice invoice) {
+        CompanySettings company = getCompany();
+        try {
+            String xml = xmlBuilder.buildAnulacionInvoice(invoice, company,
+                    buildSoftwareNombre(company), props.getSoftware().getIdSistema(),
+                    props.getSoftware().getVersion(), props.getSoftware().getNumeroInstalacion());
+
+            log.info("Verifactu: enviando ANULACIÓN de factura {} a AEAT", invoice.getInvoiceNumber());
+
+            VerifactuSoapClient.AeatResponse resp = soapClient.send(xml);
+            updateInvoiceStatusAnulacion(invoice, resp);
+        } catch (Exception e) {
+            log.error("Verifactu: error anulando factura {}: {}", invoice.getInvoiceNumber(), e.getMessage());
+            markError(invoice, "Error anulación: " + e.getMessage());
+        }
+    }
+
+    private void submitAnulacionTicket(Ticket ticket) {
+        CompanySettings company = getCompany();
+        try {
+            String xml = xmlBuilder.buildAnulacionTicket(ticket, company,
+                    buildSoftwareNombre(company), props.getSoftware().getIdSistema(),
+                    props.getSoftware().getVersion(), props.getSoftware().getNumeroInstalacion());
+
+            log.info("Verifactu: enviando ANULACIÓN de ticket {} a AEAT", ticket.getTicketNumber());
+
+            VerifactuSoapClient.AeatResponse resp = soapClient.send(xml);
+            updateTicketStatusAnulacion(ticket, resp);
+        } catch (Exception e) {
+            log.error("Verifactu: error anulando ticket {}: {}", ticket.getTicketNumber(), e.getMessage());
+            markErrorTicket(ticket, "Error anulación: " + e.getMessage());
+        }
+    }
+
     // ================================================================
     //  Actualización de estado
     // ================================================================
@@ -191,6 +238,39 @@ public class VerifactuServiceImpl implements VerifactuService {
             log.warn("Verifactu: rectificativa {} rechazada: {}", rect.getRectificativeNumber(), resp.descripcion());
         }
         rectRepository.save(rect);
+    }
+
+    private void updateInvoiceStatusAnulacion(Invoice invoice, VerifactuSoapClient.AeatResponse resp) {
+        System.out.println("ANULACION_DEBUG: updating invoice " + invoice.getInvoiceNumber() + " success=" + resp.success());
+        invoice.setAeatSubmissionDate(LocalDateTime.now());
+        if (resp.success()) {
+            System.out.println("ANULACION_DEBUG: setting status to ANNULLED for invoice " + invoice.getInvoiceNumber());
+            invoice.setAeatStatus(AeatStatus.ANNULLED);
+            invoice.setAeatLastError("Anulación aceptada: " + resp.descripcion());
+            log.info("Verifactu: anulación de factura {} aceptada", invoice.getInvoiceNumber());
+        } else {
+            System.out.println("ANULACION_DEBUG: annulment REJECTED for invoice " + invoice.getInvoiceNumber() + " - " + resp.estado());
+            invoice.setAeatStatus(AeatStatus.REJECTED); // O mantener el anterior? Usamos REJECTED para reintentar
+            invoice.setAeatLastError("Error anulación: " + resp.estado() + ": " + resp.descripcion());
+            invoice.setAeatRetryCount(invoice.getAeatRetryCount() + 1);
+            log.warn("Verifactu: anulación de factura {} rechazada: {}", invoice.getInvoiceNumber(), resp.descripcion());
+        }
+        invoiceRepository.save(invoice);
+    }
+
+    private void updateTicketStatusAnulacion(Ticket ticket, VerifactuSoapClient.AeatResponse resp) {
+        ticket.setAeatSubmissionDate(LocalDateTime.now());
+        if (resp.success()) {
+            ticket.setAeatStatus(AeatStatus.ANNULLED);
+            ticket.setAeatLastError("Anulación aceptada: " + resp.descripcion());
+            log.info("Verifactu: anulación de ticket {} aceptada", ticket.getTicketNumber());
+        } else {
+            ticket.setAeatStatus(AeatStatus.REJECTED);
+            ticket.setAeatLastError("Error anulación: " + resp.estado() + ": " + resp.descripcion());
+            ticket.setAeatRetryCount(ticket.getAeatRetryCount() + 1);
+            log.warn("Verifactu: anulación de ticket {} rechazada: {}", ticket.getTicketNumber(), resp.descripcion());
+        }
+        ticketRepository.save(ticket);
     }
 
     private void markError(Invoice invoice, String msg) {
