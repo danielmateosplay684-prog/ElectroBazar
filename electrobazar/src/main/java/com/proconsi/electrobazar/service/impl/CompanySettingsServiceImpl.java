@@ -24,6 +24,7 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
     private final ActivityLogService activityLogService;
 
     @Override
+    @org.springframework.cache.annotation.Cacheable("companySettings")
     @Transactional(readOnly = true)
     public CompanySettings getSettings() {
         // ID 1 is the convention for the single configuration row
@@ -45,6 +46,7 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
     }
 
     @Override
+    @org.springframework.cache.annotation.CacheEvict(value = "companySettings", allEntries = true)
     @Transactional
     public CompanySettings save(CompanySettings incoming) {
         CompanySettings existing = repository.findById(1L)

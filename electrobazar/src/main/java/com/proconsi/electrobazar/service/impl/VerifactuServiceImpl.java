@@ -3,6 +3,7 @@ package com.proconsi.electrobazar.service.impl;
 import com.proconsi.electrobazar.config.VerifactuProperties;
 import com.proconsi.electrobazar.model.*;
 import com.proconsi.electrobazar.repository.CompanySettingsRepository;
+import com.proconsi.electrobazar.service.CompanySettingsService;
 import com.proconsi.electrobazar.repository.InvoiceRepository;
 import com.proconsi.electrobazar.repository.RectificativeInvoiceRepository;
 import com.proconsi.electrobazar.repository.TicketRepository;
@@ -43,7 +44,7 @@ public class VerifactuServiceImpl implements VerifactuService {
     private final InvoiceRepository invoiceRepository;
     private final TicketRepository ticketRepository;
     private final RectificativeInvoiceRepository rectRepository;
-    private final CompanySettingsRepository companySettingsRepository;
+    private final CompanySettingsService companySettingsService;
     private final com.proconsi.electrobazar.service.verifactu.VerifactuValidator validator;
     private final CustomerRepository customerRepository;
     private final SaleRepository saleRepository;
@@ -282,9 +283,9 @@ public class VerifactuServiceImpl implements VerifactuService {
             log.info("Verifactu: enviando BATCH de {} registros a AEAT", records.size());
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             
-            processBatchResponse(records, resp);
+            processBatchResponse(records, resp, xml);
             verifactuState.setLastSendTime(java.time.LocalDateTime.now());
-            if (resp.waitTime() > 0) {
+            if (resp.waitTime() != null && resp.waitTime() > 0) {
                 verifactuState.setCurrentWaitSeconds(resp.waitTime());
             }
         } catch (Exception e) {
@@ -298,7 +299,7 @@ public class VerifactuServiceImpl implements VerifactuService {
         }
     }
 
-    private void processBatchResponse(java.util.List<Object> records, VerifactuSoapClient.AeatBatchResponse resp) {
+    private void processBatchResponse(java.util.List<Object> records, VerifactuSoapClient.AeatBatchResponse resp, String xmlSent) {
         String csv = resp.csv(); // CSV Global del envío
         log.info("Verifactu: procesando respuesta batch. Estado global: {}. CSV: {}", resp.estadoEnvio(), csv);
 
@@ -314,7 +315,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             if (lineResp != null) {
                 // Actualizar estado individual de cada factura usando su EstadoRegistro
-                updateRecordStatus(rec, lineResp, csv, resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(rec, lineResp, csv, resp.rawResponse(), resp.waitTime(), xmlSent);
             } else {
                 log.warn("Verifactu: registro {} no encontrado en respuesta batch de AEAT", numSerie);
             }
@@ -336,15 +337,18 @@ public class VerifactuServiceImpl implements VerifactuService {
         return dt != null ? hashCalculator.getFechaExpedicion(dt) : "";
     }
 
-    private void updateRecordStatus(Object rec, VerifactuSoapClient.AeatLineResponse line, String csv, String raw, Integer wait) {
+    private void updateRecordStatus(Object rec, VerifactuSoapClient.AeatLineResponse line, String csv, String raw, Integer wait, String xmlSent) {
         if (rec instanceof Invoice i) {
             i.setAeatCsv(csv);
+            i.setAeatXmlSent(xmlSent);
             updateInvoiceStatusFromLine(i, line, raw, wait);
         } else if (rec instanceof Ticket t) {
             t.setAeatCsv(csv);
+            t.setAeatXmlSent(xmlSent);
             updateTicketStatusFromLine(t, line, raw, wait);
         } else if (rec instanceof RectificativeInvoice r) {
             r.setAeatCsv(csv);
+            r.setAeatXmlSent(xmlSent);
             updateRectStatusFromLine(r, line, raw, wait);
         }
 
@@ -481,7 +485,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 // Handle global error
                 markError(invoice, resp.estadoEnvio());
@@ -511,7 +515,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 markErrorTicket(ticket, resp.estadoEnvio());
             }
@@ -540,7 +544,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(rect, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(rect, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 markErrorRect(rect, resp.estadoEnvio());
             }
@@ -564,7 +568,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
              if (resp.lines().size() > 0) {
-                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
                 // Override status if it was an annulment success
                 if ("Correcto".equalsIgnoreCase(resp.lines().get(0).estadoRegistro())) {
                     invoice.setAeatStatus(AeatStatus.ANNULLED);
@@ -588,7 +592,7 @@ public class VerifactuServiceImpl implements VerifactuService {
 
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
              if (resp.lines().size() > 0) {
-                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
                 if ("Correcto".equalsIgnoreCase(resp.lines().get(0).estadoRegistro())) {
                     ticket.setAeatStatus(AeatStatus.ANNULLED);
                     ticketRepository.save(ticket);
@@ -611,7 +615,7 @@ public class VerifactuServiceImpl implements VerifactuService {
             log.debug("Subsanacion XML: \n{}", xml);
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(invoice, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 // Handle global error
                 markError(invoice, resp.estadoEnvio());
@@ -633,7 +637,7 @@ public class VerifactuServiceImpl implements VerifactuService {
             log.debug("Subsanacion XML: \n{}", xml);
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(ticket, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 markErrorTicket(ticket, resp.estadoEnvio());
             }
@@ -654,7 +658,7 @@ public class VerifactuServiceImpl implements VerifactuService {
             log.debug("Subsanacion XML: \n{}", xml);
             VerifactuSoapClient.AeatBatchResponse resp = soapClient.send(xml);
             if (resp.lines().size() > 0) {
-                updateRecordStatus(rect, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime());
+                updateRecordStatus(rect, resp.lines().get(0), resp.csv(), resp.rawResponse(), resp.waitTime(), xml);
             } else {
                 markErrorRect(rect, resp.estadoEnvio());
             }
@@ -719,8 +723,7 @@ public class VerifactuServiceImpl implements VerifactuService {
     // ================================================================
 
     private CompanySettings getCompany() {
-        return companySettingsRepository.findById(1L)
-                .orElseThrow(() -> new IllegalStateException("CompanySettings no configurado"));
+        return companySettingsService.getSettings();
     }
 
     private String buildSoftwareNombre(CompanySettings company) {

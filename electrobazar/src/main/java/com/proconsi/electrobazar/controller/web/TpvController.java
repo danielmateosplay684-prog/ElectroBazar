@@ -349,7 +349,7 @@ public class TpvController {
                     "Sale completed but there was an error generating the PDF document.");
         }
 
-        return "redirect:/tpv/receipt/" + sale.getId();
+        return "redirect:/tpv/receipt/" + sale.getId() + "?autoPrint=true";
     }
 
     /**
@@ -397,7 +397,30 @@ public class TpvController {
                         pId, pName, line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
                 breakdowns.add(bd);
             }
-            model.addAttribute("taxBreakdowns", breakdowns);
+            model.addAttribute("lineBreakdowns", breakdowns);
+
+            // Group taxBreakdowns by VAT rate for the summary section
+            java.util.TreeMap<BigDecimal, TaxBreakdown> groupedTax =
+                    new java.util.TreeMap<>(BigDecimal::compareTo);
+            for (TaxBreakdown tb : breakdowns) {
+                groupedTax.merge(tb.getVatRate(), TaxBreakdown.builder()
+                        .vatRate(tb.getVatRate())
+                        .vatAmount(tb.getVatAmount())
+                        .baseAmount(tb.getBaseAmount())
+                        .recargoRate(tb.getRecargoRate())
+                        .recargoAmount(tb.getRecargoAmount())
+                        .totalAmount(tb.getTotalAmount())
+                        .recargoApplied(tb.isRecargoApplied())
+                        .build(),
+                    (existing, newTb) -> {
+                        existing.setBaseAmount(existing.getBaseAmount().add(newTb.getBaseAmount()));
+                        existing.setVatAmount(existing.getVatAmount().add(newTb.getVatAmount()));
+                        existing.setRecargoAmount(existing.getRecargoAmount().add(newTb.getRecargoAmount()));
+                        existing.setTotalAmount(existing.getTotalAmount().add(newTb.getTotalAmount()));
+                        return existing;
+                    });
+            }
+            model.addAttribute("taxBreakdowns", new java.util.ArrayList<>(groupedTax.values()));
             model.addAttribute("applyRecargo", applyRecargo);
             BigDecimal totalBase = breakdowns.stream().map(TaxBreakdown::getBaseAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);

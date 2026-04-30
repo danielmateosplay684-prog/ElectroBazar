@@ -24,7 +24,8 @@ public class CacheConfig {
                 "analyticsSummary", 
                 "topProducts", 
                 "hourlyRevenue", 
-                "topProductName"
+                "topProductName",
+                "companySettings"
         ));
         return cacheManager;
     }

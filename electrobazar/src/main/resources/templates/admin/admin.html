@@ -138,16 +138,7 @@
     </aside>
 
     <!--  Toast  -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="toastMsg" class="toast toast-custom" role="alert" aria-live="assertive" aria-atomic="true"
-            data-bs-delay="3000">
-            <div class="d-flex align-items-center p-3 gap-3">
-                <i id="toastIcon" class="bi fs-5"></i>
-                <span id="toastText" class="flex-grow-1 fw-600"></span>
-                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    </div>
+
 
 
 
@@ -175,12 +166,26 @@
 
 
         <!-- ---- CONTENT VIEWS ---- -->
-
-        <!-- ABONOS VIEW -->
-        <th:block th:replace="~{admin/views/abonos-view :: view}" />
-
-        <!-- MODAL ABONOS -->
-        <th:block th:replace="~{admin/modals/abono-modal :: modal}" />
+        <div class="fragments-container w-100">
+            <th:block th:replace="~{admin/views/abonos-view :: view}" />
+            <th:block th:replace="~{admin/views/tariffs-view :: view}" />
+            <th:block th:replace="~{admin/views/tax-rates-view :: view}" />
+            <th:block th:replace="~{admin/views/measurement-units-view :: view}" />
+            <th:block th:replace="~{admin/views/coupons-view :: view}" />
+            <th:block th:replace="~{admin/views/promotions-view :: view}" />
+            <th:block th:replace="~{admin/views/verifactu-view :: view}" />
+            <th:block th:replace="~{admin/views/products-view :: view}" />
+            <th:block th:replace="~{admin/views/invoices-view :: view}" />
+            <th:block th:replace="~{admin/views/returns-view :: view}" />
+            <th:block th:replace="~{admin/views/cash-close-view :: view}" />
+            <th:block th:replace="~{admin/views/workers-view :: view}" />
+            <th:block th:replace="~{admin/views/roles-view :: view}" />
+            <th:block th:replace="~{admin/views/analytics-view :: view}" />
+            <th:block th:replace="~{admin/views/crm-view :: view}" />
+            <th:block th:replace="~{admin/views/prices-temp-view :: view}" />
+            <th:block th:replace="~{admin/views/prices-masivos-view :: view}" />
+            <th:block th:replace="~{admin/views/activity-view :: view}" />
+        </div>
 
         <!-- 0. DASHBOARD LANDING VIEW -->
         <div id="dashboardView">
@@ -506,7 +511,8 @@
                     onclick="if(!window.adminPanelReady) return; switchView('verifactuView', document.querySelector('[onclick*=\'verifactuView\']'))">
                     <i class="bi bi-shield-check"></i>
                     <h3>VeriFactu / AEAT</h3>
-                    <p>Supervisa el estado de los envíos fiscales, anulaciones técnicas y encadenamiento de facturas.</p>
+                    <p>Supervisa el estado de los envíos fiscales, anulaciones técnicas y encadenamiento de facturas.
+                    </p>
                     <div class="skeleton-error">
                         <i class="bi bi-exclamation-circle fs-2"></i>
                         <span>Error de carga</span>
@@ -527,51 +533,7 @@
             </div>
         </div>
 
-        <th:block th:replace="~{admin/views/tariffs-view :: view}" />
 
-        <!-- TIPOS IVA VIEW -->
-        <th:block th:replace="~{admin/views/tax-rates-view :: view}" />
-
-        <!-- MEASUREMENT UNITS VIEW -->
-        <th:block th:replace="~{admin/views/measurement-units-view :: view}" />
-
-        <!-- COUPONS VIEW -->
-        <th:block th:replace="~{admin/views/coupons-view :: view}" />
-
-        <!-- PROMOTIONS VIEW -->
-        <th:block th:replace="~{admin/views/promotions-view :: view}" />
-
-        <!-- VERIFACTU / AEAT VIEW -->
-        <th:block th:replace="~{admin/views/verifactu-view :: view}" />
-
-        <!-- Modal: Crear Tarifa -->
-        <th:block th:replace="~{admin/modals/tariff-modals :: modal}" />
-
-        <!-- Modal: Aplicar Precios (Matriz) -->
-
-
-        <!-- Modal: Historial/Cambios de Precios -->
-
-
-        <!-- Modal: Editar Tarifa -->
-
-
-        <!-- Modal: Cupón -->
-        <th:block th:replace="~{admin/modals/coupon-modal :: modal}" />
-
-        <!-- Modal: Promoción NxM -->
-        <th:block th:replace="~{admin/modals/promotion-modal :: modal}" />
-
-        <!-- Modal: Crear Tipo IVA -->
-        <th:block th:replace="~{admin/modals/tax-rate-modals :: modal}" />
-
-        <!-- PRODUCTS VIEW -->
-        <th:block th:replace="~{admin/views/products-view :: view}" />
-
-
-        <th:block th:replace="~{admin/views/invoices-view :: view}" />
-
-        <th:block th:replace="~{admin/views/returns-view :: view}" />
 
         <div id="settingsView" style="display: none;">
             <div class="panel-header mb-4">
@@ -821,21 +783,6 @@
         </div>
 
 
-        <!-- 3. CASH CLOSES VIEW (Hidden by default) -->
-        <th:block th:replace="~{admin/views/cash-close-view :: view}" />
-
-        <!-- 4. WORKERS VIEW -->
-        <th:block th:replace="~{admin/views/workers-view :: view}" />
-
-        <!-- 4B. ROLES VIEW -->
-        <th:block th:replace="~{admin/views/roles-view :: view}" />
-
-        <!-- 5. ANALYTICS VIEW -->
-        <th:block th:replace="~{admin/views/analytics-view :: view}" />
-
-        <!-- 6. CRM VIEW -->
-        <!-- CRM VIEW -->
-        <th:block th:replace="~{admin/views/crm-view :: view}" />
 
         <!-- Modal: Ventas del Cliente -->
         <div class="modal fade" id="customerSalesModal" tabindex="-1" aria-labelledby="customerSalesModalLabel"
@@ -906,73 +853,81 @@
         </div>
 
 
-        <!-- PRECIOS TEMPORALES VIEW -->
-        <th:block th:replace="~{admin/views/prices-temp-view :: view}" />
 
-        <!-- PRECIOS MASIVOS VIEW -->
-        <th:block th:replace="~{admin/views/prices-masivos-view :: view}" />
+    </div> <!-- End .admin-body -->
 
-        <!-- ACTIVITY LOG VIEW -->
-        <th:block th:replace="~{admin/views/activity-view :: view}" />
+    <!-- Fragments for Modals -->
+    <th:block th:replace="~{admin/modals/tariff-modals :: modal}" />
+    <th:block th:replace="~{admin/modals/coupon-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/promotion-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/tax-rate-modals :: modal}" />
+    <th:block th:replace="~{admin/modals/product-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/category-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/worker-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/role-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/customer-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/measurement-unit-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/schedule-price-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/ipc-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/document-preview-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/abono-modal :: modal}" />
+    <th:block th:replace="~{admin/modals/role-users-modal :: modal}" />
 
-        <!-- Fragments for Modals -->
-        <th:block th:replace="~{admin/modals/product-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/category-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/worker-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/role-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/customer-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/measurement-unit-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/schedule-price-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/ipc-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/document-preview-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/abono-modal :: modal}" />
-        <th:block th:replace="~{admin/modals/role-users-modal :: modal}" />
+    <!-- Optimized Script Loading -->
+    <script src="/vendor/chartjs/chart.min.js" defer></script>
+    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
+    <script th:src="@{/js/util/product-autocomplete.js}" defer></script>
+    <script th:src="@{/js/admin/admin-core.js}" defer></script>
+    <script th:src="@{/js/admin/admin-products.js}" defer></script>
+    <script th:src="@{/js/admin/admin-categories.js}" defer></script>
+    <script th:src="@{/js/admin/admin-workers.js}" defer></script>
+    <script th:src="@{/js/admin/admin-roles.js}" defer></script>
+    <script th:src="@{/js/admin/admin-customers.js}" defer></script>
+    <script th:src="@{/js/admin/admin-precios.js}" defer></script>
+    <script th:src="@{/js/admin/admin-invoices.js}" defer></script>
+    <script th:src="@{/js/admin/admin-returns.js}" defer></script>
+    <script th:src="@{/js/admin/admin-coupons.js}" defer></script>
+    <script th:src="@{/js/admin/admin-promotions.js}" defer></script>
+    <script th:src="@{/js/admin/admin-analytics.js}" defer></script>
+    <script th:src="@{/js/admin/admin-settings.js}" defer></script>
+    <script th:src="@{/js/admin/admin-unidades.js}" defer></script>
+    <script th:src="@{/js/admin/admin-abonos.js}" defer></script>
+    <script th:src="@{/js/admin/admin-tariffs.js}" defer></script>
+    <script th:src="@{/js/admin/admin-tax-rates.js}" defer></script>
+    <script th:src="@{/js/admin/admin-logs.js}" defer></script>
 
-        <!-- Optimized Script Loading -->
-        <script src="/vendor/chartjs/chart.min.js" defer></script>
-        <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
-        <script th:src="@{/js/util/product-autocomplete.js}" defer></script>
-        <script th:src="@{/js/admin/admin-core.js}" defer></script>
-        <script th:src="@{/js/admin/admin-products.js}" defer></script>
-        <script th:src="@{/js/admin/admin-categories.js}" defer></script>
-        <script th:src="@{/js/admin/admin-workers.js}" defer></script>
-        <script th:src="@{/js/admin/admin-roles.js}" defer></script>
-        <script th:src="@{/js/admin/admin-customers.js}" defer></script>
-        <script th:src="@{/js/admin/admin-precios.js}" defer></script>
-        <script th:src="@{/js/admin/admin-invoices.js}" defer></script>
-        <script th:src="@{/js/admin/admin-returns.js}" defer></script>
-        <script th:src="@{/js/admin/admin-coupons.js}" defer></script>
-        <script th:src="@{/js/admin/admin-promotions.js}" defer></script>
-        <script th:src="@{/js/admin/admin-analytics.js}" defer></script>
-        <script th:src="@{/js/admin/admin-settings.js}" defer></script>
-        <script th:src="@{/js/admin/admin-unidades.js}" defer></script>
-        <script th:src="@{/js/admin/admin-abonos.js}" defer></script>
-        <script th:src="@{/js/admin/admin-tariffs.js}" defer></script>
-        <script th:src="@{/js/admin/admin-tax-rates.js}" defer></script>
-        <script th:src="@{/js/admin/admin-logs.js}" defer></script>
-
-        <script th:inline="javascript">
-            function showDocPreview(url) {
-                const iframe = document.getElementById('docPreviewIframe');
-                const loader = document.getElementById('previewLoader');
-                if (iframe) {
-                    iframe.style.opacity = '0';
-                    loader.style.display = 'block';
-                    iframe.src = url;
-                    const modalElement = document.getElementById('documentPreviewModal');
-                    let modal = bootstrap.Modal.getInstance(modalElement);
-                    if (!modal) modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                }
+    <script th:inline="javascript">
+        function showDocPreview(url) {
+            const iframe = document.getElementById('docPreviewIframe');
+            const loader = document.getElementById('previewLoader');
+            if (iframe) {
+                iframe.style.opacity = '0';
+                loader.style.display = 'block';
+                iframe.src = url;
+                const modalElement = document.getElementById('documentPreviewModal');
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (!modal) modal = new bootstrap.Modal(modalElement);
+                modal.show();
             }
-            function printPreviewIframe() {
-                const iframe = document.getElementById('docPreviewIframe');
-                if (iframe && iframe.contentWindow) {
-                    iframe.contentWindow.print();
-                }
+        }
+        function printPreviewIframe() {
+            const iframe = document.getElementById('docPreviewIframe');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.print();
             }
-        </script>
+        }
+    </script>
 
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toastMsg" class="toast toast-custom" role="alert" aria-live="assertive" aria-atomic="true"
+            data-bs-delay="3000">
+            <div class="d-flex align-items-center p-3 gap-3">
+                <i id="toastIcon" class="bi fs-5"></i>
+                <span id="toastText" class="flex-grow-1 fw-600"></span>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

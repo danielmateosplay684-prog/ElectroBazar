@@ -1,145 +1,139 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <body>
-<th:block th:fragment="view">
-
-    <div id="cashCloseView" style="display: none;">
-        <div class="panel-header">
-            <span class="panel-title">
-                <button class="btn-icon me-2"
-                    onclick="backToPreviousView()"
-                    th:title="#{admin.common.backtopanel}">
-                    <i class="bi bi-arrow-left"></i>
-                </button>
-                <i class="bi bi-cash-stack me-2"></i><span th:text="#{admin.cash.title}">Listado de Cierres de
-                    Caja</span>
-            </span>
-        </div>
-
-        <div class="filter-bar mb-3 p-4 rounded" style="background: var(--surface); border: 1px solid var(--border);">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                            class="bi bi-person-circle me-2"></i><span
-                            th:text="#{common.worker}">Trabajador</span></label>
-                    <input type="text" id="cashFilterWorker" class="form-control form-control-sm"
-                        th:placeholder="#{admin.cash.worker.placeholder}" oninput="filterCashClosures()">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                            class="bi bi-calendar3 me-2"></i><span th:text="#{common.date}">Fecha</span></label>
-                    <input type="date" id="cashFilterdate" class="form-control form-control-sm"
-                        onchange="filterCashClosures()">
-                </div>
-                <!-- Ordenamiento -->
-                <div class="col-md-2">
-                    <label class="form-label small mb-1" style="color: var(--text-main);"><i
-                            class="bi bi-sort-down me-1"></i>Orden</label>
-                    <select id="cashFilterSortBy" class="form-select form-select-sm" onchange="filterCashClosures()">
-                        <option value="id">ID</option>
-                        <option value="openingTime">Apertura</option>
-                        <option value="closedAt">Cierre</option>
-                        <option value="difference">Diferencia</option>
-                        <option value="totalSales">Ventas</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
-                    <select id="cashFilterSortDir" class="form-select form-select-sm" onchange="filterCashClosures()">
-                        <option value="desc">↓ Desc</option>
-                        <option value="asc">↑ Asc</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCashFilters()">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> <span th:text="#{common.reset}">Reset</span>
+    <th:block th:fragment="view">
+        <div id="cashCloseView" style="display: none;">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <button class="btn-icon me-2" onclick="backToPreviousView()" th:title="#{admin.common.backtopanel}">
+                        <i class="bi bi-arrow-left"></i>
                     </button>
+                    <i class="bi bi-cash-stack me-2"></i><span th:text="#{admin.cash.title}">Listado de Cierres de
+                        Caja</span>
+                </span>
+            </div>
+
+
+            <div class="filter-bar mb-3 p-4 rounded"
+                style="background: var(--surface); border: 1px solid var(--border);">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-person-circle me-2"></i><span
+                                th:text="#{common.worker}">Trabajador</span></label>
+                        <input type="text" id="cashFilterWorker" class="form-control form-control-sm"
+                            th:placeholder="#{admin.cash.worker.placeholder}" oninput="filterCashClosures()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-calendar3 me-2"></i><span th:text="#{common.date}">Fecha</span></label>
+                        <input type="date" id="cashFilterdate" class="form-control form-control-sm"
+                            onchange="filterCashClosures()">
+                    </div>
+                    <!-- Ordenamiento -->
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1" style="color: var(--text-main);"><i
+                                class="bi bi-sort-down me-1"></i>Orden</label>
+                        <select id="cashFilterSortBy" class="form-select form-select-sm"
+                            onchange="filterCashClosures()">
+                            <option value="id">ID</option>
+                            <option value="openingTime">Apertura</option>
+                            <option value="closedAt">Cierre</option>
+                            <option value="difference">Diferencia</option>
+                            <option value="totalSales">Ventas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
+                        <select id="cashFilterSortDir" class="form-select form-select-sm"
+                            onchange="filterCashClosures()">
+                            <option value="desc">↓ Desc</option>
+                            <option value="asc">↑ Asc</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCashFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span
+                                th:text="#{common.reset}">Reset</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="cashCountLabel" class="small mt-2" style="color: var(--text-muted);">
+                    Mostrando todos los cierres de caja.
                 </div>
             </div>
-            <div id="cashCountLabel" class="small mt-2" style="color: var(--text-muted);">
-                Mostrando todos los cierres de caja.
+
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="cashClosuresTable">
+                    <thead>
+                        <tr>
+                            <th th:text="#{common.id}">ID</th>
+                            <th th:text="#{admin.cash.opening}">Apertura</th>
+                            <th th:text="#{admin.cash.closing}">Cierre</th>
+                            <th th:text="#{admin.cash.calculated}">Total Calculado</th>
+                            <th th:text="#{admin.cash.declared}">Total Declarado</th>
+                            <th th:text="#{admin.cash.difference}">Diferencia</th>
+                            <th th:text="#{admin.invoices.worker}">Atendido por</th>
+                            <th style="text-align:right" th:text="#{common.download}">Descargar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cashClosuresTableBody">
+                        <tr th:each="register : ${cashRegisters}" class="cash-row"
+                            th:data-worker="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : 'Sistema')}"
+                            th:data-open-date="${register.openingTime != null ? #temporals.format(register.openingTime, 'yyyy-MM-dd') : ''}"
+                            th:data-close-date="${register.closedAt != null ? #temporals.format(register.closedAt, 'yyyy-MM-dd') : ''}"
+                            style="cursor:pointer"
+                            th:onclick="'window.location.href = \'/admin/cash-register/' + ${register.id} + '\''">
+                            <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+register.id}"></td>
+                            <td
+                                th:text="${register.openingTime != null ? #temporals.format(register.openingTime, 'dd/MM/yyyy HH:mm') : '—'}">
+                            </td>
+                            <td
+                                th:text="${register.closedAt != null ? #temporals.format(register.closedAt, 'dd/MM/yyyy HH:mm') : '—'}">
+                            </td>
+
+                            <td style="font-weight:600;text-align:right;white-space:nowrap"
+                                th:text="${#numbers.formatDecimal((register.openingBalance ?: 0) + (register.totalSales ?: 0), 1, 2)} + ' &euro;'">
+                            </td>
+
+                            <td style="font-weight:600;text-align:right;white-space:nowrap"
+                                th:text="${#numbers.formatDecimal(register.closingBalance ?: 0, 1, 2)} + ' &euro;'">
+                            </td>
+
+                            <td style="text-align:right;white-space:nowrap">
+                                <span th:if="${(register.difference ?: 0) == 0}" class="badge-active yes"
+                                    th:text="'Cuadrado (0.00 &euro;)'"></span>
+                                <span th:if="${(register.difference ?: 0) > 0}" class="badge-active yes"
+                                    th:text="'+' + ${#numbers.formatDecimal(register.difference, 1, 2)} + ' &euro;'"></span>
+                                <span th:if="${(register.difference ?: 0) < 0}" class="badge-active no"
+                                    th:text="${#numbers.formatDecimal(register.difference, 1, 2)} + ' &euro;'"></span>
+                            </td>
+                            <td style="font-weight: 500;">
+                                <span
+                                    th:text="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : #messages.msg('admin.invoices.worker.system'))}"></span>
+                            </td>
+
+                            <td style="text-align:right">
+                                <a th:href="@{/admin/download/cash-close/{id}(id=${register.id})}" target="_blank"
+                                    class="btn-icon" th:title="#{common.download.pdf}" style="text-decoration: none;"
+                                    onclick="event.stopPropagation();">
+                                    <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(cashRegisters)}">
+                            <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)"
+                                th:text="#{admin.cash.empty}">
+                                No hay cierres de caja registrados histórico.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="admin-table-wrap">
-            <table class="admin-table" id="cashClosuresTable">
-                <thead>
-                    <tr>
-                        <th th:text="#{common.id}">ID</th>
-                        <th th:text="#{admin.cash.opening}">Apertura</th>
-                        <th th:text="#{admin.cash.closing}">Cierre</th>
-                        <th th:text="#{admin.cash.calculated}">Total Calculado</th>
-                        <th th:text="#{admin.cash.declared}">Total Declarado</th>
-                        <th th:text="#{admin.cash.difference}">Diferencia</th>
-                        <th th:text="#{admin.invoices.worker}">Atendido por</th>
-                        <th style="text-align:right" th:text="#{common.download}">Descargar</th>
-                    </tr>
-                </thead>
-                <tbody id="cashClosuresTableBody">
-                    <tr th:each="register : ${cashRegisters}" class="cash-row"
-                        th:data-worker="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : 'Sistema')}"
-                        th:data-open-date="${register.openingTime != null ? #temporals.format(register.openingTime, 'yyyy-MM-dd') : ''}"
-                        th:data-close-date="${register.closedAt != null ? #temporals.format(register.closedAt, 'yyyy-MM-dd') : ''}"
-                        style="cursor:pointer"
-                        th:onclick="'window.location.href = \'/admin/cash-register/' + ${register.id} + '\''">
-                        <td style="color:var(--text-muted);font-weight:600" th:text="${'#'+register.id}"></td>
-                        <td
-                            th:text="${register.openingTime != null ? #temporals.format(register.openingTime, 'dd/MM/yyyy HH:mm') : '—'}">
-                        </td>
-                        <td
-                            th:text="${register.closedAt != null ? #temporals.format(register.closedAt, 'dd/MM/yyyy HH:mm') : '—'}">
-                        </td>
-
-                        <td style="font-weight:600;text-align:right;white-space:nowrap"
-                            th:text="${#numbers.formatDecimal((register.openingBalance ?: 0) + (register.totalSales ?: 0), 1, 2)} + ' &euro;'">
-                        </td>
-
-                        <td style="font-weight:600;text-align:right;white-space:nowrap"
-                            th:text="${#numbers.formatDecimal(register.closingBalance ?: 0, 1, 2)} + ' &euro;'">
-                        </td>
-
-                        <td style="text-align:right;white-space:nowrap">
-                            <span th:if="${(register.difference ?: 0) == 0}" class="badge-active yes"
-                                th:text="'Cuadrado (0.00 &euro;)'"></span>
-                            <span th:if="${(register.difference ?: 0) > 0}" class="badge-active yes"
-                                th:text="'+' + ${#numbers.formatDecimal(register.difference, 1, 2)} + ' &euro;'"></span>
-                            <span th:if="${(register.difference ?: 0) < 0}" class="badge-active no"
-                                th:text="${#numbers.formatDecimal(register.difference, 1, 2)} + ' &euro;'"></span>
-                        </td>
-                        <td style="font-weight: 500;">
-                            <span th:text="${register.retainedByWorker != null ? register.retainedByWorker.username : (register.worker != null ? register.worker.username : #messages.msg('admin.invoices.worker.system'))}"></span>
-                        </td>
-
-                        <td style="text-align:right">
-                            <a th:href="@{/admin/download/cash-close/{id}(id=${register.id})}" target="_blank"
-                                class="btn-icon" th:title="#{common.download.pdf}" style="text-decoration: none;"
-                                onclick="event.stopPropagation();">
-                                <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(cashRegisters)}">
-                        <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)"
-                            th:text="#{admin.cash.empty}">
-                            No hay cierres de caja registrados histórico.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-</th:block>
+    </th:block>
 </body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-

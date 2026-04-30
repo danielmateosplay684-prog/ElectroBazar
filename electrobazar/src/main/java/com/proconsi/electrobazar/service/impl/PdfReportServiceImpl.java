@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -178,24 +179,50 @@ public class PdfReportServiceImpl implements PdfReportService {
 
         boolean applyRecargo = sale.getCustomer() != null
                 && Boolean.TRUE.equals(sale.getCustomer().getHasRecargoEquivalencia());
-        List<TaxBreakdown> breakdowns = new ArrayList<>();
+
+        // Build per-line breakdown list (1-to-1 with sale.lines) for the items table
+        List<TaxBreakdown> lineBreakdowns = new ArrayList<>();
         for (SaleLine line : sale.getLines()) {
             BigDecimal vatRate = line.getVatRate() != null ? line.getVatRate() : new BigDecimal("0.21");
             Long pId = (line.getProduct() != null) ? line.getProduct().getId() : null;
-            String pName = (line.getProductName() != null) ? line.getProductName() : 
-                          (line.getProduct() != null ? line.getProduct().getName() : "Producto Comodín");
+            String pName = (line.getProductName() != null) ? line.getProductName()
+                         : (line.getProduct() != null ? line.getProduct().getName() : "Producto Comodín");
             TaxBreakdown bd = recargoCalculator.calculateLineBreakdown(
                     pId, pName, line.getUnitPrice(), line.getQuantity(), vatRate, applyRecargo);
-            breakdowns.add(bd);
+            lineBreakdowns.add(bd);
         }
-        context.setVariable("taxBreakdowns", breakdowns);
+        context.setVariable("lineBreakdowns", lineBreakdowns);
+
+        // Group by VAT rate for the tax summary section.
+        // TreeMap with BigDecimal.compareTo() treats 0.21 and 0.2100 as the same key.
+        TreeMap<BigDecimal, TaxBreakdown> grouped =
+                new TreeMap<>(BigDecimal::compareTo);
+        for (TaxBreakdown tb : lineBreakdowns) {
+            grouped.merge(tb.getVatRate(), TaxBreakdown.builder()
+                            .vatRate(tb.getVatRate())
+                            .vatAmount(tb.getVatAmount())
+                            .baseAmount(tb.getBaseAmount())
+                            .recargoRate(tb.getRecargoRate())
+                            .recargoAmount(tb.getRecargoAmount())
+                            .totalAmount(tb.getTotalAmount())
+                            .recargoApplied(tb.isRecargoApplied())
+                            .build(),
+                    (existing, newTb) -> {
+                        existing.setBaseAmount(existing.getBaseAmount().add(newTb.getBaseAmount()));
+                        existing.setVatAmount(existing.getVatAmount().add(newTb.getVatAmount()));
+                        existing.setRecargoAmount(existing.getRecargoAmount().add(newTb.getRecargoAmount()));
+                        existing.setTotalAmount(existing.getTotalAmount().add(newTb.getTotalAmount()));
+                        return existing;
+                    });
+        }
+        context.setVariable("taxBreakdowns", new ArrayList<>(grouped.values()));
         context.setVariable("applyRecargo", applyRecargo);
 
-        BigDecimal totalBase = breakdowns.stream().map(TaxBreakdown::getBaseAmount)
+        BigDecimal totalBase = lineBreakdowns.stream().map(TaxBreakdown::getBaseAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalVat = breakdowns.stream().map(TaxBreakdown::getVatAmount)
+        BigDecimal totalVat = lineBreakdowns.stream().map(TaxBreakdown::getVatAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalRecargo = breakdowns.stream().map(TaxBreakdown::getRecargoAmount)
+        BigDecimal totalRecargo = lineBreakdowns.stream().map(TaxBreakdown::getRecargoAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
 
         context.setVariable("totalBase", totalBase);

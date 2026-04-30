@@ -14,6 +14,7 @@ import com.proconsi.electrobazar.dto.SubsanarRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,9 +86,23 @@ public class VerifactuXmlBuilder {
                              String softwareNombre, String softwareId,
                              String softwareVersion, String softwareInstalacion) {
         String nif = company.getCif();
+
+        // Detect Incidencia (older than 4 mins)
+        LocalDateTime oldest = LocalDateTime.now();
+        for (Object record : records) {
+            LocalDateTime created = null;
+            if (record instanceof Invoice i) created = i.getCreatedAt();
+            else if (record instanceof Ticket t) created = t.getCreatedAt();
+            else if (record instanceof RectificativeInvoice r) created = r.getCreatedAt();
+
+            if (created != null && created.isBefore(oldest)) oldest = created;
+        }
+        long seconds = ChronoUnit.SECONDS.between(oldest, LocalDateTime.now());
+        boolean incidencia = seconds > 240;
+
         StringBuilder sb = new StringBuilder();
         sb.append(soapEnvelopeOpen());
-        sb.append(regFactuOpen(nif, company.getName()));
+        sb.append(regFactuOpen(nif, company.getName(), incidencia));
 
         for (Object record : records) {
             sb.append(registroFacturaOpen());
@@ -169,7 +184,7 @@ public class VerifactuXmlBuilder {
         sb.append(encadenamiento(invoice.getHashPreviousInvoice(), nif, getPreviousNumSerie(invoice), getPreviousFecha(invoice)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
         
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
         String huellaEnvio = hashCalculator.calculate(nif, invoice.getInvoiceNumber(), invoice.getCreatedAt(), "F1", cuotaTotal, importeTotal, invoice.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -208,7 +223,7 @@ public class VerifactuXmlBuilder {
         sb.append(encadenamientoTicket(ticket.getHashPreviousInvoice(), nif, getPreviousTicketNumSerie(ticket), getPreviousTicketFecha(ticket)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
         
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
         String huellaEnvio = hashCalculator.calculate(nif, ticket.getTicketNumber(), ticket.getCreatedAt(), "F2", cuotaTotal, importeTotal, ticket.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -285,7 +300,7 @@ public class VerifactuXmlBuilder {
         sb.append(tag("sf:ImporteTotal", fmt(totalRefundedNeg.setScale(2, RoundingMode.HALF_UP))));
         sb.append(encadenamiento(rect.getHashPreviousInvoice(), nif, getPreviousRectNumSerie(rect), getPreviousRectFecha(rect)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(rect.getCreatedAt());
         String huellaEnvio = hashCalculator.calculate(nif, rect.getRectificativeNumber(), rect.getCreatedAt(), tipoFactura, cuotaTotal, totalRefundedNeg.setScale(2, RoundingMode.HALF_UP), rect.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -310,7 +325,7 @@ public class VerifactuXmlBuilder {
         LastRecordInfo last = getLatestRecordInfo();
         sb.append(encadenamientoAnulacion(last, nif));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, invoice.getInvoiceNumber(), invoice.getCreatedAt(), last.hash, fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -335,7 +350,7 @@ public class VerifactuXmlBuilder {
         LastRecordInfo last = getLatestRecordInfo();
         sb.append(encadenamientoAnulacion(last, nif));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, ticket.getTicketNumber(), ticket.getCreatedAt(), last.hash, fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -403,8 +418,7 @@ public class VerifactuXmlBuilder {
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
 
-        LocalDateTime ahora = LocalDateTime.now();
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
         
         // El hash de anulación usa la huella del ÚLTIMO registro enviado al sistema (no de la propia factura)
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, invoice.getInvoiceNumber(),
@@ -447,8 +461,7 @@ public class VerifactuXmlBuilder {
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
 
-        LocalDateTime ahora = LocalDateTime.now();
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ahora);
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
         
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, ticket.getTicketNumber(),
                 ticket.getCreatedAt(), last.hash, fechaHoraHuso);
@@ -540,15 +553,28 @@ public class VerifactuXmlBuilder {
     }
 
     private String regFactuOpen(String nif, String nombre) {
-        return "    <sfLR:RegFactuSistemaFacturacion\n"
-                + "        xmlns:sfLR=\"" + NS_LR + "\"\n"
-                + "        xmlns:sf=\"" + NS_SF + "\">\n"
-                + "      <sfLR:Cabecera>\n"
-                + "        <sf:ObligadoEmision>\n"
-                + tag("sf:NombreRazon", esc(nombre))
-                + tag("sf:NIF", nif)
-                + "        </sf:ObligadoEmision>\n"
-                + "      </sfLR:Cabecera>\n";
+        return regFactuOpen(nif, nombre, false);
+    }
+
+    private String regFactuOpen(String nif, String nombre, boolean incidencia) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("    <sfLR:RegFactuSistemaFacturacion\n")
+          .append("        xmlns:sfLR=\"").append(NS_LR).append("\"\n")
+          .append("        xmlns:sf=\"").append(NS_SF).append("\">\n")
+          .append("      <sfLR:Cabecera>\n")
+          .append("        <sf:ObligadoEmision>\n")
+          .append(tag("sf:NombreRazon", esc(nombre)))
+          .append(tag("sf:NIF", nif))
+          .append("        </sf:ObligadoEmision>\n");
+        
+        if (incidencia) {
+            sb.append("        <sf:RemisionVoluntaria>\n")
+              .append("          <sf:Incidencia>S</sf:Incidencia>\n")
+              .append("        </sf:RemisionVoluntaria>\n");
+        }
+        
+        sb.append("      </sfLR:Cabecera>\n");
+        return sb.toString();
     }
 
     private String regFactuClose() {

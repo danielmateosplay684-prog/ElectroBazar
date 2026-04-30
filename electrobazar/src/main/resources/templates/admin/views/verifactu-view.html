@@ -424,7 +424,8 @@
             <td><div class="wait-timer" id="${timerId}" data-time="${r.submissionDate||''}" data-wait="${r.waitTime||0}" data-next="${r.nextRetry||''}"></div></td>
             <td>
                 <div class="d-flex gap-1">
-                    <button class="btn-icon" onclick="viewSale(${r.saleId})"><i class="bi bi-eye"></i></button>
+                    <button class="btn-icon" onclick="viewSale(${r.saleId})" title="Ver Venta"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-outline-primary btn-sm px-2" onclick="vfViewAudit('${type}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
                     ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn btn-outline-info btn-retry btn-sm" onclick="vfEditSubsanar('${type}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
                     ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn btn-outline-warning btn-retry btn-sm" onclick="vfSubsanar('${type}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
                 </div>
@@ -665,6 +666,87 @@
     }
     setInterval(updateCooldown, 1000);
 
+    function vfViewResponse(type, id) {
+        const modal = new bootstrap.Modal(document.getElementById('vfResponseModal'));
+        document.getElementById('vf-resp-csv').innerText = 'Cargando...';
+        document.getElementById('vf-resp-raw').innerText = 'Recuperando respuesta del servidor...';
+        document.getElementById('vf-resp-error-box').classList.add('d-none');
+        modal.show();
+
+        fetch(`/api/admin/verifactu/response/${type}/${id}`)
+            .then(r => r.ok ? r.json() : Promise.reject('No encontrada'))
+            .then(data => {
+                document.getElementById('vf-resp-csv').innerText = data.csv || 'SIN CSV (Rechazo global)';
+                document.getElementById('vf-resp-status').innerHTML = aeatBadge(data.estadoRegistro);
+                
+                let xml = data.rawResponse || '';
+                if (xml) {
+                    // Basic XML Pretty Print
+                    let formatted = '';
+                    let reg = /(>)(<)(\/*)/g;
+                    xml = xml.replace(reg, '$1\n$2$3');
+                    let pad = 0;
+                    xml.split('\n').forEach(node => {
+                        let indent = 0;
+                        if (node.match(/.+<\/\w[^>]*>$/)) indent = 0;
+                        else if (node.match(/^<\/\w/)) { if (pad !== 0) pad -= 1; }
+                        else if (node.match(/^<\w[^>]*[^\/]>.*$/)) indent = 1;
+                        formatted += '  '.repeat(pad) + node + '\n';
+                        pad += indent;
+                    });
+                    document.getElementById('vf-resp-raw').innerText = formatted;
+                } else {
+                    document.getElementById('vf-resp-raw').innerText = 'No hay contenido XML almacenado.';
+                }
+
+                if (data.errorDescripcion) {
+                    document.getElementById('vf-resp-error-box').classList.remove('d-none');
+                    document.getElementById('vf-resp-error-desc').innerText = data.errorDescripcion;
+                }
+            })
+            .catch(err => {
+                document.getElementById('vf-resp-raw').innerText = 'Error al cargar la respuesta: ' + err;
+            });
+    }
+    function vfViewAudit(type, id) {
+        const modal = new bootstrap.Modal(document.getElementById('vfAuditModal'));
+        modal.show();
+
+        fetch(`/api/admin/verifactu/details/${type}/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('audit-num').innerText = data.factura.numero;
+                document.getElementById('audit-client-name').innerText = data.cliente.nombre;
+                document.getElementById('audit-client-nif').innerText = data.cliente.nif;
+                document.getElementById('audit-date').innerText = fmtDt(data.factura.fecha);
+                document.getElementById('audit-status').innerHTML = aeatBadge(data.factura.estadoAeat);
+                
+                document.getElementById('audit-xml-sent').innerText = formatXml(data.verifactuXmlSent);
+                document.getElementById('audit-xml-received').innerText = formatXml(data.verifactuXmlReceived);
+            })
+            .catch(err => console.error("Error loading audit data", err));
+    }
+
+    function formatXml(xml) {
+        if (!xml) return 'No disponible';
+        let formatted = '';
+        let reg = /(>)(<)(\/*)/g;
+        xml = xml.replace(reg, '$1\n$2$3');
+        let pad = 0;
+        xml.split('\n').forEach(node => {
+            let indent = 0;
+            if (node.match(/.+<\/\w[^>]*>$/)) indent = 0;
+            else if (node.match(/^<\/\w/)) { if (pad !== 0) pad -= 1; }
+            else if (node.match(/^<\w[^>]*[^\/]>.*$/)) indent = 1;
+            formatted += '  '.repeat(pad) + node + '\n';
+            pad += indent;
+        });
+        return formatted;
+    }
+
+    window.vfViewAudit = vfViewAudit;
+    window.vfViewResponse = vfViewResponse;
+
     // First load observer
     const el = document.getElementById('verifactuView');
     if (el) {
@@ -673,5 +755,101 @@
     }
 })();
 </script>
+    <div class="modal fade" id="vfResponseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-secondary shadow-lg border-border">
+                <div class="modal-header border-border bg-primary">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-code me-2"></i>Respuesta Oficial AEAT</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="bg-dark p-3 border-bottom border-border d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">CSV de Recepción:</span>
+                            <div id="vf-resp-csv" class="h5 mb-0 text-accent font-monospace"></div>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small text-uppercase fw-bold">Estado:</span>
+                            <div id="vf-resp-status"></div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-dark" style="max-height: 500px; overflow-y: auto;">
+                        <pre id="vf-resp-raw" class="text-info small mb-0 font-monospace" style="white-space: pre-wrap;"></pre>
+                    </div>
+                    <div id="vf-resp-error-box" class="p-3 bg-danger bg-opacity-10 border-top border-danger border-opacity-25 d-none">
+                        <div class="text-danger small fw-bold mb-1">DETALLE DEL ERROR:</div>
+                        <div id="vf-resp-error-desc" class="text-danger small"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-border">
+                    <button type="button" class="btn btn-outline-light btn-sm px-4" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-accent btn-sm px-4" onclick="copyToClipboard(document.getElementById('vf-resp-raw').innerText)">
+                        <i class="bi bi-clipboard me-1"></i>Copiar XML
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ── MODAL: AUDITORÍA DETALLADA VERIFACTU ────────────────── -->
+    <div class="modal fade" id="vfAuditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-secondary shadow-lg border-border">
+                <div class="modal-header border-border bg-dark">
+                    <h5 class="modal-title text-accent"><i class="bi bi-shield-lock me-2"></i>Auditoría Técnica Veri*Factu</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="row g-0">
+                        <div class="col-md-4 border-end border-border bg-dark p-4">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-4">Información de Negocio</h6>
+                            <div class="mb-4">
+                                <label class="small text-muted d-block">Factura / Número</label>
+                                <span id="audit-num" class="fw-bold h5 text-main"></span>
+                            </div>
+                            <div class="mb-4">
+                                <label class="small text-muted d-block">Cliente</label>
+                                <span id="audit-client-name" class="fw-bold d-block"></span>
+                                <span id="audit-client-nif" class="small text-muted"></span>
+                            </div>
+                            <div class="mb-4">
+                                <label class="small text-muted d-block">Fecha Registro</label>
+                                <span id="audit-date" class="small"></span>
+                            </div>
+                            <div class="mb-4">
+                                <label class="small text-muted d-block">Estado Fiscal</label>
+                                <div id="audit-status"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-8 p-0">
+                            <ul class="nav nav-tabs border-0 bg-dark px-3 pt-2" id="auditTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active border-0 bg-transparent text-muted" data-bs-toggle="tab" data-bs-target="#tab-xml-sent">XML Enviado (Petición)</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link border-0 bg-transparent text-muted" data-bs-toggle="tab" data-bs-target="#tab-xml-received">XML Recibido (Respuesta)</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="tab-xml-sent">
+                                    <div class="p-3 bg-dark" style="max-height: 600px; overflow-y: auto;">
+                                        <pre id="audit-xml-sent" class="text-info small mb-0 font-monospace" style="white-space: pre-wrap;"></pre>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="tab-xml-received">
+                                    <div class="p-3 bg-dark" style="max-height: 600px; overflow-y: auto;">
+                                        <pre id="audit-xml-received" class="text-success small mb-0 font-monospace" style="white-space: pre-wrap;"></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-border">
+                    <button type="button" class="btn btn-outline-light btn-sm px-4" data-bs-dismiss="modal">Cerrar Auditoría</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </th:block>
 </html>

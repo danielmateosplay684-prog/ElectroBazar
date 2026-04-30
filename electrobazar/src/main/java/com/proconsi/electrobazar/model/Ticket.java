@@ -83,6 +83,9 @@ public class Ticket {
     @Column(name = "aeat_wait_time")
     private Integer aeatWaitTime;
 
+    @Column(name = "aeat_xml_sent", columnDefinition = "TEXT")
+    private String aeatXmlSent;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "aeat_rejection_reason", length = 30)
     private AeatRejectionReason aeatRejectionReason;

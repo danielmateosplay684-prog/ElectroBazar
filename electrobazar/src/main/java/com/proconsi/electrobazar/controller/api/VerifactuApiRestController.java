@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.proconsi.electrobazar.model.Customer;
+import com.proconsi.electrobazar.model.Sale;
+import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -453,5 +456,109 @@ public class VerifactuApiRestController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping("/response/{type}/{id}")
+    public ResponseEntity<?> getResponse(@PathVariable String type, @PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
+            return ResponseEntity.status(401).build();
+
+        String raw = null;
+        String csv = null;
+        String status = null;
+        String lastError = null;
+
+        if ("invoices".equalsIgnoreCase(type)) {
+            Invoice inv = invoiceRepository.findById(id).orElse(null);
+            if (inv != null) {
+                raw = inv.getAeatRawResponse();
+                csv = inv.getAeatCsv();
+                status = inv.getAeatStatus() != null ? inv.getAeatStatus().name() : null;
+                lastError = inv.getAeatLastError();
+            }
+        } else if ("tickets".equalsIgnoreCase(type)) {
+            Ticket tick = ticketRepository.findById(id).orElse(null);
+            if (tick != null) {
+                raw = tick.getAeatRawResponse();
+                csv = tick.getAeatCsv();
+                status = tick.getAeatStatus() != null ? tick.getAeatStatus().name() : null;
+                lastError = tick.getAeatLastError();
+            }
+        } else if ("rectificativas".equalsIgnoreCase(type)) {
+            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
+            if (rect != null) {
+                raw = rect.getAeatRawResponse();
+                csv = rect.getAeatCsv();
+                status = rect.getAeatStatus() != null ? rect.getAeatStatus().name() : null;
+                lastError = rect.getAeatLastError();
+            }
+        }
+
+        if (raw == null && csv == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("csv", csv);
+        resp.put("rawResponse", raw);
+        resp.put("estadoRegistro", status);
+        resp.put("errorCodigo", null);
+        resp.put("errorDescripcion", lastError);
+
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/details/{type}/{id}")
+    public ResponseEntity<?> getDetails(@PathVariable String type, @PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
+            return ResponseEntity.status(401).build();
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        
+        if ("invoices".equalsIgnoreCase(type)) {
+            Invoice inv = invoiceRepository.findById(id).orElse(null);
+            if (inv != null) {
+                fillDetails(resp, inv.getSale(), inv.getInvoiceNumber(), inv.getCreatedAt(), inv.getAeatStatus(), 
+                            inv.getAeatXmlSent(), inv.getAeatRawResponse());
+            }
+        } else if ("tickets".equalsIgnoreCase(type)) {
+            Ticket tick = ticketRepository.findById(id).orElse(null);
+            if (tick != null) {
+                fillDetails(resp, tick.getSale(), tick.getTicketNumber(), tick.getCreatedAt(), tick.getAeatStatus(),
+                            tick.getAeatXmlSent(), tick.getAeatRawResponse());
+            }
+        } else if ("rectificativas".equalsIgnoreCase(type)) {
+            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
+            if (rect != null) {
+                fillDetails(resp, rect.getSaleReturn().getOriginalSale(), rect.getRectificativeNumber(), rect.getCreatedAt(), rect.getAeatStatus(),
+                            rect.getAeatXmlSent(), rect.getAeatRawResponse());
+            }
+        }
+
+        if (resp.isEmpty()) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(resp);
+    }
+
+    private void fillDetails(Map<String, Object> resp, Sale sale, String number, LocalDateTime date, AeatStatus status, String sent, String received) {
+        Map<String, Object> client = new LinkedHashMap<>();
+        if (sale != null && sale.getCustomer() != null) {
+            Customer c = sale.getCustomer();
+            client.put("nombre", c.getName());
+            client.put("nif", c.getTaxId());
+            client.put("direccion", c.getAddress());
+            client.put("cp", c.getPostalCode());
+        } else {
+            client.put("nombre", "Cliente Final / Simplificada");
+            client.put("nif", "—");
+        }
+        resp.put("cliente", client);
+
+        Map<String, Object> fact = new LinkedHashMap<>();
+        fact.put("numero", number);
+        fact.put("fecha", date);
+        fact.put("importe", sale != null ? sale.getTotalAmount() : 0);
+        fact.put("estadoAeat", status != null ? status.name() : "PENDIENTE");
+        resp.put("factura", fact);
+
+        resp.put("verifactuXmlSent", sent);
+        resp.put("verifactuXmlReceived", received);
     }
 }
