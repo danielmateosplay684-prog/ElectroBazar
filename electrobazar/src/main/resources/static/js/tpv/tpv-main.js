@@ -3513,43 +3513,56 @@ window.openAbonoSelectionModal = function() {
     if (searchInput) searchInput.value = '';
 
     if (customerId) {
-        instructions.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Cargando bonos del cliente...';
+        instructions.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: var(--accent);"></span> Cargando bonos del cliente...';
         abonoList.innerHTML = '';
         abonoList.style.display = 'none';
-        manualInput.style.display = 'none';
+        
+        // Show manual search/input even if customer is selected (user request)
+        manualInput.style.display = 'block';
 
         fetch(`/api/customers/${customerId}/abonos`)
             .then(r => r.json())
             .then(abonos => {
                 if (abonos && abonos.length > 0) {
-                    instructions.textContent = "Seleccione el abono que desea aplicar a esta venta.";
+                    instructions.innerHTML = '<i class="bi bi-person-check-fill me-1" style="color: var(--accent);"></i> ' + abonos.length + ' bonos disponibles para este cliente.';
                     let html = '';
                     abonos.forEach(a => {
                         html += `
-                            <div class="form-check p-3 mb-2 rounded border" style="background: var(--surface); cursor: pointer;" onclick="this.querySelector('input').click()">
-                                <input class="form-check-input abono-modal-radio" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}">
-                                <label class="form-check-label ps-2 w-100" for="abono-${a.id}" style="cursor: pointer;">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong>${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</strong>
-                                        <span class="badge bg-secondary">${new Date(a.createdAt).toLocaleDateString()}</span>
+                            <div class="d-flex align-items-center p-3 mb-2 rounded border abono-item-card" 
+                                 style="background: var(--surface); border-color: var(--border) !important; cursor: pointer;" 
+                                 onclick="const r = this.querySelector('input'); r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true}));">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input abono-modal-radio me-3" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}" style="cursor: pointer;">
+                                </div>
+                                <label class="form-check-label w-100" for="abono-${a.id}" style="cursor: pointer; color: var(--text-main); margin-bottom: 0;">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong style="font-size: 1.1rem; color: var(--accent);">${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</strong>
+                                        <div class="d-flex flex-column align-items-end">
+                                            <span class="badge mb-1" style="background: rgba(var(--accent-rgb), 0.1); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), 0.2); font-size: 0.7rem;">Emitido: ${new Date(a.fecha).toLocaleDateString()}</span>
+                                            <span class="badge" style="background: ${a.fechaLimite ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'}; color: ${a.fechaLimite ? '#ef4444' : '#22c55e'}; border: 1px solid ${a.fechaLimite ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; font-size: 0.7rem;">
+                                                ${a.fechaLimite ? 'Vence: ' + new Date(a.fechaLimite).toLocaleDateString() : 'Sin fecha límite'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="small text-muted text-truncate" style="max-width: 300px;">${a.motivo || 'Bono'}</div>
+                                    <div class="small" style="color: var(--text-muted); opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
+                                        <i class="bi bi-info-circle me-1"></i> ${a.motivo || 'Bono de crédito'}
+                                    </div>
                                 </label>
                             </div>`;
                     });
                     abonoList.innerHTML = html;
                     abonoList.style.display = 'block';
                 } else {
-                    instructions.textContent = "El cliente no tiene bonos disponibles.";
+                    instructions.innerHTML = '<i class="bi bi-info-circle me-1"></i> El cliente seleccionado no tiene bonos guardados.';
                 }
             })
             .catch(err => {
                 console.error("[Abonos] Error fetching:", err);
-                instructions.textContent = "Error al cargar los bonos.";
+                instructions.innerHTML = '<span class="text-danger">Error al cargar los bonos.</span>';
             });
     } else {
         // No hay cliente, mostrar entrada manual y búsqueda por código
-        instructions.textContent = "Busque un bono por código o introduzca el importe manualmente.";
+        instructions.innerHTML = '<i class="bi bi-search me-1"></i> Busque un bono por código o introduzca el importe manualmente.';
         abonoList.style.display = 'none';
         manualInput.style.display = 'block';
         const manAmtInput = document.getElementById('abono-manual-amount');
@@ -3578,7 +3591,7 @@ window.searchAbonoByCode = function() {
     const code = codeInput.value.trim();
     if (!code) return;
 
-    resultDiv.innerHTML = '<div class="text-center p-2"><span class="spinner-border spinner-border-sm text-primary"></span> Buscando...</div>';
+    resultDiv.innerHTML = '<div class="text-center p-3" style="color: var(--text-main);"><span class="spinner-border spinner-border-sm" style="color: var(--accent);"></span> Buscando bono...</div>';
     resultDiv.style.display = 'block';
 
     fetch(`/api/abonos/search?code=${encodeURIComponent(code)}`)
@@ -3588,21 +3601,35 @@ window.searchAbonoByCode = function() {
         })
         .then(a => {
             resultDiv.innerHTML = `
-                <div class="alert alert-success d-flex align-items-center mb-0" style="border-radius: 12px; border: 2px solid var(--success);">
-                    <div class="form-check w-100" onclick="this.querySelector('input').click()">
-                        <input class="form-check-input abono-modal-radio" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}" checked>
-                        <label class="form-check-label ps-2 w-100" for="abono-${a.id}" style="cursor: pointer;">
-                            <div class="fw-bold">Bono encontrado: ${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</div>
-                            <div class="small">Código: ${a.code} | Cliente: ${a.cliente ? a.cliente.name : 'N/D'}</div>
-                        </label>
+                <div class="d-flex align-items-center p-3 mb-0 rounded border abono-item-card" 
+                     style="background: var(--surface); border-color: var(--accent) !important; border-width: 2px !important; cursor: pointer;" 
+                     onclick="const r = this.querySelector('input'); r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true}));">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input abono-modal-radio me-3" type="radio" name="abonoSelection" id="abono-${a.id}" value="${a.id}" data-amount="${a.importe}" checked style="cursor: pointer;">
                     </div>
+                    <label class="form-check-label w-100" for="abono-${a.id}" style="cursor: pointer; color: var(--text-main); margin-bottom: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong style="font-size: 1.1rem; color: var(--accent);">Bono: ${parseFloat(a.importe).toFixed(2).replace('.', ',')}€</strong>
+                            <div class="d-flex flex-column align-items-end">
+                                <span class="badge mb-1" style="background: rgba(var(--accent-rgb), 0.1); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), 0.2); font-size: 0.7rem;">Código: ${a.code}</span>
+                                <span class="badge" style="background: ${a.fechaLimite ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'}; color: ${a.fechaLimite ? '#ef4444' : '#22c55e'}; border: 1px solid ${a.fechaLimite ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; font-size: 0.7rem;">
+                                    ${a.fechaLimite ? 'Vence: ' + new Date(a.fechaLimite).toLocaleDateString() : 'Sin fecha límite'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="small" style="color: var(--text-muted);">
+                            <i class="bi bi-person-circle me-1"></i> Cliente: ${a.cliente ? a.cliente.name : 'N/D'}
+                        </div>
+                    </label>
                 </div>`;
             // Al encontrar uno, borramos el importe manual para evitar confusiones
             const manAmtInput = document.getElementById('abono-manual-amount');
             if (manAmtInput) manAmtInput.value = '';
         })
         .catch(err => {
-            resultDiv.innerHTML = `<div class="alert alert-danger mb-0 small" style="border-radius: 12px;">${err.message}</div>`;
+            resultDiv.innerHTML = `<div class="p-3 mb-0 border" style="border-radius: 12px; border: 1px solid #ef4444 !important; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 600; font-size: 0.85rem;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>${err.message}
+            </div>`;
         });
 }
 

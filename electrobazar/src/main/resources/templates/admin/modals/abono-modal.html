@@ -51,6 +51,10 @@
                                 <label class="form-label small fw-bold text-muted" th:text="#{admin.abonos.modal.reason}">Motivo (Opcional)</label>
                                 <textarea id="abonoFormMotivo" class="form-control" rows="2" th:placeholder="#{common.description.placeholder}"></textarea>
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted">Fecha Límite / Caducidad (Opcional)</label>
+                                <input type="datetime-local" id="abonoFormFechaLimite" class="form-control">
+                            </div>
                             <!-- NUEVA OPCIÓN: CONFIGURACIÓN DE USO -->
                             <div class="mb-1 p-2 rounded" style="background: rgba(var(--accent-rgb), 0.05); border: 1px dashed var(--border);">
                                 <div class="form-check form-switch mb-0">

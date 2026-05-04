@@ -178,7 +178,11 @@
                     <table class="return-lines-table">
                         <thead>
                             <tr>
-                                <th><i class="bi bi-check2-square"></i></th>
+                                <th>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="master-selector" onchange="toggleAll(this)">
+                                    </div>
+                                </th>
                                 <th>Producto</th>
                                 <th>Precio/ud.</th>
                                 <th>Vendido</th>
@@ -190,7 +194,8 @@
                         <tbody>
                             <tr th:each="line : ${sale.lines}"
                                 th:with="returned=${alreadyReturned[line.id]}, available=${line.quantity - alreadyReturned[line.id]}"
-                                th:class="${available == 0} ? 'fully-returned' : ''">
+                                th:class="${available == 0} ? 'fully-returned' : ''"
+                                onclick="handleRowClick(event, this)" style="cursor: pointer;">
                                 <td>
                                     <div class="form-check">
                                         <input class="form-check-input row-selector" type="checkbox"
@@ -210,9 +215,13 @@
                                         ud.</strong></td>
                                 <td>
                                     <input type="number" name="quantities" class="qty-input" th:id="'qty-' + ${line.id}"
-                                        th:value="0" min="0" th:max="${available}" step="0.001" disabled
-                                        th:attr="data-max=${available}" oninput="validateQty(this)">
-                                    <div class="qty-error-msg">Máx. <span th:text="${available}">0</span> superado</div>
+                                        th:value="0" min="0" th:max="${available}" 
+                                        th:step="${line.product.measurementUnit != null ? (line.product.measurementUnit.decimalPlaces > 0 ? (1.0 / T(java.lang.Math).pow(10, line.product.measurementUnit.decimalPlaces)) : 1) : 1}"
+                                        th:attr="data-max=${available}, data-decimals=${line.product.measurementUnit != null ? line.product.measurementUnit.decimalPlaces : 0}"
+                                        disabled
+                                        oninput="validateQty(this)" 
+                                        onkeydown="if(event.key==='-' || event.key==='e') event.preventDefault();">
+                                    <div class="qty-error-msg">Cantidad no válida</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -270,10 +279,44 @@
     </div>
 
     <script>
+        function toggleAll(masterCheckbox) {
+            const checkboxes = document.querySelectorAll('.row-selector:not(:disabled)');
+            checkboxes.forEach(cb => {
+                cb.checked = masterCheckbox.checked;
+                toggleRow(cb);
+            });
+        }
+
+        function handleRowClick(event, tr) {
+            // Prevent toggling if clicking on interactive elements
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || 
+                event.target.tagName === 'A' || event.target.closest('.form-check')) {
+                return;
+            }
+            const checkbox = tr.querySelector('.row-selector');
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = !checkbox.checked;
+                toggleRow(checkbox);
+                
+                // Update master checkbox if needed
+                updateMasterCheckbox();
+            }
+        }
+
+        function updateMasterCheckbox() {
+            const master = document.getElementById('master-selector');
+            if (!master) return;
+            const checkboxes = document.querySelectorAll('.row-selector:not(:disabled)');
+            const checked = document.querySelectorAll('.row-selector:checked');
+            master.checked = checkboxes.length > 0 && checkboxes.length === checked.length;
+            master.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+        }
+
         function toggleRow(checkbox) {
             const row = checkbox.closest('tr');
             const qtyInput = row.querySelector('.qty-input');
             const idInput = row.querySelector('.line-id-input');
+            const errorMsg = row.querySelector('.qty-error-msg');
             const max = parseFloat(qtyInput.getAttribute('data-max'));
 
             if (checkbox.checked) {
@@ -282,27 +325,56 @@
                 idInput.disabled = false;
                 qtyInput.value = max;
                 qtyInput.focus();
+                validateQty(qtyInput);
             } else {
                 row.classList.remove('row-selected');
+                row.classList.remove('row-error');
                 qtyInput.disabled = true;
                 idInput.disabled = true;
                 qtyInput.value = 0;
+                qtyInput.classList.remove('is-invalid');
+                if (errorMsg) errorMsg.style.display = 'none';
             }
-            validateQty(qtyInput);
+            updateMasterCheckbox();
         }
 
         function validateQty(input) {
             const max = parseFloat(input.getAttribute('data-max'));
-            const val = parseFloat(input.value || 0);
+            const decimals = parseInt(input.getAttribute('data-decimals') || 0);
+            const rawVal = input.value;
+            const val = parseFloat(rawVal || 0);
             const row = input.closest('tr');
+            const errorMsg = row.querySelector('.qty-error-msg');
+            
+            let errorText = "";
+            let isInvalid = false;
 
-            if (val > max || val < 0) {
+            if (rawVal === "" || val <= 0) {
+                const minVal = decimals > 0 ? (1 / Math.pow(10, decimals)).toFixed(decimals) : "1";
+                errorText = `Debes devolver al menos ${minVal} uds.`;
+                isInvalid = true;
+            } else if (val > max) {
+                // Personalised message as requested
+                const maxFormatted = decimals > 0 ? max.toFixed(decimals).replace('.', ',') : Math.floor(max);
+                errorText = `Máximo disponible para devolver: ${maxFormatted} uds.`;
+                isInvalid = true;
+            } else if (decimals === 0 && !Number.isInteger(val)) {
+                errorText = "Este producto solo permite cantidades enteras.";
+                isInvalid = true;
+            }
+
+            if (isInvalid) {
                 input.classList.add('is-invalid');
                 row.classList.add('row-error');
+                if (errorMsg) {
+                    errorMsg.innerText = errorText;
+                    errorMsg.style.display = 'block';
+                }
                 return false;
             } else {
                 input.classList.remove('is-invalid');
                 row.classList.remove('row-error');
+                if (errorMsg) errorMsg.style.display = 'none';
                 return true;
             }
         }

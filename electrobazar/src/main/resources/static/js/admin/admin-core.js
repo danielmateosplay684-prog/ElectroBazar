@@ -57,8 +57,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Hash-based navigation
     function handleHashNavigation() {
         const hash = window.location.hash.substring(1);
+        const navType = performance.getEntriesByType('navigation')[0]?.type;
+        const isFreshEntry = navType === 'navigate';
+
         if (!hash || hash === 'dashboard') {
             const lastView = sessionStorage.getItem('adminLastView');
+            
+            // If it's a fresh entry (not a reload or back/forward), force dashboard
+            if (isFreshEntry) {
+                switchView('dashboardView', null, true);
+                return;
+            }
+
+            // For reloads or back/forward, try to restore the last view
             if (lastView && lastView !== 'dashboardView' && document.getElementById(lastView)) {
                 switchView(lastView, null, true);
                 return;

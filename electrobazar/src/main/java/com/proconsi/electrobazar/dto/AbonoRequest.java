@@ -29,4 +29,6 @@ public class AbonoRequest {
     private String motivo;
     
     private Boolean requiresFullUse;
+
+    private String fechaLimite;
 }

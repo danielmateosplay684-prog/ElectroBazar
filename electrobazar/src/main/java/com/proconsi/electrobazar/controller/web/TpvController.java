@@ -692,13 +692,12 @@ public class TpvController {
                         .ok(Collections.singletonMap("redirectUrl", "/tpv/return/" + saleId));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Collections.singletonMap("errorMessage", "Ticket not found: " + query));
+                        .body(Collections.singletonMap("errorMessage", getMessage("tpv.error.ticket_not_found", query)));
             }
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("errorMessage",
-                            "Error searching for ticket: " + e.getMessage()));
+                    .body(Collections.singletonMap("errorMessage", getMessage("tpv.error.ticket_search", e.getMessage())));
         }
     }
 
@@ -722,10 +721,10 @@ public class TpvController {
                 return "redirect:/tpv/return/" + invoiceOpt.get().getSale().getId();
             }
 
-            redirectAttributes.addFlashAttribute("errorMessage", "Ticket/Invoice not found: " + query);
+            redirectAttributes.addFlashAttribute("errorMessage", getMessage("tpv.error.ticket_invoice_not_found", query));
             return "redirect:/tpv";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error searching for ticket: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", getMessage("tpv.error.ticket_search", e.getMessage()));
             return "redirect:/tpv";
         }
     }
@@ -1058,5 +1057,8 @@ public class TpvController {
         result.put("newPrice", displayNewPrice);
         result.put("productId", productId);
         return ResponseEntity.ok(result);
+    }
+    private String getMessage(String key, Object... args) {
+        return messageSource.getMessage(key, args, LocaleContextHolder.getLocale());
     }
 }

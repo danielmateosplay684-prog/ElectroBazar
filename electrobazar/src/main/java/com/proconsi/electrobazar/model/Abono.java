@@ -56,4 +56,7 @@ public class Abono {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EstadoAbono estado;
+
+    @Column(name = "fecha_limite")
+    private LocalDateTime fechaLimite;
 }

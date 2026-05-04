@@ -1469,3 +1469,32 @@
         .btn-accent i, .btn-accent span {
             color: inherit !important;
         }
+        .abono-item-card {
+            position: relative;
+            overflow: hidden;
+            border-width: 2px !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .abono-item-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent) !important;
+            background: rgba(var(--accent-rgb), 0.05) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .abono-item-card input:checked + label {
+            font-weight: bold;
+        }
+
+        /* Ensure radio button is inside and visible */
+        .abono-modal-radio {
+            transform: scale(1.2);
+            border-color: var(--border);
+            background-color: var(--surface);
+        }
+
+        .abono-modal-radio:checked {
+            background-color: var(--accent) !important;
+            border-color: var(--accent) !important;
+        }

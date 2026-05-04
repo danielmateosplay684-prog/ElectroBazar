@@ -381,7 +381,8 @@
         </div>
     </header>
 
-    <div class="tpv-body">
+    <div class="tpv-body" id="tpvMainBody" style="opacity: 0; transition: opacity 0.3s ease;">
+
         <!-- SIDEBAR CATEGORÍAS (Izquierda) -->
         <nav class="tpv-sidebar">
             <div class="sidebar-title" th:text="#{tpv.categories}">Categorías</div>
@@ -394,73 +395,7 @@
                 Categoría
             </button>
         </nav>
-
-        <!-- GRID DE PRODUCTOS (Centro) -->
-        <main class="tpv-products" th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''">
-            <div th:if="${successMessage}" class="alert-tpv" id="successAlert">
-                <i class="bi bi-check-circle-fill"></i>
-                <span th:text="${successMessage}"></span>
-            </div>
-            <div th:if="${errorMessage}" class="alert-tpv bg-danger" id="errorAlert">
-                <i class="bi bi-exclamation-octagon-fill"></i>
-                <span th:text="${errorMessage}"></span>
-            </div>
-            <div class="products-grid">
-                <!-- Wildcard Product (Always first) -->
-                <div class="product-card wildcard-card" th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''"
-                    onclick="event.stopPropagation(); openWildcardModal()" data-id="wildcard" data-stock="&infin;"
-                    style="border: 2px dashed var(--accent); background: rgba(var(--accent-rgb), 0.05);">
-                    <div class="product-image-container">
-                        <i class="bi bi-plus-circle-dotted product-icon"
-                            style="color: var(--accent); font-size: 2.5rem;"></i>
-                        <span class="stock-badge stock-neutral"
-                            style="background: var(--accent); color: var(--primary);">∞</span>
-                    </div>
-                    <div class="product-info text-center">
-                        <div class="product-name" style="color: var(--accent); font-weight: 800; font-size: 0.95rem;">
-                            PRODUCTO COMODÍN</div>
-                        <div class="product-price" style="color: var(--text-muted); font-size: 0.85rem;">Nombre y precio
-                            manual</div>
-                        <div class="product-category-badge"
-                            style="background: var(--accent); color: var(--primary); font-weight: 700;">GENÉRICO</div>
-                    </div>
-                </div>
-                <div th:if="${#lists.isEmpty(products)}" class="no-products">
-                    <i class="bi bi-box-seam"></i>
-                    <p th:text="#{tpv.no_products}">No hay productos disponibles</p>
-                </div>
-                <div th:each="product : ${products}" class="product-card"
-                    th:classappend="${(!isRegisterOpen) ? 'disabled-tpv' : (product.stock <= 0 ? 'out-of-stock' : '')}" style="position: relative;"
-                    th:attr="data-id=${product.id}, 
-                             data-name=${product.name}, 
-                             data-price=${product.price}, 
-                             data-category=${product.category != null ? product.category.name : ''}, 
-                             data-category-id=${product.category != null ? product.category.id : ''}, 
-                             data-stock=${product.stock},
-                             data-sales-rank=${product.salesRank},
-                             data-decimal-places=${product.measurementUnit != null ? product.measurementUnit.decimalPlaces : 0},
-                             data-prompt-on-add=${product.measurementUnit != null ? (product.measurementUnit.promptOnAdd or product.measurementUnit.decimalPlaces > 0) : false},
-                             data-unit-symbol=${product.measurementUnit != null ? product.measurementUnit.symbol : 'uds.'}">
-                    <i class="bi bi-star product-favorite-btn" th:attr="data-product-id=${product.id}"
-                        style="position: absolute; top: 8px; left: 8px; z-index: 10; font-size: 1.25rem; cursor: pointer; text-shadow: 0 0 3px rgba(0,0,0,0.3);"></i>
-                    <div class="product-image-container">
-                        <img th:if="${product.imageUrl}" th:src="${product.imageUrl}" alt="Imagen producto"
-                            class="product-image">
-                        <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
-                        <span class="stock-badge"
-                            th:classappend="${product.stock <= 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
-                            th:text="${(product.stock == 0 or product.stock == null) ? '0' : (product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, product.measurementUnit.decimalPlaces, 'COMMA') : #numbers.formatDecimal(product.stock, 1, 0, 'COMMA'))}">0</span>
-                    </div>
-                    <div class="product-info">
-                        <div class="product-name" th:text="${product.name}">Nombre producto</div>
-                        <div class="product-price" th:text="${formattedPrices[product.id]} + '€'"></div>
-                        <div class="product-category-badge"
-                            th:text="${product.category != null ? product.category.name : ''}"></div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
+        
         <!-- TICKET (Derecha) -->
         <aside class="tpv-ticket">
             <div class="ticket-header">
@@ -476,7 +411,7 @@
                         <div class="d-flex flex-column overflow-hidden">
                             <div class="d-flex align-items-center gap-2">
                                 <span id="sidebarCustomerName" class="fw-bold truncate"
-                                    style="font-size: 0.9rem; color: var(--text-main);"></span>
+                                     style="font-size: 0.9rem; color: var(--text-main);"></span>
                                 <span id="sidebarTariffBadge" class="badge-tariff-small"></span>
                             </div>
                             <span id="sidebarCustomerTaxId" class="small text-muted" style="font-size: 0.75rem;"></span>
@@ -658,7 +593,83 @@
                 </button>
             </div>
         </aside>
+
+
+        <!-- GRID DE PRODUCTOS (Centro) -->
+        <main class="tpv-products" th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''">
+            <div th:if="${successMessage}" class="alert-tpv" id="successAlert">
+                <i class="bi bi-check-circle-fill"></i>
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="alert-tpv bg-danger" id="errorAlert">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+            <div class="products-grid">
+                <!-- Wildcard Product (Always first) -->
+                <div class="product-card wildcard-card" th:classappend="${!isRegisterOpen} ? 'disabled-tpv' : ''"
+                    onclick="event.stopPropagation(); openWildcardModal()" data-id="wildcard" data-stock="&infin;"
+                    style="border: 2px dashed var(--accent); background: rgba(var(--accent-rgb), 0.05);">
+                    <div class="product-image-container">
+                        <i class="bi bi-plus-circle-dotted product-icon"
+                            style="color: var(--accent); font-size: 2.5rem;"></i>
+                        <span class="stock-badge stock-neutral"
+                            style="background: var(--accent); color: var(--primary);">∞</span>
+                    </div>
+                    <div class="product-info text-center">
+                        <div class="product-name" style="color: var(--accent); font-weight: 800; font-size: 0.95rem;">
+                            PRODUCTO COMODÍN</div>
+                        <div class="product-price" style="color: var(--text-muted); font-size: 0.85rem;">Nombre y precio
+                            manual</div>
+                        <div class="product-category-badge"
+                            style="background: var(--accent); color: var(--primary); font-weight: 700;">GENÉRICO</div>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(products)}" class="no-products">
+                    <i class="bi bi-box-seam"></i>
+                    <p th:text="#{tpv.no_products}">No hay productos disponibles</p>
+                </div>
+                <div th:each="product : ${products}" class="product-card"
+                    th:classappend="${(!isRegisterOpen) ? 'disabled-tpv' : (product.stock <= 0 ? 'out-of-stock' : '')}" style="position: relative;"
+                    th:attr="data-id=${product.id}, 
+                             data-name=${product.name}, 
+                             data-price=${product.price}, 
+                             data-category=${product.category != null ? product.category.name : ''}, 
+                             data-category-id=${product.category != null ? product.category.id : ''}, 
+                             data-stock=${product.stock},
+                             data-sales-rank=${product.salesRank},
+                             data-decimal-places=${product.measurementUnit != null ? product.measurementUnit.decimalPlaces : 0},
+                             data-prompt-on-add=${product.measurementUnit != null ? (product.measurementUnit.promptOnAdd or product.measurementUnit.decimalPlaces > 0) : false},
+                             data-unit-symbol=${product.measurementUnit != null ? product.measurementUnit.symbol : 'uds.'}">
+                    <i class="bi bi-star product-favorite-btn" th:attr="data-product-id=${product.id}"
+                        style="position: absolute; top: 8px; left: 8px; z-index: 10; font-size: 1.25rem; cursor: pointer; text-shadow: 0 0 3px rgba(0,0,0,0.3);"></i>
+                    <div class="product-image-container">
+                        <img th:if="${product.imageUrl}" th:src="${product.imageUrl}" alt="Imagen producto"
+                            class="product-image">
+                        <i th:unless="${product.imageUrl}" class="bi bi-box product-icon"></i>
+                        <span class="stock-badge"
+                            th:classappend="${product.stock <= 0 ? 'stock-danger' : (product.stock < 5 ? 'stock-warning' : 'stock-neutral')}"
+                            th:text="${(product.stock == 0 or product.stock == null) ? '0' : (product.measurementUnit != null ? #numbers.formatDecimal(product.stock, 1, product.measurementUnit.decimalPlaces, 'COMMA') : #numbers.formatDecimal(product.stock, 1, 0, 'COMMA'))}">0</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name" th:text="${product.name}">Nombre producto</div>
+                        <div class="product-price" th:text="${formattedPrices[product.id]} + '€'"></div>
+                        <div class="product-category-badge"
+                            th:text="${product.category != null ? product.category.name : ''}"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+
     </div>
+    <script>
+        (function() {
+            const body = document.getElementById('tpvMainBody');
+            if (body) body.style.opacity = '1';
+        })();
+    </script>
+
 
     <!-- Modal para Introducir Cantidad -->
     <div class="modal fade" id="quantityModal" tabindex="-1">
@@ -1553,7 +1564,7 @@
                     <button type="button" class="btn-close" th:style="'filter: brightness(0) invert(1);'" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.9;"></button>
                 </div>
                 <div class="modal-body p-4" style="background: var(--primary);">
-                    <p id="abono-modal-instructions" class="small mb-4" style="color: var(--text-muted) !important; opacity: 0.9;">Seleccione el abono que desea aplicar a esta venta (máximo uno por venta).</p>
+                    <p id="abono-modal-instructions" class="small mb-4" style="color: var(--text-main) !important; opacity: 0.85; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">Seleccione el abono que desea aplicar a esta venta (máximo uno por venta).</p>
                     
                     <!-- Formulario para cliente con abonos -->
                     <div id="tpv-abono-selection-list" style="display:none;">

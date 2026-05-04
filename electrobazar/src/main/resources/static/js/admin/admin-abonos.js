@@ -3,6 +3,14 @@
  * Modern Abonos (credits/refunds) management.
  */
 
+// Initialize global functions
+window.openAbonoModal = openAbonoModal;
+window.saveAbono = saveAbono;
+window.filterAbonos = filterAbonos;
+window.anularAbono = anularAbono;
+window.eliminarAbono = eliminarAbono;
+window.imprimirAbono = imprimirAbono;
+
 function openAbonoModal() {
     const form = document.getElementById('abonoForm');
     if (form) form.reset();
@@ -34,7 +42,8 @@ function saveAbono() {
         tipoAbono: tipo,
         metodoPago: pago,
         motivo: motivo,
-        requiresFullUse: requiresFullUse
+        requiresFullUse: requiresFullUse,
+        fechaLimite: document.getElementById('abonoFormFechaLimite')?.value || null
     };
 
     fetch('/api/abonos', {
@@ -117,7 +126,10 @@ function filterAbonos() {
                                 <i class="bi bi-printer"></i>
                             </button>
                              ${a.estado === 'PENDIENTE' ? `
-                                <button class="btn-icon danger" onclick="anularAbono(${a.id})" title="Anular">
+                                <button class="btn-icon warning" onclick="anularAbono(${a.id})" title="Anular">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                                <button class="btn-icon danger" onclick="eliminarAbono(${a.id})" title="Eliminar Permanentemente">
                                     <i class="bi bi-trash"></i>
                                 </button>
                              ` : ''}
@@ -139,7 +151,7 @@ function anularAbono(id) {
     if (!confirm('¿Seguro que desea anular este abono?')) return;
 
     fetch(`/api/abonos/${id}/anular`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 
             [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
         }
@@ -151,6 +163,32 @@ function anularAbono(id) {
         } else {
             if (typeof showToast === 'function') showToast('No se pudo anular el abono', 'error');
         }
+    });
+}
+
+/**
+ * Permanently deletes an abono (only if PENDING)
+ */
+function eliminarAbono(id) {
+    if (!confirm('¿Seguro que desea ELIMINAR PERMANENTEMENTE este abono? Esta acción no se puede deshacer.')) return;
+
+    fetch(`/api/abonos/${id}`, {
+        method: 'DELETE',
+        headers: { 
+            [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
+        }
+    })
+    .then(res => {
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Abono eliminado correctamente', 'success');
+            filterAbonos();
+        } else {
+            if (typeof showToast === 'function') showToast('No se pudo eliminar el abono (puede que ya haya sido usado)', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        if (typeof showToast === 'function') showToast('Error de conexión', 'error');
     });
 }
 
@@ -210,11 +248,3 @@ function imprimirAbono(a) {
     `);
     printWin.document.close();
 }
-
-// Global exports
-window.openAbonoModal = openAbonoModal;
-window.saveAbono = saveAbono;
-window.filterAbonos = filterAbonos;
-window.anularAbono = anularAbono;
-window.imprimirAbono = imprimirAbono;
-

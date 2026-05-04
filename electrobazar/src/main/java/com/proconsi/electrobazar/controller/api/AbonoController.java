@@ -76,6 +76,18 @@ public class AbonoController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarAbono(@PathVariable Long id) {
+        try {
+            abonoService.deleteAbono(id);
+            return ResponseEntity.ok("Abono eliminado con éxito");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al eliminar el abono");
+        }
+    }
+
     @GetMapping("/search")
     public ResponseEntity<?> findByCode(@RequestParam String code) {
         return abonoService.findByCode(code)

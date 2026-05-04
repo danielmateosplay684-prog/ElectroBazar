@@ -5,6 +5,7 @@ import com.proconsi.electrobazar.model.TipoAbono;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,5 +15,7 @@ public interface AbonoRepository extends JpaRepository<Abono, Long> {
     List<Abono> findByClienteId(Long clienteId);
     Page<Abono> findByClienteId(Long clienteId, Pageable pageable);
     List<Abono> findByTipoAbono(TipoAbono tipoAbono);
-    java.util.Optional<Abono> findByCode(String code);
+    Optional<Abono> findByCode(String code);
+    Optional<Abono> findTopByCodeStartingWithOrderByIdDesc(String prefix);
 }
+

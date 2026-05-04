@@ -71,9 +71,23 @@ public class AbonoServiceImpl implements AbonoService {
         // Guardamos el importe como valor positivo absoluto para facilitar los cálculos de resta en el TPV
         BigDecimal importePositivo = request.getImporte().abs();
 
-        // Generar un código único estilo matrícula/localizador: AB-AÑO-RANDOM (ej: AB-24-X9R2)
-        String code = "AB-" + (java.time.Year.now().getValue() % 100) + "-" + 
-                     java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        // Generar código secuencial: AB-YYYY-N (ej: AB-2026-1, AB-2026-2...)
+        int currentYear = java.time.Year.now().getValue();
+        String prefix = "AB-" + currentYear + "-";
+        
+        long nextNum = 1;
+        java.util.Optional<Abono> lastAbono = abonoRepository.findTopByCodeStartingWithOrderByIdDesc(prefix);
+        if (lastAbono.isPresent()) {
+            try {
+                String lastCode = lastAbono.get().getCode();
+                String numPart = lastCode.substring(prefix.length());
+                nextNum = Long.parseLong(numPart) + 1;
+            } catch (Exception e) {
+                // Si el formato no coincide, buscamos el siguiente ID disponible como fallback
+                nextNum = abonoRepository.count() + 1;
+            }
+        }
+        String code = prefix + nextNum;
 
         Abono abono = Abono.builder()
                 .code(code)
@@ -86,6 +100,7 @@ public class AbonoServiceImpl implements AbonoService {
                 .requiresFullUse(request.getRequiresFullUse() != null ? request.getRequiresFullUse() : true)
                 .motivo(request.getMotivo())
                 .estado(EstadoAbono.PENDIENTE)
+                .fechaLimite(request.getFechaLimite() != null && !request.getFechaLimite().isBlank() ? LocalDateTime.parse(request.getFechaLimite()) : null)
                 .build();
                 
         // Si el tipo es CREDITO_FAVOR, no descuente caja sino que quede como saldo pendiente del cliente
@@ -153,6 +168,19 @@ public class AbonoServiceImpl implements AbonoService {
 
         abono.setEstado(EstadoAbono.ANULADO);
         abonoRepository.save(abono);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAbono(Long id) {
+        Abono abono = abonoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Abono no encontrado"));
+
+        if (abono.getEstado() != EstadoAbono.PENDIENTE) {
+            throw new IllegalStateException("Solo se pueden eliminar abonos en estado PENDIENTE");
+        }
+
+        abonoRepository.delete(abono);
     }
 
     @Override

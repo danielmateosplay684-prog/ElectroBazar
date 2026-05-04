@@ -12,5 +12,6 @@ public interface AbonoService {
     List<Abono> getAbonosByCliente(String clienteIdOrDoc);
     Page<Abono> getAbonosPaged(String clienteIdOrDoc, Pageable pageable);
     void anularAbono(Long id);
+    void deleteAbono(Long id);
     java.util.Optional<Abono> findByCode(String code);
 }
