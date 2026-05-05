@@ -95,7 +95,8 @@ document.addEventListener('DOMContentLoaded', function () {
             'unidades': 'measurementUnitsView',
             'logs': 'activityView',
             'config': 'settingsView',
-            'abonos': 'abonosView'
+            'abonos': 'abonosView',
+            'verifactu': 'verifactuView'
         };
 
         const viewId = mapping[hash] || (hash + 'View');

@@ -32,4 +32,8 @@ public class DailyCategorySummary {
     @Column(nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 15, scale = 3)
+    @Builder.Default
+    private BigDecimal unitsSold = BigDecimal.ZERO;
 }

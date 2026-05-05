@@ -76,11 +76,12 @@ public class DatabaseIndexInitializer {
         if (countCats != null && countCats == 0) {
             log.warn("Daily category stats table is empty. Seeding from historical lines... (This may take a minute)");
             String seedCatsSql = """
-                INSERT INTO daily_category_stats (date, category_name, total_amount)
+                INSERT INTO daily_category_stats (date, category_name, total_amount, units_sold)
                 SELECT 
                     DATE(s.created_at) as date,
                     COALESCE(c.name_es, 'Sin Categoría') as category_name,
-                    SUM(sl.subtotal) as total_amount
+                    SUM(sl.subtotal) as total_amount,
+                    SUM(sl.quantity) as units_sold
                 FROM sales s
                 JOIN sale_lines sl ON sl.sale_id = s.id
                 JOIN products p ON p.id = sl.product_id
@@ -141,8 +142,11 @@ public class DatabaseIndexInitializer {
             // Try to update monthly stats too if it exists as a table
             jdbcTemplate.execute("ALTER TABLE monthly_sales_stats ADD COLUMN IF NOT EXISTS returns_count BIGINT DEFAULT 0");
             jdbcTemplate.execute("ALTER TABLE monthly_sales_stats ADD COLUMN IF NOT EXISTS returns_total DECIMAL(15,2) DEFAULT 0.00");
+
+            // Ensure daily_category_stats has units_sold
+            jdbcTemplate.execute("ALTER TABLE daily_category_stats ADD COLUMN IF NOT EXISTS units_sold DECIMAL(15,3) DEFAULT 0.000");
         } catch (Exception e) {
-            log.warn("Could not add returns columns to stats tables (might be views): {}", e.getMessage());
+            log.warn("Could not add columns to stats tables (might be views): {}", e.getMessage());
         }
 
         // Return deadline feature: ensure columns exist (idempotent on every restart)

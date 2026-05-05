@@ -118,12 +118,12 @@
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                                     <button class="btn-icon" th:title="#{common.edit}" th:data-id="${p.id}"
                                         onclick="openProductModal(this.getAttribute('data-id'))">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="bi bi-pencil" style="color: #3498db;"></i>
                                     </button>
-                                    <button class="btn-icon danger" th:title="#{common.delete}"
+                                    <button class="btn-icon" th:title="#{common.delete}"
                                         th:data-id="${p.id}" th:data-name="${p.name}"
                                         onclick="deleteProduct(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
                                     </button>
                                 </div>
                             </td>
@@ -217,12 +217,12 @@
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                                     <button class="btn-icon" th:title="#{common.edit}" th:data-id="${c.id}"
                                         onclick="openCategoryModal(this.getAttribute('data-id'))">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="bi bi-pencil" style="color: #3498db;"></i>
                                     </button>
-                                    <button class="btn-icon danger" th:title="#{common.delete}"
+                                    <button class="btn-icon" th:title="#{common.delete}"
                                         th:data-id="${c.id}" th:data-name="${c.name}"
                                         onclick="deleteCategory(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
                                     </button>
                                 </div>
                             </td>

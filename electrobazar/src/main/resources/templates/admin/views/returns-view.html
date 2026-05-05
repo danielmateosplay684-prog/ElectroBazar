@@ -120,12 +120,12 @@
                             <button type="button" class="btn-icon" th:title="#{admin.common.preview}"
                                 style="text-decoration: none;"
                                 th:onclick="'event.stopPropagation(); showDocPreview(\'/tpv/return-receipt/' + ${ret.id} + '\')'">
-                                <i class="bi bi-eye" style="color:#3498db;"></i>
+                                <i class="bi bi-eye" style="color: #6c757d;"></i>
                             </button>
                             <a th:href="@{/admin/download/return/{id}(id=${ret.id})}" target="_blank" class="btn-icon"
-                                th:title="#{admin.returns.print}" style="text-decoration: none;"
+                                th:title="#{common.download}" style="text-decoration: none;"
                                 onclick="event.stopPropagation();">
-                                <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                                <i class="bi bi-download" style="color: #3498db;"></i>
                             </a>
                         </td>
                     </tr>

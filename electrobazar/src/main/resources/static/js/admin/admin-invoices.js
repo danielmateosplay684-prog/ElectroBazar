@@ -130,16 +130,16 @@ function renderSalesTable(sales, hasMore) {
             </td>
             <td style="text-align:right">
                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                    ${!isCancelled ? `
-                    <button class="btn-icon danger" title="Anular" onclick="event.stopPropagation(); cancelSale(${sale.id})">
-                        <i class="bi bi-x-circle"></i>
-                    </button>` : ''}
-                    <button type="button" class="btn-icon" title="Vista Previa" onclick="event.stopPropagation(); showDocPreview('/tpv/receipt/${sale.id}')">
-                        <i class="bi bi-eye" style="color:#3498db;"></i>
+                    <button type="button" class="btn-icon" title="Ver Detalle" onclick="event.stopPropagation(); window.location.href='/admin/sale/${sale.id}'">
+                        <i class="bi bi-eye" style="color: #6c757d;"></i>
                     </button>
-                    <a href="/tpv/receipt/${sale.id}?autoPrint=true" target="_blank" class="btn-icon" title="Imprimir" onclick="event.stopPropagation();">
-                        <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                    <a href="/tpv/receipt/${sale.id}?autoPrint=true" class="btn-icon" title="Descargar" onclick="event.stopPropagation();">
+                        <i class="bi bi-download" style="color: #3498db;"></i>
                     </a>
+                    ${!isCancelled ? `
+                    <button class="btn-icon" title="Anular" onclick="event.stopPropagation(); cancelSale(${sale.id})">
+                        <i class="bi bi-x-circle" style="color: #e74c3c;"></i>
+                    </button>` : ''}
                 </div>
             </td>
         `;

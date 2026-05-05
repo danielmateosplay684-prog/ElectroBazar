@@ -51,7 +51,7 @@ public class VerifactuApiRestController {
             sale = invoiceRepository.findById(id).map(Invoice::getSale).orElse(null);
         } else if ("tickets".equalsIgnoreCase(type)) {
             sale = ticketRepository.findById(id).map(Ticket::getSale).orElse(null);
-        } else if ("rectificativas".equalsIgnoreCase(type)) {
+        } else if ("rectificativas".equalsIgnoreCase(type) || "devoluciones".equalsIgnoreCase(type)) {
             sale = rectificativeRepository.findById(id).map(r -> r.getSaleReturn() != null ? r.getSaleReturn().getOriginalSale() : null).orElse(null);
         }
 
@@ -109,6 +109,39 @@ public class VerifactuApiRestController {
         return ResponseEntity.ok(result);
     }
 
+    /* ── ALL RECORDS ──────────────────────────────────────────── */
+
+    @GetMapping("/all")
+    public ResponseEntity<?> all(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false)    String status,
+            @RequestParam(required = false)    String reason,
+            @RequestParam(required = false)    String start,
+            @RequestParam(required = false)    String end,
+            HttpSession session) {
+
+        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
+            return ResponseEntity.status(401).build();
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        
+        invoiceRepository.findAll().forEach(i -> rows.add(mapInvoice(i)));
+        ticketRepository.findAll().forEach(t -> rows.add(mapTicket(t)));
+        rectificativeRepository.findAll().forEach(r -> rows.add(mapRectificative(r)));
+
+        List<Map<String, Object>> filtered = filterRows(rows, status, reason, start, end);
+        filtered.sort((a, b) -> {
+            String ca = (String) a.get("createdAt");
+            String cb = (String) b.get("createdAt");
+            if (ca == null) return (cb == null) ? 0 : 1;
+            if (cb == null) return -1;
+            return cb.compareTo(ca);
+        });
+
+        return ResponseEntity.ok(pageResponse(paginate(filtered, page, size), filtered.size(), page, size));
+    }
+
     /* ── INVOICES ─────────────────────────────────────────────── */
 
     @GetMapping("/invoices")
@@ -127,24 +160,7 @@ public class VerifactuApiRestController {
         List<Invoice> all = invoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         List<Invoice> filtered = filterRecords(all, Invoice::getAeatStatus, Invoice::getAeatRejectionReason, Invoice::getCreatedAt, status, reason, start, end);
 
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (Invoice inv : paginate(filtered, page, size)) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id",             inv.getId());
-            row.put("number",         inv.getInvoiceNumber());
-            row.put("type",           inv.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : "F1");
-            row.put("saleId",         inv.getSale() != null ? inv.getSale().getId() : null);
-            row.put("amount",         inv.getSale() != null ? inv.getSale().getTotalAmount() : 0);
-            row.put("createdAt",      inv.getCreatedAt() != null ? inv.getCreatedAt().toString() : null);
-            row.put("aeatStatus",     inv.getAeatStatus() != null ? inv.getAeatStatus().name() : "NOT_SENT");
-            row.put("submissionDate", inv.getAeatSubmissionDate() != null ? inv.getAeatSubmissionDate().toString() : null);
-            row.put("retryCount",     inv.getAeatRetryCount());
-            row.put("lastError",      inv.getAeatLastError());
-            row.put("rejectionReason",inv.getAeatRejectionReason() != null ? inv.getAeatRejectionReason().name() : null);
-            row.put("waitTime",       inv.getAeatWaitTime());
-            row.put("hash",           inv.getHashCurrentInvoice());
-            rows.add(row);
-        }
+        List<Map<String, Object>> rows = filtered.stream().map(this::mapInvoice).toList();
         return ResponseEntity.ok(pageResponse(rows, filtered.size(), page, size));
     }
 
@@ -163,31 +179,10 @@ public class VerifactuApiRestController {
         if (!Boolean.TRUE.equals(session.getAttribute("admin")))
             return ResponseEntity.status(401).build();
 
-        List<RectificativeInvoice> all = rectificativeRepository.findAllWithDetails(
-                Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<RectificativeInvoice> all = rectificativeRepository.findAllWithDetails(Sort.by(Sort.Direction.DESC, "createdAt"));
         List<RectificativeInvoice> filtered = filterRecords(all, RectificativeInvoice::getAeatStatus, RectificativeInvoice::getAeatRejectionReason, RectificativeInvoice::getCreatedAt, status, reason, start, end);
 
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (RectificativeInvoice r : paginate(filtered, page, size)) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id",             r.getId());
-            row.put("number",         r.getRectificativeNumber());
-            boolean isR5 = r.getOriginalTicket() != null;
-            row.put("type",           r.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : (isR5 ? "R5" : "R4"));
-            row.put("saleId",         r.getSaleReturn() != null && r.getSaleReturn().getOriginalSale() != null
-                                        ? r.getSaleReturn().getOriginalSale().getId() : null);
-            row.put("amount",         r.getSaleReturn() != null ? r.getSaleReturn().getTotalRefunded().negate() : 0);
-            row.put("createdAt",      r.getCreatedAt() != null ? r.getCreatedAt().toString() : null);
-            row.put("returnNumber",   r.getSaleReturn() != null ? r.getSaleReturn().getReturnNumber() : null);
-            row.put("aeatStatus",     r.getAeatStatus() != null ? r.getAeatStatus().name() : "NOT_SENT");
-            row.put("submissionDate", r.getAeatSubmissionDate() != null ? r.getAeatSubmissionDate().toString() : null);
-            row.put("retryCount",     r.getAeatRetryCount());
-            row.put("lastError",      r.getAeatLastError());
-            row.put("rejectionReason",r.getAeatRejectionReason() != null ? r.getAeatRejectionReason().name() : null);
-            row.put("waitTime",       r.getAeatWaitTime());
-            row.put("hash",           r.getHashCurrentInvoice());
-            rows.add(row);
-        }
+        List<Map<String, Object>> rows = filtered.stream().map(this::mapRectificative).toList();
         return ResponseEntity.ok(pageResponse(rows, filtered.size(), page, size));
     }
 
@@ -209,24 +204,7 @@ public class VerifactuApiRestController {
         List<Ticket> all = ticketRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         List<Ticket> filtered = filterRecords(all, Ticket::getAeatStatus, Ticket::getAeatRejectionReason, Ticket::getCreatedAt, status, reason, start, end);
 
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (Ticket t : paginate(filtered, page, size)) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id",             t.getId());
-            row.put("number",         t.getTicketNumber());
-            row.put("type",           t.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : "F2");
-            row.put("saleId",         t.getSale() != null ? t.getSale().getId() : null);
-            row.put("amount",         t.getSale() != null ? t.getSale().getTotalAmount() : 0);
-            row.put("createdAt",      t.getCreatedAt() != null ? t.getCreatedAt().toString() : null);
-            row.put("aeatStatus",     t.getAeatStatus() != null ? t.getAeatStatus().name() : "NOT_SENT");
-            row.put("submissionDate", t.getAeatSubmissionDate() != null ? t.getAeatSubmissionDate().toString() : null);
-            row.put("retryCount",     t.getAeatRetryCount());
-            row.put("lastError",      t.getAeatLastError());
-            row.put("rejectionReason",t.getAeatRejectionReason() != null ? t.getAeatRejectionReason().name() : null);
-            row.put("waitTime",       t.getAeatWaitTime());
-            row.put("hash",           t.getHashCurrentInvoice());
-            rows.add(row);
-        }
+        List<Map<String, Object>> rows = filtered.stream().map(this::mapTicket).toList();
         return ResponseEntity.ok(pageResponse(rows, filtered.size(), page, size));
     }
 
@@ -315,7 +293,7 @@ public class VerifactuApiRestController {
         try {
             if ("invoices".equalsIgnoreCase(type)) verifactuService.submitInvoiceAsync(id);
             else if ("tickets".equalsIgnoreCase(type)) verifactuService.submitTicketAsync(id);
-            else if ("rectificativas".equalsIgnoreCase(type)) verifactuService.submitRectificativeAsync(id);
+            else if ("rectificativas".equalsIgnoreCase(type) || "devoluciones".equalsIgnoreCase(type)) verifactuService.submitRectificativeAsync(id);
             else return ResponseEntity.badRequest().body("Unknown type");
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -355,21 +333,224 @@ public class VerifactuApiRestController {
         }
     }
 
-    /* ── TEST ENDPOINTS ───────────────────────────────────────── */
-    @GetMapping("/test/force-accepted-with-errors/{id}")
-    public ResponseEntity<?> forceAcceptedWithErrors(@PathVariable Long id, HttpSession session) {
+    @GetMapping("/cooldown")
+    public ResponseEntity<?> getCooldown() {
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("lastSendTime", verifactuState.getLastSendTime());
+        resp.put("waitSeconds", verifactuState.getCurrentWaitSeconds());
+        resp.put("remainingSeconds", verifactuState.getRemainingSeconds());
+        resp.put("readyToSend", !verifactuState.isCooldownActive());
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/scheduler-status")
+    public ResponseEntity<?> schedulerStatus() {
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("schedulerBeanAlive", true);
+        resp.put("verifactuEnabled", props.isEnabled());
+        resp.put("cooldownActive", verifactuState.isCooldownActive());
+        resp.put("remainingSeconds", verifactuState.getRemainingSeconds());
+        resp.put("lastSendTime", verifactuState.getLastSendTime());
+        return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/scheduler-status/force-tick")
+    public ResponseEntity<?> forceTick(HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin")))
             return ResponseEntity.status(401).build();
-        return invoiceRepository.findById(id).map(inv -> {
-            inv.setAeatStatus(AeatStatus.ACCEPTED_WITH_ERRORS);
-            inv.setAeatLastError("AceptadoConErrores: El cálculo de la huella suministrada es incorrecta");
-            inv.setAeatRejectionReason(null);
-            invoiceRepository.save(inv);
-            return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+        try {
+            retryScheduler.retryPending();
+            return ResponseEntity.ok(Map.of("triggered", true, "message", "Tick forzado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/response/{type}/{id}")
+    public ResponseEntity<?> getResponse(@PathVariable String type, @PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
+            return ResponseEntity.status(401).build();
+
+        String raw = null;
+        String csv = null;
+        String status = null;
+        String lastError = null;
+
+        if ("invoices".equalsIgnoreCase(type)) {
+            Invoice inv = invoiceRepository.findById(id).orElse(null);
+            if (inv != null) {
+                raw = inv.getAeatRawResponse();
+                csv = inv.getAeatCsv();
+                status = inv.getAeatStatus() != null ? inv.getAeatStatus().name() : null;
+                lastError = inv.getAeatLastError();
+            }
+        } else if ("tickets".equalsIgnoreCase(type)) {
+            Ticket tick = ticketRepository.findById(id).orElse(null);
+            if (tick != null) {
+                raw = tick.getAeatRawResponse();
+                csv = tick.getAeatCsv();
+                status = tick.getAeatStatus() != null ? tick.getAeatStatus().name() : null;
+                lastError = tick.getAeatLastError();
+            }
+        } else if ("rectificativas".equalsIgnoreCase(type) || "devoluciones".equalsIgnoreCase(type)) {
+            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
+            if (rect != null) {
+                raw = rect.getAeatRawResponse();
+                csv = rect.getAeatCsv();
+                status = rect.getAeatStatus() != null ? rect.getAeatStatus().name() : null;
+                lastError = rect.getAeatLastError();
+            }
+        }
+
+        if (raw == null && csv == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("csv", csv);
+        resp.put("rawResponse", raw);
+        resp.put("estadoRegistro", status);
+        resp.put("errorCodigo", null);
+        resp.put("errorDescripcion", lastError);
+
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/details/{type}/{id}")
+    public ResponseEntity<?> getDetails(@PathVariable String type, @PathVariable Long id, HttpSession session) {
+        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
+            return ResponseEntity.status(401).build();
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        
+        if ("invoices".equalsIgnoreCase(type)) {
+            Invoice inv = invoiceRepository.findById(id).orElse(null);
+            if (inv != null) {
+                fillDetails(resp, inv.getSale(), inv.getInvoiceNumber(), inv.getCreatedAt(), inv.getAeatStatus(), 
+                            inv.getAeatXmlSent(), inv.getAeatRawResponse());
+            }
+        } else if ("tickets".equalsIgnoreCase(type)) {
+            Ticket tick = ticketRepository.findById(id).orElse(null);
+            if (tick != null) {
+                fillDetails(resp, tick.getSale(), tick.getTicketNumber(), tick.getCreatedAt(), tick.getAeatStatus(),
+                            tick.getAeatXmlSent(), tick.getAeatRawResponse());
+            }
+        } else if ("rectificativas".equalsIgnoreCase(type) || "devoluciones".equalsIgnoreCase(type)) {
+            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
+            if (rect != null) {
+                fillDetails(resp, rect.getSaleReturn().getOriginalSale(), rect.getRectificativeNumber(), rect.getCreatedAt(), rect.getAeatStatus(),
+                            rect.getAeatXmlSent(), rect.getAeatRawResponse());
+            }
+        }
+
+        if (resp.isEmpty()) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(resp);
+    }
+
+    private void fillDetails(Map<String, Object> resp, Sale sale, String number, LocalDateTime date, AeatStatus status, String sent, String received) {
+        Map<String, Object> client = new LinkedHashMap<>();
+        if (sale != null && sale.getCustomer() != null) {
+            Customer c = sale.getCustomer();
+            client.put("nombre", c.getName());
+            client.put("nif", c.getTaxId());
+            client.put("direccion", c.getAddress());
+            client.put("cp", c.getPostalCode());
+        } else {
+            client.put("nombre", "Cliente Final / Simplificada");
+            client.put("nif", "—");
+        }
+        resp.put("cliente", client);
+
+        Map<String, Object> fact = new LinkedHashMap<>();
+        fact.put("numero", number);
+        fact.put("fecha", date);
+        fact.put("importe", sale != null ? sale.getTotalAmount() : 0);
+        fact.put("estadoAeat", status != null ? status.name() : "PENDIENTE");
+        resp.put("factura", fact);
+
+        resp.put("verifactuXmlSent", sent);
+        resp.put("verifactuXmlReceived", received);
     }
 
     /* ── HELPERS ──────────────────────────────────────────────── */
+    
+    private Map<String, Object> mapInvoice(Invoice inv) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id",             inv.getId());
+        row.put("number",         inv.getInvoiceNumber());
+        row.put("type",           inv.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : "F1");
+        row.put("realType",       "invoices");
+        row.put("saleId",         inv.getSale() != null ? inv.getSale().getId() : null);
+        row.put("amount",         inv.getSale() != null ? inv.getSale().getTotalAmount() : 0);
+        row.put("createdAt",      inv.getCreatedAt() != null ? inv.getCreatedAt().toString() : null);
+        row.put("aeatStatus",     inv.getAeatStatus() != null ? inv.getAeatStatus().name() : "NOT_SENT");
+        row.put("submissionDate", inv.getAeatSubmissionDate() != null ? inv.getAeatSubmissionDate().toString() : null);
+        row.put("retryCount",     inv.getAeatRetryCount());
+        row.put("lastError",      inv.getAeatLastError());
+        row.put("rejectionReason",inv.getAeatRejectionReason() != null ? inv.getAeatRejectionReason().name() : null);
+        row.put("waitTime",       inv.getAeatWaitTime());
+        row.put("hash",           inv.getHashCurrentInvoice());
+        return row;
+    }
+
+    private Map<String, Object> mapTicket(Ticket t) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id",             t.getId());
+        row.put("number",         t.getTicketNumber());
+        row.put("type",           t.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : "F2");
+        row.put("realType",       "tickets");
+        row.put("saleId",         t.getSale() != null ? t.getSale().getId() : null);
+        row.put("amount",         t.getSale() != null ? t.getSale().getTotalAmount() : 0);
+        row.put("createdAt",      t.getCreatedAt() != null ? t.getCreatedAt().toString() : null);
+        row.put("aeatStatus",     t.getAeatStatus() != null ? t.getAeatStatus().name() : "NOT_SENT");
+        row.put("submissionDate", t.getAeatSubmissionDate() != null ? t.getAeatSubmissionDate().toString() : null);
+        row.put("retryCount",     t.getAeatRetryCount());
+        row.put("lastError",      t.getAeatLastError());
+        row.put("rejectionReason",t.getAeatRejectionReason() != null ? t.getAeatRejectionReason().name() : null);
+        row.put("waitTime",       t.getAeatWaitTime());
+        row.put("hash",           t.getHashCurrentInvoice());
+        return row;
+    }
+
+    private Map<String, Object> mapRectificative(RectificativeInvoice r) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id",             r.getId());
+        row.put("number",         r.getRectificativeNumber());
+        boolean isR5 = r.getOriginalTicket() != null;
+        row.put("type",           r.getAeatStatus() == AeatStatus.ANNULLED ? "Anulación" : (isR5 ? "R5" : "R4"));
+        row.put("realType",       isR5 ? "devoluciones" : "rectificativas");
+        row.put("saleId",         r.getSaleReturn() != null && r.getSaleReturn().getOriginalSale() != null
+                                    ? r.getSaleReturn().getOriginalSale().getId() : null);
+        row.put("amount",         r.getSaleReturn() != null ? r.getSaleReturn().getTotalRefunded().negate() : 0);
+        row.put("createdAt",      r.getCreatedAt() != null ? r.getCreatedAt().toString() : null);
+        row.put("returnNumber",   r.getSaleReturn() != null ? r.getSaleReturn().getReturnNumber() : null);
+        row.put("aeatStatus",     r.getAeatStatus() != null ? r.getAeatStatus().name() : "NOT_SENT");
+        row.put("submissionDate", r.getAeatSubmissionDate() != null ? r.getAeatSubmissionDate().toString() : null);
+        row.put("retryCount",     r.getAeatRetryCount());
+        row.put("lastError",      r.getAeatLastError());
+        row.put("rejectionReason",r.getAeatRejectionReason() != null ? r.getAeatRejectionReason().name() : null);
+        row.put("waitTime",       r.getAeatWaitTime());
+        row.put("returnId",       r.getSaleReturn() != null ? r.getSaleReturn().getId() : null);
+        row.put("hash",           r.getHashCurrentInvoice());
+        return row;
+    }
+
+    private List<Map<String, Object>> filterRows(List<Map<String, Object>> list, String status, String reason, String start, String end) {
+        java.util.stream.Stream<Map<String, Object>> stream = list.stream();
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            stream = stream.filter(m -> status.equalsIgnoreCase((String) m.get("aeatStatus")));
+        }
+        if (reason != null && !reason.isBlank() && !"ALL".equalsIgnoreCase(reason)) {
+            stream = stream.filter(m -> reason.equalsIgnoreCase((String) m.get("rejectionReason")));
+        }
+        if (start != null && !start.isBlank()) {
+            java.time.LocalDateTime s = java.time.LocalDateTime.parse(start + "T00:00:00");
+            stream = stream.filter(m -> m.get("createdAt") != null && !java.time.LocalDateTime.parse((String) m.get("createdAt")).isBefore(s));
+        }
+        if (end != null && !end.isBlank()) {
+            java.time.LocalDateTime e = java.time.LocalDateTime.parse(end + "T23:59:59");
+            stream = stream.filter(m -> m.get("createdAt") != null && !java.time.LocalDateTime.parse((String) m.get("createdAt")).isAfter(e));
+        }
+        return stream.collect(java.util.stream.Collectors.toList());
+    }
 
     @FunctionalInterface
     private interface StatusExtractor<T> { AeatStatus get(T item); }
@@ -417,148 +598,5 @@ public class VerifactuApiRestController {
         m.put("page",          page);
         m.put("size",          size);
         return m;
-    }
-
-    @GetMapping("/cooldown")
-    public ResponseEntity<?> getCooldown() {
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("lastSendTime", verifactuState.getLastSendTime());
-        resp.put("waitSeconds", verifactuState.getCurrentWaitSeconds());
-        resp.put("remainingSeconds", verifactuState.getRemainingSeconds());
-        resp.put("readyToSend", !verifactuState.isCooldownActive());
-        return ResponseEntity.ok(resp);
-    }
-
-    /**
-     * Endpoint de diagnóstico: confirma que el bean del scheduler está vivo
-     * y fuerza manualmente un tick del worker sin esperar al @Scheduled.
-     * GET  /api/admin/verifactu/scheduler-status  → estado del bean
-     * POST /api/admin/verifactu/scheduler-status  → fuerza un tick inmediato
-     */
-    @GetMapping("/scheduler-status")
-    public ResponseEntity<?> schedulerStatus() {
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("schedulerBeanAlive", true); // Si este endpoint responde, el bean existe
-        resp.put("verifactuEnabled", props.isEnabled());
-        resp.put("cooldownActive", verifactuState.isCooldownActive());
-        resp.put("remainingSeconds", verifactuState.getRemainingSeconds());
-        resp.put("lastSendTime", verifactuState.getLastSendTime());
-        return ResponseEntity.ok(resp);
-    }
-
-    @PostMapping("/scheduler-status/force-tick")
-    public ResponseEntity<?> forceTick(HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return ResponseEntity.status(401).build();
-        try {
-            retryScheduler.retryPending();
-            return ResponseEntity.ok(Map.of("triggered", true, "message", "Tick forzado correctamente"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/response/{type}/{id}")
-    public ResponseEntity<?> getResponse(@PathVariable String type, @PathVariable Long id, HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return ResponseEntity.status(401).build();
-
-        String raw = null;
-        String csv = null;
-        String status = null;
-        String lastError = null;
-
-        if ("invoices".equalsIgnoreCase(type)) {
-            Invoice inv = invoiceRepository.findById(id).orElse(null);
-            if (inv != null) {
-                raw = inv.getAeatRawResponse();
-                csv = inv.getAeatCsv();
-                status = inv.getAeatStatus() != null ? inv.getAeatStatus().name() : null;
-                lastError = inv.getAeatLastError();
-            }
-        } else if ("tickets".equalsIgnoreCase(type)) {
-            Ticket tick = ticketRepository.findById(id).orElse(null);
-            if (tick != null) {
-                raw = tick.getAeatRawResponse();
-                csv = tick.getAeatCsv();
-                status = tick.getAeatStatus() != null ? tick.getAeatStatus().name() : null;
-                lastError = tick.getAeatLastError();
-            }
-        } else if ("rectificativas".equalsIgnoreCase(type)) {
-            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
-            if (rect != null) {
-                raw = rect.getAeatRawResponse();
-                csv = rect.getAeatCsv();
-                status = rect.getAeatStatus() != null ? rect.getAeatStatus().name() : null;
-                lastError = rect.getAeatLastError();
-            }
-        }
-
-        if (raw == null && csv == null) return ResponseEntity.notFound().build();
-
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("csv", csv);
-        resp.put("rawResponse", raw);
-        resp.put("estadoRegistro", status);
-        resp.put("errorCodigo", null);
-        resp.put("errorDescripcion", lastError);
-
-        return ResponseEntity.ok(resp);
-    }
-
-    @GetMapping("/details/{type}/{id}")
-    public ResponseEntity<?> getDetails(@PathVariable String type, @PathVariable Long id, HttpSession session) {
-        if (!Boolean.TRUE.equals(session.getAttribute("admin")))
-            return ResponseEntity.status(401).build();
-
-        Map<String, Object> resp = new LinkedHashMap<>();
-        
-        if ("invoices".equalsIgnoreCase(type)) {
-            Invoice inv = invoiceRepository.findById(id).orElse(null);
-            if (inv != null) {
-                fillDetails(resp, inv.getSale(), inv.getInvoiceNumber(), inv.getCreatedAt(), inv.getAeatStatus(), 
-                            inv.getAeatXmlSent(), inv.getAeatRawResponse());
-            }
-        } else if ("tickets".equalsIgnoreCase(type)) {
-            Ticket tick = ticketRepository.findById(id).orElse(null);
-            if (tick != null) {
-                fillDetails(resp, tick.getSale(), tick.getTicketNumber(), tick.getCreatedAt(), tick.getAeatStatus(),
-                            tick.getAeatXmlSent(), tick.getAeatRawResponse());
-            }
-        } else if ("rectificativas".equalsIgnoreCase(type)) {
-            RectificativeInvoice rect = rectificativeRepository.findById(id).orElse(null);
-            if (rect != null) {
-                fillDetails(resp, rect.getSaleReturn().getOriginalSale(), rect.getRectificativeNumber(), rect.getCreatedAt(), rect.getAeatStatus(),
-                            rect.getAeatXmlSent(), rect.getAeatRawResponse());
-            }
-        }
-
-        if (resp.isEmpty()) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(resp);
-    }
-
-    private void fillDetails(Map<String, Object> resp, Sale sale, String number, LocalDateTime date, AeatStatus status, String sent, String received) {
-        Map<String, Object> client = new LinkedHashMap<>();
-        if (sale != null && sale.getCustomer() != null) {
-            Customer c = sale.getCustomer();
-            client.put("nombre", c.getName());
-            client.put("nif", c.getTaxId());
-            client.put("direccion", c.getAddress());
-            client.put("cp", c.getPostalCode());
-        } else {
-            client.put("nombre", "Cliente Final / Simplificada");
-            client.put("nif", "—");
-        }
-        resp.put("cliente", client);
-
-        Map<String, Object> fact = new LinkedHashMap<>();
-        fact.put("numero", number);
-        fact.put("fecha", date);
-        fact.put("importe", sale != null ? sale.getTotalAmount() : 0);
-        fact.put("estadoAeat", status != null ? status.name() : "PENDIENTE");
-        resp.put("factura", fact);
-
-        resp.put("verifactuXmlSent", sent);
-        resp.put("verifactuXmlReceived", received);
     }
 }

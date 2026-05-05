@@ -538,7 +538,10 @@ public class AdminController {
     }
 
     @GetMapping("/admin/sale/{id}")
-    public String saleDetail(@PathVariable Long id, Model model, HttpSession session) {
+    public String saleDetail(
+            @PathVariable Long id, 
+            @RequestParam(required = false) String from,
+            Model model, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/login";
         }
@@ -548,13 +551,17 @@ public class AdminController {
         }
 
         model.addAttribute("sale", sale);
+        model.addAttribute("from", from);
         model.addAttribute("companySettings", companySettingsService.getSettings());
 
         return "admin/sale-detail";
     }
 
     @GetMapping("/admin/return/{id}")
-    public String returnDetail(@PathVariable Long id, Model model, HttpSession session) {
+    public String returnDetail(
+            @PathVariable Long id, 
+            @RequestParam(required = false) String from,
+            Model model, HttpSession session) {
         if (!Boolean.TRUE.equals(session.getAttribute("admin"))) {
             return "redirect:/login";
         }
@@ -564,6 +571,7 @@ public class AdminController {
         }
 
         model.addAttribute("return", ret);
+        model.addAttribute("from", from);
         model.addAttribute("companySettings", companySettingsService.getSettings());
 
         return "admin/return-detail";

@@ -122,12 +122,35 @@
     </div>
 
     <!-- ── TABLES ─────────────────────────────────────────────── -->
-    <div class="nav-tabs mb-0 border-0 bg-transparent">
-        <button class="nav-link active" id="vf-tab-invoices"       onclick="vfSwitchTab('invoices')"><i class="bi bi-file-earmark-text"></i>Facturas</button>
+    <div class="nav-tabs mb-0 border-0 bg-transparent d-flex flex-wrap">
+        <button class="nav-link active" id="vf-tab-all"            onclick="vfSwitchTab('all')"><i class="bi bi-grid-fill"></i>Todas</button>
+        <button class="nav-link"        id="vf-tab-invoices"       onclick="vfSwitchTab('invoices')"><i class="bi bi-file-earmark-text"></i>Facturas</button>
         <button class="nav-link"        id="vf-tab-tickets"        onclick="vfSwitchTab('tickets')"><i class="bi bi-receipt"></i>Tickets</button>
         <button class="nav-link"        id="vf-tab-rectificativas" onclick="vfSwitchTab('rectificativas')"><i class="bi bi-file-earmark-medical"></i>Rectificativas / Devoluciones</button>
         <button class="nav-link"        id="vf-tab-pending"        onclick="vfSwitchTab('pending')"><i class="bi bi-hourglass-split"></i>Próximos Envíos</button>
         <button class="nav-link ms-auto" id="vf-tab-settings"       onclick="vfSwitchTab('settings')"><i class="bi bi-gear-fill"></i></button>
+    </div>
+
+    <!-- ALL -->
+    <div id="vf-table-all" class="admin-table-wrap mb-4">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Nº Documento</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Importe</th>
+                    <th>Estado AEAT</th>
+                    <th>Error</th>
+                    <th>Envío</th>
+                    <th class="text-center">Int.</th>
+                    <th>Espera</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="vf-tbody-all"></tbody>
+        </table>
+        <div id="vf-pag-all" class="p-2 border-top border-border bg-primary d-flex justify-content-end gap-2"></div>
     </div>
 
     <!-- INVOICES -->
@@ -195,6 +218,8 @@
         </table>
         <div id="vf-pag-rectificativas" class="p-2 border-top border-border bg-primary d-flex justify-content-end gap-2"></div>
     </div>
+
+
 
     <!-- PENDING (FEATURE 1) -->
     <div id="vf-table-pending" class="admin-table-wrap mb-4" style="display:none">
@@ -308,7 +333,7 @@
 <script>
 (function () {
     'use strict';
-    var vfTab     = 'invoices';
+    var vfTab     = 'all';
     var PAGE_SIZE = 50;
     var timers    = {};
 
@@ -321,7 +346,7 @@
 
     window.vfSwitchTab = function (tab) {
         vfTab = tab;
-        ['invoices','tickets','rectificativas','pending'].forEach(t => {
+        ['all','invoices','tickets','rectificativas','pending'].forEach(t => {
             const table = document.getElementById('vf-table-' + t);
             if (table) table.style.display = t === tab ? '' : 'none';
             const nav = document.getElementById('vf-tab-' + t);
@@ -408,9 +433,12 @@
         const errorText = r.lastError || '';
         const truncatedError = errorText.length > 80 ? errorText.substring(0, 77) + '...' : errorText;
 
-        const subLabel = type === 'rectificativas' 
-            ? `Devolución: ${esc(r.returnNumber || '—')}` 
-            : `ID Venta: ${r.saleId || '—'}`;
+        const isRet = (type === 'rectificativas' || r.realType === 'rectificativas' || r.realType === 'devoluciones');
+        const viewFn = isRet ? `viewReturn(${r.returnId})` : `viewSale(${r.saleId})`;
+        const printBtn = isRet ? `<button class="btn btn-outline-info btn-sm px-2" onclick="printReturn(${r.returnId})" title="Imprimir Devolución"><i class="bi bi-printer"></i></button>` : '';
+        
+        const subLabel = isRet ? `Devolución: ${esc(r.returnNumber || '—')}` : `ID Venta: ${r.saleId || '—'}`;
+        const retryType = r.realType || type;
 
         return `<tr data-s="${esc(searchable)}" class="align-middle">
             <td><div class="fw-bold text-main">${esc(r.number)}</div><div class="small text-muted" style="font-size:0.65rem">${subLabel}</div></td>
@@ -424,10 +452,11 @@
             <td><div class="wait-timer" id="${timerId}" data-time="${r.submissionDate||''}" data-wait="${r.waitTime||0}" data-next="${r.nextRetry||''}"></div></td>
             <td>
                 <div class="d-flex gap-1">
-                    <button class="btn-icon" onclick="viewSale(${r.saleId})" title="Ver Venta"><i class="bi bi-eye"></i></button>
-                    <button class="btn btn-outline-primary btn-sm px-2" onclick="vfViewAudit('${type}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
-                    ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn btn-outline-info btn-retry btn-sm" onclick="vfEditSubsanar('${type}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
-                    ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn btn-outline-warning btn-retry btn-sm" onclick="vfSubsanar('${type}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
+                    <button class="btn-icon" onclick="${viewFn}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                    ${printBtn}
+                    <button class="btn btn-outline-primary btn-sm px-2" onclick="vfViewAudit('${retryType}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
+                    ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn btn-outline-info btn-retry btn-sm" onclick="vfEditSubsanar('${retryType}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
+                    ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn btn-outline-warning btn-retry btn-sm" onclick="vfSubsanar('${retryType}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
                 </div>
             </td>
         </tr>`;
@@ -621,7 +650,9 @@
         });
     };
 
-    window.viewSale = id => id && window.open('/admin/sale/' + id, '_blank');
+    window.viewSale = id => id && (window.location.href = '/admin/sale/' + id + '?from=verifactu');
+    window.viewReturn = id => id && (window.location.href = '/admin/return/' + id + '?from=verifactu');
+    window.printReturn = id => id && window.open('/admin/download/return/' + id, '_blank');
 
     function aeatBadge(s) {
         const MAP = { 'ACCEPTED':['success','Aceptado'], 'ACCEPTED_WITH_ERRORS':['warning','Parcial'], 'REJECTED':['danger','Rechazado'], 'PENDING_SEND':['primary','Pendiente'], 'ANNULLED':['dark','Anulado'] };

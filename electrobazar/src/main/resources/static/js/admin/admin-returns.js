@@ -84,11 +84,11 @@ function renderReturnsTable(items) {
             </td>
             <td style="font-size:1rem;font-weight:700;color:var(--danger);text-align:right">-${formatDecimal(ret.amount)} €</td>
             <td style="text-align:right">
-                <button type="button" class="btn-icon" title="Vista Previa" style="text-decoration:none" onclick="event.stopPropagation(); showDocPreview('/tpv/return-receipt/${ret.id}')">
-                    <i class="bi bi-eye" style="color:#3498db;"></i>
+                <button type="button" class="btn-icon" title="Ver Detalle" onclick="event.stopPropagation(); window.location.href='/admin/return/${ret.id}'">
+                    <i class="bi bi-eye" style="color: #6c757d;"></i>
                 </button>
-                <a href="/admin/download/return/${ret.id}" target="_blank" class="btn-icon" title="Imprimir" style="text-decoration:none" onclick="event.stopPropagation();">
-                    <i class="bi bi-printer" style="color:#e74c3c;"></i>
+                <a href="/admin/download/return/${ret.id}" class="btn-icon" title="Descargar" style="text-decoration:none" onclick="event.stopPropagation();">
+                    <i class="bi bi-download" style="color: #3498db;"></i>
                 </a>
             </td>
         `;

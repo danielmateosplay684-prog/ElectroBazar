@@ -132,6 +132,27 @@ public class DailyStatsScheduler {
               sales_count = VALUES(sales_count)
         """;
     jdbcTemplate.update(sqlHourly, targetDate);
+
+    // BLOQUE 3: Desglose por Categoría
+    String sqlCategories = """
+            INSERT INTO daily_category_stats
+              (date, category_name, total_amount, units_sold)
+            SELECT
+              DATE(s.created_at),
+              COALESCE(c.name_es, 'Sin Categoría'),
+              SUM(sl.subtotal),
+              SUM(sl.quantity)
+            FROM sales s
+            JOIN sale_lines sl ON sl.sale_id = s.id
+            JOIN products p ON p.id = sl.product_id
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE DATE(s.created_at) = ? AND s.status = 'ACTIVE'
+            GROUP BY DATE(s.created_at), COALESCE(c.name_es, 'Sin Categoría')
+            ON DUPLICATE KEY UPDATE
+              total_amount = VALUES(total_amount),
+              units_sold = VALUES(units_sold)
+        """;
+    jdbcTemplate.update(sqlCategories, targetDate);
   }
 
   private void checkSchema() {
