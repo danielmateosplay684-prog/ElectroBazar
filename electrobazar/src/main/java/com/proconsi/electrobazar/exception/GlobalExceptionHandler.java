@@ -67,9 +67,23 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
-        log.error("Bad request: {}", ex.getMessage());
+        log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(ex.getMessage()));
     }
+
+    private static final java.util.Map<String, String> FIELD_MAPPING = java.util.Map.ofEntries(
+        java.util.Map.entry("name", "nombre"),
+        java.util.Map.entry("description", "descripción"),
+        java.util.Map.entry("price", "precio"),
+        java.util.Map.entry("basePriceNet", "precio base"),
+        java.util.Map.entry("taxRateId", "tipo de IVA"),
+        java.util.Map.entry("stock", "stock"),
+        java.util.Map.entry("measurementUnitId", "unidad de medida"),
+        java.util.Map.entry("categoryId", "categoría"),
+        java.util.Map.entry("active", "activo"),
+        java.util.Map.entry("nameEs", "nombre"),
+        java.util.Map.entry("descriptionEs", "descripción")
+    );
 
     /**
      * Handles Bean Validation errors (e.g., @NotNull, @Size).
@@ -77,10 +91,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error -> {
+                    String field = error.getField();
+                    String translatedField = FIELD_MAPPING.getOrDefault(field, field);
+                    return translatedField + ": " + error.getDefaultMessage();
+                })
                 .collect(Collectors.joining(", "));
         log.error("Validation error: {}", errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody("Validation error: " + errors));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody("Error de validación: " + errors));
     }
 
     /**
@@ -88,7 +106,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
-        log.error("Illegal state: {}", ex.getMessage(), ex);
+        log.warn("Illegal state: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(ex.getMessage()));
     }
 
@@ -97,17 +115,17 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        String message = "The operation could not be completed due to a data integrity constraint.";
+        String message = "La operación no se pudo completar debido a una restricción de integridad de datos.";
         String rootMsg = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
 
-        log.error("Data integrity violation: {}", rootMsg);
+        log.warn("Data integrity violation: {}", rootMsg);
 
         if (rootMsg != null) {
             String lowerMsg = rootMsg.toLowerCase();
             if (lowerMsg.contains("foreign key") || lowerMsg.contains("referential integrity")) {
-                message = "Cannot delete item because it is referenced by other records (sales, invoices, etc.).";
+                message = "No se puede eliminar el elemento porque está referenciado por otros registros (ventas, facturas, etc.).";
             } else if (lowerMsg.contains("duplicate") || lowerMsg.contains("unique constraint")) {
-                message = "A record with these unique values already exists.";
+                message = "Ya existe un registro con estos valores únicos.";
             }
         }
 
@@ -134,9 +152,9 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        log.error("Internal server error: {}", ex.getMessage(), ex);
+        log.error("Error interno del servidor: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(errorBody("Internal server error: " + ex.getMessage()));
+                .body(errorBody("Error interno del servidor: " + ex.getMessage()));
     }
 
     /**

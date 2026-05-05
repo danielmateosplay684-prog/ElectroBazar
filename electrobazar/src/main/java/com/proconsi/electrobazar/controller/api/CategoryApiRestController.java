@@ -70,14 +70,20 @@ public class CategoryApiRestController {
         return ResponseEntity.ok(categoryService.update(id, category));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> toggleStatus(@PathVariable Long id) {
+        categoryService.toggleStatus(id);
+        return ResponseEntity.noContent().build();
+    }
+
     /**
-     * Deactivates a category (Soft Delete).
+     * Permanently removes a category if it has no products.
      * @param id Category ID.
      * @return 204 No Content.
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        categoryService.delete(id);
+    @DeleteMapping("/{id}/hard")
+    public ResponseEntity<Void> hardDelete(@PathVariable Long id) {
+        categoryService.hardDelete(id);
         return ResponseEntity.noContent().build();
     }
 }

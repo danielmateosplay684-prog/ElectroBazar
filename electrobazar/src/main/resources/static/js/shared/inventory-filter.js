@@ -248,8 +248,15 @@ function renderSharedProductsTable(products) {
             <td>${activeBadge}</td>
             <td style="text-align:right">
                 <div class="d-flex gap-1 justify-content-end">
-                    <button class="btn-icon" title="${sharedInventoryI18n.actions_edit}" onclick="openProductModal(${p.id})"><i class="bi bi-pencil" style="color: #3498db;"></i></button>
-                    <button class="btn-icon" title="${sharedInventoryI18n.actions_delete}" onclick="deleteProduct(${p.id}, '${escapedName}')"><i class="bi bi-trash" style="color: #e74c3c;"></i></button>
+                    <button class="btn-icon" title="${sharedInventoryI18n.actions_edit}" onclick="openProductModal(${p.id})">
+                        <i class="bi bi-pencil" style="color: #3498db;"></i>
+                    </button>
+                    <button class="btn-icon" title="${p.active ? 'Desactivar' : 'Activar'}" onclick="toggleProductStatus(${p.id})">
+                        <i class="bi bi-power" style="${p.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
+                    </button>
+                    <button class="btn-icon" title="${sharedInventoryI18n.actions_delete}" onclick="deleteProduct(${p.id}, '${escapedName}')">
+                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
+                    </button>
                 </div>
             </td>
         `;
@@ -389,8 +396,15 @@ function renderSharedCategoriesTable(categories) {
             <td>${activeBadge}</td>
             <td style="text-align:right">
                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                    <button class="btn-icon" title="${sharedInventoryI18n.actions_edit}" onclick="openCategoryModal(${c.id})"><i class="bi bi-pencil" style="color: #3498db;"></i></button>
-                    <button class="btn-icon" title="${sharedInventoryI18n.actions_delete}" onclick="deleteCategory(${c.id}, '${escapedName}')"><i class="bi bi-trash" style="color: #e74c3c;"></i></button>
+                    <button class="btn-icon" title="${sharedInventoryI18n.actions_edit}" onclick="openCategoryModal(${c.id})">
+                        <i class="bi bi-pencil" style="color: #3498db;"></i>
+                    </button>
+                    <button class="btn-icon" title="${c.active ? 'Desactivar' : 'Activar'}" onclick="toggleCategoryStatus(${c.id})">
+                        <i class="bi bi-power" style="${c.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
+                    </button>
+                    <button class="btn-icon" title="${sharedInventoryI18n.actions_delete}" onclick="deleteCategory(${c.id}, '${escapedName}')">
+                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
+                    </button>
                 </div>
             </td>
         `;

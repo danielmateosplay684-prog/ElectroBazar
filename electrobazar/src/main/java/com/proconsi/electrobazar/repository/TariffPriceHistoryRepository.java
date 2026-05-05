@@ -104,4 +104,8 @@ public interface TariffPriceHistoryRepository extends JpaRepository<TariffPriceH
         @Query("UPDATE TariffPriceHistory t SET t.validFrom = :newTime WHERE t.tariff.id = :tariffId AND t.validFrom = :oldTime")
         void updateValidFromForTariffAndTime(@Param("tariffId") Long tariffId, @Param("oldTime") LocalDateTime oldTime,
                         @Param("newTime") LocalDateTime newTime);
+
+        @Modifying
+        @Query("DELETE FROM TariffPriceHistory t WHERE t.product.id = :productId")
+        void deleteByProductId(@Param("productId") Long productId);
 }

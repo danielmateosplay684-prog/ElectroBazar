@@ -60,7 +60,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public Category findById(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con id: " + id));
     }
 
     @Override
@@ -69,7 +69,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new IllegalArgumentException("El nombre de la categoría no puede estar vacío.");
         }
         if (categoryRepository.existsByNameEsIgnoreCase(category.getName())) {
-            throw new DuplicateResourceException("A category with name '" + category.getName() + "' already exists.");
+            throw new DuplicateResourceException("Ya existe una categoría con el nombre '" + category.getName() + "'.");
         }
         Category saved = categoryRepository.save(category);
         activityLogService.logActivity(
@@ -90,7 +90,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         if (!existing.getNameEs().equalsIgnoreCase(updated.getName())
                 && categoryRepository.existsByNameEsIgnoreCase(updated.getName())) {
-            throw new DuplicateResourceException("A category with name '" + updated.getName() + "' already exists.");
+            throw new DuplicateResourceException("Ya existe una categoría con el nombre '" + updated.getName() + "'.");
         }
 
         existing.setNameEs(updated.getName());
@@ -108,14 +108,14 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void toggleStatus(Long id) {
         Category category = findById(id);
-        category.setActive(false);
+        category.setActive(!category.getActive());
         categoryRepository.save(category);
 
         activityLogService.logActivity(
-                "DESACTIVAR_CATEGORIA",
-                "Categoría desactivada: " + category.getName(),
+                "TOGGLE_ESTADO_CATEGORIA",
+                "Categoría " + (category.getActive() ? "activada" : "desactivada") + ": " + category.getName(),
                 "Admin",
                 "CATEGORY",
                 category.getId());

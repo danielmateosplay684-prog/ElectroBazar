@@ -83,14 +83,15 @@ function saveProduct() {
     fetch('/api/products' + (id ? '/' + id : ''), {
         method: id ? 'PUT' : 'POST',
         body: formData
-    }).then(res => {
+    }).then(async res => {
         isSavingProduct = false;
         if (res.ok) {
             productModal.hide();
             showToast(getAdminI18n('successSave'));
-            location.reload();
+            setTimeout(() => location.reload(), 1000);
         } else {
-            showToast(getAdminI18n('errorSave'), 'error');
+            const data = await res.json().catch(() => ({}));
+            showToast(data.error || getAdminI18n('errorSave'), 'error');
         }
     }).catch(() => {
         isSavingProduct = false;
@@ -98,14 +99,29 @@ function saveProduct() {
     });
 }
 
-function deleteProduct(id, name) {
-    if (!confirm(getAdminI18n('confirmDelete'))) return;
+function toggleProductStatus(id) {
     fetch('/api/products/' + id, { method: 'DELETE' })
         .then(res => {
             if (res.ok) {
-                showToast(getAdminI18n('successDelete'));
-                location.reload();
+                showToast(getAdminI18n('successSave'));
+                setTimeout(() => location.reload(), 1000);
             }
+        });
+}
+
+function deleteProduct(id, name) {
+    if (!confirm('¿Seguro que quieres ELIMINAR permanentemente el producto "' + name + '"? Esta acción no se puede deshacer.')) return;
+    fetch('/api/products/' + id + '/hard', { method: 'DELETE' })
+        .then(async res => {
+            if (res.ok) {
+                showToast('Producto eliminado correctamente');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const data = await res.json();
+                showToast(data.error || 'No se pudo eliminar el producto', 'error');
+            }
+        }).catch(err => {
+            showToast('Error de conexión al eliminar', 'error');
         });
 }
 
@@ -131,6 +147,7 @@ function uploadCsvFile(input) {
 // --- Global Exports ---
 window.openProductModal = openProductModal;
 window.saveProduct = saveProduct;
+window.toggleProductStatus = toggleProductStatus;
 window.deleteProduct = deleteProduct;
 window.uploadCsvFile = uploadCsvFile;
 

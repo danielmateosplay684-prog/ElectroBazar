@@ -56,10 +56,10 @@ public interface CategoryService {
     Category update(Long id, Category category);
 
     /**
-     * Performs a soft delete (sets active = false).
-     * @param id The ID of the category to deactivate.
+     * Toggles the category active status.
+     * @param id The ID of the category to toggle.
      */
-    void delete(Long id);
+    void toggleStatus(Long id);
 
     /**
      * Performs a permanent removal from the database.

@@ -131,7 +131,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public Product findById(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
     }
 
     @Override
@@ -178,7 +178,7 @@ public class ProductServiceImpl implements ProductService {
         if (request.getTaxRateId() != null) {
             TaxRate newRate = taxRateRepository.findById(request.getTaxRateId())
                     .orElseThrow(
-                            () -> new ResourceNotFoundException("TaxRate " + request.getTaxRateId() + " not found."));
+                            () -> new ResourceNotFoundException("Tipo de IVA " + request.getTaxRateId() + " no encontrado."));
             existing.setTaxRate(newRate);
         }
 
@@ -256,13 +256,13 @@ public class ProductServiceImpl implements ProductService {
      */
 
     @Override
-    public void delete(Long id) {
+    public void toggleStatus(Long id) {
         Product product = findById(id);
-        product.setActive(false);
+        product.setActive(!product.getActive());
         productRepository.save(product);
         activityLogService.logActivity(
-                "ELIMINAR_PRODUCTO",
-                "Producto desactivado: " + product.getName(),
+                "TOGGLE_ESTADO_PRODUCTO",
+                "Producto " + (product.getActive() ? "activado" : "desactivado") + ": " + product.getName(),
                 "Sistema",
                 "PRODUCT",
                 product.getId());
@@ -276,12 +276,21 @@ public class ProductServiceImpl implements ProductService {
         // 1. Check for real transaction references
         if (saleLineRepository.countByProductId(id) > 0) {
             throw new IllegalStateException(
-                    "Cannot delete item because it is referenced by other records (sales, invoices, etc.).");
+                    "No se puede eliminar el producto porque ya tiene ventas registradas. Use 'Desactivar' en su lugar.");
         }
 
         // 2. Clear metadata/history cascade manually if not mapped as cascade
         productPriceRepository.deleteByProductId(id);
-        tariffPriceHistoryRepository.deleteById(id);
+        tariffPriceHistoryRepository.deleteByProductId(id);
+        
+        // Also clear favorites if any
+        try {
+            entityManager.createQuery("DELETE FROM UserFavoriteProduct u WHERE u.productId = :pid")
+                .setParameter("pid", id)
+                .executeUpdate();
+        } catch (Exception e) {
+            log.warn("Could not clear favorites for product {}: {}", id, e.getMessage());
+        }
 
         // 3. Final Delete
         productRepository.deleteById(id);
@@ -303,7 +312,7 @@ public class ProductServiceImpl implements ProductService {
         int updated = productRepository.decreaseStockAtomic(productId, quantity);
         if (updated == 0) {
             Product p = findById(productId);
-            throw new IllegalStateException("Insufficient stock for product: " + p.getName());
+            throw new IllegalStateException("Stock insuficiente para el producto: " + p.getName());
         }
 
         // Audit log (only once per call)
@@ -326,7 +335,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = findById(productId);
         BigDecimal newStock = product.getStock().add(quantity);
         if (newStock.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Target stock cannot be negative.");
+            throw new IllegalArgumentException("El stock objetivo no puede ser negativo.");
         }
         product.setStock(newStock);
         productRepository.save(product);
@@ -347,7 +356,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void applyNewTaxRate(Long newTaxRateId) {
         TaxRate newRate = taxRateRepository.findById(newTaxRateId)
-                .orElseThrow(() -> new ResourceNotFoundException("TaxRate " + newTaxRateId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Tipo de IVA " + newTaxRateId + " no encontrado."));
 
         List<TaxRate> oldRates = taxRateRepository.findByDescriptionAndIdNot(newRate.getDescription(), newTaxRateId);
         if (oldRates.isEmpty())

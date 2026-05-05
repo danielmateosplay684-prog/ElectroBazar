@@ -124,11 +124,11 @@ public interface ProductService {
     Product update(Long id, ProductRequest request);
 
     /**
-     * Performs a soft delete (active = false).
+     * Toggles the product active status.
      * 
      * @param id The product ID.
      */
-    void delete(Long id);
+    void toggleStatus(Long id);
 
     /**
      * Physically removes the product from the database if no constraints prevent

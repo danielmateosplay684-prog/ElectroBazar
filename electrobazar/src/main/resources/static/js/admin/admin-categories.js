@@ -39,39 +39,43 @@ function saveCategory() {
         method: id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(category)
-    }).then(function (res) {
+    }).then(async res => {
         if (res.ok) {
             categoryModal.hide();
             showToast(getAdminI18n('successSave'));
-            setTimeout(function () { location.reload(); }, 1000);
+            setTimeout(() => location.reload(), 1000);
         } else {
-            res.json().then(function (err) {
-                showToast(getAdminI18n('errorSave') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
-            }).catch(function () {
-                showToast(getAdminI18n('errorSave'), 'error');
-            });
+            const data = await res.json().catch(() => ({}));
+            showToast(data.error || getAdminI18n('errorSave'), 'error');
         }
-    }).catch(function () {
+    }).catch(() => {
         showToast(getAdminI18n('errorNetwork'), 'error');
     });
 }
 
-function deleteCategory(id) {
-    if (!confirm(getAdminI18n('confirmDelete'))) return;
+function toggleCategoryStatus(id) {
     fetch('/api/categories/' + id, { method: 'DELETE' })
-        .then(function (res) {
+        .then(res => {
             if (res.ok) {
-                showToast(getAdminI18n('successDelete'));
-                setTimeout(function () { location.reload(); }, 1000);
-            } else {
-                res.json().then(function (err) {
-                    showToast(getAdminI18n('errorDelete') + ': ' + (err.error || err.message || 'Desconocido'), 'error');
-                }).catch(function () {
-                    showToast(getAdminI18n('errorDelete'), 'error');
-                });
+                showToast(getAdminI18n('successSave'));
+                setTimeout(() => location.reload(), 1000);
             }
-        }).catch(function () {
-            showToast(getAdminI18n('errorNetwork'), 'error');
+        });
+}
+
+function deleteCategory(id, name) {
+    if (!confirm('¿Seguro que quieres ELIMINAR permanentemente la categoría "' + (name || '') + '"? Esta acción no se puede deshacer.')) return;
+    fetch('/api/categories/' + id + '/hard', { method: 'DELETE' })
+        .then(async res => {
+            if (res.ok) {
+                showToast('Categoría eliminada correctamente');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const data = await res.json();
+                showToast(data.error || 'No se pudo eliminar la categoría', 'error');
+            }
+        }).catch(err => {
+            showToast('Error de conexión al eliminar', 'error');
         });
 }
 
@@ -94,5 +98,6 @@ function resetCategoryFilters() {
 // Global Exports
 window.openCategoryModal = openCategoryModal;
 window.saveCategory = saveCategory;
+window.toggleCategoryStatus = toggleCategoryStatus;
 window.deleteCategory = deleteCategory;
 window.resetCategoryFilters = resetCategoryFilters;

@@ -227,7 +227,7 @@ public class ProductApiRestController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        productService.delete(id);
+        productService.toggleStatus(id);
         return ResponseEntity.noContent().build();
     }
 
