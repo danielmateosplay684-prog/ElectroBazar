@@ -1223,38 +1223,54 @@
 
     <!-- ── MODAL: Buscar Ticket para Devolución ── -->
     <div class="modal fade" id="returnSearchModal" tabindex="-1">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
             <div class="modal-content"
-                style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
-                <div class="modal-header" style="border-color: var(--border);">
-                    <h6 class="modal-title">
-                        <i class="bi bi-search me-2"></i>
-                        <span th:text="#{tpv.return.search.title}">Buscar Ticket</span>
+                style="background: var(--secondary); color: var(--text-main); border-color: var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+                <div class="modal-header py-3"
+                    style="border-color: var(--border); background: rgba(var(--accent-rgb), 0.08); border-radius: 16px 16px 0 0;">
+                    <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+                        <span style="background: var(--accent); color: var(--primary); border-radius: 8px; padding: 5px 9px; font-size: 0.9rem;">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <span th:text="#{tpv.return.search.title}">Buscar Ticket o Factura</span>
                     </h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         style="filter: var(--close-filter, invert(1));"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div id="returnSearchError" class="alert alert-danger py-2 mb-3"
-                        style="display:none; font-size: 0.8rem;"></div>
+                        style="display:none; font-size: 0.85rem; border-radius: 10px;"></div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size:0.85rem; color: var(--text-muted);"
-                            th:text="#{tpv.return.search.label}">ID de Venta o Número de Ticket</label>
-                        <input type="text" id="returnQueryInput" class="form-control"
-                            th:placeholder="#{tpv.return.search.placeholder}" placeholder="Ej: 123 o T-2026-0001"
-                            style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">
+                            <i class="bi bi-hash me-1"></i>
+                            <span th:text="#{tpv.return.search.label}">ID de Venta o Número de Ticket</span>
+                        </label>
+                        <div class="input-group input-group-lg shadow-sm">
+                            <span class="input-group-text px-3" style="background: var(--primary); border-color: var(--border); color: var(--text-muted); border-radius: 12px 0 0 12px;">
+                                <i class="bi bi-ticket-perforated fs-4"></i>
+                            </span>
+                            <input type="text" id="returnQueryInput" class="form-control fw-bold"
+                                th:placeholder="#{tpv.return.search.placeholder}" placeholder="Ej: 123 o T-2026-0001"
+                                style="background: var(--primary); color: var(--text-main); border-color: var(--border); font-size: 1.2rem; border-radius: 0 12px 12px 0; height: 60px;">
+                        </div>
                     </div>
-                    <small style="color: var(--text-muted); font-size:0.78rem;" th:text="#{tpv.return.search.help}">
-                        Introduce el número que aparece en la parte superior del ticket.
-                    </small>
+                    
+                    <div class="d-flex align-items-start gap-3 p-3 rounded-3" style="background: rgba(var(--accent-rgb), 0.05); border: 1px solid rgba(var(--accent-rgb), 0.1);">
+                        <i class="bi bi-info-circle-fill text-accent fs-5 mt-1"></i>
+                        <small style="color: var(--text-muted); font-size:0.85rem; line-height: 1.5;">
+                            <span th:text="#{tpv.return.search.help}">Introduce el número que aparece en la parte superior del ticket o factura para localizarla.</span>
+                        </small>
+                    </div>
                 </div>
-                <div class="modal-footer" style="border-color: var(--border);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" th:text="#{common.cancel}"
-                        style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
-                    <button type="button" class="btn" id="btnSubmitReturnSearch" onclick="handleReturnSearch()"
+                <div class="modal-footer border-0 p-4 pt-0 d-flex gap-2">
+                    <button type="button" class="btn flex-grow-1 py-2 fw-semibold" data-bs-dismiss="modal" th:text="#{common.cancel}"
+                        style="background: var(--primary); border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; transition: all 0.2s;">Cancelar</button>
+                    <button type="button" class="btn flex-grow-1 py-2 fw-bold" id="btnSubmitReturnSearch" onclick="handleReturnSearch()"
                         th:text="#{tpv.return.search.confirm}"
-                        style="background: var(--accent); color: var(--primary); font-weight: 600;">Buscar</button>
+                        style="background: var(--accent); color: var(--primary); border-radius: 12px; box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3); transition: all 0.2s;">
+                        <i class="bi bi-search me-2"></i>Buscar
+                    </button>
                 </div>
             </div>
         </div>
@@ -1476,7 +1492,8 @@
                   data-on-hold-resume=#{tpv.on_hold.action.resume},
                   data-on-hold-no-label=#{tpv.on_hold.no_label},
                   data-error-connection=#{common.error.connection},
-                  data-error-network=#{common.error.network}">
+                  data-error-network=#{common.error.network},
+                  data-search-confirm=#{tpv.return.search.confirm}">
     </div>
 
     <script th:src="@{/js/util/product-autocomplete.js}"></script>

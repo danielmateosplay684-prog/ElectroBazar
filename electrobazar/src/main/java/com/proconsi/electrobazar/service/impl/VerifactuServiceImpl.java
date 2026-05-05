@@ -2,7 +2,6 @@ package com.proconsi.electrobazar.service.impl;
 
 import com.proconsi.electrobazar.config.VerifactuProperties;
 import com.proconsi.electrobazar.model.*;
-import com.proconsi.electrobazar.repository.CompanySettingsRepository;
 import com.proconsi.electrobazar.service.CompanySettingsService;
 import com.proconsi.electrobazar.repository.InvoiceRepository;
 import com.proconsi.electrobazar.repository.RectificativeInvoiceRepository;

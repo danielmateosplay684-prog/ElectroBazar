@@ -2782,7 +2782,9 @@ function handleReturnSearch() {
         })
         .finally(function () {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Buscar';
+            const transTable = document.getElementById('tpv-js-translations');
+            const searchLabel = transTable ? transTable.dataset.searchConfirm : 'Buscar';
+            submitBtn.innerHTML = '<i class="bi bi-search me-2"></i>' + searchLabel;
         });
 }
 

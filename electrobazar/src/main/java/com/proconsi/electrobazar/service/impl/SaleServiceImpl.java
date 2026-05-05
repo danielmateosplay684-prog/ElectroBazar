@@ -1,5 +1,6 @@
 package com.proconsi.electrobazar.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import com.proconsi.electrobazar.dto.AnalyticsSummaryDTO;
 import com.proconsi.electrobazar.dto.SaleSummaryProjection;
 import com.proconsi.electrobazar.dto.SaleSummaryResponse;
@@ -48,6 +49,7 @@ import org.springframework.data.domain.PageRequest;
  */
 @Service
 @Transactional
+@Slf4j
 public class SaleServiceImpl implements SaleService {
 
     private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
@@ -102,172 +104,201 @@ public class SaleServiceImpl implements SaleService {
     public AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to) {
         LocalDate startDate = from.toLocalDate();
         LocalDate endDate = to.toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        boolean includesToday = !endDate.isBefore(today);
+        LocalDate historicalEndDate = includesToday ? today.minusDays(1) : endDate;
+        boolean hasHistorical = !historicalEndDate.isBefore(startDate);
 
         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
         boolean useMonthly = days > 31;
 
-        BigDecimal totalRevenue;
-        long totalSalesCount;
-        long totalCancelledCount;
-        BigDecimal totalCancelledAmount;
-        long totalReturnsCount;
-
-        BigDecimal cashTotal;
-        BigDecimal cardTotal;
-        BigDecimal mixedTotal;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        long totalSalesCount = 0;
+        long totalCancelledCount = 0;
+        BigDecimal totalCancelledAmount = BigDecimal.ZERO;
+        long totalReturnsCount = 0;
+        BigDecimal cashTotal = BigDecimal.ZERO;
+        BigDecimal cardTotal = BigDecimal.ZERO;
+        BigDecimal mixedTotal = BigDecimal.ZERO;
 
         Map<String, BigDecimal> trend = new TreeMap<>();
         Map<String, BigDecimal> categories = new LinkedHashMap<>();
         Map<Integer, BigDecimal> hourly = new TreeMap<>();
         Map<String, BigDecimal> topProds = new LinkedHashMap<>();
-        String topProduct;
+        String topProduct = null;
 
-        if (useMonthly) {
-            // ── 1. Totales desde monthly_sales_stats ──────────────────────────
-            String summarySql = """
-                        SELECT
-                            COALESCE(SUM(total_revenue),0), COALESCE(SUM(sales_count),0),
-                            COALESCE(SUM(cancelled_count),0), COALESCE(SUM(cancelled_total),0),
-                            COALESCE(SUM(returns_count),0), COALESCE(SUM(returns_total),0),
-                            COALESCE(SUM(cash_total),0), COALESCE(SUM(card_total),0),
-                            COALESCE(SUM(mixed_total),0), COALESCE(SUM(total_units_sold),0)
-                        FROM monthly_sales_stats
-                        WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
-                        AND DATE_FORMAT(?, '%Y-%m-01')
-                    """;
-            Object[] summaryData = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[] {
-                    rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
-                    rs.getLong(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8),
-                    rs.getBigDecimal(9), rs.getBigDecimal(10)
-            }, startDate, endDate);
+        // ── 1. PROCESAR PARTE HISTÓRICA ──────────────────────────────────────
+        if (hasHistorical) {
+            if (useMonthly) {
+                // Lógica mensual (stats consolidadas)
+                String summarySql = """
+                            SELECT
+                                COALESCE(SUM(total_revenue),0), COALESCE(SUM(sales_count),0),
+                                COALESCE(SUM(cancelled_count),0), COALESCE(SUM(cancelled_total),0),
+                                COALESCE(SUM(returns_count),0), COALESCE(SUM(returns_total),0),
+                                COALESCE(SUM(cash_total),0), COALESCE(SUM(card_total),0),
+                                COALESCE(SUM(mixed_total),0)
+                            FROM monthly_sales_stats
+                            WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
+                            AND DATE_FORMAT(?, '%Y-%m-01')
+                        """;
+                long t0 = System.currentTimeMillis();
+                Object[] data = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[] {
+                        rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
+                        rs.getLong(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8),
+                        rs.getBigDecimal(9)
+                }, startDate, historicalEndDate);
+                log.info("[ANALYTICS] Monthly Summary query took {}ms", System.currentTimeMillis() - t0);
 
-            totalRevenue = (BigDecimal) summaryData[0];
-            totalSalesCount = (long) summaryData[1];
-            totalCancelledCount = (long) summaryData[2];
-            totalCancelledAmount = (BigDecimal) summaryData[3];
-            totalReturnsCount = (long) summaryData[4];
-            cashTotal = (BigDecimal) summaryData[6];
-            cardTotal = (BigDecimal) summaryData[7];
-            mixedTotal = (BigDecimal) summaryData[8];
+                totalRevenue = (BigDecimal) data[0];
+                totalSalesCount = (long) data[1];
+                totalCancelledCount = (long) data[2];
+                totalCancelledAmount = (BigDecimal) data[3];
+                totalReturnsCount = (long) data[4];
+                cashTotal = (BigDecimal) data[6];
+                cardTotal = (BigDecimal) data[7];
+                mixedTotal = (BigDecimal) data[8];
 
+                // Tendencia mensual
+                long tTrend = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT stat_month, total_revenue FROM monthly_sales_stats WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01') AND DATE_FORMAT(?, '%Y-%m-01') ORDER BY stat_month ASC",
+                        (rs, rowNum) -> trend.put(rs.getDate(1).toString(), rs.getBigDecimal(2)), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Monthly Trend query took {}ms", System.currentTimeMillis() - tTrend);
 
-            // ── 2. Tendencia mensual ───────────────────────────────────────────
-            String trendSql = """
-                        SELECT stat_month, total_revenue FROM monthly_sales_stats
-                        WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
-                        AND DATE_FORMAT(?, '%Y-%m-01')
-                        ORDER BY stat_month ASC
-                    """;
-            List<Object[]> trendRows = jdbcTemplate.query(trendSql, (rs, rowNum) -> new Object[] {
-                    rs.getDate("stat_month").toString(), rs.getBigDecimal("total_revenue")
-            }, startDate, endDate);
-            for (Object[] row : trendRows)
-                trend.put((String) row[0], (BigDecimal) row[1]);
+                // Categorías mensuales
+                long tCat = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT category_name, SUM(total_amount) FROM monthly_category_stats WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01') AND DATE_FORMAT(?, '%Y-%m-01') GROUP BY category_name",
+                        (rs, rowNum) -> categories.merge(rs.getString(1), rs.getBigDecimal(2), BigDecimal::add), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Monthly Categories query took {}ms", System.currentTimeMillis() - tCat);
 
-            // ── 3. Categorías ─────────────────────────────────────────────────
-            String catSql = """
-                        SELECT category_name, SUM(total_amount) as total
-                        FROM monthly_category_stats
-                        WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
-                        AND DATE_FORMAT(?, '%Y-%m-01')
-                        GROUP BY category_name ORDER BY total DESC
-                    """;
-            List<Object[]> catRowsShared = jdbcTemplate.query(catSql, (rs, rowNum) -> new Object[] {
-                    rs.getString("category_name"), rs.getBigDecimal("total")
-            }, startDate, endDate);
-            for (Object[] row : catRowsShared)
-                categories.put((String) row[0], (BigDecimal) row[1]);
+                // Top Productos mensuales
+                long tProd = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT product_name, SUM(revenue) FROM monthly_product_stats WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01') AND DATE_FORMAT(?, '%Y-%m-01') GROUP BY product_name ORDER BY SUM(revenue) DESC LIMIT 5",
+                        (rs, rowNum) -> topProds.merge(rs.getString(1), rs.getBigDecimal(2), BigDecimal::add), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Monthly Products query took {}ms", System.currentTimeMillis() - tProd);
+            } else {
+                // Lógica diaria (stats consolidadas)
+                String summarySql = """
+                            SELECT
+                                COALESCE(SUM(total_revenue), 0), COALESCE(SUM(sales_count), 0),
+                                COALESCE(SUM(cancelled_count), 0), COALESCE(SUM(cancelled_total), 0),
+                                COALESCE(SUM(returns_count), 0), COALESCE(SUM(returns_total), 0),
+                                COALESCE(SUM(cash_total), 0), COALESCE(SUM(card_total), 0),
+                                COALESCE(SUM(mixed_total), 0)
+                            FROM daily_sales_stats WHERE date BETWEEN ? AND ?
+                        """;
+                long t0 = System.currentTimeMillis();
+                Object[] data = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[] {
+                        rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
+                        rs.getLong(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8),
+                        rs.getBigDecimal(9)
+                }, startDate, historicalEndDate);
+                log.info("[ANALYTICS] Daily Summary query took {}ms", System.currentTimeMillis() - t0);
 
-            // ── 5. Top productos ──────────────────────────────────────────────
-            String topProdsSql = """
-                        SELECT product_name, SUM(revenue) as total
-                        FROM monthly_product_stats
-                        WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
-                        AND DATE_FORMAT(?, '%Y-%m-01')
-                        GROUP BY product_id, product_name
-                        ORDER BY total DESC LIMIT 5
-                    """;
-            List<Object[]> prodRows = jdbcTemplate.query(topProdsSql, (rs, rowNum) -> new Object[] {
-                    rs.getString("product_name"), rs.getBigDecimal("total")
-            }, startDate, endDate);
-            for (Object[] row : prodRows)
-                topProds.put((String) row[0], (BigDecimal) row[1]);
+                totalRevenue = (BigDecimal) data[0];
+                totalSalesCount = (long) data[1];
+                totalCancelledCount = (long) data[2];
+                totalCancelledAmount = (BigDecimal) data[3];
+                totalReturnsCount = (long) data[4];
+                cashTotal = (BigDecimal) data[6];
+                cardTotal = (BigDecimal) data[7];
+                mixedTotal = (BigDecimal) data[8];
 
-            // ── 6. Top producto nombre ────────────────────────────────────────
-            String topNameSql = """
-                        SELECT product_name FROM monthly_product_stats
-                        WHERE stat_month BETWEEN DATE_FORMAT(?, '%Y-%m-01')
-                        AND DATE_FORMAT(?, '%Y-%m-01')
-                        GROUP BY product_id, product_name
-                        ORDER BY SUM(units_sold) DESC LIMIT 1
-                    """;
-            List<String> topNames = jdbcTemplate.queryForList(topNameSql, String.class, startDate, endDate);
-            topProduct = topNames.isEmpty() ? null : topNames.get(0);
+                // Tendencia diaria
+                long tTrend = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT date, total_revenue FROM daily_sales_stats WHERE date BETWEEN ? AND ? ORDER BY date ASC",
+                        (rs, rowNum) -> trend.put(rs.getDate(1).toString(), rs.getBigDecimal(2)), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Daily Trend query took {}ms", System.currentTimeMillis() - tTrend);
 
-        } else {
-            // ── Tablas diarias (lógica original) ─────────────────────────────
-            String summarySql = """
-                        SELECT
-                            COALESCE(SUM(total_revenue), 0), COALESCE(SUM(sales_count), 0),
-                            COALESCE(SUM(cancelled_count), 0), COALESCE(SUM(cancelled_total), 0),
-                            COALESCE(SUM(returns_count), 0), COALESCE(SUM(returns_total), 0),
-                            COALESCE(SUM(cash_total), 0), COALESCE(SUM(card_total), 0),
-                            COALESCE(SUM(mixed_total), 0), COALESCE(SUM(total_units_sold), 0)
-                        FROM daily_sales_stats WHERE date BETWEEN ? AND ?
-                    """;
-            Object[] summaryData = jdbcTemplate.queryForObject(summarySql, (rs, rowNum) -> new Object[] {
-                    rs.getBigDecimal(1), rs.getLong(2), rs.getLong(3), rs.getBigDecimal(4),
-                    rs.getLong(5), rs.getBigDecimal(6), rs.getBigDecimal(7), rs.getBigDecimal(8),
-                    rs.getBigDecimal(9), rs.getBigDecimal(10)
-            }, startDate, endDate);
+                // Categorías diarias
+                long tCat = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT category_name, SUM(total_amount) FROM daily_category_stats WHERE date BETWEEN ? AND ? GROUP BY category_name",
+                        (rs, rowNum) -> categories.merge(rs.getString(1), rs.getBigDecimal(2), BigDecimal::add), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Daily Categories query took {}ms", System.currentTimeMillis() - tCat);
 
-            totalRevenue = (BigDecimal) summaryData[0];
-            totalSalesCount = (long) summaryData[1];
-            totalCancelledCount = (long) summaryData[2];
-            totalCancelledAmount = (BigDecimal) summaryData[3];
-            totalReturnsCount = (long) summaryData[4];
-            cashTotal = (BigDecimal) summaryData[6];
-            cardTotal = (BigDecimal) summaryData[7];
-            mixedTotal = (BigDecimal) summaryData[8];
-
-
-            topProduct = findTopProductNameBetween(from, to);
-
-            String trendSql = "SELECT date, total_revenue FROM daily_sales_stats WHERE date BETWEEN ? AND ? ORDER BY date ASC";
-            List<Object[]> trendRowsDaily = jdbcTemplate.query(trendSql, (rs, rowNum) -> new Object[] {
-                    rs.getDate("date").toString(), rs.getBigDecimal("total_revenue")
-            }, startDate, endDate);
-            for (Object[] row : trendRowsDaily)
-                trend.put((String) row[0], (BigDecimal) row[1]);
-
-            String catSql = """
-                        SELECT category_name, SUM(total_amount) as total, SUM(units_sold)
-                        FROM daily_category_stats
-                        WHERE date BETWEEN ? AND ?
-                        GROUP BY category_name ORDER BY total DESC
-                    """;
-            List<Object[]> catRowsSharedDaily = jdbcTemplate.query(catSql, (rs, rowNum) -> new Object[] {
-                    rs.getString("category_name"), rs.getBigDecimal("total")
-            }, startDate, endDate);
-            for (Object[] row : catRowsSharedDaily)
-                categories.put((String) row[0], (BigDecimal) row[1]);
-
-            List<Object[]> topProdsData = getTopProducts(from, to, 5);
-            for (Object[] row : topProdsData) {
-                topProds.put((String) row[0], (BigDecimal) row[1]);
+                // Top Productos diarios (Optimización: usar daily_product_stats en lugar de tabla sales)
+                long tProd = System.currentTimeMillis();
+                jdbcTemplate.query("SELECT product_name, SUM(revenue) FROM daily_product_stats WHERE date BETWEEN ? AND ? GROUP BY product_name ORDER BY SUM(revenue) DESC LIMIT 5",
+                        (rs, rowNum) -> topProds.merge(rs.getString(1), rs.getBigDecimal(2), BigDecimal::add), startDate, historicalEndDate);
+                log.info("[ANALYTICS] Daily Products query took {}ms", System.currentTimeMillis() - tProd);
             }
         }
 
-        // ── Horario: siempre desde hourly_sales_stats ────────────────────────
-        List<Object[]> hourlyRows = jdbcTemplate.query(
-                "SELECT hour, SUM(total_revenue) FROM hourly_sales_stats WHERE date BETWEEN ? AND ? GROUP BY hour ORDER BY hour ASC",
-                (rs, rowNum) -> new Object[] { rs.getInt(1), rs.getBigDecimal(2) },
-                startDate, endDate);
-        for (Object[] row : hourlyRows)
-            hourly.put((Integer) row[0], (BigDecimal) row[1]);
+        // ── 2. PROCESAR PARTE DE HOY (EN VIVO) ────────────────────────────────
+        if (includesToday) {
+            LocalDateTime liveFrom = today.atStartOfDay();
+            LocalDateTime liveTo = LocalDateTime.now();
 
-        Long lowStockCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM products WHERE stock < 5 AND active = true", Long.class);
+            long tLive = System.currentTimeMillis();
+            SaleSummaryProjection liveSummary = saleRepository.getSummaryBetween(liveFrom, liveTo);
+            log.info("[ANALYTICS] Live Summary query took {}ms", System.currentTimeMillis() - tLive);
+            if (liveSummary != null) {
+                totalSalesCount += (liveSummary.getTotalSalesCount() != null ? liveSummary.getTotalSalesCount() : 0L);
+                totalRevenue = totalRevenue.add(liveSummary.getTotalSalesAmount() != null ? liveSummary.getTotalSalesAmount() : BigDecimal.ZERO);
+                cashTotal = cashTotal.add(liveSummary.getTotalCashAmount() != null ? liveSummary.getTotalCashAmount() : BigDecimal.ZERO);
+                cardTotal = cardTotal.add(liveSummary.getTotalCardAmount() != null ? liveSummary.getTotalCardAmount() : BigDecimal.ZERO);
+                totalCancelledCount += (liveSummary.getTotalCancelledCount() != null ? liveSummary.getTotalCancelledCount() : 0L);
+                totalCancelledAmount = totalCancelledAmount.add(liveSummary.getTotalCancelledAmount() != null ? liveSummary.getTotalCancelledAmount() : BigDecimal.ZERO);
+            }
+
+            // Tendencia hoy
+            trend.merge(today.toString(), liveSummary != null ? liveSummary.getTotalSalesAmount() : BigDecimal.ZERO, BigDecimal::add);
+
+            // Categorías hoy
+            long tLiveCat = System.currentTimeMillis();
+            List<Object[]> liveCats = saleRepository.getCategoryDistribution(liveFrom, liveTo);
+            log.info("[ANALYTICS] Live Categories query took {}ms", System.currentTimeMillis() - tLiveCat);
+            for (Object[] row : liveCats) {
+                categories.merge((String) row[0], (BigDecimal) row[1], BigDecimal::add);
+            }
+
+            // Top productos hoy
+            long tLiveProd = System.currentTimeMillis();
+            List<Object[]> liveProds = saleRepository.getTopProductsDetailed(liveFrom, liveTo);
+            log.info("[ANALYTICS] Live Products query took {}ms", System.currentTimeMillis() - tLiveProd);
+            for (Object[] row : liveProds) {
+                topProds.merge((String) row[0], (BigDecimal) row[1], BigDecimal::add);
+            }
+            
+            // Top Product Name (Combinado)
+            if (topProds.isEmpty()) {
+                topProduct = "—";
+            } else {
+                topProduct = topProds.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse("—");
+            }
+        } else {
+            // Caso histórico puro
+            if (!topProds.isEmpty()) {
+                topProduct = topProds.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse("—");
+            } else {
+                topProduct = "—";
+            }
+        }
+
+        // ── 3. HORARIO Y STOCK (SIEMPRE EN VIVO / HÍBRIDO) ──────────────────
+        if (hasHistorical) {
+            long tHour = System.currentTimeMillis();
+            jdbcTemplate.query("SELECT hour, SUM(total_revenue) FROM hourly_sales_stats WHERE date BETWEEN ? AND ? GROUP BY hour",
+                    (rs, rowNum) -> hourly.merge(rs.getInt(1), rs.getBigDecimal(2), BigDecimal::add), startDate, historicalEndDate);
+            log.info("[ANALYTICS] Historical Hourly query took {}ms", System.currentTimeMillis() - tHour);
+        }
+        if (includesToday) {
+            long tLiveHour = System.currentTimeMillis();
+            List<Object[]> liveHourly = saleRepository.getHourlyTrend(today.atStartOfDay(), LocalDateTime.now());
+            log.info("[ANALYTICS] Live Hourly query took {}ms", System.currentTimeMillis() - tLiveHour);
+            for (Object[] row : liveHourly) {
+                hourly.merge((Integer) row[0], (BigDecimal) row[1], BigDecimal::add);
+            }
+        }
+
+        Long lowStockCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM products WHERE stock < 5 AND active = true", Long.class);
 
         return AnalyticsSummaryDTO.builder()
                 .totalSales(totalSalesCount)
