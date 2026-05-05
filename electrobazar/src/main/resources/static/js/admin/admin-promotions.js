@@ -273,10 +273,10 @@ function loadPromotions() {
                     <td>${formatDateTime(p.validUntil)}</td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                            <button class="btn-icon" title="Editar" onclick="openPromotionModal(${p.id})">
+                            <button class="btn-icon btn-edit" title="Editar" onclick="openPromotionModal(${p.id})">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Eliminar" onclick="deletePromotion(${p.id})">
+                            <button class="btn-icon btn-delete" title="Eliminar" onclick="deletePromotion(${p.id})">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>

@@ -116,18 +116,18 @@
                             </td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                                    <button class="btn-icon" th:title="#{common.edit}" th:data-id="${p.id}"
+                                    <button class="btn-icon btn-edit" th:title="#{common.edit}" th:data-id="${p.id}"
                                         onclick="openProductModal(this.getAttribute('data-id'))">
-                                        <i class="bi bi-pencil" style="color: #3498db;"></i>
+                                        <i class="bi bi-pencil"></i>
                                     </button>
                                     <button class="btn-icon" th:title="${p.active ? 'Desactivar' : 'Activar'}" th:data-id="${p.id}"
                                         onclick="toggleProductStatus(this.getAttribute('data-id'))">
-                                        <i class="bi bi-power" th:style="${p.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
+                                        <i class="bi bi-power" th:classappend="${p.active ? 'color-inactive' : 'color-active'}"></i>
                                     </button>
-                                    <button class="btn-icon" th:title="#{common.delete}"
+                                    <button class="btn-icon btn-delete" th:title="#{common.delete}"
                                         th:data-id="${p.id}" th:data-name="${p.name}"
                                         onclick="deleteProduct(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -219,18 +219,18 @@
                             </td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                                    <button class="btn-icon" th:title="#{common.edit}" th:data-id="${c.id}"
+                                    <button class="btn-icon btn-edit" th:title="#{common.edit}" th:data-id="${c.id}"
                                         onclick="openCategoryModal(this.getAttribute('data-id'))">
-                                        <i class="bi bi-pencil" style="color: #3498db;"></i>
+                                        <i class="bi bi-pencil"></i>
                                     </button>
                                     <button class="btn-icon" th:title="${c.active ? 'Desactivar' : 'Activar'}" th:data-id="${c.id}"
                                         onclick="toggleCategoryStatus(this.getAttribute('data-id'))">
-                                        <i class="bi bi-power" th:style="${c.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
+                                        <i class="bi bi-power" th:classappend="${c.active ? 'color-inactive' : 'color-active'}"></i>
                                     </button>
-                                    <button class="btn-icon" th:title="#{common.delete}"
+                                    <button class="btn-icon btn-delete" th:title="#{common.delete}"
                                         th:data-id="${c.id}" th:data-name="${c.name}"
                                         onclick="deleteCategory(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                        <i class="bi bi-trash" style="color: #e74c3c;"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </td>

@@ -164,7 +164,7 @@
                                             onclick="toggleProductStatus(this.getAttribute('data-id'))">
                                             <i class="bi bi-power" th:style="${p.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
                                         </button>
-                                        <button class="btn-icon danger" th:title="#{common.delete}" th:data-id="${p.id}"
+                                        <button class="btn-icon" th:title="#{common.delete}" th:data-id="${p.id}"
                                             th:data-name="${p.name}"
                                             onclick="deleteProduct(this.getAttribute('data-id'), this.getAttribute('data-name'))">
                                             <i class="bi bi-trash" style="color: #e74c3c;"></i>
@@ -278,7 +278,7 @@
                                             onclick="toggleCategoryStatus(this.getAttribute('data-id'))">
                                             <i class="bi bi-power" th:style="${c.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
                                         </button>
-                                        <button class="btn-icon danger" th:data-id="${c.id}" th:data-name="${c.name}"
+                                        <button class="btn-icon" th:data-id="${c.id}" th:data-name="${c.name}"
                                             onclick="deleteCategory(this.getAttribute('data-id'), this.getAttribute('data-name'))">
                                             <i class="bi bi-trash" style="color: #e74c3c;"></i>
                                         </button>

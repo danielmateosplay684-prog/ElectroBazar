@@ -650,30 +650,44 @@
 
         /* ── Action buttons ── */
         .btn-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 7px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(--primary);
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            background: var(--surface);
+            color: var(--text-main);
+            font-size: 0.95rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .btn-icon:hover {
             border-color: var(--accent);
             color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        .btn-icon.danger:hover {
-            border-color: var(--danger);
-            color: var(--danger);
-        }
+        /* Standardized Action Colors - High contrast for both themes */
+        .btn-view i, .color-view { color: #8e9aaf !important; } /* Soft Gray-Blue */
+        .btn-edit i, .color-edit { color: #3498db !important; } /* Bright Blue */
+        .btn-delete i, .color-delete { color: #e74c3c !important; } /* Vibrant Red */
+        .btn-download i, .color-download { color: #3498db !important; } /* Blue for downloads */
+        .btn-history i, .color-history { color: #8e9aaf !important; } /* Gray for history */
+        
+        /* Dark mode overrides for icons if needed */
+        [data-theme='dark'] .btn-view i { color: #a0aec0 !important; }
+        [data-theme='dark'] .btn-edit i { color: #60a5fa !important; }
+        [data-theme='dark'] .btn-delete i { color: #f87171 !important; }
+        [data-theme='dark'] .btn-download i { color: #60a5fa !important; }
+
+        .color-active { color: #2ecc71 !important; }
+        .color-inactive { color: #f39c12 !important; }
 
         /* ── "Nuevo" button ── */
         .btn-nuevo {
@@ -1219,4 +1233,72 @@
             color: var(--text-main) !important;
             background-color: var(--surface) !important;
             border: 1px solid var(--border) !important;
+        }
+
+        /* ── Analytics & Stats ── */
+        .stats-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            height: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            border-color: var(--accent);
+        }
+
+        .stats-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(var(--accent-rgb), 0.1);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .stats-data {
+            flex-grow: 1;
+        }
+
+        .stats-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+        }
+
+        .stats-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-container-p {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            height: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .chart-container-p h6 {
+            color: var(--text-main);
+            font-size: 0.95rem;
+            letter-spacing: 0.2px;
         }

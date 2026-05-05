@@ -179,25 +179,25 @@
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                                     <a th:href="@{'/admin/tariffs/' + ${tariff.id} + '/history'}" class="btn-icon"
                                         th:title="#{admin.tariffs.action.viewhistory}">
-                                        <i class="bi bi-clock-history"></i>
+                                        <i class="bi bi-clock-history color-history"></i>
                                     </a>
                                     <button class="btn-icon" th:title="#{admin.tariffs.action.edit}"
                                         th:data-id="${tariff.id}" th:data-name="${tariff.name}"
                                         th:data-discount="${tariff.discountPercentage}"
                                         th:data-description="${tariff.description ?: ''}"
                                         th:data-color="${tariff.color ?: ''}" onclick="openEditTariffModal(this)">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="bi bi-pencil color-edit"></i>
                                     </button>
-                                    <button th:if="${!tariff.systemTariff and tariff.active}" class="btn-icon danger"
+                                    <button th:if="${!tariff.systemTariff and tariff.active}" class="btn-icon"
                                         th:title="#{admin.tariffs.action.deactivate}" th:data-id="${tariff.id}"
                                         th:data-name="${tariff.name}"
                                         onclick="deactivateTariff(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                        <i class="bi bi-toggle-off"></i>
+                                        <i class="bi bi-toggle-off color-delete"></i>
                                     </button>
                                     <button th:if="${!tariff.systemTariff and !tariff.active}" class="btn-icon"
                                         th:title="#{admin.tariffs.action.activate}" th:data-id="${tariff.id}"
-                                        style="color:#27ae60;" onclick="activateTariff(this.getAttribute('data-id'))">
-                                        <i class="bi bi-toggle-on"></i>
+                                        onclick="activateTariff(this.getAttribute('data-id'))">
+                                        <i class="bi bi-toggle-on color-edit"></i>
                                     </button>
                                 </div>
                             </td>

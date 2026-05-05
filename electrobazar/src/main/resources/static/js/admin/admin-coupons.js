@@ -235,11 +235,11 @@ function loadCoupons() {
                     <td>${c.validUntil ? c.validUntil.substring(0, 10) : '—'}</td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                            <button class="btn-icon" title="Editar" 
+                            <button class="btn-icon btn-edit" title="Editar" 
                                 onclick="openCouponModal(${c.id})">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Eliminar"
+                            <button class="btn-icon btn-delete" title="Eliminar"
                                 onclick="deleteCoupon(${c.id})">
                                 <i class="bi bi-trash"></i>
                             </button>

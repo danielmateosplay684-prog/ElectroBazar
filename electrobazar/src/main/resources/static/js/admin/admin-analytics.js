@@ -21,21 +21,31 @@ function onAnalyticsPeriodChange() {
 }
 
 function updateAnalytics() {
+    console.log("updateAnalytics called");
     const periodSelect = document.getElementById('analyticsPeriod');
     const period = periodSelect ? periodSelect.value : '7days';
     const periodText = periodSelect ? periodSelect.options[periodSelect.selectedIndex].text : '';
     const now = new Date();
     let fromDate = new Date();
     let toDate = new Date();
+    let chartTitle = '';
+
+    const translationEl = document.getElementById('analytics-js-translations') || document.getElementById('admin-js-translations');
     const labels = {
-        trend: document.getElementById('analytics-js-translations').getAttribute('data-chart-trend'),
-        analysis: document.getElementById('analytics-js-translations').getAttribute('data-chart-analysis'),
-        error: document.getElementById('analytics-js-translations').getAttribute('data-error-loading')
+        trend: translationEl ? (translationEl.getAttribute('data-chart-trend') || 'Tendencia') : 'Tendencia',
+        analysis: translationEl ? (translationEl.getAttribute('data-chart-analysis') || 'Análisis') : 'Análisis',
+        error: translationEl ? (translationEl.getAttribute('data-error-loading') || 'Error al cargar') : 'Error al cargar'
     };
 
     const toLocalISO = (d) => {
-        const off = d.getTimezoneOffset() * 60000;
-        return new Date(d.getTime() - off).toISOString().slice(0, 19);
+        try {
+            if (!d || isNaN(d.getTime())) return new Date().toISOString().slice(0, 19);
+            const off = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - off).toISOString().slice(0, 19);
+        } catch (e) {
+            console.error("ISO conversion error", e);
+            return new Date().toISOString().slice(0, 19);
+        }
     };
 
     toDate.setHours(23, 59, 59, 999);
@@ -80,180 +90,217 @@ function updateAnalytics() {
     }
 
     const url = `/api/sales/analytics?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}&_=${Date.now()}`;
+    console.log("Fetching analytics from:", url);
 
     fetch(url)
-        .then(r => { if (!r.ok) throw new Error('Status: ' + r.status); return r.json(); })
+        .then(r => { 
+            if (!r.ok) throw new Error('Status: ' + r.status); 
+            return r.json(); 
+        })
         .then(analytics => {
+            console.log("Analytics data received:", analytics);
             initCharts(analytics, period, chartTitle);
         })
         .catch(err => {
             console.error('Error updating analytics:', err);
-            showToast(labels.error, 'error');
+            if (typeof showToast === 'function') showToast(labels.error, 'error');
         });
 }
 
 function initCharts(analytics, period, chartLabel) {
-    if (!analytics) return;
-
-    // KPI Counters
-    if (document.getElementById('statTodayRevenue')) {
-        document.getElementById('statTodayRevenue').textContent =
-            (analytics.totalRevenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
-    }
-    if (document.getElementById('statTodaySales')) {
-        document.getElementById('statTodaySales').textContent = analytics.totalSales || 0;
-    }
-    if (document.getElementById('statTopProduct')) {
-        const topP = analytics.topProductName || '—';
-        document.getElementById('statTopProduct').textContent =
-            topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
-    }
-    if (document.getElementById('statLowStock')) {
-        document.getElementById('statLowStock').textContent = analytics.lowStockCount || 0;
-    }
-    if (document.getElementById('statAvgTicket')) {
-        document.getElementById('statAvgTicket').textContent =
-            (analytics.averageTicket || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
-    }
-    if (document.getElementById('statCancellationRate')) {
-        document.getElementById('statCancellationRate').textContent =
-            (analytics.cancellationRate || 0).toFixed(1) + '%';
+    console.log("initCharts called with period:", period, "analytics:", analytics);
+    if (!analytics) {
+        console.warn("No analytics data to render");
+        return;
     }
 
-    // Trend Chart
-    const trendData = (period === 'today') ? (analytics.hourlyTrend || {}) : (analytics.revenueTrend || {});
-    let labels = [];
-    let datasetsData = [];
-
-    if (period === 'today') {
-        for (let i = 0; i < 24; i++) {
-            labels.push(i + ':00');
-            datasetsData.push(trendData[i] || 0);
+    try {
+        // KPI Counters
+        console.log("Updating KPI counters...");
+        if (document.getElementById('statTodayRevenue')) {
+            document.getElementById('statTodayRevenue').textContent =
+                (analytics.totalRevenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
         }
-    } else {
-        Object.keys(trendData).sort().forEach(dateStr => {
-            const d = new Date(dateStr);
-            labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
-            datasetsData.push(trendData[dateStr]);
-        });
-    }
+        if (document.getElementById('statTodaySales')) {
+            document.getElementById('statTodaySales').textContent = analytics.totalSales || 0;
+        }
+        if (document.getElementById('statTopProduct')) {
+            const topP = analytics.topProductName || '—';
+            document.getElementById('statTopProduct').textContent =
+                topP.length > 20 ? topP.substring(0, 20) + '...' : topP;
+        }
+        if (document.getElementById('statLowStock')) {
+            document.getElementById('statLowStock').textContent = analytics.lowStockCount || 0;
+        }
+        if (document.getElementById('statAvgTicket')) {
+            document.getElementById('statAvgTicket').textContent =
+                (analytics.averageTicket || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
+        }
+        if (document.getElementById('statCancellationRate')) {
+            document.getElementById('statCancellationRate').textContent =
+                (analytics.cancellationRate || 0).toFixed(1) + '%';
+        }
 
-    const ctxSales = document.getElementById('salesChart');
-    if (ctxSales) {
-        if (salesChart) salesChart.destroy();
-        salesChart = new Chart(ctxSales.getContext('2d'), {
-            type: (labels.length <= 1) ? 'bar' : 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: document.getElementById('analytics-js-translations').getAttribute('data-label-sales'),
-                    data: datasetsData,
-                    borderColor: '#f5a623',
-                    backgroundColor: 'rgba(245, 166, 35, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return (context.raw || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
+        // Translation element safe lookup
+        const transEl = document.getElementById('analytics-js-translations') || document.getElementById('admin-js-translations');
+        const salesLabel = transEl ? (transEl.getAttribute('data-label-sales') || 'Ventas') : 'Ventas';
+
+        // Trend Chart
+        console.log("Initializing Trend Chart...");
+        const trendData = (period === 'today') ? (analytics.hourlyTrend || {}) : (analytics.revenueTrend || {});
+        let labels = [];
+        let datasetsData = [];
+
+        if (period === 'today') {
+            for (let i = 0; i < 24; i++) {
+                labels.push(i + ':00');
+                datasetsData.push(trendData[i] || 0);
+            }
+        } else {
+            Object.keys(trendData).sort().forEach(dateStr => {
+                try {
+                    const d = new Date(dateStr);
+                    if (isNaN(d.getTime())) {
+                        labels.push(dateStr);
+                    } else {
+                        labels.push(d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+                    }
+                    datasetsData.push(trendData[dateStr]);
+                } catch (e) {
+                    console.error("Error parsing date:", dateStr, e);
+                }
+            });
+        }
+
+        const ctxSales = document.getElementById('salesChart');
+        if (ctxSales) {
+            console.log('canvas dimensions (salesChart):', ctxSales.offsetWidth, ctxSales.offsetHeight);
+            console.log("Rendering Sales Chart...");
+            if (salesChart) salesChart.destroy();
+            salesChart = new Chart(ctxSales.getContext('2d'), {
+                type: (labels.length <= 1) ? 'bar' : 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: salesLabel,
+                        data: datasetsData,
+                        borderColor: '#f5a623',
+                        backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return (context.raw || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: {
-                            callback: function(value) { return value + ' €'; }
-                        }
                     },
-                    x: { grid: { display: false } }
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: {
+                                callback: function(value) { return value + ' €'; }
+                            }
+                        },
+                        x: { grid: { display: false } }
+                    }
                 }
-            }
-        });
-    }
-
-    // Category Distribution
-    const catSummary = analytics.categoryDistribution || {};
-    const ctxCat = document.getElementById('categoryChart');
-    if (ctxCat) {
-        if (categoryChart) categoryChart.destroy();
-        categoryChart = new Chart(ctxCat.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(catSummary),
-                datasets: [{
-                    data: Object.values(catSummary),
-                    backgroundColor: ['#f5a623', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#06b6d4'],
-                    borderWidth: 0
-                }]
-            },
-            options: { cutout: '75%', plugins: { legend: { position: 'bottom' } } }
-        });
-    }
-
-    // Hourly Trend
-    const hourlyTrend = analytics.hourlyTrend || {};
-    const ctxHourly = document.getElementById('hourlyChart');
-    if (ctxHourly) {
-        if (hourlyChartInstance) hourlyChartInstance.destroy();
-
-        let hourlyLabels = [];
-        let hourlyData = [];
-        for (let i = 0; i < 24; i++) {
-            hourlyLabels.push(i + ':00');
-            hourlyData.push(hourlyTrend[i] || 0);
+            });
         }
 
-        hourlyChartInstance = new Chart(ctxHourly.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: hourlyLabels,
-                datasets: [{
-                    label: 'Ventas (€)',
-                    data: hourlyData,
-                    backgroundColor: '#10b981' // Greenish
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' } }
-                }
-            }
-        });
-    }
+        // Category Distribution
+        const catSummary = analytics.categoryDistribution || {};
+        const ctxCat = document.getElementById('categoryChart');
+        if (ctxCat && Object.keys(catSummary).length > 0) {
+            console.log('canvas dimensions (categoryChart):', ctxCat.offsetWidth, ctxCat.offsetHeight);
+            console.log("Rendering Category Chart...");
+            if (categoryChart) categoryChart.destroy();
+            categoryChart = new Chart(ctxCat.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(catSummary),
+                    datasets: [{
+                        data: Object.values(catSummary),
+                        backgroundColor: ['#f5a623', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#06b6d4'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '75%', plugins: { legend: { position: 'bottom' } } }
+            });
+        }
 
-    // Top Products Chart
-    const topProds = analytics.topProducts || {};
-    const ctxTop = document.getElementById('topProductsChart');
-    if (ctxTop) {
-        if (topProductsChartInstance) topProductsChartInstance.destroy();
-        topProductsChartInstance = new Chart(ctxTop.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(topProds),
-                datasets: [{
-                    label: 'Ventas (€)',
-                    data: Object.values(topProds),
-                    backgroundColor: '#3b82f6'
-                }]
-            },
-            options: {
-                indexAxis: 'y', // Better for top list
-                responsive: true,
-                plugins: { legend: { display: false } }
+        // Hourly Trend
+        const hourlyTrend = analytics.hourlyTrend || {};
+        const ctxHourly = document.getElementById('hourlyChart');
+        if (ctxHourly) {
+            console.log('canvas dimensions (hourlyChart):', ctxHourly.offsetWidth, ctxHourly.offsetHeight);
+            console.log("Rendering Hourly Chart...");
+            if (hourlyChartInstance) hourlyChartInstance.destroy();
+
+            let hourlyLabels = [];
+            let hourlyData = [];
+            for (let i = 0; i < 24; i++) {
+                hourlyLabels.push(i + ':00');
+                hourlyData.push(hourlyTrend[i] || 0);
             }
-        });
+
+            hourlyChartInstance = new Chart(ctxHourly.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: hourlyLabels,
+                    datasets: [{
+                        label: 'Ventas (€)',
+                        data: hourlyData,
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        // Top Products Chart
+        const topProds = analytics.topProducts || {};
+        const ctxTop = document.getElementById('topProductsChart');
+        if (ctxTop && Object.keys(topProds).length > 0) {
+            console.log('canvas dimensions (topProductsChart):', ctxTop.offsetWidth, ctxTop.offsetHeight);
+            console.log("Rendering Top Products Chart...");
+            if (topProductsChartInstance) topProductsChartInstance.destroy();
+            topProductsChartInstance = new Chart(ctxTop.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(topProds),
+                    datasets: [{
+                        label: 'Ventas (€)',
+                        data: Object.values(topProds),
+                        backgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        console.log("initCharts completed successfully");
+
+    } catch (err) {
+        console.error("Critical error in initCharts:", err);
     }
 }
 

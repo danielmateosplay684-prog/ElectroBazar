@@ -240,10 +240,10 @@ function renderRolesTable(items) {
             </td>
             <td style="text-align:right">
                 ${isAdmin ? '<span class="small" style="color:var(--text-muted)">Protegido</span>' : `
-                <button class="btn-icon" data-action="edit" data-role-id="${r.id}" title="Editar">
+                <button class="btn-icon btn-edit" data-action="edit" data-role-id="${r.id}" title="Editar">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn-icon danger" data-action="delete" data-role-id="${r.id}" title="Eliminar">
+                <button class="btn-icon btn-delete" data-action="delete" data-role-id="${r.id}" title="Eliminar">
                     <i class="bi bi-trash"></i>
                 </button>`}
             </td>

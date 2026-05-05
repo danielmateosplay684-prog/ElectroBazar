@@ -294,8 +294,8 @@ function renderCashClosuresTable(items) {
             <td style="text-align:right">${diffBadge}</td>
             <td style="font-weight: 500;">${escHtml(item.workerUsername || 'Sistema')}</td>
             <td style="text-align:right">
-                <a href="/admin/download/cash-close/${item.id}" target="_blank" class="btn-icon" title="Descargar PDF" onclick="event.stopPropagation();" style="text-decoration: none;">
-                    <i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>
+                <a href="/admin/download/cash-close/${item.id}" target="_blank" class="btn-icon btn-download" title="Descargar" onclick="event.stopPropagation();" style="text-decoration: none;">
+                    <i class="bi bi-download"></i>
                 </a>
             </td>
         `;

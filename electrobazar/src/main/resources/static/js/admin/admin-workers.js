@@ -151,19 +151,21 @@ function renderWorkersTable(items) {
                 </span>
             `;
         } else {
-            actionsHtml = `
-                <button class="btn-icon" title="Editar" 
-                    onclick="openWorkerModal(${w.id}, '${w.username}', ${w.active}, null, ${w.roleId || 'null'})">
-                    <i class="bi bi-pencil"></i>
-                </button>
+                actionsHtml = `
+                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                    <button class="btn-icon btn-edit" title="Editar" 
+                        onclick="openWorkerModal(${w.id}, '${w.username}', ${w.active}, null, ${w.roleId || 'null'})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
             `;
             if (!w.hasSales) {
                 actionsHtml += `
-                    <button class="btn-icon danger" title="Eliminar" onclick="deleteWorker(${w.id})">
+                    <button class="btn-icon btn-delete" title="Eliminar" onclick="deleteWorker(${w.id})">
                         <i class="bi bi-trash"></i>
                     </button>
                 `;
             }
+            actionsHtml += `</div>`;
         }
 
         tr.innerHTML = `

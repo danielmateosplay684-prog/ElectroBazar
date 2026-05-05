@@ -138,7 +138,7 @@ async function loadTaxRates() {
                 <td>${tr.validTo || '—'}</td>
                 <td style="text-align:right">
                     <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                        <button class="btn-icon" title="Editar" 
+                        <button class="btn-icon btn-edit" title="Editar" 
                             data-id="${tr.id}"
                             data-description="${tr.description}" 
                             data-vatrate="${tr.vatRate}"
@@ -149,7 +149,7 @@ async function loadTaxRates() {
                             onclick="openEditTaxRateModal(this)">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn-icon danger" title="Eliminar" 
+                        <button class="btn-icon btn-delete" title="Eliminar" 
                             onclick="deleteTaxRate(${tr.id}, '${tr.description}')">
                             <i class="bi bi-trash"></i>
                         </button>

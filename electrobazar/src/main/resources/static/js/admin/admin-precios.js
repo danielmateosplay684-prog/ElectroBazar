@@ -91,7 +91,7 @@ function renderFuturePricesTable(items) {
             <td>${formatDateTime(item.endDate) || '—'}</td>
             <td>${item.label || ''}</td>
             <td class="text-end">
-                <button class="btn-icon danger" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
+                <button class="btn-icon btn-delete" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -459,7 +459,7 @@ function loadPendingPriceChanges() {
                     <td>${item.tariffName || 'BASE'}</td>
                     <td class="text-end fw-bold">${parseFloat(item.price).toFixed(2)} €</td>
                     <td class="text-center">
-                        <button class="btn-icon danger" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
+                        <button class="btn-icon btn-delete" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);

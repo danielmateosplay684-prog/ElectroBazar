@@ -253,7 +253,13 @@ function switchView(viewId, btn, isBack = false) {
     if (viewId === 'measurementUnitsView' && typeof loadMeasurementUnits === 'function') loadMeasurementUnits();
     if (viewId === 'tarifasView' && typeof loadTariffs === 'function') loadTariffs();
     if (viewId === 'tiposIvaView' && typeof loadTaxRates === 'function') loadTaxRates();
-    if (viewId === 'analyticsView' && typeof initDashboardCharts === 'function') initDashboardCharts();
+    if (viewId === 'analyticsView' && typeof initDashboardCharts === 'function') {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                initDashboardCharts();
+            });
+        });
+    }
     if (viewId === 'promotionsView' && typeof loadPromotions === 'function') loadPromotions();
     if (viewId === 'abonosView' && typeof filterAbonos === 'function') filterAbonos();
     if (viewId === 'preciosTempView' && typeof loadFuturePrices === 'function') loadFuturePrices();

@@ -647,18 +647,20 @@ function renderCRMTable(items) {
             <td>${tariffBadge}</td>
             <td>${badgeRE}</td>
             <td style="text-align:right">
-                <button class="btn-icon" title="Historial ventas"
-                    onclick="openCustomerSalesModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">
-                    <i class="bi bi-receipt-cutoff"></i>
-                </button>
-                <button class="btn-icon" title="Editar"
-                    onclick="openCustomerModal(${c.id})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-icon danger" title="Eliminar"
-                    onclick="deleteCustomer(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+                    <button class="btn-icon btn-view" title="Historial ventas"
+                        onclick="openCustomerSalesModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">
+                        <i class="bi bi-receipt-cutoff"></i>
+                    </button>
+                    <button class="btn-icon btn-edit" title="Editar"
+                        onclick="openCustomerModal(${c.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn-icon btn-delete" title="Eliminar"
+                        onclick="deleteCustomer(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);

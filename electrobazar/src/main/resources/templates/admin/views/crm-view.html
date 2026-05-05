@@ -129,16 +129,16 @@
                     </td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                            <button class="btn-icon" th:title="#{admin.crm.view.sales}" th:data-id="${c.id}"
+                            <button class="btn-icon btn-view" th:title="#{admin.crm.view.sales}" th:data-id="${c.id}"
                                 th:data-name="${c.name}"
                                 onclick="openCustomerSalesModal(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                <i class="bi bi-receipt-cutoff"></i>
+                                <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn-icon" th:title="#{common.edit}" th:data-id="${c.id}"
+                            <button class="btn-icon btn-edit" th:title="#{common.edit}" th:data-id="${c.id}"
                                 onclick="openCustomerModal(this.getAttribute('data-id'))">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" th:title="#{common.delete}" th:data-id="${c.id}"
+                            <button class="btn-icon btn-delete" th:title="#{common.delete}" th:data-id="${c.id}"
                                 th:data-name="${c.name}"
                                 onclick="deleteCustomer(this.getAttribute('data-id'), this.getAttribute('data-name'))">
                                 <i class="bi bi-trash"></i>

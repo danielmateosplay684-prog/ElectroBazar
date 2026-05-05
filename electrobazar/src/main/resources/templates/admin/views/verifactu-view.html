@@ -435,7 +435,7 @@
 
         const isRet = (type === 'rectificativas' || r.realType === 'rectificativas' || r.realType === 'devoluciones');
         const viewFn = isRet ? `viewReturn(${r.returnId})` : `viewSale(${r.saleId})`;
-        const printBtn = isRet ? `<button class="btn btn-outline-info btn-sm px-2" onclick="printReturn(${r.returnId})" title="Imprimir Devolución"><i class="bi bi-printer"></i></button>` : '';
+        const printBtn = isRet ? `<button class="btn-icon btn-edit" onclick="printReturn(${r.returnId})" title="Imprimir Devolución"><i class="bi bi-printer"></i></button>` : '';
         
         const subLabel = isRet ? `Devolución: ${esc(r.returnNumber || '—')}` : `ID Venta: ${r.saleId || '—'}`;
         const retryType = r.realType || type;
@@ -451,12 +451,12 @@
             <td class="text-center small">${r.retryCount || 0}</td>
             <td><div class="wait-timer" id="${timerId}" data-time="${r.submissionDate||''}" data-wait="${r.waitTime||0}" data-next="${r.nextRetry||''}"></div></td>
             <td>
-                <div class="d-flex gap-1">
-                    <button class="btn-icon" onclick="${viewFn}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn-icon btn-view" onclick="${viewFn}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
                     ${printBtn}
-                    <button class="btn btn-outline-primary btn-sm px-2" onclick="vfViewAudit('${retryType}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
-                    ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn btn-outline-info btn-retry btn-sm" onclick="vfEditSubsanar('${retryType}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
-                    ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn btn-outline-warning btn-retry btn-sm" onclick="vfSubsanar('${retryType}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
+                    <button class="btn-icon btn-edit" onclick="vfViewAudit('${retryType}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
+                    ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn-icon btn-edit" onclick="vfEditSubsanar('${retryType}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
+                    ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn-icon btn-edit" onclick="vfSubsanar('${retryType}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
                 </div>
             </td>
         </tr>`;

@@ -47,14 +47,14 @@
                             <td th:text="${tr.validTo ?: '—'}">—</td>
                             <td style="text-align:right">
                                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                                    <button class="btn-icon" title="Editar" th:data-id="${tr.id}"
+                                    <button class="btn-icon btn-edit" title="Editar" th:data-id="${tr.id}"
                                         th:data-description="${tr.description}" th:data-vatrate="${tr.vatRate}"
                                         th:data-rerate="${tr.reRate}" th:data-active="${tr.active}"
                                         th:data-validfrom="${tr.validFrom}" th:data-validto="${tr.validTo ?: ''}"
                                         onclick="openEditTaxRateModal(this)">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn-icon danger" title="Eliminar" th:data-id="${tr.id}"
+                                    <button class="btn-icon btn-delete" title="Eliminar" th:data-id="${tr.id}"
                                         th:data-description="${tr.description}"
                                         onclick="deleteTaxRate(this.getAttribute('data-id'), this.getAttribute('data-description'))">
                                         <i class="bi bi-trash"></i>

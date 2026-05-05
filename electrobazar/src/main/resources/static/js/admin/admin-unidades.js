@@ -19,8 +19,8 @@ function loadMeasurementUnits() {
                     <td>${u.promptOnAdd ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
                     <td>${u.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
                     <td class="text-end">
-                        <button class="btn-icon" onclick="openMeasurementUnitModal(${u.id}, '${escHtml(u.name)}', '${escHtml(u.symbol)}')" title="Editar"><i class="bi bi-pencil"></i></button>
-                        <button class="btn-icon danger" onclick="deleteMeasurementUnit(${u.id})" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        <button class="btn-icon btn-edit" onclick="openMeasurementUnitModal(${u.id}, '${escHtml(u.name)}', '${escHtml(u.symbol)}')" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button class="btn-icon btn-delete" onclick="deleteMeasurementUnit(${u.id})" title="Eliminar"><i class="bi bi-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);

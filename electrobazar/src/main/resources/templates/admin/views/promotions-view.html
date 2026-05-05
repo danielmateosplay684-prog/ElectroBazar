@@ -36,6 +36,11 @@
                         <tbody>
                             <tr th:each="promo : ${promotions}">
                                 <td><strong class="text-accent" th:text="${promo.name}">PROMO</strong></td>
+                                <td class="small" style="color: var(--text-muted);">
+                                    <span th:if="${not #lists.isEmpty(promo.products)}" th:text="${promo.products.size()} + ' productos'"></span>
+                                    <span th:if="${not #lists.isEmpty(promo.categories)}" th:text="${promo.categories.size()} + ' categorías'"></span>
+                                    <span th:if="${#lists.isEmpty(promo.products) and #lists.isEmpty(promo.categories)}" th:text="#{admin.promotions.all}">Todo el catálogo</span>
+                                </td>
                                 <td><span class="badge bg-primary"
                                         th:text="${promo.nValue} + 'x' + ${promo.mValue}">3x2</span></td>
                                 <td>
@@ -48,11 +53,11 @@
                                 <td th:text="${promo.validUntil != null ? promo.validUntil : '—'}">—</td>
                                 <td style="text-align:right">
                                     <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                                        <button class="btn-icon" th:title="#{common.edit}"
+                                        <button class="btn-icon btn-edit" th:title="#{common.edit}"
                                             th:onclick="'openPromotionModal(' + ${promo.id} + ')'">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn-icon danger" th:title="#{common.delete}"
+                                        <button class="btn-icon btn-delete" th:title="#{common.delete}"
                                             th:onclick="'deletePromotion(' + ${promo.id} + ')'">
                                             <i class="bi bi-trash"></i>
                                         </button>

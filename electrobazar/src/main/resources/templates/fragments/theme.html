@@ -108,6 +108,7 @@
                     accentValue = isDark ? '#ffffff' : '#000000';
                     accentHover = isDark ? '#e0e0e0' : '#333333';
                 }
+                document.documentElement.setAttribute('data-theme', prefs.mode);
                 rs.setProperty('--primary', p.primary);
                 rs.setProperty('--secondary', p.secondary);
                 rs.setProperty('--surface', p.surface);
@@ -188,6 +189,7 @@
                         }
                     }
                     const rs2 = document.documentElement.style;
+                    document.documentElement.setAttribute('data-theme', p2.mode);
                     rs2.setProperty('--primary', pal2.primary);
                     rs2.setProperty('--secondary', pal2.secondary);
                     rs2.setProperty('--surface', pal2.surface);

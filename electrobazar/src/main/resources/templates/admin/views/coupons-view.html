@@ -58,7 +58,7 @@
                                 <td th:text="${coupon.validUntil != null ? coupon.validUntil : '—'}">—</td>
                                 <td style="text-align:right">
                                     <div style="display:flex;gap:0.4rem;justify-content:flex-end">
-                                        <button class="btn-icon" th:title="#{common.edit}" th:data-id="${coupon.id}"
+                                        <button class="btn-icon btn-edit" th:title="#{common.edit}" th:data-id="${coupon.id}"
                                             th:data-code="${coupon.code}" th:data-type="${coupon.discountType}"
                                             th:data-value="${coupon.discountValue}"
                                             th:data-desc="${coupon.description ?: ''}" th:data-active="${coupon.active}"
@@ -68,7 +68,7 @@
                                             th:data-generic="${coupon.generic}" onclick="openCouponModal(this)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn-icon danger" th:title="#{common.delete}"
+                                        <button class="btn-icon btn-delete" th:title="#{common.delete}"
                                             th:onclick="'deleteCoupon(' + ${coupon.id} + ')'">
                                             <i class="bi bi-trash"></i>
                                         </button>

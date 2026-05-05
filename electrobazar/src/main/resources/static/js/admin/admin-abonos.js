@@ -122,14 +122,14 @@ function filterAbonos() {
                     <td><span class="${statusClass}">${statusText}</span></td>
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-2">
-                            <button class="btn-icon accent" onclick='imprimirAbono(${JSON.stringify(a).replace(/'/g, "&apos;")})' title="Imprimir Ticket">
+                            <button class="btn-icon btn-download" onclick='imprimirAbono(${JSON.stringify(a).replace(/'/g, "&apos;")})' title="Imprimir Ticket">
                                 <i class="bi bi-printer"></i>
                             </button>
                              ${a.estado === 'PENDIENTE' ? `
-                                <button class="btn-icon warning" onclick="anularAbono(${a.id})" title="Anular">
+                                <button class="btn-icon btn-delete" onclick="anularAbono(${a.id})" title="Anular">
                                     <i class="bi bi-slash-circle"></i>
                                 </button>
-                                <button class="btn-icon danger" onclick="eliminarAbono(${a.id})" title="Eliminar Permanentemente">
+                                <button class="btn-icon btn-delete" onclick="eliminarAbono(${a.id})" title="Eliminar Permanentemente">
                                     <i class="bi bi-trash"></i>
                                 </button>
                              ` : ''}
