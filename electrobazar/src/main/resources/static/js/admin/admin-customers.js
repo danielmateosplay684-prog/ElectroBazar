@@ -581,7 +581,7 @@ function renderCustomerSales(sales) {
 
 // ── CRM table filter / render ────────────────────────────────────────────────
 
-function filterCRM() {
+function filterCRM(page = 0) {
     const search  = document.getElementById('crmFilterSearch').value.trim();
     const type    = document.getElementById('crmFilterType').value;
     const re      = document.getElementById('crmFilterRE').value;
@@ -594,6 +594,8 @@ function filterCRM() {
     if (re)      params.append('re', re);
     params.append('sortBy', sortBy);
     params.append('sortDir', sortDir);
+    params.append('page', page);
+    params.append('size', 10);
 
     fetch('/api/admin/customers?' + params.toString())
         .then(res => res.json())
@@ -603,10 +605,14 @@ function filterCRM() {
             const labelEl = document.getElementById('crmCountLabel');
             if (labelEl) {
                 if (search || type || re) {
-                    labelEl.textContent = `Mostrando ${data.totalElements || (data.content || data).length} clientes coincidentes.`;
+                    labelEl.textContent = `Mostrando clientes coincidentes.`;
                 } else {
                     labelEl.textContent = 'Mostrando todos los clientes.';
                 }
+            }
+            
+            if (typeof renderInventoryPagination === 'function') {
+                renderInventoryPagination('crmPagination', data, filterCRM);
             }
         })
         .catch(err => console.error('Error filtering CRM:', err));

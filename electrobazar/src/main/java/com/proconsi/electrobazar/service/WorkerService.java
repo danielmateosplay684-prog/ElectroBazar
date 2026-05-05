@@ -5,7 +5,6 @@ import com.proconsi.electrobazar.model.WorkerRepository;
 import com.proconsi.electrobazar.repository.specification.WorkerSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,9 +34,9 @@ public class WorkerService {
      * Retrieves workers with optional filtering (search query, role, and status).
      */
     @Transactional(readOnly = true)
-    public Page<Worker> getFilteredWorkers(String search, Long roleId, Boolean active, Pageable pageable) {
+    public org.springframework.data.domain.Slice<Worker> getFilteredWorkers(String search, Long roleId, Boolean active, Pageable pageable) {
         Specification<Worker> spec = WorkerSpecification.filterWorkers(search, roleId, active);
-        return workerRepository.findAll(spec, pageable);
+        return workerRepository.findSliceBy(spec, pageable);
     }
 
     /**

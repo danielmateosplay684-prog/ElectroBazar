@@ -6,7 +6,6 @@ import com.proconsi.electrobazar.repository.specification.RoleSpecification;
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.RoleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -29,9 +28,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Role> getFilteredRoles(String search, List<String> permissions, Pageable pageable) {
+    public org.springframework.data.domain.Slice<Role> getFilteredRoles(String search, List<String> permissions, Pageable pageable) {
         Specification<Role> spec = RoleSpecification.filterRoles(search, permissions);
-        return roleRepository.findAll(spec, pageable);
+        return roleRepository.findSliceBy(spec, pageable);
     }
 
     @Override

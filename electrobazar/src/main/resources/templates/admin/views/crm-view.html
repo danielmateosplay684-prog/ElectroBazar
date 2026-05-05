@@ -125,7 +125,7 @@
                         <span th:if="${c.hasRecargoEquivalencia}" 
                             style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">SÍ</span>
                         <span th:unless="${c.hasRecargoEquivalencia}" 
-                            style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;">NO</span>
+                            style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; font-size: 0.75rem;">NO</span>
                     </td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">
@@ -147,11 +147,12 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(customers)}">
-                    <td colspan="9" class="text-center py-4" style="color: var(--text-muted);"
+                    <td colspan="9" class="text-center py-4" style="color: var(--text-muted)"
                         th:text="#{admin.crm.empty}">No hay clientes
                         registrados</td>
                 </tr>
             </tbody>
         </table>
     </div>
+    <div id="crmPagination"></div>
 </div>

@@ -15,7 +15,6 @@ import com.proconsi.electrobazar.repository.specification.CashRegisterSpecificat
 import com.proconsi.electrobazar.service.ActivityLogService;
 import com.proconsi.electrobazar.service.CashRegisterService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -58,15 +57,15 @@ public class CashRegisterServiceImpl implements CashRegisterService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CashRegister> findAllClosed(Pageable pageable) {
+    public org.springframework.data.domain.Slice<CashRegister> findAllClosed(Pageable pageable) {
         return cashRegisterRepository.findByClosedTrue(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CashRegister> getFilteredRegisters(String worker, String date, Pageable pageable) {
+    public org.springframework.data.domain.Slice<CashRegister> getFilteredRegisters(String worker, String date, Pageable pageable) {
         Specification<CashRegister> spec = CashRegisterSpecification.filterRegisters(worker, date);
-        return cashRegisterRepository.findAll(spec, pageable);
+        return cashRegisterRepository.findSliceBy(spec, pageable);
     }
 
     @Override

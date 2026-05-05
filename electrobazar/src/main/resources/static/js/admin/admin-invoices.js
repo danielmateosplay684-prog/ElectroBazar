@@ -231,28 +231,39 @@ function cancelSale(id) {
 }
 
 
-function filterCashClosures() {
+function filterCashClosures(page = 0) {
     const date = document.getElementById('cashFilterdate').value;
     const workerId = document.getElementById('cashFilterWorker').value;
     const sortBy = document.getElementById('cashFilterSortBy')?.value || 'id';
     const sortDir = document.getElementById('cashFilterSortDir')?.value || 'desc';
 
-    fetch(`/api/admin/cash-closings?date=${date}&worker=${encodeURIComponent(workerId)}&sortBy=${sortBy}&sortDir=${sortDir}`)
+    const params = new URLSearchParams();
+    params.append('date', date);
+    params.append('worker', workerId);
+    params.append('sortBy', sortBy);
+    params.append('sortDir', sortDir);
+    params.append('page', page);
+    params.append('size', 10);
+
+    fetch(`/api/admin/cash-closings?${params.toString()}`)
         .then(res => res.json())
         .then(data => {
             renderCashClosuresTable(data.content || data);
 
             const labelEl = document.getElementById('cashCountLabel');
             if (labelEl) {
-                const date = document.getElementById('cashFilterdate').value;
-                const workerId = document.getElementById('cashFilterWorker').value;
                 if (date || workerId) {
-                    labelEl.textContent = `Mostrando ${data.totalElements || (data.content || data).length} cierres de caja coincidentes.`;
+                    labelEl.textContent = `Mostrando cierres de caja coincidentes.`;
                 } else {
                     labelEl.textContent = 'Mostrando todos los cierres de caja.';
                 }
             }
-        });
+
+            if (typeof renderInventoryPagination === 'function') {
+                renderInventoryPagination('cashClosuresPagination', data, filterCashClosures);
+            }
+        })
+        .catch(err => console.error("Error filtering cash closures:", err));
 }
 
 function renderCashClosuresTable(items) {

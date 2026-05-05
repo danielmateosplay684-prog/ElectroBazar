@@ -19,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -73,7 +71,6 @@ public class AdminApiRestController {
     private final RoleService roleService;
     private final WorkerRepository workerRepository;
     private final com.proconsi.electrobazar.repository.SaleRepository saleRepository;
-    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
@@ -197,10 +194,10 @@ public class AdminApiRestController {
         } else {
             pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
         }
-        Page<Product> productsPage = productService.getFilteredProducts(search, category, stock, active, unitId,
+        org.springframework.data.domain.Slice<Product> productsSlice = productService.getFilteredProducts(search, category, stock, active, unitId,
                 pageable);
 
-        List<AdminProductListingDTO> list = productsPage.getContent().stream().map(p -> AdminProductListingDTO.builder()
+        List<AdminProductListingDTO> list = productsSlice.getContent().stream().map(p -> AdminProductListingDTO.builder()
                 .id(p.getId())
                 .name(p.getNameEs())
                 .description(p.getDescriptionEs())
@@ -218,10 +215,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", productsPage.getTotalPages());
-        response.put("totalElements", productsPage.getTotalElements());
-        response.put("currentPage", productsPage.getNumber());
-
+        response.put("number", productsSlice.getNumber());
+        response.put("hasNext", productsSlice.hasNext());
+        response.put("first", productsSlice.isFirst());
+        response.put("last", !productsSlice.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -242,10 +239,10 @@ public class AdminApiRestController {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<com.proconsi.electrobazar.model.Category> categoriesPage = categoryService.getFilteredCategories(search,
+        org.springframework.data.domain.Slice<com.proconsi.electrobazar.model.Category> categoriesSlice = categoryService.getFilteredCategories(search,
                 pageable);
 
-        List<AdminCategoryListingDTO> list = categoriesPage.getContent().stream()
+        List<AdminCategoryListingDTO> list = categoriesSlice.getContent().stream()
                 .map(c -> AdminCategoryListingDTO.builder()
                         .id(c.getId())
                         .name(c.getNameEs())
@@ -256,10 +253,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", categoriesPage.getTotalPages());
-        response.put("totalElements", categoriesPage.getTotalElements());
-        response.put("currentPage", categoriesPage.getNumber());
-
+        response.put("number", categoriesSlice.getNumber());
+        response.put("hasNext", categoriesSlice.hasNext());
+        response.put("first", categoriesSlice.isFirst());
+        response.put("last", !categoriesSlice.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -268,7 +265,7 @@ public class AdminApiRestController {
             @RequestParam(required = false) String worker,
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
@@ -278,9 +275,9 @@ public class AdminApiRestController {
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<CashRegister> pageData = cashRegisterService.getFilteredRegisters(worker, date, pageable);
+        org.springframework.data.domain.Slice<CashRegister> sliceData = cashRegisterService.getFilteredRegisters(worker, date, pageable);
 
-        List<AdminCashClosingListingDTO> list = pageData.getContent().stream()
+        List<AdminCashClosingListingDTO> list = sliceData.getContent().stream()
                 .map(r -> AdminCashClosingListingDTO.builder()
                         .id(r.getId())
                         .openingTime(r.getOpeningTime())
@@ -297,10 +294,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -314,7 +311,7 @@ public class AdminApiRestController {
             @RequestParam(required = false) String method,
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
@@ -324,9 +321,9 @@ public class AdminApiRestController {
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<SaleReturn> pageData = returnService.getFilteredReturns(search, method, date, pageable);
+        org.springframework.data.domain.Slice<SaleReturn> sliceData = returnService.getFilteredReturns(search, method, date, pageable);
 
-        List<AdminReturnListingDTO> list = pageData.getContent().stream().map(r -> AdminReturnListingDTO.builder()
+        List<AdminReturnListingDTO> list = sliceData.getContent().stream().map(r -> AdminReturnListingDTO.builder()
                 .id(r.getId())
                 .returnNumber(r.getReturnNumber())
                 .originalNumber(r.getOriginalSale().getInvoice() != null
@@ -346,10 +343,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -362,7 +359,7 @@ public class AdminApiRestController {
             @RequestParam(required = false) Long roleId,
             @RequestParam(required = false) Boolean active,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "username") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
@@ -372,9 +369,9 @@ public class AdminApiRestController {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<Worker> pageData = workerService.getFilteredWorkers(search, roleId, active, pageable);
+        org.springframework.data.domain.Slice<Worker> sliceData = workerService.getFilteredWorkers(search, roleId, active, pageable);
 
-        List<AdminWorkerListingDTO> list = pageData.getContent().stream().map(w -> AdminWorkerListingDTO.builder()
+        List<AdminWorkerListingDTO> list = sliceData.getContent().stream().map(w -> AdminWorkerListingDTO.builder()
                 .id(w.getId())
                 .username(w.getUsername())
                 .active(w.isActive())
@@ -386,10 +383,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -411,11 +408,11 @@ public class AdminApiRestController {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<Role> pageData = roleService.getFilteredRoles(search, permissions, pageable);
+        org.springframework.data.domain.Slice<Role> sliceData = roleService.getFilteredRoles(search, permissions, pageable);
 
         // Filter out ADMIN role from the management table listing to avoid accidental
         // deletion/modification
-        List<AdminRoleListingDTO> list = pageData.getContent().stream()
+        List<AdminRoleListingDTO> list = sliceData.getContent().stream()
                 .filter(r -> !"ADMIN".equalsIgnoreCase(r.getName()))
                 .map(r -> {
                     long count = workerRepository.countByRole_Id(r.getId());
@@ -431,11 +428,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        // Simple adjustment since ADMIN is usually just 1 role
-        response.put("totalElements", Math.max(0, pageData.getTotalElements() - 1));
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -488,9 +484,9 @@ public class AdminApiRestController {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<Customer> pageData = customerService.getFilteredCustomers(search, customerType, hasRecargo, pageable);
+        org.springframework.data.domain.Slice<Customer> sliceData = customerService.getFilteredCustomers(search, customerType, hasRecargo, pageable);
 
-        List<AdminCustomerListingDTO> list = pageData.getContent().stream().map(c -> AdminCustomerListingDTO.builder()
+        List<AdminCustomerListingDTO> list = sliceData.getContent().stream().map(c -> AdminCustomerListingDTO.builder()
                 .id(c.getId())
                 .name(c.getName())
                 .taxId(c.getTaxId())
@@ -506,10 +502,10 @@ public class AdminApiRestController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", list);
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 
@@ -534,14 +530,14 @@ public class AdminApiRestController {
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, safeSort));
-        Page<ActivityLog> pageData = activityLogService.getFilteredLogs(search, action, username, pageable);
+        org.springframework.data.domain.Slice<ActivityLog> sliceData = activityLogService.getFilteredLogs(search, action, username, pageable);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("content", pageData.getContent());
-        response.put("totalPages", pageData.getTotalPages());
-        response.put("totalElements", pageData.getTotalElements());
-        response.put("currentPage", pageData.getNumber());
-
+        response.put("content", sliceData.getContent());
+        response.put("number", sliceData.getNumber());
+        response.put("hasNext", sliceData.hasNext());
+        response.put("first", sliceData.isFirst());
+        response.put("last", !sliceData.hasNext());
         return ResponseEntity.ok(response);
     }
 

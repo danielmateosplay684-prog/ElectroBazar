@@ -97,8 +97,8 @@ public class AdminController {
             return "redirect:/tpv";
         }
 
-        Page<Product> productsPaged = productService.findAllWithCategoryPaged(page, size);
-        Page<Category> catsPaged = categoryService.getFilteredCategories(null,
+        org.springframework.data.domain.Slice<Product> productsPaged = productService.findAllWithCategoryPaged(page, size);
+        org.springframework.data.domain.Slice<Category> catsPaged = categoryService.getFilteredCategories(null,
                 PageRequest.of(categoriesPage, categoriesSize, Sort.by("nameEs").ascending()));
 
         model.addAttribute("products", productsPaged.getContent());
@@ -178,8 +178,8 @@ public class AdminController {
         model.addAttribute("cashRegisters", List.of());
         model.addAttribute("activeRegister", cashRegisterService.getOpenRegister());
         model.addAttribute("customers", List.of());
-        model.addAttribute("productsPage", Page.empty());
-        model.addAttribute("categoriesPage", Page.empty());
+        model.addAttribute("productsPage", org.springframework.data.domain.Page.empty());
+        model.addAttribute("categoriesPage", org.springframework.data.domain.Page.empty());
 
         model.addAttribute("isOptimizedView", true);
         log.info("Dashboard - Total setup: {}ms", System.currentTimeMillis() - t0);

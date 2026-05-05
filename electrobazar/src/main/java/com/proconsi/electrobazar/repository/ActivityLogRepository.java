@@ -13,8 +13,17 @@ import java.util.List;
  * Repository for {@link ActivityLog} entities.
  * Provides audit trail tracking and log maintenance functionality.
  */
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 @Repository
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>, JpaSpecificationExecutor<ActivityLog> {
+
+    /**
+     * Slice-based search for activity logs to avoid COUNT(*).
+     */
+    Slice<ActivityLog> findSliceBy(Specification<ActivityLog> spec, Pageable pageable);
 
     /**
      * Retrieves the 50 most recent activity logs for general monitoring.

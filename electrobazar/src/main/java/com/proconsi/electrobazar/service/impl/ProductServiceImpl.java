@@ -20,7 +20,6 @@ import com.proconsi.electrobazar.repository.TariffPriceHistoryRepository;
 import com.proconsi.electrobazar.repository.TariffRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -69,7 +68,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Product> findAll(Pageable pageable) {
+    public org.springframework.data.domain.Slice<Product> findAllWithCategoryPaged(int page, int size) {
+        return productRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Slice<Product> findAll(Pageable pageable) {
         return productRepository.findAll(pageable);
     }
 
@@ -120,11 +125,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Product> getFilteredProducts(String search, String category, String stock, Boolean active,
+    public org.springframework.data.domain.Slice<Product> getFilteredProducts(String search, String category, String stock, Boolean active,
             Long measurementUnitId, Pageable pageable) {
         Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active,
                 measurementUnitId);
-        return productRepository.findAll(spec, pageable);
+        return productRepository.findSliceBy(spec, pageable);
     }
 
     @Override
@@ -392,15 +397,6 @@ public class ProductServiceImpl implements ProductService {
     @org.springframework.cache.annotation.CacheEvict(value = "productPrices", allEntries = true)
     public void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate) {
         productRepository.updateGrossPricesByTaxRate(taxRateId, newVatRate);
-    }
-
-    @Override
-    public Page<Product> findAllWithCategoryPaged(int page, int size) {
-        int safePage = Math.max(page, 0);
-        int safeSize = size <= 0 ? 25 : size;
-
-        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("nameEs").ascending());
-        return productRepository.findAllWithCategoryPaged(pageable);
     }
 
     @Override

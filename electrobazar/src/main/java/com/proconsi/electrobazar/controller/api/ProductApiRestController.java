@@ -94,7 +94,7 @@ public class ProductApiRestController {
      * @return Page of matching products.
      */
     @GetMapping("/search")
-    public ResponseEntity<org.springframework.data.domain.Page<Product>> search(
+    public ResponseEntity<org.springframework.data.domain.Slice<Product>> search(
             @RequestParam(value = "q") String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size) {
@@ -108,7 +108,7 @@ public class ProductApiRestController {
      * @return Page of filtered products.
      */
     @GetMapping("/filter")
-    public ResponseEntity<org.springframework.data.domain.Page<Product>> filterProducts(
+    public ResponseEntity<org.springframework.data.domain.Slice<Product>> filterProducts(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String stock,

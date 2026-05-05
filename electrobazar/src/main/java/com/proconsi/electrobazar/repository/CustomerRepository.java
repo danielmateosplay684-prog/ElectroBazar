@@ -12,8 +12,17 @@ import java.util.Optional;
  * Repository for {@link Customer} entities.
  * handles customer data management, tax ID (CIF/NIF) lookups, and search functionality.
  */
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSpecificationExecutor<Customer> {
+
+    /**
+     * Slice-based search for customers to avoid COUNT(*).
+     */
+    Slice<Customer> findSliceBy(Specification<Customer> spec, Pageable pageable);
 
     /**
      * Lists all active customers ordered alphabetically.

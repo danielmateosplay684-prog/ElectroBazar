@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <div class="admin-table-wrap mb-5">
+        <div class="admin-table-wrap mb-3">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -84,7 +84,7 @@
                         <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="workersTableBody">
                     <tr th:each="w : ${workers}" class="worker-row" th:data-username="${w.username}"
                         th:data-active="${w.active}" th:data-role-id="${w.role != null ? w.role.id : ''}">
                         <td><strong th:text="${w.username}"></strong></td>
@@ -130,6 +130,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="workersPagination"></div>
     </div>
 
 </th:block>

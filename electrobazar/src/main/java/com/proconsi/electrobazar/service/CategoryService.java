@@ -25,7 +25,7 @@ public interface CategoryService {
     /**
      * Filters categories with pagination and sorting support.
      */
-    org.springframework.data.domain.Page<Category> getFilteredCategories(String search, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Slice<Category> getFilteredCategories(String search, org.springframework.data.domain.Pageable pageable);
 
     /**
      * Retrieves all categories currently marked as active.

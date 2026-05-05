@@ -21,7 +21,7 @@ public interface ReturnService {
     /**
      * Retrieves returns with optional filtering (search query, payment method, and date).
      */
-    Page<SaleReturn> getFilteredReturns(String search, String method, String date, Pageable pageable);
+    org.springframework.data.domain.Slice<SaleReturn> getFilteredReturns(String search, String method, String date, Pageable pageable);
 
     /**
      * Processes a return for an original sale.

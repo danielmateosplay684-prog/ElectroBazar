@@ -12,8 +12,17 @@ import java.util.List;
  * Handles product classification and supports advanced filtering via JPA
  * Specifications.
  */
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long>, JpaSpecificationExecutor<Category> {
+
+    /**
+     * Slice-based search for categories to avoid COUNT(*).
+     */
+    Slice<Category> findSliceBy(Specification<Category> spec, Pageable pageable);
 
     /**
      * Checks if a category with a given Spanish name exists, ignoring case

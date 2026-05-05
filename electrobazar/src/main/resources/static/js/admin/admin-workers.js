@@ -91,7 +91,7 @@ function deleteWorker(id) {
         });
 }
 
-function filterWorkers() {
+function filterWorkers(page = 0) {
     const search = document.getElementById('workerFilterName').value.trim();
     const roleId = document.getElementById('workerFilterRole').value;
     const active = document.getElementById('workerFilterStatus').value;
@@ -104,6 +104,8 @@ function filterWorkers() {
     if (active) queryParams.append('active', active);
     queryParams.append('sortBy', sortBy);
     queryParams.append('sortDir', sortDir);
+    queryParams.append('page', page);
+    queryParams.append('size', 10);
 
     fetch(`/api/admin/workers?${queryParams.toString()}`)
         .then(res => res.json())
@@ -112,10 +114,16 @@ function filterWorkers() {
             
             const total = data.totalElements || data.length;
             const label = document.getElementById('workerCountLabel');
-            if (search || roleId || active !== '') {
-                label.innerHTML = `Mostrando <b>${total}</b> trabajadores encontrados con los filtros aplicados.`;
-            } else {
-                label.textContent = 'Mostrando todas las fichas de trabajadores.';
+            if (label) {
+                if (search || roleId || active !== '') {
+                    label.innerHTML = `Mostrando trabajadores encontrados con los filtros aplicados.`;
+                } else {
+                    label.textContent = 'Mostrando todas las fichas de trabajadores.';
+                }
+            }
+            
+            if (typeof renderInventoryPagination === 'function') {
+                renderInventoryPagination('workersPagination', data, filterWorkers);
             }
         })
         .catch(err => console.error("Error filtering workers:", err));

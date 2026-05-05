@@ -3,7 +3,7 @@
  * Returns history management functions.
  */
 
-function filterReturns() {
+function filterReturns(page = 0) {
     const search = document.getElementById('returnFilterSearch').value.trim();
     const method = document.getElementById('returnFilterMethod').value;
     const date = document.getElementById('returnFilterdate').value;
@@ -16,6 +16,8 @@ function filterReturns() {
     if (date) params.append('date', date);
     params.append('sortBy', sortBy);
     params.append('sortDir', sortDir);
+    params.append('page', page);
+    params.append('size', 10);
 
     fetch(`/api/admin/returns?${params.toString()}`)
         .then(res => res.json())
@@ -25,10 +27,14 @@ function filterReturns() {
             const labelEl = document.getElementById('returnCountLabel');
             if (labelEl) {
                 if (search || method || date) {
-                    labelEl.textContent = `Mostrando ${data.totalElements || (data.content || data).length} devoluciones coincidentes.`;
+                    labelEl.textContent = `Mostrando devoluciones coincidentes.`;
                 } else {
                     labelEl.textContent = 'Mostrando todas las devoluciones.';
                 }
+            }
+
+            if (typeof renderInventoryPagination === 'function') {
+                renderInventoryPagination('returnsPagination', data, filterReturns);
             }
         })
         .catch(err => console.error("Error filtering returns:", err));

@@ -60,7 +60,7 @@ public interface CustomerService {
     /**
      * Retrieves customers with optional filtering (search query, type, and surcharge status).
      */
-    Page<Customer> getFilteredCustomers(String search, com.proconsi.electrobazar.model.Customer.CustomerType type, Boolean hasRecargo, Pageable pageable);
+    org.springframework.data.domain.Slice<Customer> getFilteredCustomers(String search, com.proconsi.electrobazar.model.Customer.CustomerType type, Boolean hasRecargo, Pageable pageable);
 
     /**
      * Searches for customers by name, tax ID, or email.

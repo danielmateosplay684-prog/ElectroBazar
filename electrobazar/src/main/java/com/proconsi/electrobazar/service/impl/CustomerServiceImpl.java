@@ -37,9 +37,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Customer> getFilteredCustomers(String search, Customer.CustomerType type, Boolean hasRecargo, Pageable pageable) {
+    public org.springframework.data.domain.Slice<Customer> getFilteredCustomers(String search, Customer.CustomerType type, Boolean hasRecargo, Pageable pageable) {
         Specification<Customer> spec = CustomerSpecification.filterCustomers(search, type, hasRecargo);
-        return customerRepository.findAll(spec, pageable);
+        return customerRepository.findSliceBy(spec, pageable);
     }
 
     @Override

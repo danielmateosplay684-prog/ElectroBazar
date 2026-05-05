@@ -15,8 +15,20 @@ import java.util.Optional;
  * Manages the lifecycle of terminal shifts (opening, closing, and reconciliation).
  * Uses EntityGraphs to eagerly load associated worker entities and prevent N+1 queries.
  */
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 @Repository
 public interface CashRegisterRepository extends JpaRepository<CashRegister, Long>, JpaSpecificationExecutor<CashRegister> {
+
+    /**
+     * Slice-based search to avoid COUNT(*) on shift history.
+     */
+    Slice<CashRegister> findSliceBy(Specification<CashRegister> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = { "worker" })
+    Slice<CashRegister> findByClosedTrue(Pageable pageable);
 
     /**
      * Finds a closed shift for a specific date.
@@ -30,8 +42,6 @@ public interface CashRegisterRepository extends JpaRepository<CashRegister, Long
     @EntityGraph(attributePaths = { "worker" })
     List<CashRegister> findByClosedTrueOrderByRegisterDateDesc();
 
-    @EntityGraph(attributePaths = { "worker" })
-    org.springframework.data.domain.Page<CashRegister> findByClosedTrue(org.springframework.data.domain.Pageable pageable);
 
     /**
      * Finds the currently open shift, if any.

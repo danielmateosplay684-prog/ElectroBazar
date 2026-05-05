@@ -3,7 +3,6 @@ package com.proconsi.electrobazar.service;
 import com.proconsi.electrobazar.model.ActivityLog;
 import com.proconsi.electrobazar.repository.ActivityLogRepository;
 import com.proconsi.electrobazar.repository.specification.ActivityLogSpecification;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,9 +28,9 @@ public class ActivityLogService {
      * Retrieves paginated logs with optional filtering.
      */
     @Transactional(readOnly = true)
-    public Page<ActivityLog> getFilteredLogs(String search, String action, String username, Pageable pageable) {
+    public org.springframework.data.domain.Slice<ActivityLog> getFilteredLogs(String search, String action, String username, Pageable pageable) {
         Specification<ActivityLog> spec = ActivityLogSpecification.filterLogs(search, action, username);
-        return activityLogRepository.findAll(spec, pageable);
+        return activityLogRepository.findSliceBy(spec, pageable);
     }
 
     /**

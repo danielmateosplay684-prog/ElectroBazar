@@ -3,7 +3,6 @@ package com.proconsi.electrobazar.service;
 import com.proconsi.electrobazar.model.Product;
 import com.proconsi.electrobazar.model.TaxRate;
 import com.proconsi.electrobazar.dto.ProductRequest;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,7 +26,7 @@ public interface ProductService {
      * @param pageable Pagination and sorting criteria.
      * @return A page of products.
      */
-    Page<Product> findAll(Pageable pageable);
+    org.springframework.data.domain.Slice<Product> findAll(Pageable pageable);
 
     /**
      * Retrieves only products marked as active.
@@ -88,7 +87,7 @@ public interface ProductService {
     /**
      * Advanced filtering for products with pagination and sorting.
      */
-    Page<Product> getFilteredProducts(String search, String category, String stock, Boolean active, Long measurementUnitId, Pageable pageable);
+    org.springframework.data.domain.Slice<Product> getFilteredProducts(String search, String category, String stock, Boolean active, Long measurementUnitId, Pageable pageable);
 
     /**
      * Finds a specific product by ID.
@@ -193,7 +192,7 @@ public interface ProductService {
      */
     void recalculatePricesForTaxRate(Long taxRateId, BigDecimal newVatRate);
 
-    Page<Product> findAllWithCategoryPaged(int page, int size);
+    org.springframework.data.domain.Slice<Product> findAllWithCategoryPaged(int page, int size);
 
     List<Product> getTopSellingProducts(int limit);
 

@@ -108,109 +108,12 @@
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
-                            <tr th:each="p : ${products}" class="product-row"
-                                th:data-iva="${p.taxRate != null ? p.taxRate.vatRate : ''}">
-                                <td class="id-val right" th:text="'#' + ${p.id}"></td>
-                                <td class="center">
-                                    <img th:if="${p.imageUrl != null && !#strings.isEmpty(p.imageUrl)}"
-                                        th:src="${p.imageUrl}" class="thumb">
-                                    <div th:unless="${p.imageUrl != null && !#strings.isEmpty(p.imageUrl)}"
-                                        class="thumb-placeholder mx-auto"><i class="bi bi-image"></i></div>
-                                </td>
-                                <td class="center">
-                                    <strong th:text="${p.name}"></strong>
-                                    <div class="product-desc-small"
-                                        th:if="${p.description != null}"
-                                        th:text="${#strings.abbreviate(p.description,60)}">
-                                    </div>
-                                </td>
-                                <td class="product-iva-val center">
-                                    <span th:if="${p.taxRate != null && p.taxRate.vatRate != null}"
-                                        th:text="${#numbers.formatDecimal(p.taxRate.vatRate * 100, 1, 0)} + '%'"></span>
-                                    <span th:unless="${p.taxRate != null && p.taxRate.vatRate != null}"
-                                        class="text-muted">-</span>
-                                </td>
-                                <td class="price-val right"
-                                    th:text="${p.measurementUnit != null ? #numbers.formatDecimal(p.price, 1, (p.measurementUnit.decimalPlaces > 2 ? p.measurementUnit.decimalPlaces : 2), 'COMMA') : #numbers.formatDecimal(p.price, 1, 2, 'COMMA')} + ' €'">
-                                </td>
-                                <td class="center">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <span th:text="${p.stock == 0 ? '0' : (p.measurementUnit != null ? #numbers.formatDecimal(p.stock, 1, p.measurementUnit.decimalPlaces, 'COMMA') : #numbers.formatDecimal(p.stock, 1, 0, 'COMMA'))}"
-                                            th:classappend="${p.stock < 5} ? 'fw-bold text-danger' : ''">0</span>
-                                        <span th:if="${p.stock < 5}" class="badge-stock-low"
-                                            th:text="#{admin.inventory.stock.low}">Stock Bajo</span>
-                                    </div>
-                                </td>
-                                <td class="center">
-                                    <span class="product-unit-val"
-                                        th:text="${p.measurementUnit != null ? p.measurementUnit.symbol : '-'}"></span>
-                                </td>
-                                <td class="center">
-                                    <span th:if="${p.category != null}" th:text="${p.category.name}"
-                                        class="product-category-val"></span>
-                                    <span th:unless="${p.category != null}" class="text-muted">-</span>
-                                </td>
-                                <td class="center">
-                                    <span class="badge-active" th:classappend="${p.active} ? 'yes' : 'no'"
-                                        th:text="${p.active} ? #{common.yes} : #{common.no}"></span>
-                                </td>
-                                <td class="right">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <button class="btn-icon" th:title="#{common.edit}" th:data-id="${p.id}"
-                                            onclick="openProductModal(this.getAttribute('data-id'))">
-                                            <i class="bi bi-pencil" style="color: #3498db;"></i>
-                                        </button>
-                                        <button class="btn-icon" th:title="${p.active ? 'Desactivar' : 'Activar'}" th:data-id="${p.id}"
-                                            onclick="toggleProductStatus(this.getAttribute('data-id'))">
-                                            <i class="bi bi-power" th:style="${p.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
-                                        </button>
-                                        <button class="btn-icon" th:title="#{common.delete}" th:data-id="${p.id}"
-                                            th:data-name="${p.name}"
-                                            onclick="deleteProduct(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                            <i class="bi bi-trash" style="color: #e74c3c;"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Injected by inventory-filter.js -->
                         </tbody>
                     </table>
                 </div>
 
-                <input type="hidden" id="totalPages" th:value="${productsPage.totalPages}">
-                <input type="hidden" id="currentPage" th:value="${productsPage.number}">
-                <input type="hidden" id="pageSize" th:value="${pageSize}">
-
-                <div class="pagination-wrap mt-3" th:if="${productsPage != null && productsPage.totalPages > 0}">
-                    <button class="pagination-btn" th:onclick="|goToPage(0)|" th:disabled="${productsPage.number == 0}"
-                        title="Primera página">
-                        <i class="bi bi-chevron-double-left"></i>
-                    </button>
-
-                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.number - 1})|"
-                        th:disabled="${productsPage.number == 0}" title="Página anterior">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
-
-                    <div class="pagination-jump">
-                        <input type="number" id="pageInput" min="1" th:max="${productsPage.totalPages}"
-                            th:value="${productsPage.number + 1}"
-                            onkeydown="if(event.key === 'Enter') jumpToPage(this.value)" title="Ir a página">
-                        <span class="small text-muted">
-                            de <span th:text="${productsPage.totalPages}">1</span>
-                        </span>
-                    </div>
-
-                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.number + 1})|"
-                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}" title="Página siguiente">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
-
-                    <button class="pagination-btn" th:onclick="|goToPage(${productsPage.totalPages - 1})|"
-                        th:disabled="${productsPage.number + 1 >= productsPage.totalPages}"
-                        th:title="#{admin.inventory.last_page}">
-                        <i class="bi bi-chevron-double-right"></i>
-                    </button>
-                </div>
+                <div id="productsPagination"></div>
             </div>
 
             <!-- 2. CATEGORIAS -->
@@ -239,7 +142,7 @@
                                 oninput="debounceSharedFilter()">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetCategoryFilters()">
+                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetSharedBackendCategoryFilter()">
                                 <i class="bi bi-arrow-counterclockwise"></i> <span
                                     th:text="#{common.reset}">Reset</span>
                             </button>
@@ -261,69 +164,12 @@
                             </tr>
                         </thead>
                         <tbody id="categoriesTableBody">
-                            <tr th:each="c : ${categories}">
-                                <td class="fw-bold" th:text="${c.name}"></td>
-                                <td th:text="${c.description}"></td>
-                                <td>
-                                    <span class="badge-active" th:classappend="${c.active} ? 'yes' : 'no'"
-                                        th:text="${c.active} ? #{admin.inventory.status.active} : #{admin.inventory.status.inactive}"></span>
-                                </td>
-                                <td class="right">
-                                    <div class="d-flex gap-1 justify-content-end">
-                                        <button class="btn-icon" th:data-id="${c.id}"
-                                            onclick="openCategoryModal(this.getAttribute('data-id'))">
-                                            <i class="bi bi-pencil" style="color: #3498db;"></i>
-                                        </button>
-                                        <button class="btn-icon" th:title="${c.active ? 'Desactivar' : 'Activar'}" th:data-id="${c.id}"
-                                            onclick="toggleCategoryStatus(this.getAttribute('data-id'))">
-                                            <i class="bi bi-power" th:style="${c.active ? 'color: #f39c12;' : 'color: #2ecc71;'}"></i>
-                                        </button>
-                                        <button class="btn-icon" th:data-id="${c.id}" th:data-name="${c.name}"
-                                            onclick="deleteCategory(this.getAttribute('data-id'), this.getAttribute('data-name'))">
-                                            <i class="bi bi-trash" style="color: #e74c3c;"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Injected by inventory-filter.js -->
                         </tbody>
                     </table>
                 </div>
 
-                <input type="hidden" id="categoriesTotalPages" th:value="${categoriesPage.totalPages}">
-                <input type="hidden" id="categoriesCurrentPage" th:value="${categoriesPage.number}">
-                <input type="hidden" id="categoriesPageSize" th:value="${categoriesPageSize}">
-
-                <div class="pagination-wrap mt-3" th:if="${categoriesPage != null && categoriesPage.totalPages > 0}">
-                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(0)|"
-                        th:disabled="${categoriesPage.number == 0}" title="Primera página">
-                        <i class="bi bi-chevron-double-left"></i>
-                    </button>
-
-                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.number - 1})|"
-                        th:disabled="${categoriesPage.number == 0}" title="Página anterior">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
-
-                    <div class="pagination-jump">
-                        <input type="number" id="categoriesPageInput" min="1" th:max="${categoriesPage.totalPages}"
-                            th:value="${categoriesPage.number + 1}"
-                            onkeydown="if(event.key === 'Enter') jumpToCategoriesPage(this.value)" title="Ir a página">
-                        <span class="small text-muted">
-                            de <span th:text="${categoriesPage.totalPages}">1</span>
-                        </span>
-                    </div>
-
-                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.number + 1})|"
-                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}"
-                        title="Página siguiente">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
-
-                    <button class="pagination-btn" th:onclick="|goToCategoriesPage(${categoriesPage.totalPages - 1})|"
-                        th:disabled="${categoriesPage.number + 1 >= categoriesPage.totalPages}" title="Última página">
-                        <i class="bi bi-chevron-double-right"></i>
-                    </button>
-                </div>
+                <div id="categoriesPagination"></div>
             </div>
 
         </div>

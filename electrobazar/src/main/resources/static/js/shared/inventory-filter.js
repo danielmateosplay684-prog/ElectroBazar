@@ -90,9 +90,8 @@ function runSharedBackendFilter(page = 0) {
     if (active) queryParams.append('active', active);
     if (unitId) queryParams.append('unitId', unitId);
     queryParams.append('sortBy', sortBy);
-    queryParams.append('sortDir', sortDir);
     queryParams.append('page', page);
-    queryParams.append('size', 50);
+    queryParams.append('size', 10);
 
     const tbody = document.getElementById('productsTableBody');
     if (tbody) tbody.style.opacity = '0.5';
@@ -115,7 +114,7 @@ function runSharedBackendFilter(page = 0) {
                 }
             }
 
-            if (data.totalPages !== undefined) {
+            if (data.hasNext !== undefined || data.totalPages !== undefined) {
                 renderInventoryPagination('productsPagination', data, runSharedBackendFilter);
             }
         })
@@ -279,9 +278,8 @@ function runSharedBackendCategoryFilter(page = 0) {
     const queryParams = new URLSearchParams();
     if (search) queryParams.append('search', search);
     queryParams.append('sortBy', sortBy);
-    queryParams.append('sortDir', sortDir);
     queryParams.append('page', page);
-    queryParams.append('size', 50);
+    queryParams.append('size', 10);
 
     const tbody = document.getElementById('categoriesTableBody');
     if (tbody) tbody.style.opacity = '0.5';
@@ -304,7 +302,7 @@ function runSharedBackendCategoryFilter(page = 0) {
                 }
             }
 
-            if (data.totalPages !== undefined) {
+            if (data.hasNext !== undefined || data.totalPages !== undefined) {
                 renderInventoryPagination('categoriesPagination', data, runSharedBackendCategoryFilter);
             }
         })
@@ -321,44 +319,29 @@ function renderInventoryPagination(containerId, pageData, callbackName) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const totalPages = pageData.totalPages || 0;
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    const currentPage = pageData.currentPage || pageData.number || 0;
+    const currentPage = pageData.number !== undefined ? pageData.number : (pageData.currentPage || 0);
+    const hasNext = pageData.hasNext !== undefined ? pageData.hasNext : (pageData.currentPage < pageData.totalPages - 1);
+    const isFirst = pageData.first !== undefined ? pageData.first : (currentPage === 0);
+    
     const callbackStr = (typeof callbackName === 'function') ? callbackName.name : callbackName;
 
-    let html = `
-        <div class="pagination-wrap mt-3">
-            <button class="pagination-btn" onclick="${callbackStr}(0)" ${currentPage === 0 ? 'disabled' : ''} title="Primera página">
-                <i class="bi bi-chevron-double-left"></i>
-            </button>
-
-            <button class="pagination-btn" onclick="${callbackStr}(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''} title="Página anterior">
-                <i class="bi bi-chevron-left"></i>
-            </button>
-
-            <div class="pagination-jump">
-                <input type="number" value="${currentPage + 1}" min="1" max="${totalPages}"
-                    onkeydown="if(event.key === 'Enter') { 
-                        let p = parseInt(this.value)-1; 
-                        if(p >= 0 && p < ${totalPages}) ${callbackStr}(p); 
-                    }">
-                <span class="small text-muted">de ${totalPages}</span>
-            </div>
-
-            <button class="pagination-btn" onclick="${callbackStr}(${currentPage + 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''} title="Página siguiente">
-                <i class="bi bi-chevron-right"></i>
-            </button>
-
-            <button class="pagination-btn" onclick="${callbackStr}(${totalPages - 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''} title="Última página">
-                <i class="bi bi-chevron-double-right"></i>
-            </button>
+    const wrap = document.createElement('div');
+    wrap.className = 'pagination-wrap rounded-bottom mt-0';
+    wrap.innerHTML = `
+        <button class="pagination-btn" ${isFirst ? 'disabled' : ''} onclick="${callbackStr}(${currentPage - 1})">
+            <i class="bi bi-chevron-left"></i> <span>Anterior</span>
+        </button>
+        
+        <div class="pagination-info">
+            Página  <strong>${currentPage + 1}</strong>
         </div>
+        
+        <button class="pagination-btn" ${!hasNext ? 'disabled' : ''} onclick="${callbackStr}(${currentPage + 1})">
+            <span>Siguiente</span> <i class="bi bi-chevron-right"></i>
+        </button>
     `;
-    container.innerHTML = html;
+    container.innerHTML = '';
+    container.appendChild(wrap);
 }
 
 function renderSharedCategoriesTable(categories) {
@@ -410,4 +393,18 @@ function renderSharedCategoriesTable(categories) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+function resetSharedBackendCategoryFilter() {
+    const globalSearch = document.getElementById('sharedFilterSearch');
+    const catSearch = document.getElementById('categoryFilterSearch');
+    if (globalSearch) globalSearch.value = '';
+    if (catSearch) catSearch.value = '';
+
+    const sortByEl = document.getElementById('categoryFilterSortBy');
+    const sortDirEl = document.getElementById('categoryFilterSortDir');
+    if (sortByEl) sortByEl.value = 'id';
+    if (sortDirEl) sortDirEl.value = 'asc';
+
+    runSharedBackendCategoryFilter();
 }

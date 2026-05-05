@@ -70,26 +70,20 @@ function renderActivityPagination(data) {
     if (!container) return;
     container.innerHTML = '';
     
-    const totalPages = data.totalPages;
-    const currentPage = data.currentPage;
-    if (totalPages <= 1) return;
+    if (data.first && !data.hasNext) return;
 
     const wrap = document.createElement('div');
     wrap.className = 'pagination-wrap rounded-bottom mt-0';
     wrap.innerHTML = `
-        <button class="pagination-btn" ${currentPage === 0 ? 'disabled' : ''} onclick="fetchActivityLogs(${currentPage - 1})">
+        <button class="pagination-btn" ${data.first ? 'disabled' : ''} onclick="fetchActivityLogs(${data.number - 1})">
             <i class="bi bi-chevron-left"></i> <span>Anterior</span>
         </button>
         
         <div class="pagination-info">
-            Página <strong>${currentPage + 1}</strong> de <strong>${totalPages}</strong>
+            Página  <strong>${data.number + 1}</strong>
         </div>
         
-        <div class="pagination-jump">
-            <input type="number" value="${currentPage + 1}" min="1" max="${totalPages}" onchange="if(this.value > 0 && this.value <= ${totalPages}) fetchActivityLogs(this.value - 1)">
-        </div>
-
-        <button class="pagination-btn" ${currentPage === totalPages - 1 ? 'disabled' : ''} onclick="fetchActivityLogs(${currentPage + 1})">
+        <button class="pagination-btn" ${!data.hasNext ? 'disabled' : ''} onclick="fetchActivityLogs(${data.number + 1})">
             <span>Siguiente</span> <i class="bi bi-chevron-right"></i>
         </button>
     `;
