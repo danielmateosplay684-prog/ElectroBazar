@@ -11,15 +11,14 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminSaleListingDTO {
+public class SaleListingDTO {
     private Long id;
     private LocalDateTime createdAt;
-    private BigDecimal totalAmount;
-    private String paymentMethod;
-    private String status;
     private String customerName;
-    private String customerTaxId;
     private String workerUsername;
-    private String displayId;
-    private String type;
+    private String paymentMethod;
+    private BigDecimal totalAmount;
+    private String status;
+    private String invoiceNumber;
+    private String ticketNumber;
 }

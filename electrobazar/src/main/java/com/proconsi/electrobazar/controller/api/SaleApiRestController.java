@@ -40,13 +40,28 @@ public class SaleApiRestController {
 
     /**
      * Retrieves all recorded sales with pagination.
-     * @param pageable Pagination and sorting criteria (page, size, sort).
-     * @return Paginated result containing {@link Sale} entities.
+     * Returns a lightweight DTO to avoid N+1 queries for lines and products.
+     * @param pageable Pagination and sorting criteria.
+     * @return Paginated result containing {@link com.proconsi.electrobazar.dto.SaleListingDTO}.
      */
     @GetMapping
-    public ResponseEntity<Page<Sale>> getAll(
-            @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(saleService.findAll(pageable));
+    public ResponseEntity<org.springframework.data.domain.Page<com.proconsi.electrobazar.dto.SaleListingDTO>> getAll(
+            @org.springframework.data.web.PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable) {
+        
+        org.springframework.data.domain.Page<Sale> sales = saleService.findAll(pageable);
+        org.springframework.data.domain.Page<com.proconsi.electrobazar.dto.SaleListingDTO> dtos = sales.map(s -> com.proconsi.electrobazar.dto.SaleListingDTO.builder()
+                .id(s.getId())
+                .createdAt(s.getCreatedAt())
+                .customerName(s.getCustomer() != null ? s.getCustomer().getName() : null)
+                .workerUsername(s.getWorker() != null ? s.getWorker().getUsername() : null)
+                .paymentMethod(s.getPaymentMethod() != null ? s.getPaymentMethod().name() : null)
+                .totalAmount(s.getTotalAmount())
+                .status(s.getStatus() != null ? s.getStatus().name() : "ACTIVE")
+                .invoiceNumber(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber() : null)
+                .ticketNumber(s.getTicket() != null ? s.getTicket().getTicketNumber() : null)
+                .build());
+                
+        return ResponseEntity.ok(dtos);
     }
 
     /**

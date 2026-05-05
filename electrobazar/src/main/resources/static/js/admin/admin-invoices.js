@@ -18,7 +18,7 @@ async function fetchSalesPage(page) {
     const sortBy = (document.getElementById('invoiceSortBy') || {}).value || 'createdAt';
     const sortDir = (document.getElementById('invoiceSortDir') || {}).value || 'desc';
 
-    const url = `/api/admin/sales?page=${page}&search=${encodeURIComponent(search)}&type=${type}&method=${method}&date=${date}&sortBy=${sortBy}&sortDir=${sortDir}`;
+    const url = `/api/admin/sales?page=${page}&size=10&search=${encodeURIComponent(search)}&type=${type}&method=${method}&date=${date}&sortBy=${sortBy}&sortDir=${sortDir}`;
 
     const tbody = document.getElementById('invoicesTableBody');
     if (tbody) tbody.style.opacity = '0.5';
@@ -33,7 +33,7 @@ async function fetchSalesPage(page) {
         const data = await response.json();
 
 
-        currentSalesPage = data.currentPage;
+        currentSalesPage = data.number;
         salesTotalPages = data.totalPages || 0;
 
         renderSalesTable(data.content, data.hasMore);
@@ -146,40 +146,39 @@ function renderSalesTable(sales, hasMore) {
         tbody.appendChild(tr);
     });
 
-    // 4. MENSAJE DE LÍMITE (Top 15)
-    if (hasMore) {
-        const warningTr = document.createElement('tr');
-        warningTr.innerHTML = `
-            <td colspan="8" class="text-center py-3" style="background: rgba(var(--accent-rgb), 0.05); color: var(--text-muted); font-style: italic; border-top: 1px dashed var(--border);">
-                <i class="bi bi-info-circle me-2"></i>
-                Mostrando los mejores resultados para optimizar la búsqueda. Sé más específico si no encuentras lo que buscas.
-            </td>
-        `;
-        tbody.appendChild(warningTr);
-    }
 }
 
 function updateSalesPaginationUI(data) {
     const info = document.getElementById('salesPaginationInfo');
     if (info) {
-        info.textContent = `Página ${data.number + 1} de ${data.totalPages} (${data.totalElements} ventas en total)`;
+        info.textContent = `Página  ${data.number + 1}`;
     }
 
     // Support individual page detail spans
     const currentEl = document.getElementById('salesCurrentPage');
     const totalEl = document.getElementById('salesTotalPages');
     if (currentEl) currentEl.textContent = data.number + 1;
-    if (totalEl) totalEl.textContent = data.totalPages;
+    
+    // Hide "de" and "total" as we are in Slice mode (no count)
+    if (totalEl) {
+        totalEl.style.display = 'none';
+        const ofSpan = totalEl.previousElementSibling;
+        if (ofSpan && ofSpan.tagName === 'SPAN') ofSpan.style.display = 'none';
+    }
 
     const prevBtn = document.getElementById('salesPagePrev');
     const nextBtn = document.getElementById('salesPageNext');
     if (prevBtn) prevBtn.disabled = data.first;
-    if (nextBtn) nextBtn.disabled = data.last;
+    if (nextBtn) nextBtn.disabled = !data.hasNext;
+
+    // Hide jump input as we don't know the limit
+    const jumpWrap = document.querySelector('.pagination-jump');
+    if (jumpWrap) jumpWrap.style.display = 'none';
 }
 
 function changeSalesPage(delta) {
     const next = currentSalesPage + delta;
-    if (next >= 0 && next < salesTotalPages) {
+    if (next >= 0) {
         fetchSalesPage(next);
     }
 }

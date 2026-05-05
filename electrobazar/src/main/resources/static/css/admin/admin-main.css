@@ -1083,6 +1083,12 @@
             background: rgba(245, 166, 35, 0.05);
         }
 
+        .pagination-btn.active {
+            background: var(--accent) !important;
+            color: var(--primary) !important;
+            border-color: var(--accent) !important;
+        }
+
         .pagination-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;

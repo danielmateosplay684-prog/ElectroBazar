@@ -159,4 +159,6 @@ public interface SaleService {
      * Cancels a sale and restores stock.
      */
     void cancelSale(Long id, Worker worker, String reason);
+
+    org.springframework.data.domain.Slice<com.proconsi.electrobazar.dto.AdminSaleProjection> findAdminListing(org.springframework.data.domain.Pageable pageable);
 }

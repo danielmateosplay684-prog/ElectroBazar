@@ -15,9 +15,7 @@ public class SaleSpecification {
 
             // 1. Optimización: Solo cargar relaciones si no es un conteo de páginas
             if (Long.class != query.getResultType() && long.class != query.getResultType()) {
-                root.fetch("customer", JoinType.LEFT);
-                root.fetch("invoice", JoinType.LEFT);
-                root.fetch("ticket", JoinType.LEFT);
+                // Relaciones eliminadas para evitar JOINs pesados en Specification
             }
 
             // 2. BÚSQUEDA POR TEXTO (Bloque Único)

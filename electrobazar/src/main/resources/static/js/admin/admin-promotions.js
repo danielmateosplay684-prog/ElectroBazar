@@ -86,8 +86,8 @@ function removePromoCategory(id) {
 function renderSelectedPromoProducts() {
     const container = document.getElementById('selectedPromoProducts');
     container.innerHTML = [...selectedPromoProducts].map(p => `
-        <span class="badge bg-primary-subtle border border-primary-subtle me-1 mb-1 p-2 d-inline-flex align-items-center gap-2" 
-              style="color: var(--primary) !important; font-weight: 600;">
+        <span class="badge me-1 mb-1 d-inline-flex align-items-center gap-2" 
+              style="background: var(--surface); color: var(--text-main) !important; border: 1px solid var(--border); font-weight: 600; font-size: 0.9rem; padding: 0.5rem 0.8rem !important;">
             ${p.name} <i class="bi bi-x-circle cursor-pointer" style="color: var(--text-muted);" onclick="removePromoProduct(${p.id})"></i>
         </span>
     `).join('');
@@ -96,8 +96,8 @@ function renderSelectedPromoProducts() {
 function renderSelectedPromoCategories() {
     const container = document.getElementById('selectedPromoCategories');
     container.innerHTML = [...selectedPromoCategories].map(c => `
-        <span class="badge bg-secondary-subtle border border-secondary-subtle me-1 mb-1 p-2 d-inline-flex align-items-center gap-2"
-              style="color: var(--text-main) !important; font-weight: 600;">
+        <span class="badge me-1 mb-1 d-inline-flex align-items-center gap-2"
+              style="background: var(--surface); color: var(--text-main) !important; border: 1px solid var(--border); font-weight: 600; font-size: 0.9rem; padding: 0.5rem 0.8rem !important;">
             ${c.name} <i class="bi bi-x-circle cursor-pointer" style="color: var(--text-muted);" onclick="removePromoCategory(${c.id})"></i>
         </span>
     `).join('');
@@ -253,10 +253,10 @@ function loadPromotions() {
                 let scope = '<span class="text-muted">Todo el catálogo</span>';
                 if (p.restrictedProducts && p.restrictedProducts.length > 0) {
                     const names = p.restrictedProducts.map(prod => prod.nameEs || prod.name).join(', ');
-                    scope = `<span class="badge bg-info-subtle text-info border border-info-subtle" title="${escHtml(names)}">${escHtml(names)}</span>`;
+                    scope = `<span class="badge" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); font-size: 0.85rem; padding: 0.4rem 0.7rem;" title="${escHtml(names)}">${escHtml(names)}</span>`;
                 } else if (p.restrictedCategories && p.restrictedCategories.length > 0) {
                     const names = p.restrictedCategories.map(c => c.nameEs || c.name).join(', ');
-                    scope = `<span class="badge bg-warning-subtle text-warning border border-warning-subtle" title="${escHtml(names)}">${escHtml(names)}</span>`;
+                    scope = `<span class="badge" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); font-size: 0.85rem; padding: 0.4rem 0.7rem;" title="${escHtml(names)}">${escHtml(names)}</span>`;
                 }
 
                 return `

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -72,6 +73,7 @@ public class AdminApiRestController {
     private final RoleService roleService;
     private final WorkerRepository workerRepository;
     private final com.proconsi.electrobazar.repository.SaleRepository saleRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Retrieves aggregated statistics for the management dashboard.
@@ -95,7 +97,7 @@ public class AdminApiRestController {
             @RequestParam(required = false) String method,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
@@ -110,49 +112,62 @@ public class AdminApiRestController {
 
         Pageable pageable = PageRequest.of(page, finalSize, Sort.by(direction, safeSort));
         
-        List<Sale> salesContent;
-        boolean hasMore = false;
-        Long totalElements = null;
-        Integer totalPages = null;
+        long t0 = System.currentTimeMillis();
+        List<AdminSaleListingDTO> list;
+        boolean hasNext;
+        boolean first;
 
-        if (isSearching) {
-            // Use searchSlice to avoid COUNT query
+        // ── Optimized Path: No filters (NATIVE SLICE) ──────────────────────────
+        if (!isSearching && (type == null || type.isBlank()) && (method == null || method.isBlank()) && date == null) {
+            org.springframework.data.domain.Slice<AdminSaleProjection> projectionSlice = saleService.findAdminListing(pageable);
+            list = projectionSlice.getContent().stream().map(p -> AdminSaleListingDTO.builder()
+                    .id(p.getId())
+                    .createdAt(p.getCreatedAt())
+                    .totalAmount(p.getTotalAmount())
+                    .paymentMethod(p.getPaymentMethod())
+                    .status(p.getStatus())
+                    .customerName(p.getCustomerName())
+                    .customerTaxId(p.getCustomerTaxId())
+                    .workerUsername(p.getWorkerUsername())
+                    .displayId(p.getDisplayId())
+                    .type(p.getType())
+                    .build()).toList();
+            hasNext = projectionSlice.hasNext();
+            first = projectionSlice.isFirst();
+            log.info("[PERF] getSalesPage (OPTIMIZED SLICE) took {}ms", System.currentTimeMillis() - t0);
+        } 
+        // ── Standard Path: With filters (SPECIFICATION SLICE) ──────────────────
+        else {
             org.springframework.data.domain.Slice<Sale> slice = saleService.searchSlice(search, type, method, date, pageable);
-            salesContent = slice.getContent();
-            hasMore = slice.hasNext();
-        } else {
-            Page<Sale> salesPage = saleService.search(search, type, method, date, pageable);
-            salesContent = salesPage.getContent();
-            totalElements = salesPage.getTotalElements();
-            totalPages = salesPage.getTotalPages();
-            hasMore = !salesPage.isLast();
+            list = slice.getContent().stream().map(s -> mapToDTO(s)).toList();
+            hasNext = slice.hasNext();
+            first = slice.isFirst();
+            log.info("[PERF] getSalesPage (FILTER SLICE) took {}ms", System.currentTimeMillis() - t0);
         }
 
-        List<AdminSaleListingDTO> list = salesContent.stream().map(s -> AdminSaleListingDTO.builder()
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", list);
+        response.put("number", page);
+        response.put("hasNext", hasNext);
+        response.put("first", first);
+        response.put("last", !hasNext); // Simplified 'last' for Slice
+        return ResponseEntity.ok(response);
+    }
+
+    private AdminSaleListingDTO mapToDTO(Sale s) {
+        return AdminSaleListingDTO.builder()
                 .id(s.getId())
-                .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber()
-                        : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
                 .createdAt(s.getCreatedAt())
-                .type(s.getInvoice() != null ? "factura" : "ticket")
+                .totalAmount(s.getTotalAmount())
+                .paymentMethod(s.getPaymentMethod() != null ? s.getPaymentMethod().name() : null)
                 .status(s.getStatus() != null ? s.getStatus().name() : "ACTIVE")
                 .customerName(s.getCustomer() != null ? s.getCustomer().getName() : null)
                 .customerTaxId(s.getCustomer() != null ? s.getCustomer().getTaxId() : null)
                 .workerUsername(s.getWorker() != null ? s.getWorker().getUsername() : null)
-                .paymentMethod(s.getPaymentMethod() != null ? s.getPaymentMethod().name() : "CASH")
-                .totalAmount(s.getTotalAmount())
-                .build()).toList();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", list);
-        response.put("currentPage", page);
-        response.put("hasMore", hasMore);
-        
-        if (!isSearching) {
-            response.put("totalPages", totalPages);
-            response.put("totalElements", totalElements);
-        }
-
-        return ResponseEntity.ok(response);
+                .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber()
+                        : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
+                .type(s.getInvoice() != null ? "factura" : "ticket")
+                .build();
     }
 
     /**

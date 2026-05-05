@@ -359,18 +359,24 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional(readOnly = true)
     public Page<Sale> search(String search, String type, String method, LocalDate date, Pageable pageable) {
+        long t0 = System.currentTimeMillis();
         org.springframework.data.jpa.domain.Specification<Sale> spec = com.proconsi.electrobazar.repository.specification.SaleSpecification
                 .filterSales(search, type, method, date);
-        return saleRepository.findAll(spec, pageable);
+        Page<Sale> result = saleRepository.findAll(spec, pageable);
+        log.info("[PERF] saleService.search took {}ms for {} elements", System.currentTimeMillis() - t0, result.getNumberOfElements());
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<Sale> searchSlice(String search, String type, String method,
             LocalDate date, Pageable pageable) {
+        long t0 = System.currentTimeMillis();
         org.springframework.data.jpa.domain.Specification<Sale> spec = com.proconsi.electrobazar.repository.specification.SaleSpecification
                 .filterSales(search, type, method, date);
-        return saleRepository.findSliceBy(spec, pageable);
+        org.springframework.data.domain.Slice<Sale> result = saleRepository.findSliceBy(spec, pageable);
+        log.info("[PERF] saleService.searchSlice took {}ms", System.currentTimeMillis() - t0);
+        return result;
     }
 
     @Override
@@ -840,5 +846,13 @@ public class SaleServiceImpl implements SaleService {
             throw new IllegalStateException(String.format("Stock insuficiente para %s. Disponible: %s, Requerido: %s",
                     product.getName(), product.getStock(), cantidad));
         }
+    }
+
+    @Override
+    public org.springframework.data.domain.Slice<com.proconsi.electrobazar.dto.AdminSaleProjection> findAdminListing(org.springframework.data.domain.Pageable pageable) {
+        long t0 = System.currentTimeMillis();
+        org.springframework.data.domain.Slice<com.proconsi.electrobazar.dto.AdminSaleProjection> result = saleRepository.findAdminListing(pageable);
+        log.info("[PERF] saleService.findAdminListing (NATIVE SLICE) took {}ms", System.currentTimeMillis() - t0);
+        return result;
     }
 }

@@ -167,11 +167,11 @@
                         th:text="#{admin.pagination.prev} ?: 'Anterior'">Anterior</span>
                 </button>
 
-                <div class="pagination-info">
+                <div class="pagination-info d-flex gap-2">
                     <span th:text="#{admin.pagination.page} ?: 'Página'">Página</span>
-                    <span id="salesCurrentPage">1</span>
+                    <strong id="salesCurrentPage" class="mx-1">1</strong>
                     <span th:text="#{admin.pagination.of} ?: 'de'">de</span>
-                    <span id="salesTotalPages" th:text="${salesTotalPages}">1</span>
+                    <strong id="salesTotalPages" class="mx-1" th:text="${salesTotalPages}">1</strong>
                 </div>
 
                 <div class="pagination-jump">
