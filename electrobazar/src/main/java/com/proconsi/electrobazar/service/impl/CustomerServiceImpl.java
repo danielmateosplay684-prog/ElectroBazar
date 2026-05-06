@@ -33,6 +33,8 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final ActivityLogService activityLogService;
     private final TariffRepository tariffRepository;
+    private final com.proconsi.electrobazar.repository.SaleRepository saleRepository;
+    private final com.proconsi.electrobazar.repository.AbonoRepository abonoRepository;
     private final NifCifValidator nifCifValidator;
 
     @Override
@@ -63,7 +65,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public Customer findById(Long id) {
-        return customerRepository.findByIdAndActiveTrue(id)
+        return customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
     }
 
@@ -110,6 +112,8 @@ public class CustomerServiceImpl implements CustomerService {
 
         existing.setName(updated.getName());
         existing.setTaxId(updated.getTaxId());
+        existing.setIdDocumentType(updated.getIdDocumentType());
+        existing.setIdDocumentNumber(updated.getIdDocumentNumber());
         existing.setEmail(updated.getEmail());
         existing.setPhone(updated.getPhone());
         existing.setAddress(updated.getAddress());
@@ -136,17 +140,34 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(Long id, boolean forceDeactivate) {
         Customer customer = findById(id);
-        customer.setActive(false);
-        customerRepository.save(customer);
+        
+        boolean hasSales = saleRepository.existsByCustomerId(id);
+        boolean hasAbonos = abonoRepository.existsByClienteId(id);
 
-        activityLogService.logActivity(
-                "ELIMINAR_CLIENTE",
-                "Cliente desactivado: " + customer.getName(),
-                "Admin",
-                "CUSTOMER",
-                customer.getId());
+        if (hasSales || hasAbonos) {
+            if (forceDeactivate) {
+                customer.setActive(false);
+                customerRepository.save(customer);
+                activityLogService.logActivity(
+                        "DESACTIVAR_CLIENTE",
+                        "Cliente con historial desactivado: " + customer.getName(),
+                        "Admin",
+                        "CUSTOMER",
+                        customer.getId());
+            } else {
+                throw new IllegalStateException("HAS_SALES");
+            }
+        } else {
+            customerRepository.delete(customer);
+            activityLogService.logActivity(
+                    "ELIMINAR_CLIENTE",
+                    "Cliente eliminado permanentemente: " + customer.getName(),
+                    "Admin",
+                    "CUSTOMER",
+                    id);
+        }
     }
 
     @Override

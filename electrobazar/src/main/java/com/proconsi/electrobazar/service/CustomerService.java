@@ -52,10 +52,11 @@ public interface CustomerService {
     Customer update(Long id, Customer customer);
 
     /**
-     * Performs a soft delete (sets active = false).
-     * @param id The ID of the customer to deactivate.
+     * Deletes a customer if they have no sales, otherwise deactivates them if forceDeactivate is true.
+     * @param id The ID of the customer.
+     * @param forceDeactivate If true, allows deactivating even if there are associated records.
      */
-    void delete(Long id);
+    void delete(Long id, boolean forceDeactivate);
 
     /**
      * Retrieves customers with optional filtering (search query, type, and surcharge status).

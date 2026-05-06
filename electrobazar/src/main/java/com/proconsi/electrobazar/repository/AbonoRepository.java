@@ -17,5 +17,7 @@ public interface AbonoRepository extends JpaRepository<Abono, Long> {
     List<Abono> findByTipoAbono(TipoAbono tipoAbono);
     Optional<Abono> findByCode(String code);
     Optional<Abono> findTopByCodeStartingWithOrderByIdDesc(String prefix);
+
+    boolean existsByClienteId(Long clienteId);
 }
 

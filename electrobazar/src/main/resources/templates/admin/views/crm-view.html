@@ -95,6 +95,7 @@
                     <th th:text="#{common.type}">Tipo</th>
                     <th th:text="#{common.tariff}">Tarifa</th>
                     <th th:title="#{admin.crm.re.title}" th:text="#{admin.crm.re}">R.E.</th>
+                    <th th:text="#{common.status}">Estado</th>
                     <th style="text-align:right" th:text="#{common.actions}">Acciones</th>
                 </tr>
             </thead>
@@ -127,6 +128,10 @@
                         <span th:unless="${c.hasRecargoEquivalencia}" 
                             style="background-color: #1a1d20 !important; color: #ffffff !important; border: 1px solid #343a40 !important; padding: 0.3rem 0.6rem; font-size: 0.75rem;">NO</span>
                     </td>
+                    <td>
+                        <span th:if="${c.active}" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">ACTIVO</span>
+                        <span th:unless="${c.active}" class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.75rem;">INACTIVO</span>
+                    </td>
                     <td style="text-align:right">
                         <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                             <button class="btn-icon btn-view" th:title="#{admin.crm.view.sales}" th:data-id="${c.id}"
@@ -147,7 +152,7 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(customers)}">
-                    <td colspan="9" class="text-center py-4" style="color: var(--text-muted)"
+                    <td colspan="10" class="text-center py-4" style="color: var(--text-muted)"
                         th:text="#{admin.crm.empty}">No hay clientes
                         registrados</td>
                 </tr>

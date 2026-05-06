@@ -21,7 +21,6 @@ function onAnalyticsPeriodChange() {
 }
 
 function updateAnalytics() {
-    console.log("updateAnalytics called");
     const periodSelect = document.getElementById('analyticsPeriod');
     const period = periodSelect ? periodSelect.value : '7days';
     const periodText = periodSelect ? periodSelect.options[periodSelect.selectedIndex].text : '';
@@ -90,7 +89,6 @@ function updateAnalytics() {
     }
 
     const url = `/api/sales/analytics?from=${toLocalISO(fromDate)}&to=${toLocalISO(toDate)}&_=${Date.now()}`;
-    console.log("Fetching analytics from:", url);
 
     fetch(url)
         .then(r => { 
@@ -98,7 +96,6 @@ function updateAnalytics() {
             return r.json(); 
         })
         .then(analytics => {
-            console.log("Analytics data received:", analytics);
             initCharts(analytics, period, chartTitle);
         })
         .catch(err => {
@@ -108,15 +105,12 @@ function updateAnalytics() {
 }
 
 function initCharts(analytics, period, chartLabel) {
-    console.log("initCharts called with period:", period, "analytics:", analytics);
     if (!analytics) {
-        console.warn("No analytics data to render");
         return;
     }
 
     try {
         // KPI Counters
-        console.log("Updating KPI counters...");
         if (document.getElementById('statTodayRevenue')) {
             document.getElementById('statTodayRevenue').textContent =
                 (analytics.totalRevenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €';
@@ -146,7 +140,6 @@ function initCharts(analytics, period, chartLabel) {
         const salesLabel = transEl ? (transEl.getAttribute('data-label-sales') || 'Ventas') : 'Ventas';
 
         // Trend Chart
-        console.log("Initializing Trend Chart...");
         const trendData = (period === 'today') ? (analytics.hourlyTrend || {}) : (analytics.revenueTrend || {});
         let labels = [];
         let datasetsData = [];
@@ -174,8 +167,6 @@ function initCharts(analytics, period, chartLabel) {
 
         const ctxSales = document.getElementById('salesChart');
         if (ctxSales) {
-            console.log('canvas dimensions (salesChart):', ctxSales.offsetWidth, ctxSales.offsetHeight);
-            console.log("Rendering Sales Chart...");
             if (salesChart) salesChart.destroy();
             salesChart = new Chart(ctxSales.getContext('2d'), {
                 type: (labels.length <= 1) ? 'bar' : 'line',
@@ -220,8 +211,6 @@ function initCharts(analytics, period, chartLabel) {
         const catSummary = analytics.categoryDistribution || {};
         const ctxCat = document.getElementById('categoryChart');
         if (ctxCat && Object.keys(catSummary).length > 0) {
-            console.log('canvas dimensions (categoryChart):', ctxCat.offsetWidth, ctxCat.offsetHeight);
-            console.log("Rendering Category Chart...");
             if (categoryChart) categoryChart.destroy();
             categoryChart = new Chart(ctxCat.getContext('2d'), {
                 type: 'doughnut',
@@ -241,8 +230,6 @@ function initCharts(analytics, period, chartLabel) {
         const hourlyTrend = analytics.hourlyTrend || {};
         const ctxHourly = document.getElementById('hourlyChart');
         if (ctxHourly) {
-            console.log('canvas dimensions (hourlyChart):', ctxHourly.offsetWidth, ctxHourly.offsetHeight);
-            console.log("Rendering Hourly Chart...");
             if (hourlyChartInstance) hourlyChartInstance.destroy();
 
             let hourlyLabels = [];
@@ -277,8 +264,6 @@ function initCharts(analytics, period, chartLabel) {
         const topProds = analytics.topProducts || {};
         const ctxTop = document.getElementById('topProductsChart');
         if (ctxTop && Object.keys(topProds).length > 0) {
-            console.log('canvas dimensions (topProductsChart):', ctxTop.offsetWidth, ctxTop.offsetHeight);
-            console.log("Rendering Top Products Chart...");
             if (topProductsChartInstance) topProductsChartInstance.destroy();
             topProductsChartInstance = new Chart(ctxTop.getContext('2d'), {
                 type: 'bar',
@@ -297,7 +282,6 @@ function initCharts(analytics, period, chartLabel) {
                 }
             });
         }
-        console.log("initCharts completed successfully");
 
     } catch (err) {
         console.error("Critical error in initCharts:", err);

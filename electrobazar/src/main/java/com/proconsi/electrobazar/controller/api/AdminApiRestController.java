@@ -498,6 +498,9 @@ public class AdminApiRestController {
                 .tariffId(c.getTariff() != null ? c.getTariff().getId() : null)
                 .tariffName(c.getTariff() != null ? c.getTariff().getName() : null)
                 .tariffColor(c.getTariff() != null ? c.getTariff().getColor() : null)
+                .idDocumentType(c.getIdDocumentType())
+                .idDocumentNumber(c.getIdDocumentNumber())
+                .active(c.getActive() != null ? c.getActive() : true)
                 .build()).toList();
 
         Map<String, Object> response = new HashMap<>();

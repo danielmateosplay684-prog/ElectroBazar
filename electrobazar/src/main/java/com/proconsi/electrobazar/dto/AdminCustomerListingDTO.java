@@ -21,4 +21,5 @@ public class AdminCustomerListingDTO {
     private String tariffColor;
     private IdDocumentType idDocumentType;
     private String idDocumentNumber;
+    private boolean active;
 }

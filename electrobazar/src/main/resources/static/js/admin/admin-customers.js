@@ -131,10 +131,17 @@ function openCustomerModal(id) {
                 if (type === 'COMPANY') {
                     const nifSel = document.getElementById('customerNifDocType');
                     if (nifSel) nifSel.value = docType || 'NIF';
+                    onNifDocTypeChange();
                 } else {
                     const docSel = document.getElementById('customerIdDocumentType');
                     if (docSel) docSel.value = docType;
-                    document.getElementById('customerIdDocumentNumber').value = docNum;
+                    onDocTypeChange(true); // Prepare UI
+                    
+                    // Set value after UI settle to avoid resets from clearDocValidation
+                    setTimeout(() => {
+                        const numInp = document.getElementById('customerIdDocumentNumber');
+                        if (numInp) numInp.value = docNum;
+                    }, 0);
                 }
 
                 document.getElementById('customerActive').checked = c.active !== false;
@@ -146,7 +153,6 @@ function openCustomerModal(id) {
 
                 toggleAdminCustomerType();
                 checkCustomerReCompatibility();
-                onDocTypeChange();
             })
             .catch(() => showToast('Error al cargar el cliente', 'error'));
     } else {
@@ -198,12 +204,12 @@ function toggleAdminCustomerType() {
     }
 
     clearDocValidation();
-    if (!isCompany) onDocTypeChange();
+    if (!isCompany) onDocTypeChange(true);
 }
 
 // ── Document type change handler (INDIVIDUAL) ────────────────────────────────
 
-function onDocTypeChange() {
+function onDocTypeChange(preserveValue = false) {
     const sel  = document.getElementById('customerIdDocumentType');
     const inp  = document.getElementById('customerIdDocumentNumber');
     const hint = document.getElementById('customerDocHint');
@@ -215,8 +221,8 @@ function onDocTypeChange() {
     const type   = sel.value;
     const config = DOC_TYPE_CONFIG[type];
 
-    if (inp)  inp.value = '';
-    clearDocValidation();
+    if (inp && !preserveValue) inp.value = '';
+    clearDocValidation(preserveValue);
 
     if (config && type) {
         if (lbl)  lbl.textContent = config.label;
@@ -300,10 +306,13 @@ function showFieldFeedback(input, msgEl, error) {
     }
 }
 
-function clearDocValidation() {
+function clearDocValidation(preserveValue = false) {
     const inp = document.getElementById('customerIdDocumentNumber');
     const msg = document.getElementById('docNumberValidationMsg');
-    if (inp) { inp.classList.remove('is-valid', 'is-invalid'); inp.value = ''; }
+    if (inp) { 
+        inp.classList.remove('is-valid', 'is-invalid'); 
+        if (!preserveValue) inp.value = ''; 
+    }
     if (msg) { msg.textContent = ''; }
     clearTaxIdValidation();
 }
@@ -456,18 +465,30 @@ function saveCustomer() {
 
 // ── Delete & other utilities ─────────────────────────────────────────────────
 
-function deleteCustomer(id, name) {
-    if (!confirm('¿Seguro que quieres eliminar (desactivar) al cliente "' + name + '"?')) return;
-    fetch('/api/customers/' + id, { method: 'DELETE' })
-        .then(r => {
+function deleteCustomer(id, name, deactivateOnly = false) {
+    const actionText = deactivateOnly ? 'desactivar' : 'eliminar';
+    if (!deactivateOnly && !confirm('¿Seguro que quieres eliminar permanentemente al cliente "' + name + '"?')) return;
+
+    const url = `/api/customers/${id}${deactivateOnly ? '?deactivateOnly=true' : ''}`;
+
+    fetch(url, { method: 'DELETE' })
+        .then(async r => {
             if (r.ok) {
-                showToast('Cliente desactivado correctamente');
+                showToast(deactivateOnly ? 'Cliente desactivado correctamente' : 'Cliente eliminado correctamente');
                 if (typeof filterCRM === 'function') filterCRM();
                 else setTimeout(() => location.reload(), 900);
+            } else if (r.status === 409) {
+                const data = await r.json();
+                if (data.error === 'HAS_SALES') {
+                    if (confirm('El cliente "' + name + '" tiene compras asociadas y no se puede eliminar permanentemente. ¿Deseas desactivarlo en su lugar?')) {
+                        deleteCustomer(id, name, true);
+                    }
+                } else {
+                    showToast('Error: ' + (data.message || 'Conflicto'), 'error');
+                }
             } else {
-                r.json().then(err =>
-                    showToast('Error al eliminar cliente: ' + (err.error || err.message || 'Desconocido'), 'error')
-                ).catch(() => showToast('Error al eliminar cliente', 'error'));
+                const err = await r.json().catch(() => ({}));
+                showToast('Error al eliminar cliente: ' + (err.error || err.message || 'Desconocido'), 'error');
             }
         })
         .catch(() => showToast('Error de red al eliminar el cliente', 'error'));
@@ -624,7 +645,7 @@ function renderCRMTable(items) {
     tbody.innerHTML = '';
 
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4" style="color:var(--text-muted);">No hay clientes registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4" style="color:var(--text-muted);">No hay clientes registrados.</td></tr>';
         return;
     }
 
@@ -641,6 +662,10 @@ function renderCRMTable(items) {
             ? `<span class="badge bg-info text-dark">SÍ</span>`
             : `<span class="badge bg-light text-muted">NO</span>`;
 
+        const statusBadge = c.active
+            ? `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">ACTIVO</span>`
+            : `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.75rem;">INACTIVO</span>`;
+
         const tr = document.createElement('tr');
         tr.className = 'crm-row';
         tr.innerHTML = `
@@ -652,6 +677,7 @@ function renderCRMTable(items) {
             <td>${badgeType}</td>
             <td>${tariffBadge}</td>
             <td>${badgeRE}</td>
+            <td>${statusBadge}</td>
             <td style="text-align:right">
                 <div style="display:flex;gap:0.4rem;justify-content:flex-end">
                     <button class="btn-icon btn-view" title="Historial ventas"

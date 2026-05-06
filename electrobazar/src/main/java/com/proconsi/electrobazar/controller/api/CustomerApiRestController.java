@@ -110,9 +110,19 @@ public class CustomerApiRestController {
      * @return 204 No Content.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        customerService.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> delete(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean deactivateOnly) {
+        try {
+            customerService.delete(id, deactivateOnly);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            if ("HAS_SALES".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "HAS_SALES", "message", "El cliente tiene compras asociadas."));
+            }
+            throw e;
+        }
     }
 
     /**
