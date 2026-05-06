@@ -315,7 +315,7 @@
             <div th:if="${sale.notes != null && !#strings.isEmpty(sale.notes)}" class="mb-4 p-3 rounded"
                 style="background: var(--secondary); border-left: 4px solid var(--accent); border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
                 <div class="summary-label mb-1" th:text="#{common.notes}">Notas de la venta</div>
-                <div class="text-main fw-bold" th:text="${sale.notes}"></div>
+                <div class="text-main fw-bold" th:text="${#strings.replace(#strings.replace(sale.notes, 'ANNULLED', #messages.msg('admin.invoices.status.cancelled')), 'ANULADA', #messages.msg('admin.invoices.status.cancelled'))}"></div>
             </div>
 
             <!-- Lineas de Venta -->

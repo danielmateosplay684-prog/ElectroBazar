@@ -100,7 +100,9 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "analyticsSummary", key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString()")
+    @Cacheable(value = "analyticsSummary", 
+               key = "#from.toLocalDate().toString() + '-' + #to.toLocalDate().toString()",
+               unless = "#to.toLocalDate().isEqual(T(java.time.LocalDate).now())")
     public AnalyticsSummaryDTO getAnalyticsSummary(LocalDateTime from, LocalDateTime to) {
         LocalDate startDate = from.toLocalDate();
         LocalDate endDate = to.toLocalDate();
@@ -418,7 +420,6 @@ public class SaleServiceImpl implements SaleService {
 
     // 2. Initial logic
     @Override
-    @CacheEvict(value = "analyticsSummary", key = "T(java.time.LocalDate).now().toString() + '-' + T(java.time.LocalDate).now().toString()")
     public Sale createSaleWithCoupon(List<SaleLine> lines, PaymentMethod paymentMethod, String notes,
             BigDecimal receivedAmount, BigDecimal cashAmount, BigDecimal cardAmount, Customer customer,
             Worker worker, Tariff tariffOverride, String couponCode) {
@@ -833,7 +834,8 @@ public class SaleServiceImpl implements SaleService {
                 .forEach(l -> productService.increaseStock(l.getProduct().getId(), l.getQuantity()));
 
         sale.setStatus(Sale.SaleStatus.CANCELLED);
-        sale.setNotes((sale.getNotes() != null ? sale.getNotes() + " | " : "") + "ANNULLED: " + reason);
+        String annulledPrefix = messageSource.getMessage("admin.invoices.status.cancelled", null, LocaleContextHolder.getLocale());
+        sale.setNotes((sale.getNotes() != null ? sale.getNotes() + " | " : "") + annulledPrefix + ": " + reason);
         saleRepository.save(sale);
 
         String username = (worker != null) ? worker.getUsername() : "System";

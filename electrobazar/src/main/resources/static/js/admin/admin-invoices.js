@@ -93,7 +93,6 @@ function renderSalesTable(sales, hasMore) {
         tr.onclick = () => window.location.href = `/admin/sale/${sale.id}`;
 
         const typeLabel = sale.type === 'factura' ? 'Factura' : 'Ticket';
-        const typeClass = sale.type === 'factura' ? 'yes' : 'no';
         const cancelBadge = isCancelled ? `
             <span class="badge mb-1 d-block" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600;">
                 <i class="bi bi-x-circle me-1"></i>anulada
@@ -117,7 +116,7 @@ function renderSalesTable(sales, hasMore) {
             <td>${formatDateTime(sale.createdAt)}</td>
             <td>
                 ${cancelBadge}
-                <span class="badge-active ${typeClass}">${typeLabel}</span>
+                <span class="badge-document-type">${typeLabel}</span>
             </td>
             <td>${customerHtml}</td>
             <td style="font-weight: 500;">${escHtml(sale.workerUsername || 'Sistema')}</td>

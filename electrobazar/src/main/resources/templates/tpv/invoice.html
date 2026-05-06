@@ -602,7 +602,7 @@
         <div th:if="${sale.notes != null and !sale.notes.empty}" 
             style="margin: 20px 0; padding: 15px; border-left: 4px solid var(--invoice-accent); background: var(--surface); font-size: 13px;">
             <div style="font-weight: 700; font-size: 10px; color: var(--invoice-muted); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px;">Observaciones</div>
-            <div th:text="${sale.notes}">Nota de la factura</div>
+            <div th:text="${#strings.replace(#strings.replace(sale.notes, 'ANNULLED', #messages.msg('admin.invoices.status.cancelled')), 'ANULADA', #messages.msg('admin.invoices.status.cancelled'))}">Nota de la factura</div>
         </div>
 
         <!-- PAYMENT -->

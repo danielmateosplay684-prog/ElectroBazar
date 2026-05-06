@@ -191,7 +191,7 @@
                 <div
                     style="font-weight: 700; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.2rem;">
                     Comentarios</div>
-                <div th:text="${sale.notes}">Nota de la venta</div>
+                <div th:text="${#strings.replace(#strings.replace(sale.notes, 'ANNULLED', #messages.msg('admin.invoices.status.cancelled')), 'ANULADA', #messages.msg('admin.invoices.status.cancelled'))}">Nota de la venta</div>
             </div>
 
             <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &middot; <span

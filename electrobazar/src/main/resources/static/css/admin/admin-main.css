@@ -553,6 +553,20 @@
             color: #e74c3c;
         }
 
+        .badge-document-type {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            line-height: 1;
+        }
+
         /* CUSTOM CUSTOMER BADGES */
         .badge-type-company {
             background-color: rgba(59, 130, 246, 0.15);
