@@ -122,11 +122,10 @@
                                 th:onclick="'event.stopPropagation(); showDocPreview(\'/tpv/return-receipt/' + ${ret.id} + '\')'">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            <a th:href="@{/admin/download/return/{id}(id=${ret.id})}" target="_blank" class="btn-icon btn-download"
-                                th:title="#{common.download}" style="text-decoration: none;"
-                                onclick="event.stopPropagation();">
+                            <button type="button" class="btn-icon btn-download" th:title="#{common.download}" style="text-decoration: none;"
+                                th:onclick="'event.stopPropagation(); printUrl(\'/tpv/return-receipt/' + ${ret.id} + '?autoPrint=true\')'">
                                 <i class="bi bi-download"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(returns)}">

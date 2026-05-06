@@ -26,6 +26,7 @@ window.tariffModal = null;
 window.addTariffValueModal = null;
 window.deleteTariffModal = null;
 window.adminPanelReady = false;
+let queryViewHandled = false;
 
 // Initialization
 document.addEventListener('DOMContentLoaded', function () {
@@ -56,9 +57,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hash-based navigation
     function handleHashNavigation() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryView = urlParams.get('view');
         const hash = window.location.hash.substring(1);
         const navType = performance.getEntriesByType('navigation')[0]?.type;
         const isFreshEntry = navType === 'navigate';
+
+        // Priority 1: Direct 'view' parameter (used by detail pages sidebars)
+        if (!queryViewHandled && queryView && document.getElementById(queryView)) {
+            queryViewHandled = true;
+            // Clean the URL once handled to allow subsequent hash navigation
+            const newUrl = window.location.pathname + window.location.hash;
+            history.replaceState(null, null, newUrl);
+            
+            switchView(queryView, null, true);
+            return;
+        }
 
         if (!hash || hash === 'dashboard') {
             const lastView = sessionStorage.getItem('adminLastView');
@@ -173,7 +187,11 @@ document.addEventListener('keydown', function (e) {
 let viewHistory = JSON.parse(sessionStorage.getItem('adminViewHistory') || '[]');
 
 function switchView(viewId, btn, isBack = false) {
-    // 0. History tracking: don't track if navigating back or if it's the same view
+    // 0. Cleanup anti-flash style if present
+    const flashStyle = document.getElementById('antiFlashStyle');
+    if (flashStyle) flashStyle.remove();
+
+    // History tracking: don't track if navigating back or if it's the same view
     const currentActiveView = Array.from(document.querySelectorAll('[id$="View"]'))
         .find(v => v.style.display !== 'none');
 
@@ -205,7 +223,9 @@ function switchView(viewId, btn, isBack = false) {
             }
         }
     } else {
-        console.warn('View not found:', viewId);
+        // If we are in a detail page (sale/return/etc), we must redirect to index
+        window.location.href = `/admin?view=${viewId}`;
+        return;
     }
 
     // 3. Update Sidebar active state

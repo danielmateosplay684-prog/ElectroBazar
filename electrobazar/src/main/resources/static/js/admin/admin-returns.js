@@ -93,9 +93,9 @@ function renderReturnsTable(items) {
                 <button type="button" class="btn-icon" title="Ver Detalle" onclick="event.stopPropagation(); window.location.href='/admin/return/${ret.id}'">
                     <i class="bi bi-eye" style="color: #6c757d;"></i>
                 </button>
-                <a href="/admin/download/return/${ret.id}" class="btn-icon" title="Descargar" style="text-decoration:none" onclick="event.stopPropagation();">
+                <button type="button" class="btn-icon" title="Imprimir" style="text-decoration:none" onclick="event.stopPropagation(); printUrl('/tpv/return-receipt/${ret.id}?autoPrint=true')">
                     <i class="bi bi-download" style="color: #3498db;"></i>
-                </a>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);

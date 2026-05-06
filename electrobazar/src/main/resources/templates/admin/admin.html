@@ -61,21 +61,26 @@
         </a>
 
         <nav class="sidebar-nav">
-            <button class="nav-link sidebar-menu-btn active" id="btnDashboard"
+            <button th:class="'nav-link sidebar-menu-btn ' + (${activeView == null or activeView == 'dashboardView' or activeView == ''} ? 'active' : '')" 
+                id="btnDashboard"
                 onclick="switchView('dashboardView', this)">
                 <i class="bi bi-grid-1x2"></i> <span th:text="#{admin.menu.dashboard}">Panel de Control</span>
             </button>
-            <button class="nav-link sidebar-menu-btn" onclick="switchView('productsView', this)">
+            <button th:class="'nav-link sidebar-menu-btn ' + (${activeView == 'productsView'} ? 'active' : '')" 
+                onclick="switchView('productsView', this)">
                 <i class="bi bi-box-seam"></i> <span th:text="#{admin.menu.inventory}">Gestión de Inventario</span>
             </button>
-            <button class="nav-link sidebar-menu-btn" onclick="switchView('invoicesView', this)">
+            <button th:class="'nav-link sidebar-menu-btn ' + (${activeView == 'invoicesView'} ? 'active' : '')" 
+                onclick="switchView('invoicesView', this)">
                 <i class="bi bi-receipt"></i> <span th:text="#{admin.menu.invoices}">Facturación</span>
             </button>
-            <button class="nav-link sidebar-menu-btn" onclick="switchView('cashCloseView', this)">
+            <button th:class="'nav-link sidebar-menu-btn ' + (${activeView == 'cashCloseView'} ? 'active' : '')" 
+                onclick="switchView('cashCloseView', this)">
                 <i class="bi bi-cash-stack"></i> <span th:text="#{admin.menu.cashcloses}">Listado de Cierres de
                     caja</span>
             </button>
-            <button class="nav-link sidebar-menu-btn" onclick="switchView('returnsHistoryView', this)">
+            <button th:class="'nav-link sidebar-menu-btn ' + (${activeView == 'returnsHistoryView'} ? 'active' : '')" 
+                onclick="switchView('returnsHistoryView', this)">
                 <i class="bi bi-arrow-counterclockwise"></i> <span th:text="#{admin.menu.returns}">Listado de
                     Devoluciones</span>
             </button>
@@ -145,6 +150,20 @@
 
     <!-- Body  -->
     <div class="admin-body">
+        <!-- Immediate View Injection to prevent flash -->
+        <script th:if="${activeView != null and activeView != ''}" th:inline="javascript">
+            (function() {
+                const vId = [[${activeView}]];
+                if (vId && vId !== 'dashboardView') {
+                    const css = '#' + vId + ' { display: block !important; }';
+                    const head = document.head || document.getElementsByTagName('head')[0];
+                    const style = document.createElement('style');
+                    style.id = 'antiFlashStyle';
+                    style.appendChild(document.createTextNode(css));
+                    head.appendChild(style);
+                }
+            })();
+        </script>
         <!-- Banner: Cambio de IVA pendiente -->
         <div th:if="${not #lists.isEmpty(futureTaxRates)}"
             class="alert alert-warning m-4 d-flex align-items-center justify-content-between"
@@ -188,7 +207,7 @@
         </div>
 
         <!-- 0. DASHBOARD LANDING VIEW -->
-        <div id="dashboardView" style="display: none;">
+        <div id="dashboardView" th:style="${activeView == null or activeView == 'dashboardView' or activeView == ''} ? 'display: block;' : 'display: none;'">
             <div class="panel-header mb-4">
                 <span class="panel-title"><i class="bi bi-house-door me-2"></i><span
                         th:text="#{admin.dashboard.welcome}">Bienvenido al Administrador</span></span>
@@ -903,7 +922,7 @@
             if (iframe) {
                 iframe.style.opacity = '0';
                 loader.style.display = 'block';
-                iframe.src = url;
+                iframe.src = url + (url.includes('?') ? '&' : '?') + 'preview=true';
                 const modalElement = document.getElementById('documentPreviewModal');
                 let modal = bootstrap.Modal.getInstance(modalElement);
                 if (!modal) modal = new bootstrap.Modal(modalElement);
@@ -915,6 +934,22 @@
             if (iframe && iframe.contentWindow) {
                 iframe.contentWindow.print();
             }
+        }
+        function printUrl(url) {
+            let iframe = document.getElementById('hiddenPrintIframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'hiddenPrintIframe';
+                iframe.style.visibility = 'hidden';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = 'none';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = url;
         }
     </script>
 

@@ -133,9 +133,9 @@ function renderSalesTable(sales, hasMore) {
                     <button type="button" class="btn-icon" title="Ver Detalle" onclick="event.stopPropagation(); window.location.href='/admin/sale/${sale.id}'">
                         <i class="bi bi-eye" style="color: #6c757d;"></i>
                     </button>
-                    <a href="/tpv/receipt/${sale.id}?autoPrint=true" class="btn-icon" title="Descargar" onclick="event.stopPropagation();">
+                    <button type="button" class="btn-icon" title="Imprimir" onclick="event.stopPropagation(); printUrl('/tpv/receipt/${sale.id}?autoPrint=true')">
                         <i class="bi bi-download" style="color: #3498db;"></i>
-                    </a>
+                    </button>
                     ${!isCancelled ? `
                     <button class="btn-icon" title="Anular" onclick="event.stopPropagation(); cancelSale(${sale.id})">
                         <i class="bi bi-x-circle" style="color: #e74c3c;"></i>

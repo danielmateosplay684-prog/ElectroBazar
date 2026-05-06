@@ -228,6 +228,11 @@
                 // Always auto-print receipts as requested
                 window.print();
             };
+            // Hide UI elements if in preview mode
+            if (window.location.search.includes('preview=true')) {
+                document.querySelectorAll('.btn-row, .action-bar, .page-title').forEach(el => el.style.display = 'none');
+                document.body.style.padding = '0';
+            }
             /*]]>*/
         </script>
     </th:block>

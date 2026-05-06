@@ -144,11 +144,10 @@
                                     th:onclick="'event.stopPropagation(); showDocPreview(\'/tpv/receipt/' + ${sale.id} + '\')'">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <a th:href="@{/tpv/receipt/{id}(id=${sale.id}, autoPrint=true)}" target="_blank"
-                                    class="btn-icon btn-download" th:title="#{common.download}" style="text-decoration: none;"
-                                    onclick="event.stopPropagation();">
+                                <button type="button" class="btn-icon btn-download" th:title="#{common.download}" style="text-decoration: none;"
+                                    th:onclick="'event.stopPropagation(); printUrl(\'/tpv/receipt/' + ${sale.id} + '?autoPrint=true\')'">
                                     <i class="bi bi-download"></i>
-                                </a>
+                                </button>
                                 <button th:if="${sale.status != null && sale.status.name() == 'ACTIVE'}"
                                     class="btn-icon btn-delete" th:title="#{admin.invoices.cancel}" th:data-id="${sale.id}"
                                     onclick="event.stopPropagation(); cancelSale(this.getAttribute('data-id'))">
