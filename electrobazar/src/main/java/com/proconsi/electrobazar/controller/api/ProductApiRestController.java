@@ -14,6 +14,7 @@ import com.proconsi.electrobazar.repository.TaxRateRepository;
 import com.proconsi.electrobazar.repository.MeasurementUnitRepository;
 import com.proconsi.electrobazar.repository.UserFavoriteProductRepository;
 import com.proconsi.electrobazar.exception.ResourceNotFoundException;
+import com.proconsi.electrobazar.service.TaskProgressService;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +47,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductApiRestController {
 
+    @Value("${app.upload.dir:./uploads}")
+    private String uploadDir;
+
     private final ProductService productService;
     private final CategoryService categoryService;
     private final ProductPriceService productPriceService;
@@ -52,6 +57,7 @@ public class ProductApiRestController {
     private final TaxRateRepository taxRateRepository;
     private final MeasurementUnitRepository measurementUnitRepository;
     private final UserFavoriteProductRepository userFavoriteProductRepository;
+    private final TaskProgressService taskProgressService;
 
     /**
      * Retrieves all active products including their category details.
@@ -159,9 +165,12 @@ public class ProductApiRestController {
         
         // Handle image upload
         if (imageFile != null && !imageFile.isEmpty()) {
+            log.info("Processing image upload: {}", imageFile.getOriginalFilename());
             String imageUrl = saveImage(imageFile);
+            log.info("Image saved as: {}", imageUrl);
             product.setImageUrl(imageUrl);
         } else {
+            log.info("No image file provided, using URL from request: {}", request.getImageUrl());
             product.setImageUrl(request.getImageUrl());
         }
 
@@ -172,8 +181,13 @@ public class ProductApiRestController {
         if (request.getCategoryId() != null) {
             product.setCategory(categoryService.findById(request.getCategoryId()));
         }
-        log.info("Saving product with taxRate: {}", product.getTaxRate());
-        return ResponseEntity.status(HttpStatus.CREATED).body(productService.save(product));
+        log.info("Final Product before save - Name: {}, ImageUrl: {}, TaxRate: {}", 
+                product.getName(), product.getImageUrl(), product.getTaxRate());
+        
+        Product saved = productService.save(product);
+        log.info("Product saved successfully with ID: {} and ImageUrl: {}", saved.getId(), saved.getImageUrl());
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     /**
@@ -195,26 +209,45 @@ public class ProductApiRestController {
             request.setImageUrl(saveImage(imageFile));
         }
         
-        return ResponseEntity.ok(productService.update(id, request));
+        // Only update imageUrl if a new one was provided (preserve existing on edit)
+        if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
+            log.info("Controller: imageUrl in request is '{}' for product {}", request.getImageUrl(), id);
+        } else {
+            log.info("Controller: No new imageUrl in request for product {}", id);
+        }
+        
+        Product updated = productService.update(id, request);
+        log.info("Controller: Product updated, imageUrl is now: {}", updated.getImageUrl());
+        return ResponseEntity.ok(updated);
     }
 
     private String saveImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) return null;
         try {
-            String fileName = file.getOriginalFilename();
-            String uploadDir = "src/main/resources/static/img/";
-            Path uploadPath = Paths.get(uploadDir);
-
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            String originalFileName = file.getOriginalFilename();
+            if (originalFileName == null) originalFileName = "unnamed.png";
+            
+            // Extract only the filename part to avoid path traversal
+            String fileName = Paths.get(originalFileName).getFileName().toString();
+            fileName = fileName.replaceAll("\\s+", "_");
+            
+            // Add timestamp prefix to avoid collisions
+            fileName = System.currentTimeMillis() + "_" + fileName;
+            
+            // Save to external directory (served via WebConfig resource handler)
+            Path imgPath = Paths.get(uploadDir, "img");
+            if (!Files.exists(imgPath)) {
+                Files.createDirectories(imgPath);
             }
 
             try (var inputStream = file.getInputStream()) {
-                Path filePath = uploadPath.resolve(fileName);
+                Path filePath = imgPath.resolve(fileName);
+                log.info("Writing image to: {}", filePath.toAbsolutePath());
                 Files.copy(inputStream, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                return "/img/" + fileName;
+                return "/uploads/img/" + fileName;
             }
         } catch (IOException e) {
-            log.error("Error saving image", e);
+            log.error("CRITICAL: Error saving image file", e);
             return null;
         }
     }
@@ -364,8 +397,6 @@ public class ProductApiRestController {
         productPriceService.bulkSchedulePrice(request);
         return ResponseEntity.ok(Map.of("message", "Actualización masiva programada con éxito."));
     }
-
-    private final com.proconsi.electrobazar.service.TaskProgressService taskProgressService;
 
     @GetMapping("/bulk-progress/{taskId}")
     public ResponseEntity<?> getBulkProgress(@PathVariable String taskId) {

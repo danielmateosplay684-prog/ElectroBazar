@@ -149,6 +149,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product save(Product product) {
+        log.info("Service: Saving product '{}' with imageUrl: {}", product.getName(), product.getImageUrl());
         // autoTranslateProduct(product);
         Product saved = productRepository.save(product);
 
@@ -199,7 +200,11 @@ public class ProductServiceImpl implements ProductService {
         }
         // Only update imageUrl if a new one was provided (preserve existing on edit)
         if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
+            log.info("Service: Updating imageUrl for product {} from '{}' to '{}'", 
+                    id, existing.getImageUrl(), request.getImageUrl());
             existing.setImageUrl(request.getImageUrl());
+        } else {
+            log.info("Service: Keeping existing imageUrl '{}' for product {}", existing.getImageUrl(), id);
         }
 
         if (request.getCategoryId() != null) {

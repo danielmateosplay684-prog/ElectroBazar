@@ -454,6 +454,7 @@
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn-icon btn-view" onclick="${viewFn}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
                     ${printBtn}
+                    <button class="btn-icon btn-view" style="color: #2ecc71" onclick='vfViewQr(${JSON.stringify({number:r.number, qrBase64:r.qrBase64, qrUrl:r.qrUrl})})' title="Ver Código QR Fiscal"><i class="bi bi-qr-code"></i></button>
                     <button class="btn-icon btn-edit" onclick="vfViewAudit('${retryType}', ${r.id})" title="Auditoría Técnica (XML)"><i class="bi bi-shield-lock"></i></button>
                     ${(r.aeatStatus === 'REJECTED' || r.aeatStatus === 'ACCEPTED_WITH_ERRORS') ? `<button class="btn-icon btn-edit" onclick="vfEditSubsanar('${retryType}', ${r.id})" title="Editar y Subsanar"><i class="bi bi-pencil-square"></i></button>` : ''}
                     ${r.aeatStatus === 'ACCEPTED_WITH_ERRORS' ? `<button class="btn-icon btn-edit" onclick="vfSubsanar('${retryType}', ${r.id}, this)" title="Subsanación rápida (Sin editar)"><i class="bi bi-tools"></i></button>` : ''}
@@ -775,6 +776,16 @@
         return formatted;
     }
 
+    window.vfViewQr = function(data) {
+        document.getElementById('vf-qr-img').src = 'data:image/png;base64,' + data.qrBase64;
+        document.getElementById('vf-qr-link').href = data.qrUrl;
+        document.getElementById('vf-qr-url-text').innerText = data.qrUrl;
+        document.getElementById('vf-qr-number').innerText = data.number;
+        
+        const modal = new bootstrap.Modal(document.getElementById('vfQrModal'));
+        modal.show();
+    };
+
     window.vfViewAudit = vfViewAudit;
     window.vfViewResponse = vfViewResponse;
 
@@ -877,6 +888,41 @@
                 </div>
                 <div class="modal-footer border-border">
                     <button type="button" class="btn btn-outline-light btn-sm px-4" data-bs-dismiss="modal">Cerrar Auditoría</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ── MODAL: CÓDIGO QR FISCAL ──────────────────────────── -->
+    <div class="modal fade" id="vfQrModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-secondary shadow-lg border-border">
+                <div class="modal-header border-border bg-dark">
+                    <h5 class="modal-title text-accent"><i class="bi bi-qr-code me-2"></i>Código QR Fiscal AEAT</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <span class="text-muted small text-uppercase fw-bold">Documento:</span>
+                        <div id="vf-qr-number" class="h5 text-main fw-bold"></div>
+                    </div>
+                    
+                    <div class="bg-white p-3 d-inline-block rounded shadow-sm mb-4">
+                        <img id="vf-qr-img" style="width: 250px; height: 250px; image-rendering: pixelated;">
+                    </div>
+                    
+                    <div class="alert alert-info bg-primary border-border p-3 text-start mb-0">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-link-45deg fs-5 me-2 text-accent"></i>
+                            <strong class="small text-uppercase">Link de Verificación Oficial</strong>
+                        </div>
+                        <div id="vf-qr-url-text" class="small text-break mb-3 font-monospace text-muted" style="font-size: 0.7rem;"></div>
+                        <a id="vf-qr-link" target="_blank" class="btn btn-accent btn-sm w-100">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Abrir en AEAT (Simular Escaneo)
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer border-border">
+                    <button type="button" class="btn btn-outline-light btn-sm px-4" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>

@@ -84,4 +84,8 @@ public interface InvoiceService {
      * Calculates the Verifactu hash for a simplified ticket.
      */
     String calculateHash(com.proconsi.electrobazar.model.Ticket ticket, String previousHash);
+    /** Generates the raw verification URL text. */
+    String generateQrUrl(Invoice invoice);
+    String generateQrUrl(com.proconsi.electrobazar.model.RectificativeInvoice rect);
+    String generateQrUrl(com.proconsi.electrobazar.model.Ticket ticket);
 }

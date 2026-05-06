@@ -53,7 +53,7 @@ public class SecurityConfig {
                 return (web) -> web.ignoring()
                                 .requestMatchers("/js/**", "/css/**", "/images/**", "/img/**",
                                                 "/vendor/**", "/webjars/**", "/icons/**",
-                                                "/favicon.svg", "/favicon-light.svg");
+                                                "/uploads/**", "/favicon.svg", "/favicon-light.svg");
         }
 
         /**
@@ -130,7 +130,7 @@ public class SecurityConfig {
 
                                                 // SECURED ACTIONS (Require specific authorities granted during token
                                                 // filtering)
-                                                .requestMatchers("/api/sales/with-tax/**").authenticated()
+
                                                 .requestMatchers("/api/sales/stats/today")
                                                 .hasAnyAuthority("ACCESO_TPV", "ACCESO_TOTAL_ADMIN", "VER_VENTAS")
 

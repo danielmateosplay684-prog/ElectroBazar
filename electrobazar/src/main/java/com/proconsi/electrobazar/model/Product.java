@@ -166,7 +166,7 @@ public class Product {
     private Boolean active = true;
 
     /** URL for the product image. */
-    @Column(length = 500)
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
 
     /** Category this product belongs to. */

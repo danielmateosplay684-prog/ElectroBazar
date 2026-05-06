@@ -678,7 +678,11 @@
                                         (Opcional)</label>
                                     <textarea th:field="*{invoiceFooterText}"
                                         class="form-control form-control-sm border-border" rows="2"
-                                        th:placeholder="#{admin.settings.invoicefooter.placeholder}"></textarea>
+                                        placeholder="Ej: Gracias por su compra. Tiene {days} días para devoluciones."></textarea>
+                                    <div class="form-text" style="color:var(--text-muted);font-size:0.7rem;">
+                                        Usa <strong>{days}</strong> para insertar el número de días automáticamente.
+                                        Si se deja vacío, se usará el texto por defecto.
+                                    </div>
                                 </div>
 
                                 <div class="mb-4">

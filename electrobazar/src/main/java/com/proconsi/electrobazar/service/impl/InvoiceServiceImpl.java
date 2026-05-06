@@ -259,6 +259,28 @@ public class InvoiceServiceImpl implements InvoiceService {
         return QrCodeGenerator.generateQrBase64(url, 250, 250);
     }
 
+    @Override
+    public String generateQrUrl(Invoice invoice) {
+        return buildVerificacionUrl(getNif(), invoice.getInvoiceNumber(),
+                invoice.getCreatedAt().format(DATE_SHORT),
+                invoice.getSale().getTotalAmount().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString());
+    }
+
+    @Override
+    public String generateQrUrl(RectificativeInvoice rect) {
+        String importe = "-" + rect.getSaleReturn().getTotalRefunded()
+                .setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+        return buildVerificacionUrl(getNif(), rect.getRectificativeNumber(),
+                rect.getCreatedAt().format(DATE_SHORT), importe);
+    }
+
+    @Override
+    public String generateQrUrl(Ticket ticket) {
+        return buildVerificacionUrl(getNif(), ticket.getTicketNumber(),
+                ticket.getCreatedAt().format(DATE_SHORT),
+                ticket.getSale().getTotalAmount().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString());
+    }
+
     // ---- helpers ----
 
     private String getNif() {

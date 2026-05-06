@@ -72,4 +72,25 @@ public class CompanySettings {
     @Column(name = "return_deadline_days")
     @Builder.Default
     private Integer returnDeadlineDays = 15;
+
+    /**
+     * Returns the invoice footer text with placeholders replaced.
+     * Supported placeholders: {days} or {dias}
+     */
+    public String getFormattedFooterText(Integer days) {
+        int targetDays = (days != null) ? days : (returnDeadlineDays != null ? returnDeadlineDays : 0);
+        
+        String baseText = (invoiceFooterText == null || invoiceFooterText.trim().isEmpty())
+                ? "Gracias por su compra. Tiene {days} días para devoluciones."
+                : invoiceFooterText;
+        
+        return baseText
+                .replace("{days}", String.valueOf(targetDays))
+                .replace("{dias}", String.valueOf(targetDays));
+    }
+
+    /** No-args version for templates that don't have a specific ticket context */
+    public String getFormattedFooterText() {
+        return getFormattedFooterText(returnDeadlineDays);
+    }
 }

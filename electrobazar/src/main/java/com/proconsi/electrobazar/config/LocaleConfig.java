@@ -1,5 +1,6 @@
 package com.proconsi.electrobazar.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.LocaleResolver;
@@ -7,11 +8,15 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Locale;
 
 @Configuration
 public class LocaleConfig implements WebMvcConfigurer {
+
+    @Value("${app.upload.dir:./uploads}")
+    private String uploadDir;
 
     @Bean
     public LocaleResolver localeResolver() {
@@ -41,6 +46,11 @@ public class LocaleConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+        // External uploads directory — product images saved outside the JAR/classpath
+        String absoluteUploadPath = Paths.get(uploadDir).toAbsolutePath().normalize().toUri().toString();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(absoluteUploadPath);
+
         // Multi-location handler for standard assets
         registry.addResourceHandler("/js/**", "/css/**", "/images/**", "/img/**", "/vendor/**", "/icons/**", "/webjars/**")
                 .addResourceLocations(

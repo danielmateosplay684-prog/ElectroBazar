@@ -353,7 +353,7 @@
             </div>
 
             <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &mdash; <span th:text="${companySettings.registroMercantil}">Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1</span><br />
-            <span th:if="${companySettings.invoiceFooterText != null}" th:text="${companySettings.invoiceFooterText}"><br /></span>
+            <span th:text="${companySettings.formattedFooterText}"><br /></span>
             Factura Rectificativa generada al amparo del Art. 15 del R.D. 1619/2012.<br />
             Este documento anula parcial o totalmente el impacto fiscal del documento original referenciado.
         </div>

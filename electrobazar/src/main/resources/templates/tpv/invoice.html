@@ -631,7 +631,7 @@
         <!-- FOOTER -->
         <div class="footer">
             <span th:text="${companySettings.name}">ElectroBazar S.L.</span> &mdash; <span th:text="${companySettings.registroMercantil}">Inscrita en el Registro Mercantil de Madrid, Tomo 1, Folio 1, Hoja M-1</span><br />
-            <span th:if="${companySettings.invoiceFooterText != null}" th:text="${companySettings.invoiceFooterText}"><br /></span>
+            <span th:text="${companySettings.formattedFooterText}"><br /></span>
             Este documento tiene validez fiscal como Factura Ordinaria. Conservar para garantía y devoluciones.<br />
             Generado por <span th:text="${companySettings.appName}">ElectroBazar</span> TPV el <span
                 th:text="${#temporals.format(sale.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></span>

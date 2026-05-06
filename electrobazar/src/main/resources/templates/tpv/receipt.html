@@ -200,11 +200,7 @@
             <div class="legal-info"
                 style="margin-top:0.8rem; font-size:0.72rem; color:var(--text-muted); text-align:center; line-height: 1.4;">
                 <!-- Dynamic return deadline: uses the value snapshotted on this specific ticket -->
-                <span th:if="${ticket != null and ticket.returnDeadlineDays != null and ticket.returnDeadlineDays > 0}"
-                    th:text="'Plazo de devolución: ' + ${ticket.returnDeadlineDays} + ' días con ticket original.'"></span>
-                <span th:if="${ticket == null or ticket.returnDeadlineDays == null or ticket.returnDeadlineDays == 0}"
-                    th:text="${companySettings.invoiceFooterText}">Devoluciones en un plazo de 14 d&iacute;as con
-                    ticket original</span><br>
+                <span th:text="${companySettings.getFormattedFooterText(ticket != null ? ticket.returnDeadlineDays : null)}">Pie de ticket</span><br>
                 Factura simplificada seg&uacute;n RD 1619/2012
             </div>
         </div>

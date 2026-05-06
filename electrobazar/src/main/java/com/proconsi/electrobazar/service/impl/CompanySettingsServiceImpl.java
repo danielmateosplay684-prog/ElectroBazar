@@ -40,7 +40,7 @@ public class CompanySettingsServiceImpl implements CompanySettingsService {
                 .email("")
                 .website("")
                 .registroMercantil("")
-                .invoiceFooterText("")
+                .invoiceFooterText("Gracias por su compra. Tiene {days} días para devoluciones.")
                 .returnDeadlineDays(15)
                 .build());
     }

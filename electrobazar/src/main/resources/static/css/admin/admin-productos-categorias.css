@@ -23,6 +23,12 @@
     border: 1px solid var(--border);
 }
 
+.btn-nuevo-alt:hover {
+    background: var(--accent-hover) !important;
+    color: var(--primary) !important;
+    border-color: var(--accent-hover);
+}
+
 .admin-table th.id-col,
 .admin-table td.id-col {
     width: 50px;

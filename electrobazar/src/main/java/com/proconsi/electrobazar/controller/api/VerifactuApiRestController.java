@@ -38,6 +38,7 @@ public class VerifactuApiRestController {
     private final RectificativeInvoiceRepository rectificativeRepository;
     private final TicketRepository               ticketRepository;
     private final com.proconsi.electrobazar.service.VerifactuService verifactuService;
+    private final com.proconsi.electrobazar.service.InvoiceService invoiceService;
     private final com.proconsi.electrobazar.config.VerifactuProperties props;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
@@ -488,6 +489,8 @@ public class VerifactuApiRestController {
         row.put("rejectionReason",inv.getAeatRejectionReason() != null ? inv.getAeatRejectionReason().name() : null);
         row.put("waitTime",       inv.getAeatWaitTime());
         row.put("hash",           inv.getHashCurrentInvoice());
+        row.put("qrBase64",       invoiceService.generateQrCodeBase64(inv));
+        row.put("qrUrl",          invoiceService.generateQrUrl(inv));
         return row;
     }
 
@@ -507,6 +510,8 @@ public class VerifactuApiRestController {
         row.put("rejectionReason",t.getAeatRejectionReason() != null ? t.getAeatRejectionReason().name() : null);
         row.put("waitTime",       t.getAeatWaitTime());
         row.put("hash",           t.getHashCurrentInvoice());
+        row.put("qrBase64",       invoiceService.generateQrCodeBase64(t));
+        row.put("qrUrl",          invoiceService.generateQrUrl(t));
         return row;
     }
 
@@ -530,6 +535,8 @@ public class VerifactuApiRestController {
         row.put("waitTime",       r.getAeatWaitTime());
         row.put("returnId",       r.getSaleReturn() != null ? r.getSaleReturn().getId() : null);
         row.put("hash",           r.getHashCurrentInvoice());
+        row.put("qrBase64",       invoiceService.generateQrCodeBase64(r));
+        row.put("qrUrl",          invoiceService.generateQrUrl(r));
         return row;
     }
 

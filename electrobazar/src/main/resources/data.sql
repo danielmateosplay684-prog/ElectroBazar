@@ -1,116 +1,60 @@
-    -- =============================================================================
-    -- ELECTOBAZAR INITIAL SEED DATA
-    -- =============================================================================
+-- =============================================================================
+-- ELECTOBAZAR INITIAL SEED DATA
+-- =============================================================================
 
-    -- 1. SEED TAX RATES (Spanish standard and reduced rates)
-    INSERT IGNORE INTO tax_rates (vat_rate, re_rate, description, active, valid_from) 
-    SELECT 0.2100, 0.0520, 'IVA General', 1, '2024-01-01' 
-    WHERE NOT EXISTS (SELECT 1 FROM tax_rates WHERE description = 'IVA General');
+-- 1. SEED TAX RATES (Spanish standard and reduced rates)
+INSERT IGNORE INTO tax_rates (id, vat_rate, re_rate, description, active, valid_from) 
+VALUES (1, 0.2100, 0.0520, 'IVA General', 1, '2024-01-01');
 
-    INSERT IGNORE INTO tax_rates (vat_rate, re_rate, description, active, valid_from) 
-    SELECT 0.1000, 0.0140, 'IVA Reducido', 1, '2024-01-01' 
-    WHERE NOT EXISTS (SELECT 1 FROM tax_rates WHERE description = 'IVA Reducido');
+INSERT IGNORE INTO tax_rates (id, vat_rate, re_rate, description, active, valid_from) 
+VALUES (2, 0.1000, 0.0140, 'IVA Reducido', 1, '2024-01-01');
 
-    INSERT IGNORE INTO tax_rates (vat_rate, re_rate, description, active, valid_from) 
-    SELECT 0.0500, 0.0062, 'IVA Reducido Especial', 1, '2024-01-01' 
-    WHERE NOT EXISTS (SELECT 1 FROM tax_rates WHERE description = 'IVA Reducido Especial');
+INSERT IGNORE INTO tax_rates (id, vat_rate, re_rate, description, active, valid_from) 
+VALUES (3, 0.0400, 0.0050, 'IVA Superreducido', 1, '2024-01-01');
 
-    INSERT IGNORE INTO tax_rates (vat_rate, re_rate, description, active, valid_from) 
-    SELECT 0.0400, 0.0050, 'IVA Superreducido', 1, '2024-01-01' 
-    WHERE NOT EXISTS (SELECT 1 FROM tax_rates WHERE description = 'IVA Superreducido');
+-- 2. ROLES PROVISIONING
+INSERT IGNORE INTO roles (id, name, description) VALUES (1, 'ADMIN', 'Administrador del sistema');
+INSERT IGNORE INTO roles (id, name, description) VALUES (2, 'ENCARGADO', 'Encargado de tienda');
+INSERT IGNORE INTO roles (id, name, description) VALUES (3, 'VENDEDOR', 'Vendedor de tienda');
 
-    INSERT IGNORE INTO tax_rates (vat_rate, re_rate, description, active, valid_from) 
-    SELECT 0.0200, 0.0026, 'IVA Superreducido Especial', 1, '2024-01-01' 
-    WHERE NOT EXISTS (SELECT 1 FROM tax_rates WHERE description = 'IVA Superreducido Especial');
+-- 3. PERMISSIONS SYNC (Matching SecurityConfig.java)
+DELETE FROM role_permissions;
 
-    -- 2. ROLES PROVISIONING (Non-admin defaults)
-    INSERT IGNORE INTO roles (name, description) VALUES ('ENCARGADO', 'Encargado de tienda');
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'MANAGE_PRODUCTS_TPV' FROM roles WHERE name = 'ENCARGADO';
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'CASH_CLOSE' FROM roles WHERE name = 'ENCARGADO';
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'RETURNS' FROM roles WHERE name = 'ENCARGADO';
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'HOLD_SALES' FROM roles WHERE name = 'ENCARGADO';
+-- ADMIN: ACCESO_TOTAL_ADMIN
+INSERT INTO role_permissions (role_id, permission) VALUES (1, 'ACCESO_TOTAL_ADMIN');
 
-    INSERT IGNORE INTO roles (name, description) VALUES ('VENDEDOR', 'Vendedor de tienda');
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'CASH_CLOSE' FROM roles WHERE name = 'VENDEDOR';
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'RETURNS' FROM roles WHERE name = 'VENDEDOR';
-    INSERT IGNORE INTO role_permissions (role_id, permission)
-    SELECT id, 'HOLD_SALES' FROM roles WHERE name = 'VENDEDOR';
+-- ENCARGADO: TPV access, closing, returns, hold sales, CRM
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'ACCESO_TPV');
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'CIERRE_CAJA');
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'GESTION_DEVOLUCIONES');
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'GESTION_VENTAS_PAUSADAS');
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'GESTION_CLIENTES_CRM');
+INSERT INTO role_permissions (role_id, permission) VALUES (2, 'VER_VENTAS');
 
-    -- 4. ADMIN ROLE PROVISIONING
-    -- The ADMIN role has a single master permission: ACCESO_TOTAL_ADMIN.
-    -- That permission is accepted as a master key in all SecurityConfig rules.
-    -- There is no need for individual per-feature permissions on this role.
-    INSERT IGNORE INTO roles (name, description) VALUES ('ADMIN', 'Administrador del sistema');
-    DELETE FROM role_permissions WHERE role_id = (SELECT id FROM roles WHERE name = 'ADMIN');
-    INSERT IGNORE INTO role_permissions (role_id, permission) SELECT id, 'ACCESO_TOTAL_ADMIN' FROM roles WHERE name = 'ADMIN';
+-- VENDEDOR: TPV access, closing, hold sales
+INSERT INTO role_permissions (role_id, permission) VALUES (3, 'ACCESO_TPV');
+INSERT INTO role_permissions (role_id, permission) VALUES (3, 'CIERRE_CAJA');
+INSERT INTO role_permissions (role_id, permission) VALUES (3, 'GESTION_VENTAS_PAUSADAS');
 
-    -- 5. ENSURE ROOT USER HAS ADMIN ROLE
-    -- Mandatory for existing accounts during refactor
-    UPDATE workers SET role_id = (SELECT id FROM roles WHERE name = 'ADMIN') WHERE username = 'root';
+-- 4. COMPANY SETTINGS (ID 1)
+INSERT IGNORE INTO company_settings (id, app_name, name, cif, address, city, postal_code, phone, email, website, return_deadline_days)
+VALUES (1, 'Electrobazar', 'Electrobazar S.L.', 'B12345678', 'Calle Principal 123', 'León', '24001', '987654321', 'contacto@electrobazar.com', 'www.electrobazar.com', 15);
 
-    -- 6. MIGRATE PRODUCT IMAGE URLs from /uploads/products/ to /img/
-    UPDATE products SET image_url = REPLACE(image_url, '/uploads/products/', '/img/')
-    WHERE image_url LIKE '/uploads/products/%';
+-- 5. DEMO CATEGORIES
+INSERT IGNORE INTO categories (id, name_es, description_es, active) VALUES (1, 'Electrónica', 'Dispositivos y gadgets', 1);
+INSERT IGNORE INTO categories (id, name_es, description_es, active) VALUES (2, 'Electrodomésticos', 'Para el hogar', 1);
 
-    -- 7. CLEAN UP IMAGE URLs: Remove UUID prefixes (e.g., /img/UUID_name.png -> /img/name.png)
-    -- We look for /img/ followed by 36 chars of UUID and an underscore
-    UPDATE products 
-    SET image_url = CONCAT('/img/', SUBSTRING(image_url, 43))
-    WHERE image_url LIKE '/img/%_%' AND LENGTH(SUBSTRING_INDEX(SUBSTRING(image_url, 6), '_', 1)) = 36;
+-- 6. DEMO PRODUCTS
+-- Note: tax_rate_id 1 is 21% General
+INSERT IGNORE INTO products (id, name_es, price, base_price_net, stock, active, category_id, tax_rate_id, sales_rank)
+VALUES (1, 'Smartphone Pro X', 599.00, 495.0413, 10, 1, 1, 1, 5);
 
--- 8. FIX ABONOS TABLE SCHEMA
-ALTER TABLE abonos ADD COLUMN IF NOT EXISTS requires_full_use TINYINT(1) DEFAULT 1;
-ALTER TABLE abonos ADD COLUMN IF NOT EXISTS code VARCHAR(20) UNIQUE;
+INSERT IGNORE INTO products (id, name_es, price, base_price_net, stock, active, category_id, tax_rate_id, sales_rank)
+VALUES (2, 'Auriculares Wireless', 89.90, 74.2975, 25, 1, 1, 1, 10);
 
--- 9. FIX SALES TABLE SCHEMA
-ALTER TABLE sales ADD COLUMN IF NOT EXISTS abono_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00;
+INSERT IGNORE INTO products (id, name_es, price, base_price_net, stock, active, category_id, tax_rate_id, sales_rank)
+VALUES (3, 'Cafetera Express', 129.00, 106.6116, 5, 1, 2, 1, 3);
 
--- 10. FIX INVOICES TABLE SCHEMA (VeriFactu / AEAT)
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS hash_previous_invoice VARCHAR(64);
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS hash_current_invoice VARCHAR(64);
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS aeat_status VARCHAR(30);
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS aeat_submission_date DATETIME;
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS aeat_last_error TEXT;
-ALTER TABLE invoices ADD COLUMN IF NOT EXISTS aeat_retry_count INT DEFAULT 0;
-
--- Initializing values for existing records to avoid NULL constraints issues
-UPDATE invoices SET hash_previous_invoice = '0000000000000000' WHERE hash_previous_invoice IS NULL;
-UPDATE invoices SET hash_current_invoice = '0000000000000000' WHERE hash_current_invoice IS NULL;
-UPDATE invoices SET aeat_retry_count = 0 WHERE aeat_retry_count IS NULL;
-
--- 11. FIX TICKETS TABLE SCHEMA (VeriFactu / AEAT)
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS hash_previous_invoice VARCHAR(64);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS hash_current_invoice VARCHAR(64);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS aeat_status VARCHAR(30);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS aeat_submission_date DATETIME;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS aeat_last_error TEXT;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS aeat_retry_count INT DEFAULT 0;
-
-UPDATE tickets SET hash_previous_invoice = '0000000000000000' WHERE hash_previous_invoice IS NULL;
-UPDATE tickets SET hash_current_invoice = '0000000000000000' WHERE hash_current_invoice IS NULL;
-UPDATE tickets SET aeat_retry_count = 0 WHERE aeat_retry_count IS NULL;
-
--- 12. FIX RECTIFICATIVE_INVOICES TABLE SCHEMA (VeriFactu / AEAT)
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS hash_previous_invoice VARCHAR(64);
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS hash_current_invoice VARCHAR(64);
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS aeat_status VARCHAR(30);
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS aeat_submission_date DATETIME;
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS aeat_last_error TEXT;
-ALTER TABLE rectificative_invoices ADD COLUMN IF NOT EXISTS aeat_retry_count INT DEFAULT 0;
-
-UPDATE rectificative_invoices SET hash_previous_invoice = '0000000000000000' WHERE hash_previous_invoice IS NULL;
-UPDATE rectificative_invoices SET hash_current_invoice = '0000000000000000' WHERE hash_current_invoice IS NULL;
-UPDATE rectificative_invoices SET aeat_retry_count = 0 WHERE aeat_retry_count IS NULL;
-
--- 13. Return deadline columns (snapshotted per-ticket at sale time)
-ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS return_deadline_days INT DEFAULT 15;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS return_deadline_days INT DEFAULT 15;
-
--- 14. FIX RECTIFICATIVE_INVOICES: optional original_ticket_id (for R5 rectificativas)
-ALTER TABLE rectificative_invoices MODIFY COLUMN original_invoice_id BIGINT NULL;
+-- 7. CLEANUP IMAGE URLs (Legacy patches)
+UPDATE products SET image_url = REPLACE(image_url, '/uploads/products/', '/img/')
+WHERE image_url LIKE '/uploads/products/%';
