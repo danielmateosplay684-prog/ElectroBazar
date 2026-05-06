@@ -27,7 +27,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -376,8 +375,10 @@ public class SaleServiceImpl implements SaleService {
         long t0 = System.currentTimeMillis();
         org.springframework.data.jpa.domain.Specification<Sale> spec = com.proconsi.electrobazar.repository.specification.SaleSpecification
                 .filterSales(search, type, method, date);
-        org.springframework.data.domain.Slice<Sale> result = saleRepository.findSliceBy(spec, pageable);
-        log.info("[PERF] saleService.searchSlice took {}ms", System.currentTimeMillis() - t0);
+        // Use findAll(spec, pageable) — the actual JpaSpecificationExecutor contract.
+        // findSliceBy(spec, pageable) is a derived-name method that ignores the Specification argument.
+        org.springframework.data.domain.Page<Sale> result = saleRepository.findAll(spec, pageable);
+        log.info("[PERF] saleService.searchSlice took {}ms, found={}", System.currentTimeMillis() - t0, result.getNumberOfElements());
         return result;
     }
 

@@ -201,7 +201,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
            "s.payment_method as paymentMethod, s.status as status, c.name as customerName, " +
            "c.tax_id as customerTaxId, w.username as workerUsername, " +
            "COALESCE(i.invoice_number, t.ticket_number, CAST(s.id AS CHAR)) as displayId, " +
-           "CASE WHEN i.id IS NOT NULL THEN 'factura' ELSE 'ticket' END as type " +
+           "CASE WHEN i.id IS NOT NULL OR s.tipo_documento = 'FACTURA_COMPLETA' THEN 'factura' ELSE 'ticket' END as type " +
            "FROM sales s " +
            "LEFT JOIN customers c ON s.customer_id = c.id " +
            "LEFT JOIN workers w ON s.worker_id = w.id " +
@@ -210,7 +210,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
            nativeQuery = true)
     org.springframework.data.domain.Slice<com.proconsi.electrobazar.dto.AdminSaleProjection> findAdminListing(org.springframework.data.domain.Pageable pageable);
 
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "customer", "worker", "invoice", "ticket" })
     org.springframework.data.domain.Slice<Sale> findSliceBy(org.springframework.data.jpa.domain.Specification<Sale> spec, org.springframework.data.domain.Pageable pageable);
 
     boolean existsByWorkerId(Long workerId);

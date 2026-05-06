@@ -91,7 +91,7 @@ function deleteWorker(id) {
         });
 }
 
-function filterWorkers(page = 0) {
+const filterWorkers = debounce(function (page = 0) {
     const search = document.getElementById('workerFilterName').value.trim();
     const roleId = document.getElementById('workerFilterRole').value;
     const active = document.getElementById('workerFilterStatus').value;
@@ -127,7 +127,7 @@ function filterWorkers(page = 0) {
             }
         })
         .catch(err => console.error("Error filtering workers:", err));
-}
+}, 250);
 
 function renderWorkersTable(items) {
     const tbody = document.querySelector('#workersView table tbody');

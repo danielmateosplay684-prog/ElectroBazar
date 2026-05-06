@@ -30,7 +30,7 @@ public class ActivityLogService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<ActivityLog> getFilteredLogs(String search, String action, String username, Pageable pageable) {
         Specification<ActivityLog> spec = ActivityLogSpecification.filterLogs(search, action, username);
-        return activityLogRepository.findSliceBy(spec, pageable);
+        return activityLogRepository.findAll(spec, pageable);
     }
 
     /**

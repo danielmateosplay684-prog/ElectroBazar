@@ -65,7 +65,7 @@ public class CashRegisterServiceImpl implements CashRegisterService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<CashRegister> getFilteredRegisters(String worker, String date, Pageable pageable) {
         Specification<CashRegister> spec = CashRegisterSpecification.filterRegisters(worker, date);
-        return cashRegisterRepository.findSliceBy(spec, pageable);
+        return cashRegisterRepository.findAll(spec, pageable);
     }
 
     @Override

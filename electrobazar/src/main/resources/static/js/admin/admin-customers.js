@@ -602,7 +602,7 @@ function renderCustomerSales(sales) {
 
 // ── CRM table filter / render ────────────────────────────────────────────────
 
-function filterCRM(page = 0) {
+const filterCRM = debounce(function (page = 0) {
     const search  = document.getElementById('crmFilterSearch').value.trim();
     const type    = document.getElementById('crmFilterType').value;
     const re      = document.getElementById('crmFilterRE').value;
@@ -637,7 +637,7 @@ function filterCRM(page = 0) {
             }
         })
         .catch(err => console.error('Error filtering CRM:', err));
-}
+}, 250);
 
 function renderCRMTable(items) {
     const tbody = document.getElementById('crmTableBody');

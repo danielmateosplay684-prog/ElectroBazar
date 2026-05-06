@@ -25,11 +25,18 @@
         }
 
         .out-of-stock {
-            filter: grayscale(1) !important;
-            opacity: 0.7 !important;
+            opacity: 0.8 !important;
             pointer-events: none !important;
             cursor: not-allowed !important;
             position: relative;
+        }
+
+        .out-of-stock .product-image,
+        .out-of-stock .product-icon,
+        .out-of-stock .product-info,
+        .out-of-stock .product-favorite-btn {
+            filter: grayscale(1) !important;
+            opacity: 0.6;
         }
 
         .out-of-stock::before {
@@ -295,7 +302,6 @@
                     </a>
                 </div>
             </div>
-        </div>
         </div>
 
         <!-- Centro: Buscador -->

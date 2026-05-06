@@ -151,11 +151,24 @@
     <!-- Body  -->
     <div class="admin-body">
         <!-- Immediate View Injection to prevent flash -->
-        <script th:if="${activeView != null and activeView != ''}" th:inline="javascript">
+        <script th:inline="javascript">
             (function() {
-                const vId = [[${activeView}]];
-                if (vId && vId !== 'dashboardView') {
-                    const css = '#' + vId + ' { display: block !important; }';
+                const serverView = /*[[${activeView}]]*/ null;
+                const lastView = sessionStorage.getItem('adminLastView');
+                const hash = window.location.hash.substring(1);
+                
+                // Map hashes to view IDs (subset for immediate load)
+                const mapping = { 'productos': 'productsView', 'invoices': 'invoicesView', 'clientes': 'crmView' };
+                const hashView = hash ? (mapping[hash] || (hash + 'View')) : null;
+
+                const navType = performance.getEntriesByType('navigation')[0]?.type;
+                const isFromAdmin = document.referrer && document.referrer.includes('/admin');
+                const isEnteringFromOutside = navType === 'navigate' && !isFromAdmin;
+
+                const vId = serverView || hashView || (isEnteringFromOutside ? null : lastView);
+                
+                if (vId && vId !== 'dashboardView' && vId.endsWith('View')) {
+                    const css = '#' + vId + ' { display: block !important; } #dashboardView { display: none !important; }';
                     const head = document.head || document.getElementsByTagName('head')[0];
                     const style = document.createElement('style');
                     style.id = 'antiFlashStyle';
@@ -297,7 +310,7 @@
                     </button>
                     <button class="btn btn-outline-secondary btn-sm px-3 py-2"
                         style="background: var(--surface); color: var(--text-main); border-radius: 8px; border: 1px solid var(--border);"
-                        onclick="switchView('productsView'); setTimeout(() => { const s = document.getElementById('sharedFilterStock'); if(s) { s.value=''; sharedFilterToggleLowStock(); } }, 100)">
+                        onclick="switchView('productsView', document.querySelector('[onclick*=\'productsView\']'))">
                         <i class="bi bi-exclamation-triangle me-1"></i> <span
                             th:text="#{admin.dashboard.action.viewlowstock}">Ver Stock Bajo</span>
                     </button>

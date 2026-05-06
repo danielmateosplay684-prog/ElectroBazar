@@ -16,9 +16,7 @@ import java.util.List;
  * Repository for {@link SaleReturn} entities.
  * Tracks merchandise returns and associated refunds for shift reporting.
  */
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+
 
 @Repository
 public interface SaleReturnRepository extends JpaRepository<SaleReturn, Long>, JpaSpecificationExecutor<SaleReturn> {
@@ -26,7 +24,7 @@ public interface SaleReturnRepository extends JpaRepository<SaleReturn, Long>, J
     /**
      * Slice-based search for returns to avoid COUNT(*).
      */
-    Slice<SaleReturn> findSliceBy(Specification<SaleReturn> spec, Pageable pageable);
+
 
     /**
      * Retrieves all returns processed for a specific original sale.

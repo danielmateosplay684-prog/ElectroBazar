@@ -135,11 +135,12 @@ public class AdminApiRestController {
         } 
         // ── Standard Path: With filters (SPECIFICATION SLICE) ──────────────────
         else {
+            log.info("[FILTER] Filter path: type='{}', method='{}', search='{}', date='{}'", type, method, search, date);
             org.springframework.data.domain.Slice<Sale> slice = saleService.searchSlice(search, type, method, date, pageable);
             list = slice.getContent().stream().map(s -> mapToDTO(s)).toList();
             hasNext = slice.hasNext();
             first = slice.isFirst();
-            log.info("[PERF] getSalesPage (FILTER SLICE) took {}ms", System.currentTimeMillis() - t0);
+            log.info("[PERF] getSalesPage (FILTER SLICE) took {}ms, results={}", System.currentTimeMillis() - t0, list.size());
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -163,7 +164,7 @@ public class AdminApiRestController {
                 .workerUsername(s.getWorker() != null ? s.getWorker().getUsername() : null)
                 .displayId(s.getInvoice() != null ? s.getInvoice().getInvoiceNumber()
                         : (s.getTicket() != null ? s.getTicket().getTicketNumber() : "#" + s.getId()))
-                .type(s.getInvoice() != null ? "factura" : "ticket")
+                .type((s.getInvoice() != null || s.getTipoDocumento() == TipoDocumento.FACTURA_COMPLETA) ? "factura" : "ticket")
                 .build();
     }
 
@@ -473,9 +474,9 @@ public class AdminApiRestController {
             }
         }
         Boolean hasRecargo = null;
-        if ("yes".equalsIgnoreCase(re))
+        if ("yes".equalsIgnoreCase(re) || "true".equalsIgnoreCase(re))
             hasRecargo = true;
-        else if ("no".equalsIgnoreCase(re))
+        else if ("no".equalsIgnoreCase(re) || "false".equalsIgnoreCase(re))
             hasRecargo = false;
 
         // Whitelist allowed sort fields

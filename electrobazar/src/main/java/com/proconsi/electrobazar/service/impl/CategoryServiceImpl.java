@@ -53,7 +53,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<Category> getFilteredCategories(String search, org.springframework.data.domain.Pageable pageable) {
         Specification<Category> spec = CategorySpecification.filterCategories(search);
-        return categoryRepository.findSliceBy(spec, pageable);
+        return categoryRepository.findAll(spec, pageable);
     }
 
     @Override

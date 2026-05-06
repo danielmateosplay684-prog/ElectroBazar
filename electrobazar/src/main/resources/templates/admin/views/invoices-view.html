@@ -40,8 +40,9 @@
                             th:text="#{admin.invoices.payment}">Pago</span></label>
                     <select id="invoiceFilterMethod" class="form-select form-select-sm" onchange="filterInvoices()">
                         <option value="" th:text="#{admin.invoices.payment.any}">Cualquier método</option>
-                        <option value="Efectivo" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
-                        <option value="Tarjeta" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
+                        <option value="CASH" th:text="#{admin.invoices.payment.cash}">Efectivo</option>
+                        <option value="CARD" th:text="#{admin.invoices.payment.card}">Tarjeta</option>
+                        <option value="MIXED" th:text="#{admin.invoices.payment.mixed}">Mixto</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -96,7 +97,7 @@
                         th:data-number="${sale.invoice != null ? sale.invoice.invoiceNumber : (sale.ticket != null ? sale.ticket.ticketNumber : '#' + sale.id)}"
                         th:data-customer="${sale.customer != null ? sale.customer.name : ''}"
                         th:data-taxid="${sale.customer != null ? sale.customer.taxId : ''}"
-                        th:data-type="${sale.invoice != null ? 'factura' : 'ticket'}"
+                        th:data-type="${sale.invoice != null || (sale.tipoDocumento != null && sale.tipoDocumento.name() == 'FACTURA_COMPLETA') ? 'factura' : 'ticket'}"
                         th:data-method="${sale.paymentMethod != null && sale.paymentMethod.name() == 'CASH' ? 'Efectivo' : 'Tarjeta'}"
                         th:data-date="${#temporals.format(sale.createdAt, 'yyyy-MM-dd')}" style="cursor:pointer"
                         th:onclick="'window.location.href = \'/admin/sale/' + ${sale.id} + '\''">
@@ -111,8 +112,8 @@
                                 <i class="bi bi-x-circle me-1"></i><span
                                     th:text="#{admin.invoices.status.cancelled}">anulada</span>
                             </span>
-                            <span class="badge-active" th:classappend="${sale.invoice != null} ? 'yes' : 'no'"
-                                th:text="${sale.invoice != null} ? #{admin.invoices.type.invoice} : #{admin.invoices.type.ticket}"></span>
+                            <span class="badge-document-type"
+                                th:text="${(sale.invoice != null || (sale.tipoDocumento != null && sale.tipoDocumento.name() == 'FACTURA_COMPLETA'))} ? #{admin.invoices.type.invoice} : #{admin.invoices.type.ticket}"></span>
                         </td>
                         <td>
                             <div th:if="${sale.customer != null}">

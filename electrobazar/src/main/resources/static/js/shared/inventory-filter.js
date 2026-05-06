@@ -9,12 +9,20 @@ function debounceSharedFilter() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         const activeTab = document.querySelector('#mgmtTabs .nav-link.active');
-        if (!activeTab) return;
+        // Allow filtering even if activeTab is not found, as long as a relevant container exists
+        if (!activeTab && !document.getElementById('products-pane') && !document.getElementById('categories-pane')) return;
         
-        if (activeTab.id === 'categories-tab') {
+        if (activeTab && activeTab.id === 'categories-tab') {
             runSharedBackendCategoryFilter();
-        } else if (activeTab.id === 'products-tab') {
+        } else if (activeTab && activeTab.id === 'products-tab') {
             runSharedBackendFilter();
+        } else {
+            // Fallback: check which pane is visible if tabs are not detected
+            if (document.getElementById('categories-pane')?.classList.contains('active')) {
+                runSharedBackendCategoryFilter();
+            } else {
+                runSharedBackendFilter();
+            }
         }
     }, 350);
 }

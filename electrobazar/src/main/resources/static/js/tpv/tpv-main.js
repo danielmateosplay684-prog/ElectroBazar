@@ -601,14 +601,18 @@ function updateStockBubbles() {
                 maximumFractionDigits: dispDecimals
             });
 
-            // Update color states
+            // Update color states and card opacity
             badge.classList.remove('stock-danger', 'stock-warning', 'stock-neutral');
             if (available <= 0) {
                 badge.classList.add('stock-danger');
-            } else if (available < 5) {
-                badge.classList.add('stock-warning');
+                card.classList.add('out-of-stock');
             } else {
-                badge.classList.add('stock-neutral');
+                card.classList.remove('out-of-stock');
+                if (available < 5) {
+                    badge.classList.add('stock-warning');
+                } else {
+                    badge.classList.add('stock-neutral');
+                }
             }
 
             // Only animate if the numeric value actually changed

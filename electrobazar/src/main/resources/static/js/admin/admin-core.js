@@ -76,18 +76,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!hash || hash === 'dashboard') {
             const lastView = sessionStorage.getItem('adminLastView');
+            const isFromAdmin = document.referrer && document.referrer.includes('/admin');
+            const isEnteringFromOutside = navType === 'navigate' && !isFromAdmin;
             
-            // If it's a fresh entry (not a reload or back/forward), force dashboard
-            if (isFreshEntry) {
-                switchView('dashboardView', null, true);
-                return;
+            // Prioritize restoring the last view if available (useful for redirects after saving)
+            if (lastView && lastView !== 'dashboardView' && document.getElementById(lastView)) {
+                if (isEnteringFromOutside) {
+                    sessionStorage.removeItem('adminLastView');
+                } else {
+                    switchView(lastView, null, true);
+                    return;
+                }
             }
 
-            // For reloads or back/forward, try to restore the last view
-            if (lastView && lastView !== 'dashboardView' && document.getElementById(lastView)) {
-                switchView(lastView, null, true);
-                return;
-            }
             switchView('dashboardView', null, true);
             return;
         }
@@ -120,7 +121,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.addEventListener('hashchange', handleHashNavigation);
-    handleHashNavigation(); // Initial check
+    if (window.location.pathname.includes('/admin')) {
+        handleHashNavigation(); // Initial check
+    }
 
     // ── Skeleton Screen Implementation ──
     const dashboardCards = document.querySelectorAll('.dashboard-card');
@@ -224,8 +227,11 @@ function switchView(viewId, btn, isBack = false) {
         }
     } else {
         // If we are in a detail page (sale/return/etc), we must redirect to index
-        window.location.href = `/admin?view=${viewId}`;
-        return;
+        // BUT only if we are NOT already on a standalone management page like /productos-categorias
+        if (!window.location.pathname.includes('/productos-categorias')) {
+            window.location.href = `/admin?view=${viewId}`;
+            return;
+        }
     }
 
     // 3. Update Sidebar active state

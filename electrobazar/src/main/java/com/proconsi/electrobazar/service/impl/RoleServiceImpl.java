@@ -30,7 +30,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<Role> getFilteredRoles(String search, List<String> permissions, Pageable pageable) {
         Specification<Role> spec = RoleSpecification.filterRoles(search, permissions);
-        return roleRepository.findSliceBy(spec, pageable);
+        return roleRepository.findAll(spec, pageable);
     }
 
     @Override

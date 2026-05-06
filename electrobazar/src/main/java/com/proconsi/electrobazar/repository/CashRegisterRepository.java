@@ -17,7 +17,7 @@ import java.util.Optional;
  */
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+
 
 @Repository
 public interface CashRegisterRepository extends JpaRepository<CashRegister, Long>, JpaSpecificationExecutor<CashRegister> {
@@ -25,7 +25,7 @@ public interface CashRegisterRepository extends JpaRepository<CashRegister, Long
     /**
      * Slice-based search to avoid COUNT(*) on shift history.
      */
-    Slice<CashRegister> findSliceBy(Specification<CashRegister> spec, Pageable pageable);
+
 
     @EntityGraph(attributePaths = { "worker" })
     Slice<CashRegister> findByClosedTrue(Pageable pageable);

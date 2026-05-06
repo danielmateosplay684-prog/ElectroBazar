@@ -13,9 +13,7 @@ import java.util.Optional;
  * Repository for {@link Role} entities.
  * Manages authorization roles and system permission metadata.
  */
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificationExecutor<Role> {
@@ -23,7 +21,7 @@ public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificat
     /**
      * Slice-based search for roles to avoid COUNT(*).
      */
-    Slice<Role> findSliceBy(Specification<Role> spec, Pageable pageable);
+
 
     /**
      * Finds a role by its unique name (e.g., "ROLE_ADMIN").

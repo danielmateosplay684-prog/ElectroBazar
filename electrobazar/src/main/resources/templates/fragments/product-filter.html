@@ -63,8 +63,8 @@
         <div class="col-md-1">
             <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
             <select id="sharedFilterSortDir" class="form-select form-select-sm" onchange="runSharedBackendFilter()">
-                <option value="asc">↑ Asc</option>
-                <option value="desc">↓ Desc</option>
+                <option value="asc" th:text="#{admin.inventory.filter.sort.asc}">↑ Asc</option>
+                <option value="desc" th:text="#{admin.inventory.filter.sort.desc}">↓ Desc</option>
             </select>
         </div>
         <!-- Acciones -->

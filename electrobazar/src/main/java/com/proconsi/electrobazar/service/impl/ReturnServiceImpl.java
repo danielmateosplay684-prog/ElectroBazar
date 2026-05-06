@@ -71,7 +71,7 @@ public class ReturnServiceImpl implements ReturnService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<SaleReturn> getFilteredReturns(String search, String method, String date, Pageable pageable) {
         Specification<SaleReturn> spec = ReturnSpecification.filterReturns(search, method, date);
-        return saleReturnRepository.findSliceBy(spec, pageable);
+        return saleReturnRepository.findAll(spec, pageable);
     }
 
     @Override

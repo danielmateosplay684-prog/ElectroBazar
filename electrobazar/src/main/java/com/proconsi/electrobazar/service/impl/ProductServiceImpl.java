@@ -129,7 +129,7 @@ public class ProductServiceImpl implements ProductService {
             Long measurementUnitId, Pageable pageable) {
         Specification<Product> spec = ProductSpecification.filterProducts(search, category, stock, active,
                 measurementUnitId);
-        return productRepository.findSliceBy(spec, pageable);
+        return productRepository.findAll(spec, pageable);
     }
 
     @Override

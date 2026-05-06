@@ -92,8 +92,11 @@ public class AdminController {
             return "redirect:/login";
         }
 
-        Boolean isAdmin = (Boolean) session.getAttribute("admin");
-        if (isAdmin == null || !isAdmin) {
+        boolean hasPermission = worker.getEffectivePermissions().contains("MANAGE_PRODUCTS_TPV") ||
+                worker.getEffectivePermissions().contains("ADMIN_ACCESS") ||
+                worker.getEffectivePermissions().contains("ACCESO_TOTAL_ADMIN");
+
+        if (!hasPermission) {
             return "redirect:/tpv";
         }
 

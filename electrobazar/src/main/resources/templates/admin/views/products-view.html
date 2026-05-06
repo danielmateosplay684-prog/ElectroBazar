@@ -180,8 +180,8 @@
                         <label class="form-label small mb-1" style="color: var(--text-main);">&nbsp;</label>
                         <select id="categoryFilterSortDir" class="form-select form-select-sm"
                             onchange="debounceSharedFilter()">
-                            <option value="asc">â†‘ Asc</option>
-                            <option value="desc">â†“ Desc</option>
+                            <option value="asc" th:text="#{admin.inventory.filter.sort.asc}">↑ Asc</option>
+                            <option value="desc" th:text="#{admin.inventory.filter.sort.desc}">↓ Desc</option>
                         </select>
                     </div>
                     <div class="col-md-3 d-flex align-items-end">

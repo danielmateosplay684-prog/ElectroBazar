@@ -19,8 +19,7 @@ import java.util.List;
  * Utilizes FETCH joins to optimize performance for listing and search
  * operations.
  */
-import org.springframework.data.domain.Slice;
-import org.springframework.data.jpa.domain.Specification;
+
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
@@ -28,7 +27,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     /**
      * Slice-based search for products to avoid COUNT(*).
      */
-    Slice<Product> findSliceBy(Specification<Product> spec, Pageable pageable);
+
 
     /**
      * Finds active products for the TPV interface, ordered alphabetically

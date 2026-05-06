@@ -36,7 +36,7 @@ public class WorkerService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Slice<Worker> getFilteredWorkers(String search, Long roleId, Boolean active, Pageable pageable) {
         Specification<Worker> spec = WorkerSpecification.filterWorkers(search, roleId, active);
-        return workerRepository.findSliceBy(spec, pageable);
+        return workerRepository.findAll(spec, pageable);
     }
 
     /**

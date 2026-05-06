@@ -107,9 +107,15 @@ function renderSalesTable(sales, hasMore) {
                 </div>`;
         }
 
-        const isCash = sale.paymentMethod === 'CASH';
-        const methodIcon = isCash ? 'bi-cash' : 'bi-credit-card';
-        const methodLabel = isCash ? 'Efectivo' : 'Tarjeta';
+        let methodIcon = 'bi-credit-card';
+        let methodLabel = 'Tarjeta';
+        if (sale.paymentMethod === 'CASH') {
+            methodIcon = 'bi-cash';
+            methodLabel = 'Efectivo';
+        } else if (sale.paymentMethod === 'MIXED') {
+            methodIcon = 'bi-wallet2';
+            methodLabel = 'Mixto';
+        }
 
         tr.innerHTML = `
             <td style="color:var(--text-muted);font-weight:600">${escHtml(sale.displayId || '-')}</td>
@@ -195,7 +201,7 @@ function jumpToSalesPage(val) {
 
 const filterInvoices = debounce(function () {
     fetchSalesPage(0);
-}, 200);
+}, 250);
 
 function resetInvoiceFilters() {
     document.getElementById('invoiceFilterSearch').value = '';
