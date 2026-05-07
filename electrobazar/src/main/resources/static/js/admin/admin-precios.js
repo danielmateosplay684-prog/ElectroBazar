@@ -3,23 +3,186 @@
  * Price and bulk update management functions.
  */
 
+/**
+ * Opens the schedule price modal.
+ * @param {number} [id] - Product ID (optional)
+ * @param {string} [name] - Product Name (optional, for display)
+ * @param {number} [currentPrice] - Current Price (optional, for display)
+ */
 function openSchedulePriceModal(id, name, currentPrice) {
-    document.getElementById('scheduleProductId').value = id;
-    document.getElementById('scheduleProductName').textContent = name;
-    document.getElementById('scheduleCurrentPrice').textContent = formatDecimal(currentPrice) + ' €';
-    document.getElementById('scheduleNewPrice').value = '';
-    document.getElementById('scheduleDate').value = '';
-    
-    schedulePriceModal.show();
+    const productIdEl = document.getElementById('spProductSelect');
+    const searchInput = document.getElementById('spProductSearch');
+    const priceInput = document.getElementById('spPrice');
+    const dateInput = document.getElementById('spStartdate');
+    const labelInput = document.getElementById('spLabel');
+
+    if (!productIdEl) {
+        console.error("Required modal elements (spProductSelect) not found.");
+        return;
+    }
+
+    // Reset selection state
+    if (id && name) {
+        selectSpProduct({ id, name, price: currentPrice });
+    } else {
+        clearSpSelection();
+    }
+
+    if (priceInput) priceInput.value = '';
+    if (dateInput) dateInput.value = '';
+    const endDateInput = document.getElementById('spEnddate');
+    if (endDateInput) endDateInput.value = '';
+    if (labelInput) labelInput.value = '';
+
+    // Initialize/Show modal
+    if (window.schedulePriceModal) {
+        window.schedulePriceModal.show();
+    } else {
+        const el = document.getElementById('schedulePriceModal');
+        if (el) {
+            window.schedulePriceModal = new bootstrap.Modal(el);
+            window.schedulePriceModal.show();
+        }
+    }
 }
 
-function saveScheduledPrice() {
-    const id = document.getElementById('scheduleProductId').value;
-    const price = document.getElementById('scheduleNewPrice').value;
-    const date = document.getElementById('scheduleDate').value;
+// Searchable Product Logic
+function initSpAutocomplete() {
+    const input = document.getElementById('spProductSearch');
+    const dropdown = document.getElementById('spProductDropdown');
+    const list = document.getElementById('spProductList');
+    let timeout = null;
 
-    if (!price || !date) {
-        showToast('Precio y fecha son obligatorios', 'error');
+    if (!input || !dropdown) return;
+
+    input.addEventListener('focus', () => {
+        if (input.value.trim().length === 0) {
+            fetchTopSpProducts();
+        } else if (list.children.length > 0) {
+            dropdown.style.display = 'block';
+        }
+    });
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim();
+        if (query.length === 0) {
+            fetchTopSpProducts();
+            return;
+        }
+
+        if (query.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            fetch(`/api/products/search?q=${encodeURIComponent(query)}&size=50`)
+                .then(r => r.json())
+                .then(data => {
+                    renderSpDropdown(data.content || data);
+                });
+        }, 300);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+function fetchTopSpProducts() {
+    const list = document.getElementById('spProductList');
+    if (list) list.innerHTML = '<div class="p-3 text-center"><span class="spinner-border spinner-border-sm text-warning"></span></div>';
+    document.getElementById('spProductDropdown').style.display = 'block';
+
+    fetch('/api/products/bulk-list') // This returns top 100 by rank/sales
+        .then(r => r.json())
+        .then(data => {
+            renderSpDropdown(data);
+        }).catch(err => {
+            console.error("Error fetching top products", err);
+            if (list) list.innerHTML = '<div class="p-3 text-center text-muted">Error al cargar productos sugeridos</div>';
+        });
+}
+
+function renderSpDropdown(products) {
+    const list = document.getElementById('spProductList');
+    const dropdown = document.getElementById('spProductDropdown');
+    if (!list) return;
+
+    list.innerHTML = '';
+    if (!products || products.length === 0) {
+        list.innerHTML = '<div class="p-3 text-center text-muted">No se encontraron productos</div>';
+    } else {
+        products.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item p-2 border-bottom d-flex align-items-center gap-2';
+            item.style.cursor = 'pointer';
+            
+            const price = typeof p.price === 'number' ? formatDecimal(p.price) : '0,00';
+            
+            item.innerHTML = `
+                <div class="flex-grow-1">
+                    <div class="fw-bold small">${p.name}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">${p.categoryName || ''}</div>
+                </div>
+                <div class="text-end fw-bold text-accent">${price}€</div>
+            `;
+            
+            item.onclick = () => {
+                selectSpProduct(p);
+                dropdown.style.display = 'none';
+            };
+            list.appendChild(item);
+        });
+    }
+    dropdown.style.display = 'block';
+}
+
+function selectSpProduct(p) {
+    document.getElementById('spProductSelect').value = p.id;
+    document.getElementById('spProductSearch').value = '';
+    document.getElementById('spSelectedProductName').textContent = p.name + (p.price ? ` (${formatDecimal(p.price)}€)` : '');
+    document.getElementById('spSelectedProductInfo').style.display = 'block';
+    document.getElementById('spProductSearch').style.display = 'none';
+}
+
+function clearSpSelection() {
+    const select = document.getElementById('spProductSelect');
+    if (select) select.value = '';
+    const name = document.getElementById('spSelectedProductName');
+    if (name) name.textContent = '';
+    const info = document.getElementById('spSelectedProductInfo');
+    if (info) info.style.display = 'none';
+    const search = document.getElementById('spProductSearch');
+    if (search) {
+        search.style.display = 'block';
+        search.value = '';
+    }
+}
+
+// Initializer
+document.addEventListener('DOMContentLoaded', () => {
+    initSpAutocomplete();
+});
+
+/**
+ * Saves the scheduled price via API.
+ */
+function saveScheduledPrice() {
+    const btn = document.querySelector('#schedulePriceModal .btn-save');
+    const id = document.getElementById('spProductSelect')?.value;
+    const price = document.getElementById('spPrice')?.value;
+    const vatRate = document.getElementById('spVatRate')?.value;
+    const date = document.getElementById('spStartdate')?.value;
+    const endDate = document.getElementById('spEnddate')?.value;
+    const label = document.getElementById('spLabel')?.value;
+
+    if (!id || !price || !date) {
+        showToast('Producto, precio y fecha son obligatorios', 'error');
         return;
     }
 
@@ -28,45 +191,90 @@ function saveScheduledPrice() {
         return;
     }
 
-    fetch('/api/products/schedule-price', {
+    // Disable button to prevent double submission
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+    }
+
+    // Format date for LocalDateTime (ensure seconds are present)
+    let formattedDate = date;
+    if (date && date.length === 16) formattedDate += ':00';
+    
+    let formattedEndDate = endDate || null;
+    if (endDate && endDate.length === 16) formattedEndDate += ':00';
+
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+
+    fetch(`/api/product-prices/${id}/schedule`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(csrfHeader ? { [csrfHeader]: csrfToken } : {})
+        },
         body: JSON.stringify({
-            productId: parseInt(id),
-            newPrice: parseFloat(price),
-            scheduledDate: date
+            price: parseFloat(price),
+            vatRate: parseFloat(vatRate),
+            startDate: formattedDate,
+            endDate: formattedEndDate,
+            label: label
         })
     }).then(res => {
         if (res.ok) {
-            schedulePriceModal.hide();
+            // Close modal robustly
+            const modalEl = document.getElementById('schedulePriceModal');
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+            
             showToast('Precio programado con éxito');
-            loadFuturePrices();
+            
+            // Clear form
+            clearSpSelection();
+            
+            // Refresh views if they are visible
+            setTimeout(() => {
+                if (typeof loadFuturePrices === 'function') loadFuturePrices();
+                if (typeof loadPriceHistory === 'function') loadPriceHistory();
+            }, 300);
         } else {
-            showToast('Error al programar precio', 'error');
+            res.json().then(data => {
+                showToast('Error: ' + (data.message || 'Error al programar precio'), 'error');
+            }).catch(() => showToast('Error al programar precio', 'error'));
+        }
+    }).catch(err => {
+        console.error('Error scheduling price:', err);
+        showToast('Error de conexión', 'error');
+    }).finally(() => {
+        // Re-enable button
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-calendar-check me-1"></i> Programar Precio';
         }
     });
 }
 
 function loadFuturePrices() {
-    fetch('/api/products/future-prices')
+    fetch('/api/product-prices/future')
         .then(res => res.json())
         .then(data => {
-            renderFuturePricesTable(data);
+            const items = Array.isArray(data) ? data : (data.content || []);
+            renderFuturePricesTable(items);
             
             const labelEl = document.getElementById('futurePriceCountLabel');
             if (labelEl) {
                 const search = document.getElementById('futurePriceFilterSearch')?.value || '';
                 if (search) {
-                    labelEl.textContent = `Mostrando ${data.length} precios programados coincidentes.`;
+                    labelEl.textContent = `Mostrando ${items.length} precios programados coincidentes.`;
                 } else {
                     labelEl.textContent = 'Mostrando todos los precios programados.';
                 }
             }
-        });
+        }).catch(err => console.error("Error loading future prices:", err));
 }
 
 function filterFuturePrices() {
-    // Basic client-side filtering or re-fetch with params
+    // For now simple refresh. Backend search could be added if needed.
     loadFuturePrices();
 }
 
@@ -75,7 +283,7 @@ function renderFuturePricesTable(items) {
     if (!tbody) return;
     tbody.innerHTML = '';
     
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         const noScheduledText = document.getElementById('admin-js-translations')?.getAttribute('data-no-scheduled-prices') || 'No hay cambios de precio programados.';
         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${noScheduledText}</td></tr>`;
         return;
@@ -86,8 +294,8 @@ function renderFuturePricesTable(items) {
         tr.innerHTML = `
             <td><strong>${item.productName}</strong></td>
             <td>${formatDecimal(item.price)} €</td>
-            <td>${item.vatRate * 100}%</td>
-            <td><span class="badge bg-info text-dark">${formatDateTime(item.startDate || item.scheduledDate)}</span></td>
+            <td>${(item.vatRate * 100).toFixed(0)}%</td>
+            <td><span class="badge bg-info text-dark">${formatDateTime(item.startDate)}</span></td>
             <td>${formatDateTime(item.endDate) || '—'}</td>
             <td>${item.label || ''}</td>
             <td class="text-end">
@@ -99,11 +307,63 @@ function renderFuturePricesTable(items) {
 }
 
 function resetFuturePriceFilters() {
+    const input = document.getElementById('futurePriceFilterSearch');
+    if (input) input.value = '';
     loadFuturePrices();
 }
 
-function loadPriceHistory(productId) {
-    // Implementation for price history
+/**
+ * Loads price history for the selected product in the history tab.
+ */
+function loadPriceHistory() {
+    const productId = document.getElementById('historialProductSelect')?.value;
+    const tbody = document.getElementById('priceHistoryBody');
+    if (!tbody) return;
+
+    if (!productId) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Selecciona un producto para ver su historial.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></td></tr>';
+
+    fetch(`/api/product-prices/${productId}/history`)
+        .then(res => res.json())
+        .then(data => {
+            tbody.innerHTML = '';
+            const items = Array.isArray(data) ? data : (data.content || []);
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Sin historial de precios.</td></tr>';
+                return;
+            }
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                if (item.currentlyActive) tr.classList.add('table-success');
+
+                const variation = item.priceChange !== null 
+                    ? `<span class="${item.priceChange >= 0 ? 'text-success' : 'text-danger'}">${item.priceChange >= 0 ? '+' : ''}${formatDecimal(item.priceChange)} € (${item.priceChangePct}%)</span>`
+                    : '—';
+
+                tr.innerHTML = `
+                    <td>${formatDecimal(item.price)} €</td>
+                    <td>${(item.vatRate * 100).toFixed(0)}%</td>
+                    <td>${formatDateTime(item.startDate)}</td>
+                    <td>${formatDateTime(item.endDate) || '—'}</td>
+                    <td>${item.label || ''}</td>
+                    <td>${variation}</td>
+                    <td>
+                        <span class="badge ${item.currentlyActive ? 'bg-success' : (new Date(item.startDate) > new Date() ? 'bg-info' : 'bg-secondary')}">
+                            ${item.currentlyActive ? 'Activo' : (new Date(item.startDate) > new Date() ? 'Pendiente' : 'Pasado')}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }).catch(err => {
+            console.error("Error loading price history:", err);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
+        });
 }
 
 function showPreciosTab(tabId) {
@@ -117,13 +377,13 @@ function showPreciosTab(tabId) {
 
     if (tabId === 'bulk') loadBulkProducts();
     if (tabId === 'futuros') loadFuturePrices();
+    if (tabId === 'historial') loadPriceHistory();
 }
 
-// Bulk Updates Logic
+// Bulk Updates Logic (re-using existing structure but fixing endpoints)
 let bulkSelectedProducts = new Set();
 let bulkProductsData = [];
-
-let bulkDefaultData = []; // Store the initial top 100
+let bulkDefaultData = [];
 let bulkSearchTimeout = null;
 let bulkSelectAllAbsolute = false;
 
@@ -136,14 +396,6 @@ function loadBulkProducts() {
             bulkProductsData = data;
             renderBulkProductList(data);
         });
-}
-
-function selectAllAbsoluteBulk() {
-    bulkSelectAllAbsolute = true;
-    bulkSelectedProducts.clear(); 
-    renderBulkProductList(bulkProductsData);
-    updateBulkSelectedCount();
-    showToast("Has seleccionado TODOS los productos que coinciden con el filtro actual.");
 }
 
 function renderBulkProductList(products) {
@@ -160,7 +412,6 @@ function renderBulkProductList(products) {
         div.className = 'bulk-item d-flex align-items-center p-2 mb-1 rounded hover-surface' + (isSelected ? ' selected' : '');
         div.style.cursor = 'pointer';
         div.style.border = '1px solid var(--border)';
-        // Forzar fondo oscuro si está seleccionado o hover para que resalte
         div.onclick = () => handleBulkProductToggle(p.id);
         div.innerHTML = `
             <div class="form-check me-3 mb-0">
@@ -178,19 +429,6 @@ function renderBulkProductList(products) {
         `;
         container.appendChild(div);
     });
-
-    if (products && products.length > limit) {
-        const info = document.createElement('div');
-        info.className = 'text-center p-2 small text-muted';
-        info.innerHTML = `<i class="bi bi-info-circle me-1"></i> Mostrando solo los primeros ${limit} productos. Usa el buscador para filtrar.`;
-        container.appendChild(info);
-    }
-
-    const labelEl = document.getElementById('bulkProductCountLabel');
-    if (labelEl) {
-        const totalCount = products ? products.length : 0;
-        labelEl.textContent = `Mostrando ${Math.min(totalCount, limit)} de ${totalCount} productos en esta vista.`;
-    }
 
     updateBulkSelectedCount();
 }
@@ -225,8 +463,6 @@ function filterBulkProductList() {
         fetch(url)
             .then(res => res.json())
             .then(data => {
-                // Map from the paginated API response to our simpler DTO
-                // data is Page object, so we use data.content
                 bulkProductsData = (data.content || []).map(p => ({
                     id: p.id,
                     name: p.nameEs || p.name,
@@ -241,11 +477,7 @@ function filterBulkProductList() {
 function updateBulkSelectedCount() {
     const el = document.getElementById('bulkSelectedCount');
     if (el) {
-        if (bulkSelectAllAbsolute) {
-            el.textContent = "TODOS (según filtros)";
-        } else {
-            el.textContent = bulkSelectedProducts.size;
-        }
+        el.textContent = bulkSelectAllAbsolute ? "TODOS" : bulkSelectedProducts.size;
     }
 }
 
@@ -275,113 +507,48 @@ function applyBulkPriceUpdate() {
     const value = parseFloat(document.getElementById('bulkPriceValue').value);
     const date = document.getElementById('bulkEffectivedate').value;
     const label = document.getElementById('bulkLabel').value;
-    const search = document.getElementById('bulkProductSearch').value;
-    const categoryName = document.getElementById('bulkCategoryFilter').value;
 
     if (isNaN(value)) {
         showToast('Debes indicar un valor válido', 'error');
         return;
     }
 
-    if (type !== 'percentage' && value < 0) {
-        showToast('El precio no puede ser negativo', 'error');
-        return;
-    }
-
-    // Get selected tariffs
-    const tariffIds = Array.from(document.querySelectorAll('.tariff-bulk-checkbox:checked')).map(cb => parseInt(cb.value));
-
-    // Generate a unique task ID for progress tracking
     const taskId = 'bulk_' + Date.now();
-    
     const payload = {
-        productIds: bulkSelectAllAbsolute ? [] : Array.from(bulkSelectedProducts),
+        productIds: Array.from(bulkSelectedProducts),
         applyToAll: bulkSelectAllAbsolute,
-        search: bulkSelectAllAbsolute ? search : null,
-        categoryName: bulkSelectAllAbsolute ? categoryName : null,
         taskId: taskId,
-        effectiveDate: date || new Date(Date.now() + 60000).toISOString(),
+        effectiveDate: date || new Date().toISOString(),
         label: label || 'Actualización masiva',
-        tariffIds: tariffIds
+        tariffIds: Array.from(document.querySelectorAll('.tariff-bulk-checkbox:checked')).map(cb => parseInt(cb.value))
     };
 
-    if (type === 'percentage') {
-        payload.percentage = value;
-    } else {
-        payload.fixedAmount = value;
-    }
+    if (type === 'percentage') payload.percentage = value;
+    else payload.fixedAmount = value;
 
-    // UI Updates: show progress, disable button
-    const btn = document.getElementById('btnApplyBulkUpdate');
-    const progressContainer = document.getElementById('bulkUpdateProgressContainer');
-    if (btn) btn.disabled = true;
-    if (progressContainer) progressContainer.style.display = 'block';
-    
-    const pollInterval = setInterval(() => {
-        fetch(`/api/products/bulk-progress/${taskId}`)
-            .then(res => res.json())
-            .then(progress => {
-                const bar = document.getElementById('bulkUpdateProgressBar');
-                const percentText = document.getElementById('bulkUpdatePercent');
-                const statusText = document.getElementById('bulkUpdateStatusText');
-                
-                if (bar) bar.style.width = progress.percentage + '%';
-                if (percentText) percentText.textContent = progress.percentage + '%';
-                if (statusText) statusText.textContent = progress.message;
-            }).catch(e => console.error("Error polling progress", e));
-    }, 2000);
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
 
     fetch('/api/products/bulk-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(csrfHeader ? { [csrfHeader]: csrfToken } : {})
+        },
         body: JSON.stringify(payload)
     }).then(res => {
-        clearInterval(pollInterval);
-        if (btn) btn.disabled = false;
-        
         if (res.ok) {
-            showToast('Actualización masiva programada con éxito');
-            if (progressContainer) progressContainer.style.display = 'none';
-            // Clear selection
+            showToast('Actualización masiva programada');
             bulkSelectedProducts.clear();
-            bulkSelectAllAbsolute = false;
             renderBulkProductList(bulkProductsData);
-            document.getElementById('bulkResults').style.display = 'block';
-            document.getElementById('bulkResultsText').textContent = 'Se han programado cambios.';
         } else {
-            showToast('Error al aplicar la actualización', 'error');
-            if (progressContainer) progressContainer.style.display = 'none';
-        }
-    }).catch(err => {
-        clearInterval(pollInterval);
-        if (btn) btn.disabled = false;
-        if (progressContainer) progressContainer.style.display = 'none';
-        showToast('Error de red al aplicar actualización', 'error');
-    });
-}
-
-
-function selectBulkByCategory() {
-    const categoryName = document.getElementById('bulkCategoryFilter').value;
-    if (!categoryName) {
-        showToast('Selecciona una categoría primero', 'info');
-        return;
-    }
-    
-    let count = 0;
-    bulkProductsData.forEach(p => {
-        if (p.categoryName === categoryName) {
-            bulkSelectedProducts.add(p.id);
-            count++;
+            showToast('Error al aplicar actualización', 'error');
         }
     });
-    
-    showToast(`${count} productos seleccionados de la categoría ${categoryName}`);
-    filterBulkProductList(); // Re-render with filter
 }
 
 function openIpcUpdateModal() {
-    ipcUpdateModal.show();
+    if (window.ipcUpdateModal) window.ipcUpdateModal.show();
 }
 
 function updateIpcPreview() {
@@ -394,14 +561,20 @@ function applyIpcConfirm() {
     const val = document.getElementById('ipcPercentage').value;
     if (!confirm(`¿Seguro que quieres aumentar TODAS las tarifas un ${val}%?`)) return;
     
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+
     fetch('/api/admin/prices/apply-ipc', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(csrfHeader ? { [csrfHeader]: csrfToken } : {})
+        },
         body: JSON.stringify({ percentage: parseFloat(val) })
     }).then(res => {
         if (res.ok) {
             showToast('IPC aplicado con éxito');
-            ipcUpdateModal.hide();
+            if (window.ipcUpdateModal) window.ipcUpdateModal.hide();
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast('Error al aplicar IPC', 'error');
@@ -409,88 +582,25 @@ function applyIpcConfirm() {
     });
 }
 
-function toggleTariffEditMode(enabled) {
-    // Logic for tariff edit mode
-}
-
-function openApplyPricesModal() {
-    if (window.applyPricesModal) {
-        loadPendingChangesList();
-        window.applyPricesModal.show();
-    }
-}
-
-function loadPendingChangesList() {
-    // This would ideally collect changes from the "Editable" matrix (cell status)
-    // For now, let's mock it or clear it if no logic is provided for the matrix yet
-    const tbody = document.getElementById('pendingChangesList');
-    const countEl = document.getElementById('pendingChangesCount');
-    if (!tbody || !countEl) return;
-    
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No se han detectado cambios manuales en la matriz.</td></tr>';
-    countEl.textContent = '0';
-}
-
-function openPriceChangesHistoryModal() {
-    if (window.priceChangesHistoryModal) {
-        loadPendingPriceChanges();
-        loadPastPriceChanges();
-        window.priceChangesHistoryModal.show();
-    }
-}
-
-function loadPendingPriceChanges() {
-    fetch('/api/products/future-prices')
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('tablePendingPrices')?.querySelector('tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            if (data.length === 0) {
-                const noPendingText = document.getElementById('admin-js-translations')?.getAttribute('data-no-pending-changes') || 'No hay cambios pendientes';
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${noPendingText}</td></tr>`;
-                return;
-            }
-            data.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${new Date(item.scheduledDate).toLocaleString()}</td>
-                    <td>${item.productName}</td>
-                    <td>${item.tariffName || 'BASE'}</td>
-                    <td class="text-end fw-bold">${parseFloat(item.price).toFixed(2)} €</td>
-                    <td class="text-center">
-                        <button class="btn-icon btn-delete" onclick="deletePendingPrice(${item.id})"><i class="bi bi-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        });
-}
-
-function loadPastPriceChanges() {
-    // Past changes logic if backend supports it
-}
-
-function submitBulkPriceUpdate() {
-    // Implementation for submitting bulk updates from the matrix
-    showToast('Función de actualización masiva en desarrollo', 'info');
-}
-
 function deletePendingPrice(id) {
     if (!confirm('¿Eliminar este cambio programado?')) return;
-    fetch('/api/products/future-prices/' + id, { method: 'DELETE' })
-        .then(res => {
-            if (res.ok) {
-                showToast('Cambio eliminado');
-                loadFuturePrices();
-            } else {
-                showToast('Error al eliminar', 'error');
-            }
-        });
-}
+    
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
 
-function renderBulkPagination() {
-    // Implementation if needed
+    fetch('/api/product-prices/pending/' + id, { 
+        method: 'DELETE',
+        headers: { 
+            ...(csrfHeader ? { [csrfHeader]: csrfToken } : {})
+        }
+    }).then(res => {
+        if (res.ok) {
+            showToast('Cambio eliminado');
+            loadFuturePrices();
+        } else {
+            showToast('Error al eliminar', 'error');
+        }
+    });
 }
 
 // Global Exports
@@ -504,21 +614,14 @@ window.loadPriceHistory = loadPriceHistory;
 window.showPreciosTab = showPreciosTab;
 window.loadBulkProducts = loadBulkProducts;
 window.renderBulkProductList = renderBulkProductList;
-window.renderBulkPagination = renderBulkPagination;
 window.handleBulkProductToggle = handleBulkProductToggle;
 window.updateBulkSelectedCount = updateBulkSelectedCount;
 window.selectAllBulkProducts = selectAllBulkProducts;
 window.toggleBulkPriceFields = toggleBulkPriceFields;
 window.applyBulkPriceUpdate = applyBulkPriceUpdate;
 window.filterBulkProductList = filterBulkProductList;
-window.selectBulkByCategory = selectBulkByCategory;
 window.openIpcUpdateModal = openIpcUpdateModal;
 window.updateIpcPreview = updateIpcPreview;
 window.applyIpcConfirm = applyIpcConfirm;
-window.toggleTariffEditMode = toggleTariffEditMode;
-window.openApplyPricesModal = openApplyPricesModal;
-window.submitBulkPriceUpdate = submitBulkPriceUpdate;
-window.openPriceChangesHistoryModal = openPriceChangesHistoryModal;
-window.loadPendingPriceChanges = loadPendingPriceChanges;
-window.loadPastPriceChanges = loadPastPriceChanges;
 window.deletePendingPrice = deletePendingPrice;
+window.clearSpSelection = clearSpSelection;

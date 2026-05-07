@@ -86,13 +86,19 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
         LocalDateTime newStartDate = request.getStartDate();
 
-        // 1. Close current open price ( endDate is NULL )
-        productPriceRepository.findCurrentOpenPrice(productId).ifPresent(current -> {
+        // 1. Capture current price for potential reversion
+        Optional<ProductPrice> currentOpt = productPriceRepository.findCurrentOpenPrice(productId);
+        BigDecimal previousGrossPrice = currentOpt.map(ProductPrice::getPrice).orElse(product.getPrice());
+        BigDecimal previousVatRate = currentOpt.map(ProductPrice::getVatRate)
+                .orElse(product.getTaxRate() != null ? product.getTaxRate().getVatRate() : new BigDecimal("0.21"));
+
+        // 2. Close current open price
+        currentOpt.ifPresent(current -> {
             current.setEndDate(newStartDate.minusSeconds(1));
             productPriceRepository.save(current);
         });
 
-        // 2. Schedule new price
+        // 3. Schedule new price
         BigDecimal vatRate = request.getVatRate() != null ? request.getVatRate()
                 : (product.getTaxRate() != null ? product.getTaxRate().getVatRate() : new BigDecimal("0.21"));
 
@@ -100,15 +106,30 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                 .product(product)
                 .vatRate(vatRate)
                 .startDate(newStartDate)
+                .endDate(request.getEndDate())
                 .label(request.getLabel())
                 .build();
-        newPrice.setPrice(request.getPrice()); // Gross to net conversion happens in setter
+        newPrice.setPrice(request.getPrice());
 
         ProductPrice saved = productPriceRepository.save(newPrice);
 
-        // Immediate sync with product table for TPV display
-        product.setPrice(request.getPrice());
-        productRepository.save(product);
+        // 4. Automatic Reversion Logic: If endDate is provided, schedule the restoration of the previous price
+        if (request.getEndDate() != null) {
+            ProductPrice revertPrice = ProductPrice.builder()
+                    .product(product)
+                    .vatRate(previousVatRate)
+                    .startDate(request.getEndDate().plusSeconds(1))
+                    .label("Auto-restauración (" + (request.getLabel() != null ? request.getLabel() : "temporal") + ")")
+                    .build();
+            revertPrice.setPrice(previousGrossPrice);
+            productPriceRepository.save(revertPrice);
+        }
+
+        // Immediate sync with product table for TPV display if it starts now
+        if (!newStartDate.isAfter(LocalDateTime.now())) {
+            product.setPrice(request.getPrice());
+            productRepository.save(product);
+        }
 
         activityLogService.logActivity("PROGRAMAR_PRECIO",
                 String.format("Nuevo precio programado para '%s': %.2f € a partir de %s",

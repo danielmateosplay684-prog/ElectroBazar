@@ -104,4 +104,16 @@ public class ProductPriceApiRestController {
         List<ProductPriceResponse> responses = productPriceService.bulkSchedulePrice(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
+    /**
+     * Deletes a pending (future) price schedule.
+     * Only prices with a start date in the future can be deleted.
+     *
+     * @param id The ID of the price record.
+     * @return 204 No Content on success, or 400 if the price is already active.
+     */
+    @DeleteMapping("/pending/{id}")
+    public ResponseEntity<Void> deletePendingPrice(@PathVariable Long id) {
+        productPriceService.deletePendingPrice(id);
+        return ResponseEntity.noContent().build();
+    }
 }

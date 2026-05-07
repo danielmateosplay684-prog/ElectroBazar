@@ -35,6 +35,14 @@ public class ProductPriceRequest {
     private LocalDateTime startDate;
 
     /**
+     * Optional date and time when this price stops being effective.
+     * If not provided, the price remains active until a new schedule starts.
+     * Format: "yyyy-MM-dd'T'HH:mm:ss"
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime endDate;
+
+    /**
      * Optional label for this price entry.
      * Example: "Tarifa 2026", "Oferta Verano"
      */

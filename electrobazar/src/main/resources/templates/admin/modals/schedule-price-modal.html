@@ -18,13 +18,22 @@
                     <form id="schedulePriceForm" novalidate>
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label" for="spProductSelect"><span
-                                        th:text="#{admin.common.product}">Producto</span> *</label>
-                                <select class="form-select" id="spProductSelect" required>
-                                    <option value="" th:text="#{admin.tempprices.select_product}">— Selecciona un
-                                        producto —</option>
-                                    <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name}"></option>
-                                </select>
+                                <label class="form-label" for="spProductSearch"><span
+                                         th:text="#{admin.common.product}">Producto</span> *</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="spProductSearch" th:placeholder="#{admin.tempprices.select_product}" autocomplete="off">
+                                    <input type="hidden" id="spProductSelect" required>
+                                    <div id="spProductDropdown" class="autocomplete-dropdown shadow-lg rounded-3" style="display: none; position: absolute; z-index: 1050; width: 100%; background: var(--primary); border: 1px solid var(--border); max-height: 300px; overflow-y: auto; margin-top: 5px;">
+                                        <div id="spProductList" class="p-2"></div>
+                                    </div>
+                                </div>
+                                <div id="spSelectedProductInfo" class="mt-2 p-2 rounded border" style="display: none; background: rgba(245, 166, 35, 0.05); border-color: var(--accent) !important;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span id="spSelectedProductName" class="fw-bold small"></span>
+                                        <button type="button" class="btn-icon ms-auto" onclick="clearSpSelection()" style="color: var(--text-muted)"><i class="bi bi-x-circle"></i></button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="spPrice"
@@ -39,10 +48,17 @@
                                     <option th:each="tr : ${taxRates}" th:value="${tr.vatRate}" th:text="${tr.description + ' ' + #numbers.formatDecimal(tr.vatRate * 100, 0, 0) + '%'}"></option>
                                 </select>
                             </div>
-                            <div class="col-12">
+                            <div class="col-md-6">
                                 <label class="form-label" for="spStartdate"
                                     th:text="#{admin.common.start_date_required}">Fecha de Inicio *</label>
                                 <input type="datetime-local" class="form-control" id="spStartdate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="spEnddate"
+                                    th:text="#{admin.common.end_date}">Fecha de Fin (opcional)</label>
+                                <input type="datetime-local" class="form-control" id="spEnddate">
+                            </div>
+                            <div class="col-12 mt-0">
                                 <small class="text-muted" th:text="#{admin.tempprices.start_date_info}">El precio actual
                                     se cerrará automáticamente un segundo antes
                                     de esta fecha.</small>
