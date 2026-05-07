@@ -145,12 +145,18 @@ public class SuspendedSaleApiRestController {
     private SuspendedSaleResponse toResponse(SuspendedSale sale) {
         List<SuspendedSaleResponse.SuspendedSaleLineResponse> lineResponses = sale.getLines() == null ? List.of()
                 : sale.getLines().stream()
-                        .map(line -> SuspendedSaleResponse.SuspendedSaleLineResponse.builder()
-                                .productId(line.getProduct().getId())
-                                .productName(line.getProduct().getName())
-                                .quantity(line.getQuantity())
-                                .unitPrice(line.getUnitPrice())
-                                .build())
+                        .map(line -> {
+                            Long productId = (line.getProduct() != null) ? line.getProduct().getId() : null;
+                            String productName = (line.getProduct() != null) ? line.getProduct().getName() : line.getProductName();
+                            
+                            return SuspendedSaleResponse.SuspendedSaleLineResponse.builder()
+                                    .productId(productId)
+                                    .productName(productName)
+                                    .quantity(line.getQuantity())
+                                    .unitPrice(line.getUnitPrice())
+                                    .vatRate(line.getVatRate())
+                                    .build();
+                        })
                         .collect(Collectors.toList());
 
         return SuspendedSaleResponse.builder()

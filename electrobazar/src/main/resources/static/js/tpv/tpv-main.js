@@ -1462,10 +1462,17 @@ function loadProducts(endpoint) {
         if (grid && initialProductsGridHtml) {
             grid.innerHTML = initialProductsGridHtml;
             recordOriginalOrder();
-            // Refetch or reset stars based on current session favorites
+            // Synchronize stars based on current session favorites
             if (window.tpv_user_favorites) {
-                window.tpv_user_favorites.forEach(id => {
-                    grid.querySelector(`.product-favorite-btn[data-product-id="${id}"]`)?.classList.replace('bi-star', 'bi-star-fill');
+                grid.querySelectorAll('.product-favorite-btn').forEach(btn => {
+                    const id = String(btn.dataset.productId);
+                    if (window.tpv_user_favorites.includes(id)) {
+                        btn.classList.remove('bi-star');
+                        btn.classList.add('bi-star-fill');
+                    } else {
+                        btn.classList.remove('bi-star-fill');
+                        btn.classList.add('bi-star');
+                    }
                 });
                 reorderGridWithFavorites();
                 loadFavoriteExtras();
@@ -1492,6 +1499,11 @@ function renderProducts(data, append = false) {
     if (!productGrid) return;
 
     var products = Array.isArray(data) ? data : (data.content || []);
+
+    if (append) {
+        products = products.filter(p => !productGrid.querySelector('[data-id="' + p.id + '"]'));
+        if (products.length === 0) return;
+    }
 
     var wildcardHtml = `
                 <!-- Wildcard Product (Always first) -->
@@ -2539,11 +2551,14 @@ function resumeSale(id) {
         if (label === null) return; // El usuario canceló el prompt
 
         // Suspender la venta actual primero, y al terminar reanudar la seleccionada
-        var lines = Object.keys(ticket).map(function (productId) {
+        var lines = Object.keys(ticket).map(function (id) {
+            var item = ticket[id];
             return {
-                productId: parseInt(productId),
-                quantity: ticket[productId].quantity,
-                unitPrice: ticket[productId].price
+                productId: (typeof id === 'string' && id.indexOf('manual-') === 0) ? 0 : parseInt(id),
+                productName: item.name,
+                quantity: item.quantity,
+                unitPrice: item.price,
+                vatRate: item.vatRate
             };
         });
 
@@ -2615,13 +2630,15 @@ function resumeSale(id) {
         })
         .then(function (sale) {
             clearTicket();
-            (sale.lines || []).forEach(function (line) {
-                var productId = String(line.productId);
-                ticket[productId] = {
+            (sale.lines || []).forEach(function (line, index) {
+                var isManual = (!line.productId || line.productId === 0);
+                var key = isManual ? ('manual-resumed-' + index + '-' + Date.now()) : String(line.productId);
+                ticket[key] = {
                     name: line.productName,
                     price: parseFloat(line.unitPrice),
                     quantity: line.quantity,
-                    stock: 999
+                    vatRate: line.vatRate,
+                    stock: isManual ? '∞' : 999
                 };
             });
             renderTicket();

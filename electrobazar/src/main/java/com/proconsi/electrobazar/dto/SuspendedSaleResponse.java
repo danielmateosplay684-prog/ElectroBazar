@@ -43,5 +43,6 @@ public class SuspendedSaleResponse {
         private String productName;
         private BigDecimal quantity;
         private BigDecimal unitPrice;
+        private BigDecimal vatRate;
     }
 }
