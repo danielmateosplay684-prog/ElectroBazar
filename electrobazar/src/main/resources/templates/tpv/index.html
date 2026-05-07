@@ -961,53 +961,70 @@
     <div th:replace="~{admin/modals/customer-modal :: modal}"></div>
 
     <!-- ── MODAL: Factura Puntual ── -->
-    <div class="modal fade" id="facturaPuntualModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade modal-customer-standard" id="facturaPuntualModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="background: var(--secondary); color: var(--text-main); border-color: var(--border);">
-                <div class="modal-header" style="border-color: var(--border);">
-                    <h5 class="modal-title"><i class="bi bi-file-earmark-plus me-2"></i>Datos para Factura</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: var(--close-filter, invert(1));"></button>
+                <div class="modal-header border-0 pb-0" style="border-color: var(--border);">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-plus me-2 text-accent"></i>Datos para Factura Puntual</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-muted mb-3">Introduce los datos del cliente para emitir una factura completa. No se guardará en la base de datos.</p>
+                    <p class="small text-muted mb-4">Introduce los datos del cliente para emitir una factura completa. Estos datos no se guardarán permanentemente.</p>
                     <div id="facturaPuntualAlert" class="alert alert-danger" style="display:none;"></div>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold small">Nombre / Razón Social *</label>
-                        <input type="text" id="fp_nombre" class="form-control" placeholder="Empresa S.L. o Nombre Apellidos"
-                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold small">NIF / CIF *</label>
-                        <input type="text" id="fp_nif" class="form-control" placeholder="B12345678 o 12345678A" maxlength="20"
-                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);" oninput="this.value=this.value.toUpperCase()">
-                        <div id="fp_nif_feedback" class="invalid-feedback">Formato de NIF/CIF no válido.</div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold small">Dirección *</label>
-                        <input type="text" id="fp_direccion" class="form-control" placeholder="Calle Ejemplo, 12"
-                               style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <label class="form-label fw-bold small">C.P. *</label>
-                            <input type="text" id="fp_cp" class="form-control" placeholder="28001" maxlength="10"
-                                   style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
+                    
+                    <form id="facturaPuntualForm" novalidate>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Nombre / Razón Social <span class="text-danger">*</span></label>
+                                <input type="text" id="fp_nombre" class="form-control" placeholder="Empresa S.L. o Nombre Apellidos"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" required oninput="validateField(this)">
+                                <div class="invalid-feedback">El nombre es obligatorio.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">NIF / CIF <span class="text-danger">*</span></label>
+                                <input type="text" id="fp_nif" class="form-control" placeholder="B12345678 o 12345678A" maxlength="20"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" 
+                                       oninput="validateFpNif(this)">
+                                <div id="fp_nif_feedback" class="invalid-feedback">Formato de NIF/CIF no válido.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Dirección <span class="text-danger">*</span></label>
+                                <input type="text" id="fp_direccion" class="form-control" placeholder="Calle Ejemplo, 12"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" required oninput="validateField(this)">
+                                <div class="invalid-feedback">La dirección es obligatoria.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted">C.P. <span class="text-danger">*</span></label>
+                                <input type="text" id="fp_cp" class="form-control" placeholder="28001" maxlength="10"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" required oninput="onPostalCodeInput(this, 'fp_ciudad')">
+                                <div class="invalid-feedback">C.P. obligatorio.</div>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold small text-muted">Ciudad <span class="text-danger">*</span></label>
+                                <input type="text" id="fp_ciudad" class="form-control" placeholder="Madrid"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" required oninput="validateField(this)">
+                                <div class="invalid-feedback">La ciudad es obligatoria.</div>
+                            </div>
+                             <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Email</label>
+                                <input type="email" id="fp_email" class="form-control" placeholder="ejemplo@correo.com"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" oninput="validateEmailField(this)">
+                                <div class="invalid-feedback">Email no válido.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Teléfono</label>
+                                <input type="text" id="fp_phone" class="form-control" placeholder="+34 600 000 000"
+                                       style="background: var(--primary); color: var(--text-main); border-color: var(--border);" oninput="validatePhoneField(this)">
+                                <div class="invalid-feedback">Teléfono no válido.</div>
+                            </div>
                         </div>
-                        <div class="col-8">
-                            <label class="form-label fw-bold small">Ciudad *</label>
-                            <input type="text" id="fp_ciudad" class="form-control" placeholder="Madrid"
-                                   style="background: var(--primary); color: var(--text-main); border-color: var(--border);">
-                        </div>
-                    </div>
+                    </form>
                 </div>
-                <div class="modal-footer" style="border-color: var(--border);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" onclick="cancelarFacturaPuntual()"
-                            style="background: var(--primary); border-color: var(--border); color: var(--text-main);">
-                        Cancelar (ticket normal)
-                    </button>
-                    <button type="button" class="btn" onclick="aplicarFacturaPuntual()"
-                            style="background: var(--accent); color: var(--primary);">
-                        <i class="bi bi-check-circle me-1"></i>Usar estos datos
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" onclick="cancelarFacturaPuntual()"
+                        style="background: var(--primary); border-color: var(--border); color: var(--text-main);">Cancelar</button>
+                    <button type="button" class="btn btn-accent fw-bold" onclick="aplicarFacturaPuntual()">
+                        <i class="bi bi-check-lg me-1"></i>Aplicar Datos
                     </button>
                 </div>
             </div>

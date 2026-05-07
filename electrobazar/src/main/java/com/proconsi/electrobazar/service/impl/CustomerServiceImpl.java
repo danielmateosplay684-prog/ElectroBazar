@@ -75,6 +75,14 @@ public class CustomerServiceImpl implements CustomerService {
             if (!nifCifValidator.isValid(customer.getTaxId())) {
                 throw new IllegalArgumentException("The provided NIF/CIF or NIE is invalid.");
             }
+            // Check for duplicates
+            customerRepository.findByTaxId(customer.getTaxId().trim().toUpperCase())
+                .ifPresent(c -> { throw new IllegalArgumentException("Ya existe un cliente con ese número de documento (NIF/CIF)"); });
+        }
+        
+        if (customer.getIdDocumentNumber() != null && !customer.getIdDocumentNumber().trim().isEmpty()) {
+            customerRepository.findByIdDocumentNumber(customer.getIdDocumentNumber().trim().toUpperCase())
+                .ifPresent(c -> { throw new IllegalArgumentException("Ya existe un cliente con ese número de documento"); });
         }
         
         // Ensure required defaults as JPA columns may be non-nullable
@@ -107,6 +115,16 @@ public class CustomerServiceImpl implements CustomerService {
                 log.warn("Update rejected for customer ID {}: invalid taxId='{}'", id, updated.getTaxId());
                 throw new IllegalArgumentException("The provided NIF/CIF or NIE is invalid.");
             }
+            // Check for duplicates (excluding current customer)
+            customerRepository.findByTaxId(updated.getTaxId().trim().toUpperCase())
+                .filter(c -> !c.getId().equals(id))
+                .ifPresent(c -> { throw new IllegalArgumentException("Ya existe un cliente con ese número de documento (NIF/CIF)"); });
+        }
+
+        if (updated.getIdDocumentNumber() != null && !updated.getIdDocumentNumber().trim().isEmpty()) {
+            customerRepository.findByIdDocumentNumber(updated.getIdDocumentNumber().trim().toUpperCase())
+                .filter(c -> !c.getId().equals(id))
+                .ifPresent(c -> { throw new IllegalArgumentException("Ya existe un cliente con ese número de documento"); });
         }
         Customer existing = findById(id);
 

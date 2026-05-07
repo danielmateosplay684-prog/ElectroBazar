@@ -98,7 +98,83 @@ function validateIntracom(val) {
         : '2 letras de país ISO + sufijo alfanumérico (ej: DE123456789)';
 }
 
-// ── Modal initialization ─────────────────────────────────────────────────────
+const POSTAL_CODE_MAP = {
+    '01': 'Álava', '02': 'Albacete', '03': 'Alicante', '04': 'Almería', '05': 'Ávila',
+    '06': 'Badajoz', '07': 'Baleares', '08': 'Barcelona', '09': 'Burgos', '10': 'Cáceres',
+    '11': 'Cádiz', '12': 'Castellón', '13': 'Ciudad Real', '14': 'Córdoba', '15': 'A Coruña',
+    '16': 'Cuenca', '17': 'Girona', '18': 'Granada', '19': 'Guadalajara', '20': 'Gipuzkoa',
+    '21': 'Huelva', '22': 'Huesca', '23': 'Jaén', '24': 'León', '25': 'Lleida',
+    '26': 'La Rioja', '27': 'Lugo', '28': 'Madrid', '29': 'Málaga', '30': 'Murcia',
+    '31': 'Navarra', '32': 'Ourense', '33': 'Asturias', '34': 'Palencia', '35': 'Las Palmas',
+    '36': 'Pontevedra', '37': 'Salamanca', '38': 'S.C. Tenerife', '39': 'Cantabria', '40': 'Segovia',
+    '41': 'Sevilla', '42': 'Soria', '43': 'Tarragona', '44': 'Teruel', '45': 'Toledo',
+    '46': 'Valencia', '47': 'Valladolid', '48': 'Bizkaia', '49': 'Zamora', '50': 'Zaragoza',
+    '51': 'Ceuta', '52': 'Melilla'
+};
+
+function validateField(input) {
+    if (input.required && !input.value.trim()) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function validateEmailField(input) {
+    const val = input.value.trim();
+    if (!val && input.required) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (val && !re.test(val)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function validatePhoneField(input) {
+    let val = input.value.trim();
+    if (!val && input.required) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    
+    // Auto-prefix Spanish numbers if they start with 6, 7 or 9 and have 9 digits
+    if (/^[679]\d{8}$/.test(val)) {
+        val = '+34 ' + val;
+        input.value = val;
+    }
+
+    const re = /^\+?[\d\s\-]{7,20}$/;
+    if (val && !re.test(val)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function onPostalCodeInput(input, cityId = 'customerCity') {
+    const val = input.value.trim();
+    validateField(input);
+    
+    if (val.length >= 2) {
+        const provinceCode = val.substring(0, 2);
+        const province = POSTAL_CODE_MAP[provinceCode];
+        if (province) {
+            const cityInput = document.getElementById(cityId);
+            if (cityInput && (!cityInput.value || cityInput.dataset.autoFilled === 'true')) {
+                cityInput.value = province;
+                cityInput.dataset.autoFilled = 'true';
+                cityInput.classList.remove('is-invalid');
+            }
+        }
+    }
+}
 
 function openCustomerModal(id) {
     document.getElementById('customerForm').reset();
@@ -260,36 +336,44 @@ function validateDocNumberInline() {
     const sel = document.getElementById('customerIdDocumentType');
     const inp = document.getElementById('customerIdDocumentNumber');
     const msg = document.getElementById('docNumberValidationMsg');
-    if (!sel || !inp || !msg) return;
+    if (!sel || !inp || !msg) return false;
 
     const raw  = inp.value.trim().toUpperCase();
     const type = sel.value;
     inp.value = raw; // auto-uppercase
 
-    if (!raw || !type) { clearDocValidation(); return; }
+    if (!raw || !type) { 
+        clearDocValidation(); 
+        return false; 
+    }
 
     const config = DOC_TYPE_CONFIG[type];
-    if (!config) return;
+    if (!config) return true;
 
     const error = config.validate(raw);
     showFieldFeedback(inp, msg, error);
+    return !error;
 }
 
 function validateTaxIdInline() {
     const inp     = document.getElementById('customerTaxId');
     const msg     = document.getElementById('taxIdValidationMsg');
     const nifSel  = document.getElementById('customerNifDocType');
-    if (!inp || !msg) return;
+    if (!inp || !msg) return false;
 
     const raw  = inp.value.trim().toUpperCase();
     inp.value = raw;
 
-    if (!raw) { clearTaxIdValidation(); return; }
+    if (!raw) { 
+        clearTaxIdValidation(); 
+        return false; 
+    }
 
     const docType = nifSel ? nifSel.value : 'NIF';
     const config  = DOC_TYPE_CONFIG[docType] || DOC_TYPE_CONFIG['NIF'];
     const error   = config.validate(raw);
     showFieldFeedback(inp, msg, error);
+    return !error;
 }
 
 function showFieldFeedback(input, msgEl, error) {
@@ -356,12 +440,53 @@ function checkCustomerReCompatibility() {
 // ── Save customer ─────────────────────────────────────────────────────────────
 
 function saveCustomer() {
-    const nameInput = document.getElementById('customerName');
-    const name = nameInput ? nameInput.value.trim() : '';
-    if (!name) { showToast('El nombre es obligatorio', 'error'); return; }
+    const isComp = document.getElementById('adminTypeCompany').checked;
 
-    const id      = document.getElementById('customerId').value;
-    const isComp  = document.getElementById('adminTypeCompany').checked;
+    // 1. Validate mandatory and formatted fields
+    if (!validateField(document.getElementById('customerName'))) {
+        showToast('El nombre del cliente es obligatorio', 'error');
+        return;
+    }
+
+    if (isComp) {
+        if (!validateTaxIdInline()) {
+            showToast('NIF/CIF obligatorio o con formato incorrecto', 'error');
+            return;
+        }
+    } else {
+        if (!validateDocNumberInline()) {
+            showToast('Documento obligatorio o con formato incorrecto', 'error');
+            return;
+        }
+    }
+
+    if (!validateField(document.getElementById('customerAddress'))) {
+        showToast('La dirección es obligatoria', 'error');
+        return;
+    }
+
+    if (!validateField(document.getElementById('customerPostalCode'))) {
+        showToast('El código postal es obligatorio', 'error');
+        return;
+    }
+
+    if (!validateField(document.getElementById('customerCity'))) {
+        showToast('La población/ciudad es obligatoria', 'error');
+        return;
+    }
+
+    if (!validateEmailField(document.getElementById('customerEmail'))) {
+        showToast('El formato del email no es válido', 'error');
+        return;
+    }
+
+    if (!validatePhoneField(document.getElementById('customerPhone'))) {
+        showToast('El formato del teléfono no es válido', 'error');
+        return;
+    }
+
+    const id = document.getElementById('customerId').value;
+    const name = document.getElementById('customerName').value.trim();
 
     // Resolve document type + number depending on customer type
     let idDocumentType   = null;
@@ -371,7 +496,6 @@ function saveCustomer() {
     if (isComp) {
         // Company: taxId is the fiscal identifier (CIF/NIF)
         taxId = document.getElementById('customerTaxId').value.trim().toUpperCase() || null;
-        if (!taxId) { showToast('El CIF/NIF es obligatorio para empresas', 'error'); return; }
 
         const nifSel = document.getElementById('customerNifDocType');
         idDocumentType   = nifSel ? nifSel.value : 'NIF';
@@ -443,11 +567,10 @@ function saveCustomer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     })
-        .then(r => {
+        .then(async r => {
             if (!r.ok) {
-                return r.json().then(data => {
-                    throw new Error(data?.error || data?.message || 'Respuesta inesperada');
-                }).catch(() => { throw new Error('Estado HTTP ' + r.status); });
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || data.message || ('Estado HTTP ' + r.status));
             }
             return r.json();
         })
@@ -750,3 +873,7 @@ window.filterCRM                  = filterCRM;
 window.renderCRMTable             = renderCRMTable;
 window.resetCRMFilters            = resetCRMFilters;
 window.uploadCustomersCsvFile     = uploadCustomersCsvFile;
+window.validateField              = validateField;
+window.validateEmailField         = validateEmailField;
+window.validatePhoneField         = validatePhoneField;
+window.onPostalCodeInput          = onPostalCodeInput;

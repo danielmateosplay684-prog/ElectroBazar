@@ -3,7 +3,7 @@
 <body>
 <th:block th:fragment="modal">
 
-    <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customermodalLabel" aria-hidden="true">
+    <div class="modal fade modal-customer-standard" id="customerModal" tabindex="-1" aria-labelledby="customermodalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border);">
                 <div class="modal-header border-0 pb-0">
@@ -43,7 +43,8 @@
                                     <span th:text="#{admin.crm.name_and_surname}">Nombre y Apellidos</span>
                                     <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerName" required>
+                                <input type="text" class="form-control" id="customerName" required oninput="validateField(this)">
+                                <div class="invalid-feedback">El nombre es obligatorio.</div>
                             </div>
 
                             <!-- ── Identificación fiscal (empresa) ─────────── -->
@@ -56,7 +57,7 @@
                                 <input type="text" class="form-control" id="customerTaxId"
                                        placeholder="Ej: B12345678"
                                        oninput="validateTaxIdInline()">
-                                <div id="taxIdValidationMsg" class="form-text" style="font-size:0.78rem;"></div>
+                                <div id="taxIdValidationMsg" class="invalid-feedback" style="display:block; min-height: 1.1rem;"></div>
                             </div>
 
                             <!-- ── Tipo de documento (particulares) ───────── -->
@@ -64,6 +65,7 @@
                                 <label class="form-label small fw-bold text-muted" for="customerIdDocumentType">
                                     <i class="bi bi-card-heading me-1 text-accent"></i>
                                     <span th:text="#{admin.crm.doc.type}">Tipo de documento</span>
+                                    <span class="text-danger">*</span>
                                 </label>
                                 <select class="form-select" id="customerIdDocumentType"
                                         onchange="onDocTypeChange()">
@@ -80,11 +82,12 @@
                             <div class="col-md-3" id="customerDocNumberSection" style="display:none;">
                                 <label class="form-label small fw-bold text-muted" for="customerIdDocumentNumber">
                                     <span id="lblDocNumber" th:text="#{admin.crm.doc.number}">N.º documento</span>
+                                    <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" id="customerIdDocumentNumber"
                                        placeholder="Ej: 12345678Z"
                                        oninput="validateDocNumberInline()">
-                                <div id="docNumberValidationMsg" class="form-text" style="font-size:0.78rem;"></div>
+                                <div id="docNumberValidationMsg" class="invalid-feedback" style="display:block; min-height: 1.1rem;"></div>
                             </div>
 
                             <!-- Hint / ayuda de formato (particulares) -->
@@ -107,35 +110,45 @@
                             </div>
 
                             <!-- ── Dirección ───────────────────────────────── -->
-                            <div class="col-12">
+                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted" for="customerAddress">
                                     <span th:text="#{admin.crm.address}">Dirección completa</span>
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerAddress">
+                                <input type="text" class="form-control" id="customerAddress" required oninput="validateField(this)">
+                                <div class="invalid-feedback">La dirección es obligatoria.</div>
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label small fw-bold text-muted" for="customerCity">
                                     <span th:text="#{admin.crm.city}">Población / Ciudad</span>
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerCity">
+                                <input type="text" class="form-control" id="customerCity" required oninput="validateField(this)">
+                                <div class="invalid-feedback">La ciudad es obligatoria.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-muted" for="customerPostalCode">
                                     <span th:text="#{common.postalcode}">Código Postal</span>
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="customerPostalCode">
+                                <input type="text" class="form-control" id="customerPostalCode" required oninput="onPostalCodeInput(this)">
+                                <div class="invalid-feedback">Código postal obligatorio.</div>
                             </div>
 
                             <!-- ── Contacto ─────────────────────────────────── -->
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted" for="customerEmail"
-                                    th:text="#{common.email_optional}">Email (Opcional)</label>
-                                <input type="email" class="form-control" id="customerEmail" placeholder="ejemplo@correo.com">
+                             <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted" for="customerEmail">
+                                    <span th:text="#{common.email}">Email</span>
+                                </label>
+                                <input type="email" class="form-control" id="customerEmail" placeholder="ejemplo@correo.com" oninput="validateEmailField(this)">
+                                <div class="invalid-feedback">Formato de email no válido.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted" for="customerPhone"
-                                    th:text="#{common.phone_optional}">Teléfono (Opcional)</label>
-                                <input type="text" class="form-control" id="customerPhone" placeholder="+34 600 000 000">
+                                <label class="form-label small fw-bold text-muted" for="customerPhone">
+                                    <span th:text="#{common.phone}">Teléfono</span>
+                                </label>
+                                <input type="text" class="form-control" id="customerPhone" placeholder="+34 600 000 000" oninput="validatePhoneField(this)">
+                                <div class="invalid-feedback">Formato de teléfono no válido.</div>
                             </div>
 
                             <!-- ── Tarifa ────────────────────────────────────── -->

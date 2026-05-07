@@ -88,6 +88,84 @@ var ticket = {}; // { productId: { name, price, quantity, stock } }
 var currentDocType = 'FACTURA_SIMPLIFICADA'; // FACTURA_COMPLETA | FACTURA_SIMPLIFICADA
 var currentFacturaPuntual = null; // { nombre, nif, direccion, codigoPostal, ciudad } | null
 
+const POSTAL_CODE_MAP = {
+    '01': 'Álava', '02': 'Albacete', '03': 'Alicante', '04': 'Almería', '05': 'Ávila',
+    '06': 'Badajoz', '07': 'Baleares', '08': 'Barcelona', '09': 'Burgos', '10': 'Cáceres',
+    '11': 'Cádiz', '12': 'Castellón', '13': 'Ciudad Real', '14': 'Córdoba', '15': 'A Coruña',
+    '16': 'Cuenca', '17': 'Girona', '18': 'Granada', '19': 'Guadalajara', '20': 'Gipuzkoa',
+    '21': 'Huelva', '22': 'Huesca', '23': 'Jaén', '24': 'León', '25': 'Lleida',
+    '26': 'La Rioja', '27': 'Lugo', '28': 'Madrid', '29': 'Málaga', '30': 'Murcia',
+    '31': 'Navarra', '32': 'Ourense', '33': 'Asturias', '34': 'Palencia', '35': 'Las Palmas',
+    '36': 'Pontevedra', '37': 'Salamanca', '38': 'S.C. Tenerife', '39': 'Cantabria', '40': 'Segovia',
+    '41': 'Sevilla', '42': 'Soria', '43': 'Tarragona', '44': 'Teruel', '45': 'Toledo',
+    '46': 'Valencia', '47': 'Valladolid', '48': 'Bizkaia', '49': 'Zamora', '50': 'Zaragoza',
+    '51': 'Ceuta', '52': 'Melilla'
+};
+
+function validateField(input) {
+    if (input.required && !input.value.trim()) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function validateEmailField(input) {
+    const val = input.value.trim();
+    if (!val && input.required) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (val && !re.test(val)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function validatePhoneField(input) {
+    let val = input.value.trim();
+    if (!val && input.required) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    
+    // Auto-prefix Spanish numbers
+    if (/^[679]\d{8}$/.test(val)) {
+        val = '+34 ' + val;
+        input.value = val;
+    }
+
+    const re = /^\+?[\d\s\-]{7,20}$/;
+    if (val && !re.test(val)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
+}
+
+function onPostalCodeInput(input, cityId = 'customerCity') {
+    const val = input.value.trim();
+    validateField(input);
+    
+    if (val.length >= 2) {
+        const provinceCode = val.substring(0, 2);
+        const province = POSTAL_CODE_MAP[provinceCode];
+        if (province) {
+            const cityInput = document.getElementById(cityId);
+            if (cityInput && (!cityInput.value || cityInput.dataset.autoFilled === 'true')) {
+                cityInput.value = province;
+                cityInput.dataset.autoFilled = 'true';
+                cityInput.classList.remove('is-invalid');
+            }
+        }
+    }
+}
+
 function validarNifCif(valor) {
     if (!valor) return false;
     var v = valor.trim().toUpperCase();
@@ -109,31 +187,55 @@ function openFacturaPuntualModal() {
         document.getElementById('fp_direccion').value = currentFacturaPuntual.direccion || '';
         document.getElementById('fp_cp').value = currentFacturaPuntual.codigoPostal || '';
         document.getElementById('fp_ciudad').value = currentFacturaPuntual.ciudad || '';
+        document.getElementById('fp_email').value = currentFacturaPuntual.email || '';
+        document.getElementById('fp_phone').value = currentFacturaPuntual.phone || '';
     }
     document.getElementById('facturaPuntualAlert').style.display = 'none';
     modal.show();
 }
 
 function aplicarFacturaPuntual() {
+    if (!validateField(document.getElementById('fp_nombre'))) {
+        showToast('El nombre es obligatorio', 'warning');
+        return;
+    }
+    if (!validateFpNif(document.getElementById('fp_nif'))) {
+        showToast('NIF/CIF obligatorio o con formato incorrecto', 'warning');
+        return;
+    }
+    if (!validateField(document.getElementById('fp_direccion'))) {
+        showToast('La dirección es obligatoria', 'warning');
+        return;
+    }
+    if (!validateField(document.getElementById('fp_cp'))) {
+        showToast('El código postal es obligatorio', 'warning');
+        return;
+    }
+    if (!validateField(document.getElementById('fp_ciudad'))) {
+        showToast('La ciudad es obligatoria', 'warning');
+        return;
+    }
+    if (!validateEmailField(document.getElementById('fp_email'))) {
+        showToast('Formato de email no válido', 'warning');
+        return;
+    }
+    if (!validatePhoneField(document.getElementById('fp_phone'))) {
+        showToast('Formato de teléfono no válido', 'warning');
+        return;
+    }
+
     var nombre = document.getElementById('fp_nombre').value.trim();
     var nif = document.getElementById('fp_nif').value.trim().toUpperCase();
     var direccion = document.getElementById('fp_direccion').value.trim();
     var cp = document.getElementById('fp_cp').value.trim();
     var ciudad = document.getElementById('fp_ciudad').value.trim();
-    var alertEl = document.getElementById('facturaPuntualAlert');
+    var email = document.getElementById('fp_email').value.trim();
+    var phone = document.getElementById('fp_phone').value.trim();
 
-    if (!nombre || !nif || !direccion || !cp || !ciudad) {
-        alertEl.textContent = 'Todos los campos son obligatorios.';
-        alertEl.style.display = 'block';
-        return;
-    }
-    if (!validarNifCif(nif)) {
-        alertEl.textContent = 'El formato del NIF/CIF no es válido (DNI: 12345678A, NIE: X1234567A, CIF: B12345678).';
-        alertEl.style.display = 'block';
-        return;
-    }
-
-    currentFacturaPuntual = { nombre: nombre, nif: nif, direccion: direccion, codigoPostal: cp, ciudad: ciudad };
+    currentFacturaPuntual = { 
+        nombre: nombre, nif: nif, direccion: direccion, 
+        codigoPostal: cp, ciudad: ciudad, email: email, phone: phone 
+    };
     currentDocType = 'FACTURA_COMPLETA';
 
     // Update summary UI
@@ -143,6 +245,21 @@ function aplicarFacturaPuntual() {
     document.getElementById('summaryPuntualNif').textContent = 'NIF: ' + nif;
 
     bootstrap.Modal.getInstance(document.getElementById('facturaPuntualModal')).hide();
+}
+
+function validateFpNif(input) {
+    const val = input.value.trim().toUpperCase();
+    input.value = val;
+    if (!val) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    if (!validarNifCif(val)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+    input.classList.remove('is-invalid');
+    return true;
 }
 
 function cancelarFacturaPuntual() {
@@ -2429,8 +2546,11 @@ function saveCustomer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     })
-        .then(r => {
-            if (!r.ok) return r.json().then(d => { throw new Error(d.error || d.message || 'Error'); });
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || data.message || ('Error ' + r.status));
+            }
             return r.json();
         })
         .then(savedCustomer => {

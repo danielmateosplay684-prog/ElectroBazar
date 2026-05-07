@@ -13,6 +13,34 @@
             --danger: #e74c3c;
         }
 
+        /* ── Standard Customer Modals ── */
+        .modal-customer-standard .modal-body {
+            min-height: 520px; /* Prevent height jumping when toggling types */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-customer-standard .form-label .text-danger {
+            margin-left: 2px;
+            font-weight: bold;
+        }
+
+        .modal-customer-standard .is-invalid {
+            border-color: var(--danger) !important;
+            background-image: none !important;
+        }
+
+        .modal-customer-standard .invalid-feedback {
+            display: none;
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 0.25rem;
+        }
+
+        .modal-customer-standard .is-invalid + .invalid-feedback {
+            display: block;
+        }
+
         /* ── Connectivity LED Indicator ── */
         #connectivity-led {
             display: flex;
