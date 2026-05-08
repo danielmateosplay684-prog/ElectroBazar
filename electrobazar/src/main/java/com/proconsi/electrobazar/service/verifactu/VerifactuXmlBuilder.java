@@ -184,7 +184,7 @@ public class VerifactuXmlBuilder {
         sb.append(encadenamiento(invoice.getHashPreviousInvoice(), nif, getPreviousNumSerie(invoice), getPreviousFecha(invoice)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
         
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         String huellaEnvio = hashCalculator.calculate(nif, invoice.getInvoiceNumber(), invoice.getCreatedAt(), "F1", cuotaTotal, importeTotal, invoice.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -223,7 +223,7 @@ public class VerifactuXmlBuilder {
         sb.append(encadenamientoTicket(ticket.getHashPreviousInvoice(), nif, getPreviousTicketNumSerie(ticket), getPreviousTicketFecha(ticket)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
         
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         String huellaEnvio = hashCalculator.calculate(nif, ticket.getTicketNumber(), ticket.getCreatedAt(), "F2", cuotaTotal, importeTotal, ticket.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -300,7 +300,7 @@ public class VerifactuXmlBuilder {
         sb.append(tag("sf:ImporteTotal", fmt(totalRefundedNeg.setScale(2, RoundingMode.HALF_UP))));
         sb.append(encadenamiento(rect.getHashPreviousInvoice(), nif, getPreviousRectNumSerie(rect), getPreviousRectFecha(rect)));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(rect.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         String huellaEnvio = hashCalculator.calculate(nif, rect.getRectificativeNumber(), rect.getCreatedAt(), tipoFactura, cuotaTotal, totalRefundedNeg.setScale(2, RoundingMode.HALF_UP), rect.getHashPreviousInvoice(), fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -325,7 +325,7 @@ public class VerifactuXmlBuilder {
         LastRecordInfo last = getLatestRecordInfo();
         sb.append(encadenamientoAnulacion(last, nif));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, invoice.getInvoiceNumber(), invoice.getCreatedAt(), last.hash, fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -350,7 +350,7 @@ public class VerifactuXmlBuilder {
         LastRecordInfo last = getLatestRecordInfo();
         sb.append(encadenamientoAnulacion(last, nif));
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre, softwareId, softwareVersion, softwareInstalacion));
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, ticket.getTicketNumber(), ticket.getCreatedAt(), last.hash, fechaHoraHuso);
         sb.append(tag("sf:FechaHoraHusoGenRegistro", fechaHoraHuso));
         sb.append(tag("sf:TipoHuella", "01"));
@@ -418,7 +418,7 @@ public class VerifactuXmlBuilder {
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
 
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(invoice.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         
         // El hash de anulación usa la huella del ÚLTIMO registro enviado al sistema (no de la propia factura)
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, invoice.getInvoiceNumber(),
@@ -461,7 +461,7 @@ public class VerifactuXmlBuilder {
         sb.append(sistemaInformatico(nif, company.getName(), softwareNombre,
                 softwareId, softwareVersion, softwareInstalacion));
 
-        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(ticket.getCreatedAt());
+        String fechaHoraHuso = hashCalculator.getFechaHoraHuso(LocalDateTime.now());
         
         String huellaEnvio = hashCalculator.calculateAnulacionHash(nif, ticket.getTicketNumber(),
                 ticket.getCreatedAt(), last.hash, fechaHoraHuso);

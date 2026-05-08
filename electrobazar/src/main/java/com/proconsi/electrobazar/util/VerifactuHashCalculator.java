@@ -34,12 +34,11 @@ public class VerifactuHashCalculator {
      * Calcula la Huella Verifactu.
      * ...
      */
-    public String calculate(String nif, String numSerie, LocalDateTime fechaHora,
+    public String calculate(String nif, String numSerie, LocalDateTime fechaExpedicion,
             String tipoFactura, BigDecimal cuotaTotal,
             BigDecimal importeTotal, String huellaAnterior) {
-        ZonedDateTime zdt = fechaHora.atZone(MADRID);
-        String fecha = zdt.format(DATE_FMT);
-        String fechaHoraHuso = zdt.format(DATETIME_FMT);
+        String fecha = getFechaExpedicion(fechaExpedicion);
+        String fechaHoraHuso = getFechaHoraHuso(LocalDateTime.now());
 
         // Formato exacto AEAT: field=value&field=value...
         String input = String.format(
