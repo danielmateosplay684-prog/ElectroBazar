@@ -64,6 +64,21 @@ public class CompanySettings {
     @Column(columnDefinition = "TEXT")
     private String invoiceFooterText;
 
+    /** Series for full invoices (e.g. "F"). */
+    @Column(name = "invoice_serie", length = 5)
+    @Builder.Default
+    private String invoiceSerie = "F";
+
+    /** Series for simplified invoices/tickets (e.g. "T"). */
+    @Column(name = "ticket_serie", length = 5)
+    @Builder.Default
+    private String ticketSerie = "T";
+
+    /** Series for rectificative documents (e.g. "FR"). */
+    @Column(name = "rectificative_serie", length = 5)
+    @Builder.Default
+    private String rectificativeSerie = "FR";
+
     /**
      * Number of days after the sale date during which a return is allowed.
      * This value is stamped on each ticket at creation time.

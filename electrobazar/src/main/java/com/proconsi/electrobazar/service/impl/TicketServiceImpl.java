@@ -1,6 +1,7 @@
 package com.proconsi.electrobazar.service.impl;
 
 import com.proconsi.electrobazar.model.AeatStatus;
+import com.proconsi.electrobazar.model.CompanySettings;
 import com.proconsi.electrobazar.model.InvoiceSequence;
 import com.proconsi.electrobazar.model.Sale;
 import com.proconsi.electrobazar.model.Ticket;
@@ -46,8 +47,10 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public Ticket createTicket(Sale sale, boolean applyRecargo) {
+        CompanySettings settings = companySettingsService.getSettings();
+        String serie = (settings.getTicketSerie() != null) ? settings.getTicketSerie() : TICKET_SERIE;
+        
         int ticketYear = (sale.getCreatedAt() != null) ? sale.getCreatedAt().getYear() : LocalDate.now().getYear();
-        String serie = TICKET_SERIE;
 
         InvoiceSequence sequence = invoiceSequenceRepository.findBySerieAndYearForUpdate(serie, ticketYear)
                 .orElseGet(() -> invoiceSequenceRepository.save(

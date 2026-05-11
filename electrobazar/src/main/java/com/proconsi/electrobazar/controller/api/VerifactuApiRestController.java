@@ -550,6 +550,8 @@ public class VerifactuApiRestController {
         row.put("rejectionReason",inv.getAeatRejectionReason() != null ? inv.getAeatRejectionReason().name() : null);
         row.put("waitTime",       inv.getAeatWaitTime());
         row.put("hash",           inv.getHashCurrentInvoice());
+        row.put("aeatXmlSent",    inv.getAeatXmlSent());
+        row.put("aeatRawResponse",inv.getAeatRawResponse());
         // QR generation removed for list view performance
         row.put("qrUrl",          invoiceService.generateQrUrl(inv));
         return row;
@@ -571,6 +573,8 @@ public class VerifactuApiRestController {
         row.put("rejectionReason",t.getAeatRejectionReason() != null ? t.getAeatRejectionReason().name() : null);
         row.put("waitTime",       t.getAeatWaitTime());
         row.put("hash",           t.getHashCurrentInvoice());
+        row.put("aeatXmlSent",    t.getAeatXmlSent());
+        row.put("aeatRawResponse",t.getAeatRawResponse());
         // QR generation removed for list view performance
         row.put("qrUrl",          invoiceService.generateQrUrl(t));
         return row;
@@ -596,6 +600,8 @@ public class VerifactuApiRestController {
         row.put("waitTime",       r.getAeatWaitTime());
         row.put("returnId",       r.getSaleReturn() != null ? r.getSaleReturn().getId() : null);
         row.put("hash",           r.getHashCurrentInvoice());
+        row.put("aeatXmlSent",    r.getAeatXmlSent());
+        row.put("aeatRawResponse",r.getAeatRawResponse());
         // QR generation removed for list view performance
         row.put("qrUrl",          invoiceService.generateQrUrl(r));
         return row;

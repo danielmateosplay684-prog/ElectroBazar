@@ -66,8 +66,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public Invoice createInvoice(Sale sale) {
+        CompanySettings settings = companySettingsRepository.findById(1L).orElse(null);
+        String serie = (settings != null && settings.getInvoiceSerie() != null) ? settings.getInvoiceSerie() : DEFAULT_SERIE;
+        
         int invoiceYear = sale.getCreatedAt() != null ? sale.getCreatedAt().getYear() : LocalDate.now().getYear();
-        String serie = DEFAULT_SERIE;
 
         InvoiceSequence sequence = invoiceSequenceRepository
                 .findBySerieAndYearForUpdate(serie, invoiceYear)

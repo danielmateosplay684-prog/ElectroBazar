@@ -758,18 +758,18 @@ function renderTicket() {
         // Replicar el redondeo fiscal del backend: base+IVA redondeados por separado
         // para que el total del frontend coincida exactamente con el cálculo del servidor.
         var vatRate = item.vatRate != null ? item.vatRate : 0.21;
-        var netUnit = unitPrice / (1 + vatRate);
-        var baseAmount = Math.round((netUnit * item.quantity + Number.EPSILON) * 100) / 100;
-        var vatAmount = Math.round((baseAmount * vatRate + Number.EPSILON) * 100) / 100;
-        var subtotal = baseAmount + vatAmount;
+        var totalGrossLine = Math.round((unitPrice * item.quantity + Number.EPSILON) * 100) / 100;
+        var baseAmount = Math.round((totalGrossLine / (1 + vatRate) + Number.EPSILON) * 100) / 100;
+        var vatAmount = Math.round((totalGrossLine - baseAmount + Number.EPSILON) * 100) / 100;
+        var subtotal = totalGrossLine;
+        
         totalItems += item.quantity;
         totalAmount += subtotal;
 
         if (window.currentHasRE) {
-            var vat = item.vatRate || 0.21;
-            var reRate = getReRate(vat);
-            var net = unitPrice / (1 + vat);
-            var reLine = Math.round((net * reRate * item.quantity + Number.EPSILON) * 100) / 100;
+            var reRate = getReRate(vatRate);
+            // RE is calculated on the rounded base to match backend RecargoEquivalenciaCalculator
+            var reLine = Math.round((baseAmount * reRate + Number.EPSILON) * 100) / 100;
             totalRE += reLine;
         }
 

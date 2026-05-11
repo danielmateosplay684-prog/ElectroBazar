@@ -77,29 +77,27 @@ public class RecargoEquivalenciaCalculator {
             BigDecimal vatRate,
             boolean applyRecargo) {
 
-        // Formula: Net = Gross / (1 + VAT_Rate)
+        // Calculate total gross including VAT first to avoid penny errors
+        BigDecimal totalGrossWithVat = grossPrice.multiply(quantity).setScale(MONETARY_SCALE, ROUNDING_MODE);
+
+        // Derive base from total gross
         BigDecimal divisor = BigDecimal.ONE.add(vatRate);
-        BigDecimal netPrice = grossPrice.divide(divisor, 10, ROUNDING_MODE);
+        BigDecimal baseAmount = totalGrossWithVat.divide(divisor, MONETARY_SCALE, ROUNDING_MODE);
+        
+        // VAT is the difference to ensure sum matches exactly
+        BigDecimal vatAmount = totalGrossWithVat.subtract(baseAmount);
 
-        // Base amount = Net Unit Price * quantity
-        BigDecimal baseAmount = netPrice
-                .multiply(quantity)
-                .setScale(MONETARY_SCALE, ROUNDING_MODE);
+        // Net unit price for informative purposes
+        BigDecimal netPrice = totalGrossWithVat.divide(quantity.multiply(divisor), 10, ROUNDING_MODE);
 
-        // VAT amount = base * VAT rate
-        BigDecimal vatAmount = baseAmount
-                .multiply(vatRate)
-                .setScale(MONETARY_SCALE, ROUNDING_MODE);
-
-        // RE rate and amount
+        // RE rate and amount (RE is always added on top of the PVP/Gross total in this system)
         BigDecimal recargoRate = applyRecargo ? getRecargoRate(vatRate) : BigDecimal.ZERO;
         BigDecimal recargoAmount = baseAmount
                 .multiply(recargoRate)
                 .setScale(MONETARY_SCALE, ROUNDING_MODE);
 
-        // Final Total
-        BigDecimal totalAmount = baseAmount.add(vatAmount).add(recargoAmount)
-                .setScale(MONETARY_SCALE, ROUNDING_MODE);
+        // Final Total = Gross Total + RE
+        BigDecimal totalAmount = totalGrossWithVat.add(recargoAmount);
 
         return TaxBreakdown.builder()
                 .productId(productId)

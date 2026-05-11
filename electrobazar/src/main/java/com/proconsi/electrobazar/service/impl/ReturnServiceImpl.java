@@ -42,8 +42,6 @@ import java.util.Optional;
 @Slf4j
 public class ReturnServiceImpl implements ReturnService {
 
-    private static final String RETURN_SERIE = "D";
-
     private final SaleReturnRepository saleReturnRepository;
     private final ReturnLineRepository returnLineRepository;
     private final SaleLineRepository saleLineRepository;
@@ -58,6 +56,10 @@ public class ReturnServiceImpl implements ReturnService {
     private final MessageSource messageSource;
     private final TicketRepository ticketRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CompanySettingsRepository companySettingsRepository;
+
+    private static final String DEFAULT_RETURN_SERIE = "D";
+    private static final String DEFAULT_RECTIFICATIVE_SERIE = "FR";
 
     private static final String INITIAL_HASH = "";
 
@@ -147,7 +149,12 @@ public class ReturnServiceImpl implements ReturnService {
         }
 
         SaleReturn.ReturnType returnType = (totalOriginalUnits.compareTo(totalReturnedUnits) == 0) ? SaleReturn.ReturnType.TOTAL : SaleReturn.ReturnType.PARTIAL;
-        String returnNumber = generateNumber(RETURN_SERIE);
+        CompanySettings settings = companySettingsRepository.findById(1L).orElse(null);
+        String returnSerie = (settings != null && settings.getInvoiceSerie() != null) ? settings.getInvoiceSerie() : DEFAULT_RETURN_SERIE; // Fallback to Invoice serie or 'D'
+        // Actually, let's use a specific one if I added it. I added 'rectificativeSerie'.
+        String rectSerie = (settings != null && settings.getRectificativeSerie() != null) ? settings.getRectificativeSerie() : DEFAULT_RECTIFICATIVE_SERIE;
+
+        String returnNumber = generateNumber(DEFAULT_RETURN_SERIE); // The internal Return number can stay as is or use a setting
 
         SaleReturn saleReturn = SaleReturn.builder()
                 .returnNumber(returnNumber).originalSale(originalSale).worker(worker)
@@ -167,7 +174,7 @@ public class ReturnServiceImpl implements ReturnService {
 
         // Corrective Invoice Generation
         if (originalSale.getInvoice() != null || originalSale.getTicket() != null) {
-            String rectNumber = generateNumber("FR");
+            String rectNumber = generateNumber(rectSerie);
             String previousHash = rectificativeInvoiceRepository.findFirstByOrderByCreatedAtDesc()
                     .map(RectificativeInvoice::getHashCurrentInvoice)
                     .orElse(INITIAL_HASH);

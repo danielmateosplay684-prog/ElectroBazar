@@ -178,7 +178,8 @@ public class VerifactuXmlBuilder {
 
         sb.append(desglose(sale));
         BigDecimal cuotaTotal = sale.getTotalVat().add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal importeTotal = sale.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+        // AEAT ImporteTotal = Sum of (Base + VAT + RE). We cannot use sale.getTotalAmount() because it subtracts abonos (payment method).
+        BigDecimal importeTotal = sale.getTotalBase().add(sale.getTotalVat()).add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
         sb.append(tag("sf:CuotaTotal", fmt(cuotaTotal)));
         sb.append(tag("sf:ImporteTotal", fmt(importeTotal)));
         sb.append(encadenamiento(invoice.getHashPreviousInvoice(), nif, getPreviousNumSerie(invoice), getPreviousFecha(invoice)));
@@ -217,7 +218,8 @@ public class VerifactuXmlBuilder {
         sb.append(tag("sf:DescripcionOperacion", "Venta TPV " + ticket.getTicketNumber()));
         sb.append(desglose(sale));
         BigDecimal cuotaTotal = sale.getTotalVat().add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal importeTotal = sale.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+        // AEAT ImporteTotal = Sum of (Base + VAT + RE). We cannot use sale.getTotalAmount() because it subtracts abonos (payment method).
+        BigDecimal importeTotal = sale.getTotalBase().add(sale.getTotalVat()).add(sale.getTotalRecargo()).setScale(2, RoundingMode.HALF_UP);
         sb.append(tag("sf:CuotaTotal", fmt(cuotaTotal)));
         sb.append(tag("sf:ImporteTotal", fmt(importeTotal)));
         sb.append(encadenamientoTicket(ticket.getHashPreviousInvoice(), nif, getPreviousTicketNumSerie(ticket), getPreviousTicketFecha(ticket)));
